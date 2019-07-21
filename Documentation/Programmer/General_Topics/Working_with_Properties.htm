@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Working with Properties</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Working with Properties</h1>
+
+<p>Gamebryo defines the rendering state for each leaf renderable
+object via a set of independent rendering properties. Each of
+these properties defines a particular aspect of the rendering
+state for that renderable object, and each are subclasses of the
+base <span class="NDLSystemFont">NiProperty</span> class. 
+Rendering properties can be shared among multiple renderable
+objects. The overall rendering state for a given object is the
+property state (cached in an <span class=
+"NDLSystemFont">NiPropertyState</span> object that is attached to
+each <span class="NDLSystemFont">NiRenderObject</span> object),
+which is a collection of exactly one of each type of property. 
+While the property state objects exist on <span class=
+"NDLSystemFont">NiRenderObject</span> leaf nodes, the individual
+rendering properties themselves are attached to any <span class=
+"NDLSystemFont">NiAVObject</span> in a scene graph. It is these
+per-<span class="NDLSystemFont">NiAVObject</span> properties that
+are used to generate the property state objects on each leaf
+renderable object (via the <span class=
+"NDLSystemFont">UpdateProperties</span> process described
+below).</p>
+
+<p>A property that is attached to an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#Properties">NiAVObject</a></span> affects all child objects in the
+sub-tree under that <span class="NDLSystemFont">NiAVObject</span>
+(including the object itself), until they are overridden by
+another property of the same type lower in the sub-tree. If no
+properties of a given type are pushed at or above an object in a
+scene graph, then that object will be drawn with the default
+property of that type applied. The default for each property type
+is equivalent to the settings of a default-constructed property
+of that type (see the documentation for each property class for
+details regarding the default settings for that property
+type).</p>
+
+<p>Each <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#Properties">NiAVObject</a></span>
+contains a list of all of the properties that are attached to
+it. An <span class="NDLSystemFont">NiAVObject</span> may have no
+properties attached, or may have one or more properties attached,
+all the way up to a maximum of one of each type of property
+attached to a single <span class=
+"NDLSystemFont">NiAVObject</span> . Note that applications must
+take care to ensure that any single <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#Properties">NiAVObject</a></span>
+has no more than one property of a given type attached at any
+time. Having more than one property object of a given type
+attached to a single <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#Properties">NiAVObject</a></span>
+can result in strange visual artifacts and undefined
+behavior.</p>
+
+<h2>Rendering Property Types</h2>
+
+<p>The <span class="NDLSystemFont">NiProperty</span> object
+hierarchy in the Gamebryo database is as follows:</p>
+
+<p><span class="NDLSystemFont">NiObject<br>
+&nbsp;&nbsp;&nbsp;&nbsp;NiProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiAlphaProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiDitherProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiFogProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiMaterialProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiShadeProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiSpecularProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiStencilProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiTexturingProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiVertexColorProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiWireframeProperty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NiZBufferProperty</span></p>
+
+<p>A high-level description of each property type may be seen in
+the section <a href="Property_Descriptions.htm">Property
+Descriptions</a>.</p>
+
+<h2>Updating Properties onto Geometry Objects</h2>
+
+<p>As discussed above, properties compose from the root downward
+towards the leaves hierarchically. A property that is attached
+to an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#Properties">NiAVObject</a></span>
+will affect that object and any children of that object, unless
+overridden by another property of the same type lower down in the
+sub-tree. As a result, the current state of a leaf renderable
+object is defined by its chain of ancestors in the scene
+graph.</p>
+
+<p>Gamebryo keeps the attached properties throughout the scene
+graph, but also keeps record of the overall <em>property state</em>
+at each leaf renderable object. The property state attached to
+each leaf renderable object is an array containing the property
+of each type that is applied at that object (based on a traversal
+of the scene graph). In this way, each leaf renderable object
+contains direct pointers to all of the render properties needed
+to draw it. This is important, since the rendering phase deals
+only with the leaf renderable objects, not the scene graph. The
+property state object at each leaf renderable object is thus a
+snapshot of all of the properties inherited by the renderable
+object.</p>
+
+<p>To update these property state objects, Gamebryo uses a system
+similar to that used by the <span class=
+"NDLSystemFont">NiAVObject::Update</span> function. The analogous
+rendering property call is <span class=
+"NDLSystemFont">NiAVObject::UpdateProperties</span> .
+<span class="NDLSystemFont">UpdateProperties</span> must be
+called (before the next rendering call) on an object "O" (or any
+of its ancestors) when any of the following occurs:</p>
+
+<ul>
+    <li>A scene graph rooted at O is initially created</li>
+
+    <li>A property is attached or detached from O</li>
+
+    <li>O is detached from or attached as a child of a parent
+    object P</li>
+</ul>
+
+<p>Note that applications do <em>not</em> need to call
+<span class="NDLSystemFont">UpdateProperties</span> if <em>only
+the settings within a given property</em> or <em>properties</em>
+are changed (e.g. a new image is attached to an existing texture
+property or the "testing" flag of an <span class=
+"NDLSystemFont">NiZBufferProperty</span> changes).</p>
+
+<p>For optimal performance, these calls to
+<span class="NDLSystemFont">UpdateProperties</span> can and
+should be "batched" in the same way that calls to <span class=
+"NDLSystemFont">Update</span> are batched. If the application
+will be attaching and detaching numerous properties in a given
+sub-tree, it should make all of the attach/detach calls, and then
+make a single call to <span class=
+"NDLSystemFont">UpdateProperties</span> at the top of the
+sub-tree. Generally, since properties and children are attached
+and detached much less frequently than every frame, this call to
+<span class="NDLSystemFont">UpdateProperties</span> is much
+faster than accumulating the properties every frame. However, it
+does place a small, added burden on the application
+programmer.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

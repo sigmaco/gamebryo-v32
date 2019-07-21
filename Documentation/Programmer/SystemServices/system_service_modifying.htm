@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Modifying a system service</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Modifying a system service</h1>
+
+<p>Rather than deriving directly from <span class="NDLSystemFont">efd::ISystemService</span> you
+may wish to extend another existing service. Simply derive from the desired service and otherwise
+proceed as you normally would when creating a service from scratch by assigning a unique <span
+class="NDLSystemFont">efd::ClassID</span> and overriding whatever <span class="NDLSystemFont">
+efd::ISystemService</span> methods you require. In addition to those steps, you must also override
+the <span class="NDLSystemFont">efd::ISystemService::OnServiceRegistered</span> method. Services are
+automatically identified by the Service Manager based on their most derived <span class=
+"NDLSystemFont">ClassID</span> as determined by the Foundation RTTI system, but in the case of a
+derived class you want to also be able to fetch the service using the base class's <span class=
+"NDLSystemFont">ClassID</span>. The <span class="NDLSystemFont">OnServiceRegistered</span> method
+allows the service to associate itself with this additional <span class="NDLSystemFont">ClassID
+</span> value. In addition, when overriding the <span class="NDLSystemFont">OnPreInit</span>, <span
+class="NDLSystemFont">OnInit</span>, <span class="NDLSystemFont">OnTick</span> and <span class=
+"NDLSystemFont">OnShutdown</span> methods you will normally want to call the base class
+implementation of these methods. When you call these and how you handle <span class="NDLSystemFont">
+ASyncResult_Pending</span> return values will depend on the specific needs of your service and the
+specific behavior of the base service.</p>
+
+<p>Consider this example where the <span class="NDLSystemFont">efd::MessageService</span> is
+extended:</p>
+
+<pre>
+EE_DECLARE_EXTERNAL_CLASSID(kCLASSID_MyMessageService, 0x06200001);
+class MyMessageService : public MessageService
+{
+    EE_DECLARE_CLASS1(MyMessageService, kCLASSID_MyMessageService, MessageService);
+    // NOTE: No need to declare a reference count since MessageService already does this.
+
+protected:
+    void OnServiceRegistered(efd::IAliasRegistrar* pAliasRegistrar)
+    {
+        // Register an alias identity so this service can be looked up using the base class
+        // ClassID. The derived ClassID is automatically registered and needs not be added here.
+        pAliasRegistrar-&gt;AddIdentity&lt;MessageService&gt;();
+        // Always call the base class version in case that class is itself derived from another
+        // class.
+        MessageService::OnServiceRegistered(pAliasRegistrar);
+    }
+
+    virtual efd::SyncResult OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar)
+    {
+        // do extra work here...
+
+        efd::SyncResult retVal = MessageService::OnPreInit(pDependencyRegistrar);
+        if (retVal == SyncResult_Success)
+        {
+            // do extra work here...
+        }
+        return retVal;
+    }
+
+    efd::AsyncResult OnTick()
+    {
+        // Additional per-frame work
+        ...
+
+        // We know MessageService always returns either AsyncResult_Pending or AsyncResult_Failure
+        if (MessageService::OnTick() == efd::AsyncResult_Failure)
+            return efd::AsyncResult_Failure;
+
+        // Additional per-frame work
+        ...
+
+        return AsyncResult_Pending;
+    }
+
+public:
+    // extra function that only new class has
+    virtual void ExtraFunction()
+    {
+        // do something extra here
+    }
+};
+</pre>
+
+<p>After creating a class that derives from an existing System Service you would then create and
+register that new class instead of the original class when allocating services. The actually
+registration is the same as it would normally be:</p>
+
+<pre>
+// create our custom system service instead of the base version
+MyMessageServicePtr spMessageService = EE_NEW MyMessageService();
+// register our custom system service with the service manager
+pServiceManager-&gt;RegisterSystemService(spMessageService);
+</pre>
+
+<p>Because we registered an alias the derived service can be looked up in a variety of ways:</p>
+
+<pre>
+// Existing code that is unaware of your derived service can continue to use the base class:
+MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+EE_ASSERT(pMessageService);
+
+// Code that is aware of your derived MyMessageService can directly use it if desired:
+MyMessageService* pMyMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MyMessageService&gt;();
+EE_ASSERT(pMyMessageService);
+pMyMessageService-&gt;ExtraFunction();
+
+// These two methods will return the same results simply cast to different classes:
+EE_ASSERT(pMessageService == pMyMessageService);
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="system_service_creating.htm">Creating a system service</a></li>
+    <li><a href="system_service_deleting.htm">Deleting a system service</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+    <li><a href="../../Reference/efd/efd__MessageService.htm">efd::MessageService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

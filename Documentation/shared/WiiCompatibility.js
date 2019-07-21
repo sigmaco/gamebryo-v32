@@ -1,0 +1,1 @@
+var WiiCompatibility = false;

@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MangledMetal AI</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>MangledMetal AI</h1>
+
+<p>MangledMetal combat AI (Artificial Intelligence) consists of a series of Lua
+behaviors on the AISimple model. The Waypoint model is used to control AI
+patrolling behavior.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Model Name</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+
+            <td>Implements a simple combat AI (Artificial Intelligence) using
+            Lua behaviors.</td>
+        </tr>
+
+        <tr>
+            <td><a href="MangledMetal__Waypoint.htm">Waypoint</a></td>
+
+            <td>A waypoint in an AI patrolling network. Waypoints are linked
+            together to form waypoint networks. An AI can navigate to a
+            waypoint, then ask that waypoint where to go next.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Each behavior represents a state in the AI. The start behavior is invoked by
+the OnCreate behavior of the entity, which runs automatically upon entity
+creation. Once started, an AI behavior is always running on the entity until it
+dies. Each time the entity transitions out of a state into another state, the
+old behavior invokes the target behavior and then exits.</p>
+
+<p>The behaviors all sleep periodically, then wake up and evaluate conditions.
+Time-intensive processing such as following a given entity or pathfinding take
+place in C++ built-ins.</p>
+
+<p>Each AI state behavior name begins with "AIState". The states all perform
+setup and initialization, then enter a loop that repeats until explicitly
+exited. The algorithm for each state's loop is basically the same:</p>
+
+<ol>
+    <li>Check for exit conditions; if one is found, invoke the behavior for the
+    target state and exit.</li>
+
+    <li>Perform state-specific tasks</li>
+
+    <li>Sleep for 'SleepTime' milliseconds.</li>
+</ol>
+
+<p>Note that pathfinding is not covered by these Lua scripts. The scripts just
+set a target location to walk to or a target enemy to walk towards. C++ code in
+the MmCharacter and MmWalkable services figures out how to get the character
+there.</p>
+
+<p>The following states are supported in the Combat AI:</p>
+
+<h2>AIStatePatrolling</h2>
+
+<p>The AIStatePatrolling behavior is the start state for the AI. It is invoked
+directly from the OnCreate behavior, called by the system when the entity is
+created. Its exit conditions are</p>
+
+<ul>
+    <li>If the entity itself is dead, exit.</li>
+
+    <li>If any enemy is closer than 'PerceptionRadius', transition to
+    AIStateMoveToCombat.</li>
+</ul>
+
+<p>The AI determines if a given entity is an enemy by testing the target
+entity's "MyFactions" property against its own "HateFactions". The factions are
+lists of bytes; if my "HateFactions" property contains the letter "A", and a
+target's "MyFactions" property contains the letter "A", then that entity is my
+enemy.</p>
+
+<p>If the exit conditions are not taken, the entity checks to see if it has
+reached the position of the waypoint specified by its 'CurrentWaypoint' value.
+If it has reached that position, it will ask the current waypoint where to go
+next. The waypoint will modify the entity's 'CurrentWaypoint' value to a new
+location so that the next pass through the AI will move to the new location. If
+the entity has not reached the 'CurrentWaypoint' value, it does nothing; the
+C++ code, which runs much more frequently, will take care of moving the entity
+to the waypoint.</p>
+
+<h2>AIStateMoveToCombat</h2>
+
+<p>Once an enemy is detected, the entity will move towards that enemy. The
+behavior sets the enemy into its 'MoveToEntity' property, which is picked up by
+the MmCharacter C++ class and used to route the AI-driven character to the
+enemy. The C++ class is used rather than having the AI do the work because the
+C++ code runs more frequently, so it can adjust to movements by the enemy more
+smoothly.</p>
+
+<p>Each time through the loop, the AIStateMoveToCombat class will check these
+exit conditions:</p>
+
+<ul>
+    <li>If the entity itself is dead, exit.</li>
+
+    <li>If the 'MoveToEntity' entity is dead, transition back to
+    AIStatePatrolling.</li>
+
+    <li>If the 'MoveToEntity' entity is farther away than 'PerceptionRadius',
+    transition back to AIStatePatrolling.</li>
+
+    <li>If the 'MoveToEntity' entity is closer than 'RangedAttackRadius',
+    transition to AIStateRangedAttack.</li>
+</ul>
+
+<p>As with the AIStatePatrolling, detailed movement is handled by the C++ code.
+The AI code simply tells the C++ code which other entity to path towards. The
+C++ code can implement whatever pathing algorithm it likes to move the entity
+to its target. In the current implementation, movement is quite simplistic; no
+A* or pathing algorithm is used, just a linear move towards the enemy. However,
+if such an algorithm were to be implemented, it would only affect the C++ code;
+the Lua behaviors and properties would stay the same.</p>
+
+<h2>AIStateRangedAttack</h2>
+
+<p>In the current implementation of MangledMetal, there are no ranged attacks,
+but the AI makes provisions for one anyway. Since there are no ranged attacks,
+this state effectively works just like AIStateMoveToCombat - the character
+continues to move towards the enemy until it gets to melee combat range. The
+exit conditions are as follows:</p>
+
+<ul>
+    <li>If the entity itself is dead, exit.</li>
+
+    <li>If the 'MoveToEntity' entity is dead, transition back to
+    AIStatePatrolling.</li>
+
+    <li>If the 'MoveToEntity' entity is farther away than 'RangedAttackRadius',
+    transition to AIStateMoveToCombat.</li>
+
+    <li>If the 'MoveToEntity' entity is closer than 'MeleeAttackRadius',
+    transition to state AIMeleeAttack.</li>
+</ul>
+
+<p>If none of the exit conditions are taken, then this behavior should
+implement the ranged attack. Currently ranged attacks are not implemented in
+MangledMetal, so this behavior does nothing at this point.</p>
+
+<h2>AIStateMeleeAttack</h2>
+
+<p>When this state is reached, the AI character is close enough to engage in
+melee combat. Exit conditions are still checked as usual:</p>
+
+<ul>
+    <li>If the entity itself is dead, exit.</li>
+
+    <li>If the 'MoveToEntity' entity is dead, transition back to
+    AIStatePatrolling.</li>
+
+    <li>If the 'MoveToEntity' entity is farther away than 'MeleeAttackRadius',
+    transition to AIStateRangedAttack.</li>
+</ul>
+
+<p>If none of the exit conditions are taken, the AI character launches a melee
+attack on the enemy.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="mm_library_mangledmetal.htm">MangledMetal Library
+    Overview</a></li>
+
+    <li><a href="MangledMetal__ProjectIntro.htm">MangledMetal Library
+    Details</a></li>
+
+    <li><a href="mm_library_mangledmetal_combat.htm">MangledMetal
+    Combat</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

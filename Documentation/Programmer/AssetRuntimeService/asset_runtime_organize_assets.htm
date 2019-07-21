@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Organizing Your Assets</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Organizing Your Assets</h1>
+
+<p>The Asset Runtime Service allows considerable flexibility in
+how assets are organized into subdirectories by providing
+powerful location-independent access mechanisms. The one critical
+requirement is that all of the assets that your application needs
+must be grouped together below a single Asset Web Root directory.
+Your application only requires a single <span class=
+"NDLSystemFont">AssetWeb.Path</span> configuration parameter to
+be set to point to the Asset Web Root location.</p>
+
+<p>Discussed below are some general guidelines and best practices
+for organizing your assets.</p>
+
+<h2>Example Asset Web Directory Structure</h2>
+
+<p>The following screenshot demonstrates how your game assets
+might be organized. The Toolbench game solution wizard and
+default content settings support these data layout conventions.
+In this example, the "MyGame" folder is the root of the asset
+web. Additional media files needed at run-time can be stored in
+additional folders within the asset web. It is not necessary to
+include large source-only art assets in the asset web. Typically
+everything shown would be checked into a revision control system,
+with the exceptions of the "asset-web-metadata" and "Exported"
+folders.</p>
+
+<div class="FigureContainer">
+    <img src="./images/directory_structure.png" width="317"
+    height="335" alt="directory_structure.png">
+
+    <p class="FigureCaption">Example directory structure for game
+    assets</p>
+</div>
+
+<h2>Organization for EMT and World Builder Files</h2>
+
+<p>You use Toolbench to create or import and modify entity model
+files. You also use Toolbench to create block files for your
+project that define initial conditions in the game world. At
+runtime, your application requires exported versions of these
+files. Entity model files are exported as "flat models" with a
+<span class="NDLSystemFont">.flat</span> file extension. Block
+files are exported as files with an <span class=
+"NDLSystemFont">.xblock</span> extension. Additionally, there
+will be libraries of mix-in Models and associated assets that you
+will import into your project solution. We recommend the
+following asset organization practices for these file types:</p>
+
+<ul>
+    <li>The Entity Model libraries from previous development that
+    are imported into your project should be stored in
+    directories one level below Asset Web Root. These
+    directories' names should end with "Library." Toolbench will
+    set things up this way when you create a new solution in its
+    wizard. Also, following this guideline allows the system to
+    automatically ensure that internal asset references used in
+    the library are not broken if the directory is relocated
+    wholesale or reused in another context.</li>
+
+    <li>Create a new subdirectory under the Asset Web Root for
+    each new EMT project and each new block file. This will keep
+    supporting files grouped together and still allow sharing of
+    a single "Exported" folder for .flat and .xblock files.</li>
+
+    <li>By default, behavior scripts are stored in a single
+    folder named "Behaviors" under each EMT project. This is a
+    convenient location for editing the scripts in Toolbench.
+    However, all asset web paths that contain script files will
+    ultimately be added to the search path that is used by the
+    script interpreter in the game engine. This effectively
+    allows scripts to be stored anywhere.</li>
+</ul>
+
+<h2>Organization for Run-time Media Files</h2>
+
+<p>Create a subdirectory under your asset web called "Media". Use
+this location as the root for all the graphical, sound, and other
+media files that are needed by your application at run-time.</p>
+
+<p>We recommend that you define a platform that is the "generic
+platform" for your game. This allows you to create variations
+later to support a multi-platform game, multiple localizations,
+and so on. This should be enforced by only storing assets for the
+generic platform in the parent directory of a cluster of related
+assets and creating additional subdirectories for variations of
+these assets. For example, store the generic ogre in <span class=
+"NDLSystemFont">/Media/Characters/ogre.nif</span> and the
+platform-specific Xbox ogre in <span class=
+"NDLSystemFont">/Media/Characters/Xbox360/ogre.nif</span>. By
+using the same file name (<span class=
+"NDLSystemFont">ogre.nif</span>) the Asset Runtime Service will
+automatically be able to determine which variation to load on
+each platform.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                In the event that a platform, locale, or
+                similarly tagged variation does not exist, the
+                Asset Runtime Service has an automatic fallback
+                to use the generic asset.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Sharing Content Builds</h2>
+
+<p>Another "best practice" worth considering is creating a system
+for sharing both content builds and source code builds among
+developers. Typically, artists will want to have a convenient
+method for updating their development environment to the latest
+source code build without having to actually build the code
+themselves. Likewise, programmers would like to have a convenient
+method to update their development environment with all the
+latest content without necessarily having to run the art pipeline
+tools themselves. This amounts to having a standard and easy way
+of replicating the contents of the asset web to all the
+programmers' workstations.</p>
+
+<p>The content of the asset web is a mix of both source assets
+(solution, project, model, scripts, and block files) and
+generated assets (.xblock files, .flat files, and lots of
+exported artist content). You may or may not choose to commit all
+of these files into a revision control system. If you do commit
+all files, including generated assets, then you have a convenient
+way of pushing the updates out to the programmers. However, it
+may be too great a load on your RCS system to hold so many
+revisions of mostly binary content files which can largely be
+generated as needed from source assets.</p>
+
+<p>Our recommended best practice is to create a batch process
+that can pull source assets from the RCS system and generated
+assets from a centralized build system or file server. The
+merging of these two sources would produce the full set of assets
+that are stored in the asset web. If you will be devising such a
+system, the following is a (non-exhaustive) list of assets that
+will be required by a typical game run-time. Note that the asset
+runtime system will recognize each file as it is updated during
+the merge process.</p>
+
+<ul>
+    <li>.xblock files exported from World Builder</li>
+
+    <li>.flat model files exported from EMT</li>
+
+    <li>all the script files (and their dependency modules) that
+    are referenced by your entity models</li>
+
+    <li>.nif Gamebryo scenegraph files</li>
+
+    <li>.kfm and .kf Gamebryo animation files</li>
+
+    <li>any required shader and texture map files</li>
+
+    <li>audio sample files and other game audio data</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_config.htm">Configuring the Asset
+    Runtime Service</a></li>
+
+    <li><a href="asset_runtime_platform_support.htm">Supporting Multiple Platforms</a></li>
+
+    <li><a href=
+    "asset_runtime_customize_asset_tagging_system.htm">Customizing
+    the asset tagging system</a></li>
+
+    <li><a href="asset_runtime_deploying_assets.htm">Deploying Assets</a></li>
+
+    <li><a href="asset_runtime_l10n_support.htm">Supporting Localization</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

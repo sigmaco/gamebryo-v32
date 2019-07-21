@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Performance Impacts of Transparent Thread Safety</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Performance Impacts of Transparent Thread Safety</h1>
+
+<p>As stated in the previous section of this document, 
+ Gamebryo is not transparently thread safe. Simply put, a developer cannot 
+ just multithread an application and expect safe behavior in all circumstances. 
+ To understand this, let's look at concurrency and reentrancy issues that 
+ could occur in <span class="NDLSystemFont">NiObjectNET::IncRefCount</span> 
+ and <span class="NDLSystemFont">NiObjectNET::DecRefCount</span>. These functions 
+ are called whenever a smart pointer assignment occurs which over the course 
+ of an application amounts to a significant number of times.</p>
+
+<h2>Concurrency Issues</h2>
+
+<p>Assume that we have an object created and assigned to 
+ a regular pointer. This object has a smart pointer reference count of 
+ zero at this point. We create two threads and pass a pointer reference 
+ to that object into each thread. If we have two processors in the machine 
+ running this code, it is possible that both of these threads will occur 
+ concurrently. Each thread loads the cache line with the object's reference 
+ count and increments it. Then they write that cache line back. If these 
+ operations occur concurrently, then both threads will read in a value 
+ of zero and write out a value of one. This behavior is incorrect since 
+ there are two smart pointer references to the object. If each thread releases 
+ its smart pointer, then the object will be deleted twice which will cause 
+ a crash.</p>
+
+<p>We can solve this problem by making sure that the read 
+ and increment operations occur atomically by using a critical section 
+ or some thinner form of thread synchronization. In this case, only one 
+ thread would be allowed to touch the reference count for that object at 
+ any one time. This type of behavior is implemented for reference counted 
+ objects on all platforms.</p>
+
+<h2>Reentrancy Issues</h2>
+
+<p>Again assume that we have the same situation with a 
+ single object and two background threads running on a single processor 
+ machine. It is not possible for both threads to be running simultaneously, 
+ but it is possible for them to share time. Assume that the first thread 
+ enters <span class="NDLSystemFont">IncRefCount</span> and is interrupted 
+ before the reference count is actually incremented; The reference count 
+ is still zero. Now assume that the second thread assigns the pointer and 
+ releases the pointer before the first thread gets the processor back again. 
+ The reference count will go to one and then back to zero. The object will 
+ be deleted. When control returns to our first thread, it will increment 
+ freed memory and continue about execution with a resource that has already 
+ been freed. </p>
+
+<p>Again, this problem can be solved to a degree by making 
+ the read and increment operations atomic. However, there is also a race 
+ condition here where the increment depends upon how fast the other thread 
+ deletes the object. These types of races occur when an application passes 
+ references to an object as both regular and smart pointers. Applications 
+ should be careful when referencing an object with both regular and smart 
+ pointers.</p>
+
+<h2>Performance Analysis</h2>
+
+<p>While the issues outlined above are certainly pedagogical 
+ cases and demonstrate very poor programming assumptions, they do show 
+ problems that could potentially happen if an application accesses data 
+ across threads without restriction. This problem could be resolved by 
+ providing a critical section or other mutual exclusion object for each 
+ such method or object. This approach, however, has implications on performance 
+ since such a synchronization primitive would have to be touched for every 
+ call to these functions. In the case of <span class="NDLSystemFont">IncRefCount</span> 
+ and <span class="NDLSystemFont">DecRefCount</span>, this would result in 
+ thousands of calls per frame. There are lighter weight synchronization 
+ functions for incrementing and decrementing integer values atomically. 
+ These functions are used to make several functions of Gamebryo thread-safe.</p>
+
+<p>An alternative approach would provide each class with 
+ the ability to synchronize its own methods across all instances of that 
+ class. While a per-class solution allowing each class to synchronize across 
+ its instances would achieve greater performance, it would still be a stiff 
+ penalty like a per function solution. This per-class solution is used 
+ for some cases in Gamebryo like the creation of renderer data for source 
+ textures or the cleaning of stream resources.</p>
+
+<a name=Priority_Inversion></a><h2>Priority Inversion</h2>
+
+<p>In addition to any runtime performance implications, 
+ any thread safety scheme should make sure that priority inversion does 
+ not occur. Priority inversion is the situation where a high priority thread 
+ is prevented from executing because it requires a locked resource held 
+ by a background thread. For example, assume that an application has a 
+ high priority, foreground thread running the real time events like input, 
+ rendering, and scene update. In a lower priority, background thread, future 
+ levels are prepared for when the user reaches that section. Also assume 
+ that there is a shared pool of textures that must be accessed in a thread 
+ safe way by locking a global critical section. During level update the 
+ background thread may lock that critical section to access the texture 
+ pool. If the high priority foreground thread must also lock that resource 
+ to render with that texture pool, it may encounter a situation where it 
+ cannot continue because the background thread has locked the critical 
+ section resource. Thus, the lower priority thread actually gets priority 
+ execution while the visual display to the user could appear unresponsive. 
+ This event is priority inversion. There are synchronization primitives 
+ in Gamebryo that can cause priority inversion if used incorrectly. In 
+ the core engine, background execution time in these primitives is minimized 
+ to avoid priority inversion as much as possible.</p>
+
+<p>Note that in a two thread system priority inversion 
+ is a minimal concern since the background thread will immediately get 
+ to execute and free its resource when an inversion occurs. In heavily 
+ multithreaded applications, inversion can be more serious and the foreground 
+ thread could be starved for resources.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

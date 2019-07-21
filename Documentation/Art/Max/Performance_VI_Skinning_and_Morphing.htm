@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Skinning and Morphing with 3ds Max</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Skinning and Morphing with 3ds Max</h1>
+
+<h2>Skinning for Artists</h2>
+
+<p>There are a few important bits of hardware knowledge that a
+character animator and modeler should be aware of before jumping
+into skinning a character. The hardware skinning pipeline is
+broken into two important numbers, the maximum number of bones
+the hardware can handle and the maximum number of bones that can
+influence a vertex. Each number has an important role to play in
+determining how your skinned character will perform in a
+game.</p>
+
+<p>The maximum number of bones the hardware can handle by default
+for most platforms is four. What exactly does this mean? Four is
+a really small number for a character. Behind the scenes,
+Gamebryo will break the skinned mesh apart into pieces that obey
+this limit. These pieces are referred to as <em>skin
+partitions</em>. For each partition we generate, we have to
+render the partition's geometry in a separate rendering call. For
+instance, a skinned character with 28 bones could be broken into
+23 partitions in order to obey the maximum bone limit. This means
+that we are rendering the model in 23 separate pieces.
+Furthermore, each partition can only be composed of the vertices
+that use only those bones. If you're not careful in your weight
+assignments, you could end up with a partition with only one
+triangle!</p>
+
+<p>The maximum number of bones influencing a vertex by default on
+most platforms is also four. This means that a vertex that is
+influenced by five or more bones will only use the four most
+influential bones in its skinning. This may result in cracks in
+sections where many bones come together like the back of the neck
+and the crotch. Careful modeling and weight assignment will help
+to minimize this problem. This does not mean that you should
+always use four bones per vertex. In fact, it is best to use as
+few weights as are visually acceptable per vertex. This will help
+substantially when partitioning the mesh because more vertices
+will be able to fit into a partition.</p>
+
+<p>What should you take away from this discussion? First off, how
+you skin your character will directly transfer into performance
+for that character. Listed below are some useful hints on how to
+analyze your skinning performance and tips for getting good
+performance in general.</p>
+
+<ul>
+    <li>Do not use N-Links when skinning with Physique. Stick
+    with No Blending or 2-Links.</li>
+
+    <li>Use the <a href=
+    "../../Reference/Tool_Plug_ins/Skin_Analyzer.htm">SkinAnalyzer
+    plug-in</a> to see how exactly your skin was broken apart
+    into partitions.</li>
+
+    <li>Use the <a href=
+    "Gamebryo_3ds_max_Export_Options1.htm">Skin Weight Threshold
+    export option</a> to drop weights that are trivial. This will
+    greatly improve performance. Be careful to make sure that odd
+    skinning artifacts do not result when this value is
+    raised.</li>
+
+    <li>Use a <a href=
+    "Introduction_to_Using_Pixel_and_Vertex_Shaders_in_Max.htm">pixel/vertex
+    shader for skinning</a>. This can really boost your
+    performance if you can accept the fact that the shader will
+    not work on cards that are not compliant with the version of
+    pixel and vertex shader used. Often you can reduce the
+    partition count to one or two using shaders.</li>
+</ul>
+
+<h2>Physique vs. Skin modifier</h2>
+
+<p>The Gamebryo Max Plug-in supports the two major modifiers for
+skinning. We have found the recent versions of Skin to be more
+reliable and robust then Physique, even when applied to bipeds,
+however both are supported.</p>
+
+<p>Gamebryo doesn't support floating bones for physique. If your
+model requires this capability, we suggest modeling with Skin
+instead of physique. In the Physique Level-Of-Detail panel, we
+only support Rigid Skin Update. When using Deformable, the
+exporter treats it like Rigid.</p>
+
+<h2>Linking your skinned object</h2>
+
+<p>Do not attach a skin to a bone in the hierarchy below that to
+which the skin is bound. This causes the mesh to translate twice,
+once for the skin binding and another for the child translation.
+You can create a node above the Bip01or base node to which the
+skin is attached, or use a character node to organize a bone
+structure and skin together.</p>
+
+<p>The mesh that has the Skin or Physique modifier uses the bones
+to determine its bounding volume. The hierarchy is updated by a
+depth-first traversal of the scene. If the skin occurs before the
+bones in a depth first traversal of the scene, the skin's
+bounding volume will lag one frame. Move the skin so that it
+occurs after the bone hierarchy in a depth first traversal to
+avoid this problem.</p>
+
+<h2>Scaling your skinned object</h2>
+
+<p>Do not scale a mesh after binding. If you scale a mesh you
+must unbind it first and rebind it after it has been properly
+scaled and translated. Scale it first and reset its transforms
+before you bind it to the bone system for best results.</p>
+
+<h2>Morph and Skin work together</h2>
+
+<p>Even though we support combining skin &amp; morph targets we
+do not suggest it. If you want to make a character have facial
+animation morph targets, detach the head from the rest of the
+body and have it attached to the head bone as a direct link. The
+head mesh can use a morph target and translate via its relation
+with the head bone while the body uses a skin or physique
+modifier. When both modifiers are combined on a mesh it is much
+slower as all the vertices are being transformed twice, once in
+software and once in hardware. Please take this into
+consideration when making characters that have facial expression.
+See the section on <a href=
+"Morphing_Faces_on_Skinned_Characters.htm">Morphing Faces on
+Skinned Characters</a> for more information.</p>
+
+<h2>Morph Targets</h2>
+
+<p>The Morph Modifier and Morph compound object are both
+supported in Gamebryo. We have found the Morph Modifier more
+reliable then the compound object in Max. Morph is inherently
+slower than skinning due to the fact that morphing is still done
+in software. However, there are many things that are easier to do
+with morph targets than with bone movement. Suggested uses for
+Morph targets are things like animated flags, facial expression
+and non-uniform scales.</p>
+
+<h2>Instancing with Skinning and Morphing</h2>
+
+<p>Objects that are skinned or morphed are exported such that
+clones (instances) are independently controlled and animated.
+However, when the <a href=
+"../../Reference/Tool_Plug_ins/Mesh_Instancing.htm">Mesh
+Instancing tool plug-in</a> is used, CPU skinned and morphed
+objects that are instances or exact copies in the Max scene will
+be exported as hardware instances. As a result, there is only one
+animated object and every other instance appears exactly the
+same. Move CPU skinned and morphed instances to another Max scene
+or use export selected to prevent this behavior when using the
+Mesh Instancing plug-in.</p>
+
+<h2>Reading Skin Analyzer Plug-in Output</h2>
+
+<p>The following section is a sample output from the skin
+analyzer plug-in.</p>
+
+<div class="FigureContainer">
+    <img src="images/image1.jpg" width="628" height="508" alt=
+    "image1 (94K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>The model was broken into 23 partitions out of 28 bones. This
+model will likely perform moderately well. The key problems come
+around partition 19 in the list. Here we drop below 40 triangles
+per partition. At this point we are paying a fair amount of
+overhead for 6 partitions that don't have that many triangles in
+them. DirectX especially pays for this overhead. Often, this is
+unavoidable in modeling as some sections are the nexus of many
+bones and will be prone to small partitions (the neck and groin
+in particular). In general, the thing to be wary of is when the
+number of partitions exceeds the number of bones. This is
+horrible for performance because it also means that many of the
+partitions are incredibly small.</p>
+
+<p>Listed below the main chunk of text is a breakdown of each
+partition. This lists the bones involved in that partition and
+what the average weights were for that bone. This text can often
+be useful in pinpointing problem vertices since the bones in that
+partition would influence them</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

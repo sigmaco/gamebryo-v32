@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Animation Time Controllers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Animation Time Controllers</h1>
+
+<p>Different time controllers can control various attributes of
+the object to which they are attached. For example, <span class=
+"NDLSystemFont"><a href=
+"NiTransformController.htm">NiTransformController</a></span>
+objects animate the model-space transforms of various objects
+based on the time, while <span class="NDLSystemFont"><a href=
+"NiMorphWeightsController.htm">NiMorphWeightsController</a></span>
+objects affect the locations of vertices in the object's vertex
+mesh. Obviously, a time controller cannot be attached to an
+object that does not have any attributes which are manipulated by
+the time controller. So an <span class=
+"NDLSystemFont">NiMorphWeightsController</span> cannot be
+attached to an <span class="NDLSystemFont">NiNode</span>, since
+<span class="NDLSystemFont">NiNode</span> objects do not have a
+vertex mesh for the <span class=
+"NDLSystemFont">NiMorphWeightsController</span> to manipulate. In
+such a case, any attempt to attach the <span class=
+"NDLSystemFont">NiMorphWeightsController</span> will fail.</p>
+
+<p>More than one type of time controller can be attached to a
+given object so that multiple attributes are animated. However,
+it is important to understand what aspects of an object the time
+controllers manipulate to prevent problems when using more than
+one type at a time. For example, if there are two <span class=
+"NDLSystemFont">NiTransformController</span> objects attached to
+an object, whichever controller is updated last will write its
+results to the local transform of the object, overwriting any
+results placed there by the first controller. There are some
+cases where the controllers are able to work in conjunction, but
+such cases are an exception rather than a rule.</p>
+
+<p>All animation controllers are based on the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span>
+class, which provides basic timing functionality. For structural
+reasons, the <span class="NDLSystemFont">NiTimeController</span>
+class itself is located in the <span class=
+"NDLSystemFont"><a href="../NiMain/Hyperlinked_Hierarchy_of_Classes.htm">NiMain</a></span>
+library, and is therefore documented with the <span class=
+"NDLSystemFont">NiMain</span> library. Each time controller has a
+frequency and phase value that is applied to the time passed into
+the <span class="NDLSystemFont">Update</span> call for that
+controller. In addition, two other timing attributes may be
+specified: <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm#Enumerations">CycleType</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm#Enumerations">AnimType</a></span>.</p>
+
+<p>The <span class="NDLSystemFont">CycleType</span> determines
+what the controller does at the end of an animation cycle: loop
+back to the beginning, clamp to the end of the cycle, or reverse
+to achieve a ping-pong effect. The <span class=
+"NDLSystemFont">AnimType</span>, on the other hand, determines
+how the controller interprets the time value passed into the
+<span class="NDLSystemFont">Update</span> call. If the
+<span class="NDLSystemFont">AnimType</span> is set to
+<span class="NDLSystemFont">APP_TIME</span>, the time controller
+will simply use the <span class="NDLSystemFont">Update</span>
+time (after applying the frequency and phase modifications) to
+directly interpolate the state of the animation. On the other
+hand, if the <span class="NDLSystemFont">AnimType</span> is set
+to <span class="NDLSystemFont">APP_INIT</span>, the time
+controller will use the modified <span class=
+"NDLSystemFont">Update</span> time to determine how long it has
+been since <span class="NDLSystemFont">Start</span> has been
+called and then use that local time to interpolate the state of
+the animation.</p>
+
+<p><span class="NDLSystemFont">NiAnimation</span> objects are
+created automatically when exporting an animation from a modeling
+package such as 3ds max or Maya. The exporter creates the
+appropriate controllers according to the animation type: skeletal
+animations are exported using <span class=
+"NDLSystemFont">NiTransformControllers</span>, morphs are
+exported to <span class=
+"NDLSystemFont">NiMorphWeightsControllers</span>, and so on.
+These objects may also be created programmatically for simple
+animations.</p>
+
+<p>Most time controllers in Gamebryo contain an additional object
+called an <span class="NDLSystemFont"><a href=
+"NiInterpolator.htm">NiInterpolator</a></span>. This class is
+responsible for taking the time passed in by the <span class=
+"NDLSystemFont"><a href=
+"NiInterpController.htm">NiInterpController</a></span> (a
+subclass of <span class="NDLSystemFont">NiTimeController</span>)
+and determining the appropriate value for that time. This may
+involve interpolating animation keys, solving constraints, or
+some other algorithmic approach.</p>
+
+<p>Sets of interpolators can be converted to <span class=
+"NDLSystemFont"><a href="NiEvaluator.htm">NiEvaluator</a></span>
+objects during export from 3D modeling packages to form <a href=
+"Animation_Sequences.htm">animation sequences</a>. Evaluators
+perform a similar role as interpolators; however, evaluators are
+more efficient for sequence animation. Gamebryo provides special
+functionality to play back these sequences on in-game
+characters.</p>
+
+<p>Many <span class="NDLSystemFont">NiInterpController</span>
+objects support one or more <span class="NDLSystemFont"><a href=
+"NiInterpController.htm#UpdateValue">UpdateValue</a></span>
+functions. These methods cause the controller to push a specified
+value into the associated scene graph attribute. This particular
+interface is utilized by the sequence-based character animation
+system.</p>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction
+to Animation</a> to read about other animation concepts.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

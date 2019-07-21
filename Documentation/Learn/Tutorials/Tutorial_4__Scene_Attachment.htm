@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 4: Scene Attachment</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 4: Scene Attachment</h1>
+
+<p>This tutorial simply illustrates attaching one scene graph to another.</p>
+
+<h2>The Demo</h2>
+
+<p>The demo, as in previous tutorials, loads a cityscape from file. But in addition, it also loads
+a helicopter from a separate file (OBJECT.NIF). Then it attaches the helicopter to the main scene.
+When the demo runs, a cityscape is seen with a small helicopter directly in the center of the
+screen.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a cityscape with a small helicopter in the center of the screen.
+The following screen capture was taken from the <span class="NDLSystemFont">Win32</span>
+platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial4.jpg" width="515" height="400" alt="tutorial4 (63K)">
+
+    <p class="NDLFigureCaption">Scene attachment</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>In order to attach the helicopter to our world scene, we have to choose a point of attachment.
+We could simply attach the helicopter as a child of the root. That would work. However, we would
+like the artist or designer to be able to choose the helicopter's starting location. The easiest
+way to accommodate this is for the artist to place an agreed upon named node in the scene which we
+can key off of. The node will have all the appropriate transforms and we'll simply attach our
+helicopter to that node. In this tutorial, we have arbitrarily agreed upon the name "AttachmentBox"
+for the node we are going to attach our helicopter to. All we have to do as programmers is to find
+that node and attach it.</p>
+
+<p>The first bit of relevant code that has been added to the <span class=
+"NDLSystemFont">CreateScene</span> function is shown below, in which we use the <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> call <span class=
+"NDLSystemFont">GetObjectByName</span>. This call is of the same variety of recursive scene
+traversal calls that we created from scratch in the previous tutorial. It takes the name of the
+string we wish to search for and recursively searches down the sub-tree until it finds the named
+object or has exhausted its search.</p>
+<pre>
+    NiNode* pkAttachPt = (NiNode*) m_spScene-&gt;GetObjectByName(
+        "AttachmentBox");
+    NIASSERT(NiIsKindOf(NiNode, pkAttachPt));
+    if (!pkAttachPt)
+    {
+        NiMessageBox("There needs to be an object in the WORLD.NIF named"
+            " \"AttachmentBox\".", "NIF Error");
+        return false;
+    }
+</pre>
+
+<p>In the next lines of code, we load the file "OBJECT.NIF" which contains our helicopter model.
+For an explanation of the streaming code, please refer to <a href=
+"Tutorial_2__Nif_Files.htm">Tutorial 2: Nif Files</a>.</p>
+<pre>
+    bSuccess = kStream.Load(
+        NiApplication::ConvertMediaFilename("OBJECT.NIF"));
+    
+    if (!bSuccess)
+    {
+        NiMessageBox("OBJECT.NIF file cannot be loaded!", "NIF Error");
+        return false;
+    }
+    NiNode* pkHeli = (NiNode*) kStream.GetObjectAt(0);
+    NIASSERT(NiIsKindOf(NiNode, pkHeli));
+</pre>
+
+<p>The final line of code added to this tutorial attaches the helicopter to our attachment point
+that we found earlier. It is important to note that once we have attached <span class=
+"NDLSystemFont">pkHeli</span> as a child of the attachment point, it will have been attached
+internally as a smart pointer. This means that it will have had its reference incremented and
+deletion will be handled when its reference count reaches zero. Hence, from this point on, we no
+longer have to worry about freeing it ourselves.</p>
+<pre>
+   pkAttachPt-&gt;AttachChild(pkHeli);
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>We've walked through the steps for attaching one scene graph to another. In the next phase,
+we'll cover transforms that involve translations and rotations. See <a href=
+"Tutorial_5__Transforms.htm">Core Runtime Tutorial 5: Transforms</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiNode.htm">NiNode</a></span></li>
+
+    <li><a href="../../Programmer/Object_Systems/Reference_Counting_and_Smart_Pointers.htm">Smart
+    Pointers</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

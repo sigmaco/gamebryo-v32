@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>About the Message System</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>About the Message System</h1>
+
+<p>Gamebryo LightSpeed's <a href="../../Programmer/Messages/message_intro.htm">Message System</a>
+abstracts both remote and local messaging. Whatever object subscribed for a given message type will
+have its handler method called whether a message was sent remotely or locally. This greatly
+simplifies reconfiguring your application across multiple processes without refactoring.</p>
+
+<p>A message is usually subclassed by the application with application-specific data added and
+given a unique Class ID. The application is responsible for implementing marshaling code, using
+Foundation libraries and the base message class methods when the message needs to be transmitted
+over the network. These libraries provide network byte order neutrality. A message subclass is
+registered with a factory so that it can be reconstituted if it arrives over the network. For rapid
+prototyping and automatic marshaling support the system also provides <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__StreamMessage.htm">efd::StreamMessage</a></span>.</p>
+
+<p>The Message System uses a <a href="../../Programmer/Categories/category_intro.htm">Category</a>
+to determine how to route a message. A Category can be thought of as an address or a multicast
+group. The sender of a message does not need to be aware of who the consumers are; it just
+publishes a message to the appropriate Category that the rest of the application was designed to
+expect. A consumer subscribes to the category of messages that it needs, and messages of that
+Category are then delivered directly to the subscribing object. The application determines the
+meaning of a Category and which components consume the messages that are published there.</p>
+
+<p>Remote messages are also routed using a Category. When a remote process needs a message of a
+particular Category, it uses the Message Service to perform a remote subscription. In this way,
+remote processes forward matching messages from any remote producers to the local consumer.</p>
+
+<p>When a consumer subscribes to a message, it registers for a specified C++ message subclass. The
+Message System ensures that only messages of that class will be delivered to the target method for
+the consuming object. To do this, the system uses the Foundation runtime type system and
+easy-to-use templates.</p>
+
+<p>Local messaging has two principal purposes. It is used to create very loose coupling between
+system services. It also manages certain kinds of timing and re-entrancy problems that arise in
+large, complex systems.</p>
+
+<h2>Message Handler Considerations</h2>
+
+<p>When developing a message handler, keep in mind that all messages are handled during the Message
+System's OnTick behavior. Handlers that are heavily time consuming or inefficient will result in
+degraded application performance. Emergent recommends that message handlers remain as lightweight
+as possible. Care should be taken to avoid message handlers that would prevent the current frame
+from completing in a timely manner.</p>
+
+<h2>Send vs SendImmediate</h2>
+
+<p>The Message System provides two methods for sending messages: Send and SendImmediate.</p>
+
+<p>Messages sent using Send are processed asynchronously. Calls to Send will return immediately,
+allowing the caller to continue processing. Messages sent using Send are queued by the Message
+System with an optional real time delay. Messages sent with this method may or may not be delivered
+during the current frame. This asynchronous behavior means that you cannot assume that an
+individual message will be handled during any given frame. This is certainly to be expected when
+dealing with remote messages.</p>
+
+<p>SendImmediate will immediately deliver a given message to all of the subscribers to that
+message. This happens without queueing and without delay. Subscriber message handlers are called
+immediately, in the same stack context as the sender. This implies that the SendImmediate call is
+blocking until all subscriber message handlers are called. SendImmediate can be thought of as a
+callback mechanism using messaging. It is not supported remotely.</p>
+
+<p>The recommended method for typical application use is asynchronous Send. This avoids tight
+coupling and timing dependencies between producers and subscribers. Calls to SendImmediate should
+be limited to situations where a message must absolutely be handled in the same frame as it was
+sent. When using SendImmediate, care should be taken to avoid cyclic message hander / SendImmediate
+calls.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/Categories/category_intro.htm">About Categories</a></li>
+
+    <li><a href="../../Programmer/Messages/message_intro.htm">Working with messages</a></li>
+
+    <li><a href="architecture_overview.htm">Gamebryo LightSpeed overview</a></li>
+
+    <li><a href="architecture_foundation_overview.htm">Foundation overview</a></li>
+
+    <li><a href="architecture_core_runtime_overview.htm">Core Runtime overview</a></li>
+
+    <li><a href="architecture_framework_overview.htm">Game Framework overview</a></li>
+
+    <li><a href="architecture_online_overview.htm">Online overview</a></li>
+
+    <li><a href="architecture_sys_services_about.htm">About System Services</a></li>
+
+    <li><a href="architecture_entities_about.htm">About entities</a></li>
+
+    <li><a href="architecture_scheduler_about.htm">About the Scheduler</a></li>
+
+    <li><a href="architecture_asset_runtime_service_about.htm">About the Asset Runtime
+    Service</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

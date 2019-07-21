@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Snapshots and State Restoration</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Snapshots and State Restoration </h1>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ classes contains functionality for holding PhysX simulation state and 
+ subsequently restoring it, either by creating a completely new PhysX scene 
+ or by resetting the pose and velocity of actors in an existing scene.</p>
+
+<p>The basic unit of scene management is the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ object, each of which has at most one snapshot describing the PhysX content 
+ for that scene. Adding props to an <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object places them in the same simulation, but the snapshots retain information 
+ to un-combine them. </p>
+
+<h2>Creating a Snapshot</h2>
+
+<p>A snapshot is always available when a NIF file containing 
+ PhysX content is loaded into a Gamebryo application. See the <a href="Loading_a_PhysX_Scene.htm">Loading 
+ PhysX content</a> page for details. </p>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiPhysXTools/NiPhysXSnapshotExtractor.htm">NiPhysXSnapshotExtractor</a></span> 
+ class is provided to create a snapshot from an existing <span class="NDLSystemFont">NxScene</span> 
+ object. It is intended for use in tools, but applications may wish to 
+ use it at runtime under some circumstances. Once you have a snapshot, 
+ additional states (i.e. positions and velocities) can be added using <span 
+ class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1e882a90495e64245712acdbbae117938">NiPhysXScene::AddSnapshotState</a></span>.</p>
+
+<p>Applications can also create an entire snapshot in software 
+ using the Gamebryo-PhysX descriptor classes. This is the approach used 
+ on the Gamebryo-PhysX art tools. The starting point for software snapshot 
+ creation is the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXPropDesc.htm">NiPhysXPropDesc</a></span> 
+ class, an instance of which is associated with a prop using the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp::SetSnapshot</a></span> 
+ function.</p>
+
+<h2>Instantiating PhysX Content from a Snapshot</h2>
+
+<p>Once you have a snapshot, you can create PhysX content 
+ from it. The <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_17f2083d5e5a1c4cec3d1252f4dc18b20">NiPhysXScene::CreateSceneFromSnapshot</a></span> 
+ function creates all of the PhysX objects represented by the scene's props' 
+ snapshots. When an individual prop is added to a scene, its content is 
+ created through the same mechanism. The objects are all created in the 
+ same <span class="NDLSystemFont">NxScene</span> object, which supports the 
+ combination of physics objects from several snapshots together into one 
+ simulation.</p>
+
+<h2>Removing PhysX Content via a Snapshot</h2>
+
+<p>When a prop is removed from a scene, its PhysX content 
+ is also removed using data contained in the snapshot.</p>
+
+<h2>Storing Multiple States</h2>
+
+<p>Each snapshot contains only one copy of the information 
+ needed to create PhysX content, but can store multiple poses and velocities 
+ for each actor. When a snapshot is created, it must contain one pose, 
+ which is each actor's state at the current time. Each state may be given 
+ a name.</p>
+
+<p>Additional states can be saved using the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1e882a90495e64245712acdbbae117938">NiPhysXScene::AddSnapshotState</a></span> 
+ function. This adds the current state for each actor that appears in the 
+ scene and in some snapshot, and returns an index for the state for future 
+ access.</p>
+
+<p>The Gamebryo-PhysX art tools may be set up to create 
+ multiple initial conditions when a <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ is designed to work with the Gamebryo Animation System. See the documentation 
+ for the <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor tool plug-in</a>. Flags are available in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ to control what happens to this state on load, as applications may not 
+ wish to keep all of it in memory.</p>
+
+<h2>Restoring Actor State</h2>
+
+<p>States can be restored using the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_11888c88cbc57c1feb68362fcbb83d22f">NiPhysXScene::RestoreSnapshotState</a></span> 
+ function. This is the standard way to reset a PhysX scene to its initial 
+ conditions in Gamebryo. The demos contain many instances of its use. </p>
+
+<p>While restoring from a snapshot resets the PhysX actor 
+ states, it does not push those states to Gamebryo's scene graph. Therefore, 
+ a call to <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_11888c88cbc57c1feb68362fcbb83d22f">NiPhysXScene::RestoreSnapshotState</a></span> 
+ is frequently followed by a call to <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1d0ba9d929463d41fea4a4b0d990893ae">NiPhysXScene::UpdateDestinations</a></span> 
+ and an update of the scene graph. </p>
+
+<p>After restoring state, debug rendering will show incorrect 
+ information until a simulation step has completed. Use <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c68a860261b83bea3ee173baed47cb48">NiPhysXScene::ClearDebugGeometry</a></span> 
+ to clear the incorrect data. </p>
+
+<h2>Collision Filter State </h2>
+
+<p>The PhysX SDK provides no mechanism for retrieving the 
+ state of the collision filtering system from an existing scene (collision 
+ groups are retrievable). Applications must explicitly mirror changes to 
+ the filter masks, filter ops, and filter constants with calls to <span 
+ class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXSceneDesc.htm">NiPhysXSceneDesc::SetFilterOps</a></span> 
+ and similar functions, for every snapshot that the application wishes 
+ to reflect the changes. </p>
+
+<h2>SDK State Snapshots </h2>
+
+<p>PhysX SDK state (things set by the SDK, not on a specific 
+ scene) can be captured and restored using an instance of the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXSDKDesc.htm">NiPhysXSDKDesc</a></span> 
+ class. </p>
+
+<h2>Limitations </h2>
+
+<p>The snapshot functionality does not capture all possible 
+ PhysX state, and restore does not necessarily return a scene to the exact 
+ state at the time the snapshot was taken. There are four reasons for this: 
+ the enormous number of classes required to represent all possible PhysX 
+ objects; the inability to extract some state using the PhysX API; the 
+ fact that it is sometimes faster to destroy a scene and re-create it than 
+ reset an existing scene; and the PhysX SDK is non-deterministic, even 
+ for simple scenes. Gamebryo PhysX only guarantees that a snapshot will 
+ capture all the things that the art tool pipeline can author. Specifically: 
+ </p>
+
+<ul>
+	
+	<li>NxWheelShapes are not 
+ captured. </li>
+	
+	<li>Only D6-type joints 
+ are captured. </li>
+	
+	<li>PhysX user data is 
+ not captured. </li>
+	
+	<li>Continuous collision 
+ detection (CCD) information is not captured. </li>
+	
+	<li>Restore assumes that 
+ there have been no structural changes to the scene, such as the additional 
+ or removal of actors. It does not restore broken joints, reset collision 
+ flags, or anything other than pose and velocity information on dynamic 
+ actors and cloth. </li>
+</ul>
+
+<h2>Extending Snapshot Functionality </h2>
+
+<p>The work of storing and restoring the PhysX scene is 
+ done by a set of "descriptor" classes, each responsible for 
+ a particular PhysX object. See the documentation on <a href="Extending_PhysX_Streaming.htm">extending 
+ descriptors</a> for information on how to extend the functionality of 
+ snapshots. </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

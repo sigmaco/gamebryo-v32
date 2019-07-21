@@ -1,0 +1,1 @@
+var PS3Compatibility = false;

@@ -1,0 +1,699 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MOUT Sample Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>MOUT Sample Code Overview</h1>
+
+<p>The MOUT source code is divided into several files
+constituting the application's C++ classes. The MOUT source code
+has also been extensively commented inline to give details on
+operations of the code. Each class is contained within source
+files (.h and .cpp) of the same name. The purpose of the
+following class descriptions is to give developers some idea of
+the way that the collection of classes in MOUT work together to
+provide overall functionality. For this reason, the dependency
+listings for each class should be of high interest.</p>
+
+<h2>MOUT</h2>
+
+<p><span class="NDLSystemFont">MOUT</span> is the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span> derived class for the MOUT application. 
+The specific interfaces it relies on from <span class=
+"NDLSystemFont">NiApplication</span> are for initialization
+(<span class="NDLSystemFont">MOUT::Initialize</span>), shutdown
+(<span class="NDLSystemFont">MOUT::Terminate</span> ), renderer
+and scene creation (<span class=
+"NDLSystemFont">MOUT::CreateRenderer</span> and <span class=
+"NDLSystemFont">MOUT::CreateScene</span>), and frame update and
+rendering (<span class="NDLSystemFont">MOUT::OnIdle</span>).</p>
+
+<p>Somewhat unique to the MOUT sample (relative to most other
+Gamebryo sample applications) is the fact that little of the real
+work done in the application is maintained in the <span class=
+"NDLSystemFont">MOUT</span> class itself. As such, and in
+addition to its dependency on <span class=
+"NDLSystemFont"><a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span>, the <span class=
+"NDLSystemFont">MOUT</span> class is dependent on the
+<span class="NDLSystemFont">WorldManager</span> and <span class=
+"NDLSystemFont">ShaderHelper</span> classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    world creation and data loading occurs in <span class=
+    "NDLSystemFont">WorldManager</span> (and its dependent
+    classes). This can be seen directly in <span class=
+    "NDLSystemFont">MOUT::CreateScene</span> where the only work
+    done is the creation of the single <span class=
+    "NDLSystemFont">WorldManager</span> and execution of the
+    <span class="NDLSystemFont">WorldManager</span> method that
+    handles "world loading" (<span class=
+    "NDLSystemFont">WorldManager::LoadWorld</span>). Similarly,
+    the idle time processing of MOUT directly in <span class=
+    "NDLSystemFont">MOUT::OnIdle</span> is limited in code scope
+    most of the real application work is done through calls to
+    <span class="NDLSystemFont">WorldManager::Update</span> and
+    <span class="NDLSystemFont">WorldManager::Draw</span>.</li>
+
+    <li><span class="NDLSystemFont">ShaderHelper</span> : The
+    <span class="NDLSystemFont">MOUT</span> class maintains the
+    application instance of the <span class=
+    "NDLSystemFont">ShaderHelper</span> class, which is used to
+    initialize and load shaders into the Gamebryo Shader
+    system.</li>
+</ul>
+
+<h2>WorldManager</h2>
+
+<p><span class="NDLSystemFont">WorldManager</span> is the main
+"operations hub" for the MOUT demo. As mentioned in the
+<span class="NDLSystemFont">MOUT</span> class description, the
+<span class="NDLSystemFont">WorldManager</span> is used to create
+the world (as called in <span class=
+"NDLSystemFont">MOUT::CreateScene</span>) and handle the
+application's run-time processing via several <span class=
+"NDLSystemFont">WorldManager</span> interface calls in
+<span class="NDLSystemFont">MOUT::OnIdle</span>. The <span class=
+"NDLSystemFont">WorldManager</span> is globally available via a
+static <span class="NDLSystemFont">WorldManager::Get</span>
+function.</p>
+
+<p>Of particular interest in <span class=
+"NDLSystemFont">WorldManager</span> is the way in which it draws
+the scene elements of the MOUT application. The function
+<span class="NDLSystemFont">Draw</span> is called directly from
+<span class="NDLSystemFont">MOUT::OnIdle</span>. <span class=
+"NDLSystemFont">Draw</span> is first responsible for making sure
+the character's rendered shadow is up to date it does this by
+using <span class="NDLSystemFont">Soldier</span> interfaces to
+render the shadow texture. </p>
+
+<p>Overall, MOUT uses a "breakout" rendering technique to
+explicitly draw its world. "Breakout" rendering is a Gamebryo
+rendering strategy that can be useful for applications that don't
+maintain a single, monolithic scene graph (that would simply be
+culled and rendered in a single shot with <span class=
+"NDLSystemFont">NiDrawScene</span> or equivalent code). 
+"Breakout" rendering requires a little more code than one-shot
+single scene graph rendering, but can be both more flexible and,
+in some cases, more efficient than the
+traditional one-shot rendering.  The breakout technique involves
+culling several smaller scene graphs to independent visible
+arrays, opening an accumulator, and then registering the multiple
+visible arrays with the single accumulator. The culling and
+accumulator registration operations can be done in widely spaced
+parts of the code, with the accumulator serving as the gateway to
+final rendering for all of them. In fact, more than one
+accumulator can be used over the course of a frame, allowing for
+even more powerful rendering techniques.</p>
+
+<p>In MOUT, the first step that <span class=
+"NDLSystemFont">WorldManager::Draw</span> takes when rendering a
+frame is to "open" the next frame for rendering with <span class=
+"NDLSystemFont">NiRenderer::BeginFrame</span>. The soldier
+shadow is rendered via <span class=
+"NDLSystemFont">Soldier::RenderShadow</span>. This process
+involves rendering the character scene graph to an offscreen
+texture render target. </p>
+
+<p>Next, onscreen scene rendering setup is accomplished via a
+call to the camera system's <span class=
+"NDLSystemFont">CameraController::DrawAllCameras</span> method. 
+<span class="NDLSystemFont">DrawAllCameras</span> executes the
+first steps of "breakout" rendering for the main scene by calling
+the required <span class="NDLSystemFont">NiRenderer</span>
+functions directly to open the onscreen render target for
+drawing. The camera manager also sets up the view data for the
+rendering, based upon the currently active camera. It then calls
+back into <span class=
+"NDLSystemFont">WorldManager::DrawWorld</span> to draw the
+onscreen scene itself.</p>
+
+<p><span class="NDLSystemFont">WorldManager::DrawWorld</span>
+first culls and draws the skydome to the screen directly (with no
+sorting), using the helper function <span class=
+"NDLSystemFont">WorldManager::PartialRender</span>, which culls
+any given scene graph and then renders it (using an accumulator
+if one exists on the renderer). Since there is no accumulator
+attached to the renderer, <span class=
+"NDLSystemFont">PartialRender</span> will simply draw the culled
+skydome immediately to the renderer.</p>
+
+<p>PartialRender is a rather simple but commonly used function in
+the demo. It culls the scene graph that is passed in into a
+locally-held visible array, and then calls <span class=
+"NDLSystemFont">NiDrawVisibleArrayAppend</span> to render or add
+the objects into the current accumulator. </p>
+
+<p>In order to draw the transparent objects of the main parts of
+the world properly (i.e. after drawing the skydome), <span class=
+"NDLSystemFont">DrawWorld</span> sets an accumulator upon the
+renderer and opens the accumulator for receiving geometry before
+rendering any more objects.  To avoid expensive depth sorting,
+<span class="NDLSystemFont">DrawWorld</span> relies on an
+<span class="NDLSystemFont">NiFastAlphaAccumulator</span> to
+defer rendering of the transparent objects until after opaque
+ones are drawn. The "fast" version of the alpha accumulator does
+not sort any objects back-to-front, but instead renders the
+opaque objects first, then the alpha-tested objects, and then the
+alpha-blended objects last. By sticking to mainly tested and
+glowing (i.e. additive) blended objects, sorting is not
+required.</p>
+
+<p>Depending on the particular objects being drawn, the default
+accumulator will be turned on or off via the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/Introduction_to_the_DX9Renderer.htm">
+NiRenderer</a></span> Get/SetSorter functions as necessary
+(attaching a NULL accumulator to the <span class=
+"NDLSystemFont">NiRenderer</span> causes the <span class=
+"NDLSystemFont">NiDrawVisibleArray</span> functions to render the
+objects directly to the device). <span class=
+"NDLSystemFont">DrawWorld</span> also dispatches drawing to other
+classes in MOUT as necessary, such as via <span class=
+"NDLSystemFont">Soldier::Draw</span>.</p>
+
+<p>Next, <span class="NDLSystemFont">DrawWorld</span> draws the
+buildings in the scene in a unique way with the <span class=
+"NDLSystemFont">DrawBuildings</span> method. <span class=
+"NDLSystemFont">DrawBuildings</span> traverses the scene
+sub-graph of the scene buildings (which is established at load
+time in <span class=
+"NDLSystemFont">WorldManager::LoadWorld</span>) and checks for
+the presence of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiBooleanExtraData.htm">NiBooleanExtraData</a></span>
+objects on geometry that is set <span class=
+"NDLSystemFont">true</span>. When a piece of geometry is marked
+this way, its render state (via <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPropertyState.htm">NiPropertyState</a></span>)
+is swapped temporarily to use one that puts the building in a
+transparent x-ray mode. Specific details on the setup of the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiBooleanExtraData.htm">NiBooleanExtraData</a></span>
+elements for building tagging can be found in inline comments of
+<span class=
+"NDLSystemFont">WorldManager::ProcessBuildings</span>,
+<span class=
+"NDLSystemFont">WorldManager::SetAsSoldierBlocker</span> and also
+<span class="NDLSystemFont">WorldManager::DrawBuildings</span>
+itself.</p>
+
+<p>Once the 3D elements from the main scene are all rendered,
+<span class="NDLSystemFont">WorldManager::DrawWorld</span> calls
+<span class="NDLSystemFont">FinishAccumulating</span> upon the
+accumulator to render the alpha-blended objects that were
+encountered during rendering of the main scene. It then returns
+control to <span class=
+"NDLSystemFont">CameraController::DrawAllCameras</span>, which
+renders the 2D screen overlays and logos. <span class=
+"NDLSystemFont">CameraController</span> then closes the onscreen
+render target, completing the actual rendering of the onscreen
+scene. <span class=
+"NDLSystemFont">CameraController::DrawAllCameras</span> returns
+back up to <span class=
+"NDLSystemFont">WorldManager::Draw</span>. <span class=
+"NDLSystemFont">WorldManager::Draw</span> simply ends the current
+frame and displays it to the screen, completing the rendering of
+a frame.</p>
+
+<p><span class="NDLSystemFont">WorldManager</span> maintains
+sub-managers (and accessor functions) for the other MOUT
+application classes that are effectively globally accessible to
+the entire application. Therefore <span class=
+"NDLSystemFont">WorldManager</span> is dependent on most of the
+other classes in the MOUT application.</p>
+
+<h2>BipedCharacter</h2>
+
+<p><span class="NDLSystemFont">BipedCharacter</span> provides the
+basis for a character class that can be used in applications that
+require an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span>
+driven character. It is used in MOUT as a base for the
+<span class="NDLSystemFont">Soldier</span> class. It includes
+support for a rendered texture shadow, random idle animations,
+various base-level data access methods, and several pure-virtual
+interfaces for methods that handle drawing and locomotion.</p>
+
+<p><span class="NDLSystemFont">BipedCharacter</span> is dependent
+on three other application classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">ShadowGeometry</span>: 
+    <span class="NDLSystemFont">BipedCharacter</span> maintains
+    an instance of <span class=
+    "NDLSystemFont">ShadowGeometry</span> for giving the
+    character a rendered shadow. <span class=
+    "NDLSystemFont">BipedCharacter</span> has the interfaces for
+    application access to shadow texture and shadow geometry
+    rendering (it does not directly expose the <span class=
+    "NDLSystemFont">ShadowGeometry</span> object itself).</li>
+
+    <li><span class="NDLSystemFont">WorldManager</span>:
+    <span class="NDLSystemFont">WorldManager</span> debugging
+    interfaces are used by <span class=
+    "NDLSystemFont">BipedCharacter</span>. Also, the terrain
+    manager is accessed by <span class=
+    "NDLSystemFont">BipedCharacter</span> via the <span class=
+    "NDLSystemFont">WorldManager</span> interfaces.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    terrain manager is accessed solely to correlate the ground
+    object maintained by the terrain manager system and the
+    character's shadow.</li>
+</ul>
+
+<h2>Soldier</h2>
+
+<p><span class="NDLSystemFont">Soldier</span> provides
+specialized, <span class="NDLSystemFont">MOUT</span>-specific
+behavior to the <span class="NDLSystemFont">BipedCharacter</span>
+base class, including input-based transform updating, drawing,
+and code to determine if the Soldier is obscured in the camera
+view by buildings.</p>
+
+<p>Many of the details of the operation of this class are
+specified in inline source comments for <span class=
+"NDLSystemFont">Soldier</span>. Of particular interest might be
+<span class="NDLSystemFont">UpdateCollisionBasedPosition</span>,
+which is used to determine if movement for the character is valid
+relative to collisions with buildings, and <span class=
+"NDLSystemFont">CheckForBlockedCameraView</span>, which
+determines if buildings obscure the camera's view of the
+character.</p>
+
+<p>The <span class="NDLSystemFont">Soldier</span> class is
+dependent on the following other MOUT application classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">CameraController</span>: The
+    <span class="NDLSystemFont">CameraController</span> is
+    accessed in the <span class=
+    "NDLSystemFont">UpdateBipedRootTransforms</span> function to
+    obtain the current input values for setting the character's
+    world rotation. The current camera pitch and yaw values are
+    used to set the look-at nodes on the character's torso and
+    neck.</li>
+
+    <li><span class="NDLSystemFont">CollisionManager</span>: This
+    application class is used by the <span class=
+    "NDLSystemFont">Soldier</span> in two different ways. First,
+    the <span class="NDLSystemFont">CollisionManager</span>
+    provides access to collision detection routines for
+    determining intersections with the MOUT scene's buildings. 
+    The <span class="NDLSystemFont">Soldier</span> uses the
+    <a href=
+    "../../Reference/NiCollision/Introduction_to_Collision.htm"><span class="NDLSystemFont">
+    NiCollision</span></a> system with both static and dynamic
+    (velocity-based) collision to determine if movements are safe
+    without causing building intersections. Additionally, the
+    <span class="NDLSystemFont">CollisionManager</span> provides
+    interfaces for the <span class="NDLSystemFont">Soldier</span>
+    to use the <a href=
+    "../../Reference/NiCollision/NiPick.htm"><span class=
+    "NDLSystemFont">NiPick</span></a> system to determine if any
+    buildings are blocking the camera view of the character.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    ground the soldier on the terrain both during initialization
+    (<span class="NDLSystemFont">Initialize</span>) and run-time
+    updating of the character's position (<span class=
+    "NDLSystemFont">UpdateCollisionBasedPosition</span>).</li>
+
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">WorldManager</span> is used for
+    global access of its sub-managers as well as debug logging.
+    Additionally, its <span class=
+    "NDLSystemFont">SetAsSoldierBlocker</span> function is used
+    by the <span class=
+    "NDLSystemFont">Soldier::CheckForBlockedCameraView</span>
+    function. This call is used to mark buildings as obstructing
+    the camera's view of the character (which allows the
+    <span class="NDLSystemFont">WorldManager</span> to change the
+    drawing mode of the blocking building to be translucent,
+    implementing the x-ray view feature).</li>
+</ul>
+
+<h2>CollisionManager</h2>
+
+<p><span class="NDLSystemFont">CollisionManager</span> handles
+scene level picking and collision interactions. It is used by
+the <span class="NDLSystemFont">Soldier</span> class for
+determining if there are character-to-building collision
+intersections, as determined by the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCollision/Introduction_to_Collision.htm">NiCollision</a></span>
+system. The <span class="NDLSystemFont">Soldier</span> uses
+<span class="NDLSystemFont">CollisionManager</span> for ray
+intersection (picking via <span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a></span>)
+purposes with the buildings in the scene to determine if any
+given building obstructs the view of the <span class=
+"NDLSystemFont">Soldier</span>. This same picking system is used
+by the <span class="NDLSystemFont">CameraController</span> for
+the purposes of determining if a building obstructs the view of
+the lens flare elements (when it is in the camera's view).</p>
+
+<p><span class="NDLSystemFont">CollisionManager</span> is
+dependent on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">Soldier:</span> <span class=
+    "NDLSystemFont">CollisionManager</span> accesses a collision
+    record maintained as a member of the <span class=
+    "NDLSystemFont">Soldier</span> class. This record, when
+    collisions are detected, is used to hold information about
+    the intersection that occurred including things like time of
+    collisions, intersection points and normals.</li>
+</ul>
+
+<h2>TerrainManager</h2>
+
+<p><span class="NDLSystemFont">TerrainManager</span> loads and
+manages a separate NIF file that is assumed to contain only a
+single object that represents just the ground plane that should
+be picked against (via <span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a></span>) to
+determine height placement for objects above the terrain. The
+<span class="NDLSystemFont">TerrainManager</span> is created and
+initialized by the <span class=
+"NDLSystemFont">WorldManager</span>.</p>
+
+<p>The <span class="NDLSystemFont">TerrainManager</span> is used
+by the Soldier (primarily in <span class=
+"NDLSystemFont">Soldier::UpdateCollisionBasedPosition</span>) to
+ground the soldier on the terrain. It is also used by the
+<span class="NDLSystemFont">CameraController</span> to prevent
+the camera from going through the ground.</p>
+
+<p>The <span class="NDLSystemFont">TerrainManager</span> is
+dependent on only the <span class=
+"NDLSystemFont">WorldManager</span> solely for debug logging
+purposes.</p>
+
+<h2>CameraController</h2>
+
+<p>The <span class="NDLSystemFont">CameraController</span> class
+implements a form of "smart camera". The <span class=
+"NDLSystemFont">CameraController</span> adds numerous features
+beyond a standard Gamebryo camera and hides implementation
+details from other parts of the application.</p>
+
+<p>The major features of the <span class=
+"NDLSystemFont">CameraController</span> include Smart Camera and
+User Interface / 2D Effects Camera.</p>
+
+<h3>Smart Camera</h3>
+
+<p>The <span class="NDLSystemFont">CameraController</span>
+supports a character-relative, "over-the-shoulder" camera. The
+camera is rigidly fixed to the end of an invisible "rod" that
+would stick out of the back of the character. The rod can pivot
+up and down at the character (pitch), and the rod's length can be
+changed (zoom, of a sort). The camera uses the character's head
+as the look-at point (the pivot end of the rod), and the
+character's heading as its heading. The user can adjust the
+elevation and length of the rod with the mouse. This camera
+allows the user to change the distance of the camera from the
+character and the elevation of the camera while always focusing
+on the character.</p>
+
+<p>The method supports both first- and third-person cameras by
+popping from the default third-person view into a first-person
+camera when the camera moves close enough to the character (i.e.
+the invisible rod becomes short enough) that his body obscures
+the view ahead.</p>
+
+<p>The camera can also be zoomed in-place from 1x to 4x zoom. 
+This trick is accomplished very simply by adjusting the left,
+right, top, and bottom view frustum values inward, creating a
+"telephoto lens" effect. The <span class=
+"NDLSystemFont">UpdateAllCameras</span> method zooms the camera
+in or out smoothly, depending upon the status of the left mouse
+button. By keeping the current zoom multiplier as a member
+variable, the zoom level (frustum values) can be animated
+smoothly per frame, based on the desired zoom speed and
+frame-to-frame time delta.</p>
+
+<p>Using the terrain system, the camera automatically avoids
+"clipping" through the terrain. Two different methods are used
+to avoid this problem. The simpler method limits the amount that
+the camera arm can pivot down (i.e. look up the camera end of the
+"rod" must go down for the camera to look up) based on the
+distance of the camera from the character (i.e. the length of the
+"rod") such that the camera can never go lower than the height of
+the character's feet. This covers a wide range of cases, but
+does not handle the case where the terrain at the soldier is
+lower than the terrain under the camera. In that case, the
+system corrects by querying the terrain height under the camera
+and swings the camera up slightly to hover just over the
+terrain.</p>
+
+<p>The <span class="NDLSystemFont">CameraController</span> also
+handles parsing of the mouse input. This generates the camera
+elevation, distance and zoom as discussed above, but also
+participates in the orientation of the character itself. The
+lateral mouse movement is used to update and store a world-space
+heading (yaw) for the character. The Soldier class uses this
+information to orient the character each frame.</p>
+
+<p>In addition, at the low-level the <span class=
+"NDLSystemFont">CameraController</span> applies a constant
+rotation to the "smart camera", changing from Gamebryo's standard
+Y-up to a Z-up orientation that matches the coordinates of the
+art package used to create the demo (3ds Max).</p>
+
+<h3>User Interface / 2D Effects Camera</h3>
+
+<p><span class="NDLSystemFont">CameraController</span> supports a
+set of 2D user interface and effects objects that are
+automatically rendered each frame, overlaying the 3D scene. This
+camera is used to implement several additional effects and UI
+elements each frame, including:</p>
+
+<ul>
+    <li>Support for a rotating, sliding "automap" image, locating
+    the character in the scene at all times. This is attached to
+    the 3D UI camera. The automap consists of a fixed circular
+    polygon, with a hand-drawn map texture applied. As the
+    character moves and changes heading, the texture UVs are
+    computed from a set of circular coordinates that are stored
+    in the class. Offsets and rotations are applied to these
+    coordinates so that the texture at the center of the circle
+    matches the character's location and the orientation of the
+    texture matches the character's heading.</li>
+
+    <li>A lens flare effect, simulating glare off of camera lens
+    elements when the camera aims in the general direction of the
+    sun. This is a 3D-relative effect, but is actually drawn
+    entirely using the 2D UI camera. The effect involves a set
+    of 2D lens flare elements that are faded in and out based on
+    how close the center of the view approaches the direction of
+    the sun's light. If visible, the elements are placed along a
+    line on the screen that connects the location of the sun in
+    the view and the center of the screen, aligning completely
+    when the view direction centers upon the screen. To add to
+    the realism of the effect, an occlusion system (described
+    below) supports smoothly attenuating the brightness of the
+    lens flare based upon the partial or total visibility of the
+    sun from the viewer's location.</li>
+
+    <li>Optional frame rate indicator overlay, attached to the 2D
+    UI camera. The <span class=
+    "NDLSystemFont">CameraController</span> uses the <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiApplication/NiFrameRate.htm">NiFrameRate</a></span>
+    class to generate and display this information.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">CameraController</span>
+depends upon several of the other support classes in the
+application for specific features:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">CameraController</span> uses the
+    <span class="NDLSystemFont">WorldManager</span> to render the
+    3D scene as a part of the <span class=
+    "NDLSystemFont">CameraController</span>'s overall rendering
+    process (which includes the 2D UI elements and effects). It
+    also uses the <span class=
+    "NDLSystemFont">WorldManager</span>'s information logging
+    interfaces to log any errors encountered during the shadowing
+    process. Finally the <span class=
+    "NDLSystemFont">WorldManager</span> is used to access the
+    <span class="NDLSystemFont">Soldier</span>, the <span class=
+    "NDLSystemFont">TerrainManager</span> and the <span class=
+    "NDLSystemFont">CollisionManager</span>. </li>
+
+    <li><span class="NDLSystemFont">Soldier</span>: Owing to the
+    fact that the camera is relative to the Soldier's position
+    and heading, the <span class=
+    "NDLSystemFont">CameraController</span> uses the Soldier
+    object in several instances. During startup, the Soldier is
+    queried to determine the initial heading of the camera, as
+    well as the fixed height-offset of the soldier's eyes from
+    his feet (which are his origin). The Soldier's scene graph
+    root position is used each frame to slide the automap texture
+    in such a way that it matches the Soldier's location in the
+    scene. One other bit of coupling is implicit the camera
+    itself is attached to a child of the Soldier's root node,
+    meaning that the camera automatically transforms with the
+    character's root.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    ensure that the camera does not "clip" through the terrain. 
+    Height values returned by the terrain manager are used to
+    artificially raise the camera to avoid any clipping below the
+    terrain. This does not ensure that the character is visible
+    from the camera location (a bump in the terrain between the
+    camera and the character will not be detected), but it does
+    ensure that the camera does not end up in a "backstage"
+    region.</li>
+
+    <li><span class="NDLSystemFont">CollisionManager</span>: The
+    <span class="NDLSystemFont">CameraController</span> uses the
+    <span class="NDLSystemFont">CollisionManager</span> for one
+    special effect: lens flare. The <span class=
+    "NDLSystemFont">CollisionManager</span> is called with the
+    five rays from viewer to the sun position, checking if the
+    scene occludes the rays. These occlusion results are used to
+    attenuate or even disable the lens flare effect. The more
+    rays that are occluded, the more the effect is attenuated. 
+    Each occluded ray deducts 20% of the original brightness, so
+    that if all rays are occluded, the flare is disabled.</li>
+</ul>
+
+<h2>ShadowGeometry</h2>
+
+<p>The <span class="NDLSystemFont">ShadowGeometry</span> class
+supports automatic, projected shadows. The class includes the
+ability to generate the shadow image each frame from a set of
+"caster" geometry. The class also supports projection of the
+shadow onto a set of "recipient" geometry, culling pieces of
+geometry that do not need to receive the shadow. This creates a
+high-quality, high-performance shadow effect with minimal
+application-level code. For an alternative shadowing technique,
+please refer to the <a href=
+"../../Programmer/Shadowing_System/Introduction_to_the_Shadowing_System.htm">
+Gamebryo Shadowing System</a>.</p>
+
+<p>The basic pieces of the <span class=
+"NDLSystemFont">ShadowGeometry</span> object are as follows:</p>
+
+<ul>
+    <li>A shadow texture rendered each frame from a set of caster
+    geometry. This demo uses a complex and expensive, but
+    accurate, rendered shadow. This allows the shadow to change
+    as the caster moves and articulates, particularly important
+    when the caster geometry is a deformable, skinned
+    character.</li>
+
+    <li>A shadow camera, which represents the projection of the
+    shadow into the scene. Conceptually, this is a sort of
+    "reverse projection", as we are projecting a 2D image (the
+    shadow texture) into a 3D scene. However, the actual
+    operation really involves determining which triangles fall
+    within the camera's frustum, and then projecting those
+    triangles onto the camera's projection plane, which is
+    equivalent to the 2D texture space. This camera actually
+    represents the light source, and is a distant perspective
+    camera with a narrow FOV, simulating a parallel camera.</li>
+
+    <li>A set of recipient geometry, upon which the shadow is to
+    be cast. The system builds its own (dynamic) <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> each
+    frame by determining which triangles in the recipient
+    geometry objects fall in the view frustum of the shadow
+    camera. Each triangle that falls (even partially) within the
+    shadow camera's view frustum is copied (with a slight offset
+    to avoid z-fighting) into the shadow recipient <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>. The
+    vertices of this <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> are
+    then assigned texture UVs based on the shadow camera.</li>
+</ul>
+
+<p>The application must draw the shadow geometry <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> (which may
+be queried using <span class=
+"NDLSystemFont">ShadowGeometry::GetShadowGeometry</span>) on top
+of (after) the recipient geometry object. The renderstate on the
+shadow geometry object will cause it to be rendered with the
+shadow texture applied and multiplicative alpha blending enabled
+(to make the shadow object darken the scene in the shadowed
+area).</p>
+
+<p>In addition, if the application must call <span class=
+"NDLSystemFont">ShadowGeometry::Click</span> every frame to
+update both the shadow texture (if it is projected) and the
+recipient geometry object.</p>
+
+<p><span class="NDLSystemFont">ShadowGeometry</span> depends upon
+several of the other support classes in the application for
+specific features:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">WorldManager</span> object is
+    used to query the world-space direction of the light, which
+    is assumed to be casting the shadow. <span class=
+    "NDLSystemFont">ShadowGeometry</span> also uses the
+    <span class="NDLSystemFont">WorldManager</span>'s information
+    logging interfaces to log any errors encountered during the
+    shadowing process. Finally, the <span class=
+    "NDLSystemFont">WorldManager</span> is used to access the
+    <span class="NDLSystemFont">TerrainManager</span>
+    object.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: Is
+    used in several places to determine the geometry upon which
+    the shadow is cast. The terrain is picked in order to locate
+    a center of the projected shadow volume, and the terrain
+    objects and triangles are tested against the shadow camera
+    clipping planes. Geometry from the terrain manager that is
+    found to fall within the shadow camera's frustum is added to
+    the list of recipient geometry in each frame.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

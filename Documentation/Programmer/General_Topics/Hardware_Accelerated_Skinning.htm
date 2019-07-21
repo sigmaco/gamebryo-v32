@@ -1,0 +1,357 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Hardware-Accelerated Skinning</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Hardware-Accelerated Skinning</h1>
+
+<p>When off-loading the skinning operation to the graphics
+hardware, certain care needs to be taken to format the data
+properly. This document outlines these restrictions and
+variations from the algorithm defined by <a href=
+"Mathematics_of_Skinning.htm">The Mathematics of
+Skinning</a>.</p>
+
+<ul>
+    <li><a href=
+    "Hardware_Accelerated_Skinning.htm#Bones_and_Submeshes">Bones
+    and Submeshes</a></li>
+
+    <li><a href=
+    "Hardware_Accelerated_Skinning.htm#Required_Data_Streams">Required
+    Data Streams</a></li>
+
+    <li><a href=
+    "Hardware_Accelerated_Skinning.htm#Runtime_Evaluation">Runtime
+    Evaluation</a></li>
+</ul><a name="Bones_and_Submeshes" id="Bones_and_Submeshes"></a>
+
+<h2>Bones and Submeshes</h2>
+
+<p>A given skinned mesh will have an array of <span class=
+"NDLSystemFont">NiAVObject</span> pointers whose world
+<span class="NDLSystemFont">NiTransforms</span> uniquely define
+the bones affecting the mesh. This array can be accessed using
+the <span class=
+"NDLSystemFont">NiSkinningMeshModifier::GetBones</span> method.
+Every frame that the skinned mesh is to be rendered, the bone and
+skin-to-bone transforms are multiplied together to define the
+shader constants that are used in the skinning operation. The
+array used to set these shader constants can be accessed using
+the <span class=
+"NDLSystemFont">NiSkinningMeshModifier::GetBoneMatrices</span>
+method.</p>
+
+<p>Since hardware skinning involves setting shader constants on
+the hardware and the number of shader constants is limited, it is
+often necessary to break a mesh up into multiple pieces known as
+sub-meshes, which are influenced by a subset of the overall bone
+array. By convention, each vertex can only be influenced by 4
+bones, requiring four per-vertex bone indices to look up the
+correct transform from the set of bone transforms associated with
+the sub-mesh.</p>
+
+<p>A mesh that needs to be hardware skinned can be broken into
+sub-meshes using the Skin and Bones Hardware support option found
+in the Scene Graph Optimizations plug-in (See <a href=
+"../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">Scene
+Graph Optimization</a>.). That option will cause any mesh that
+have a skinning mesh modifier applied to be partitioned for
+hardware. The underlying sub-mesh generation code divides the
+triangles in the skinned object into subsets of triangles that
+are influenced by the same subset of no more than the number of
+bones per partition specified. The number of sub-meshes that are
+created to accommodate the specified value can be accessed by
+calling <span class=
+"NDLSystemFont">NiMesh::GetSubmeshCount</span>. When viewing a
+scene using the <a href=
+"../../Tools/Asset_Viewer/Introduction_to_the_Asset_Viewer.htm">Asset
+Viewer</a> application, this value is displayed in the
+<span class="NDLSystemFont"><a href=
+"../../Tools/Asset_Viewer/Asset_Viewer_Property_Sheets.htm">Properties</a></span>
+sheet for a skinned object with the label "Submesh Count".
+Skinning performance on hardware-accelerated platforms depends
+largely on making the number of sub-meshes as small as
+possible.</p>
+
+<p>When a skinned object is rendered on hardware that supports
+hardware accelerated skinning, the renderer must loop over the
+sub-meshes and set the active bone matrices and then render the
+triangles in that sub-mesh. The per-sub-mesh overhead is
+significant. Programmers and artists alike should devote
+attention to reducing the number of sub-meshes in skinned
+characters. Several methods are available to reduce the sub-mesh
+count.</p>
+
+<p>In general, the more influence each bone has on a model's
+vertices, the more sub-meshes that will have to be created.
+Reducing each bone's region of influence will generally reduce
+the number of sub-meshes. Another effective way to reduce the
+number of sub-meshes is to increase the skin threshold value.
+This value indicates a threshold value below which it is safe to
+ignore a bone's influence on a vertex. This value should be
+increased to as large a value as is possible without creating
+unacceptable rigidity in the skinned model. (MAX users, see
+<a href=
+"../../Art/Max/Gamebryo_3ds_max_Export_Options1.htm">Gamebryo 3ds
+max Export Options</a>. Maya users, see <a href=
+"../../Art/Maya/Export_Animation_Options.htm">Export Animation
+Options</a>.)</p>
+
+<p>The most effective way to reduce the number of sub-meshes and
+increase skinning performance on the Win32 platform is to write a
+custom palette-skinning vertex shader that allows the bones per
+submesh value to be set to a value greater than or equal to the
+total number of bones in the model. The value used by the
+Gamebryo plug-ins can be accessed by changing the number labeled
+"Bones Per Partition" in the "Optimization Options" dialog box.
+(See <a href=
+"../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">Scene
+Graph Optimization</a>.) The <span class="NDLSystemFont"><a href=
+"../../Art/Other/ASMSkinning.htm">ASMSkinning</a></span> shader
+demonstrates the use of a vertex shader in skinning..</p>
+
+<p>Note that for the windows fixed-function legacy pipeline, the
+number of bones per sub-mesh cannot exceed 4.</p><a name=
+"Required_Data_Streams" id="Required_Data_Streams"></a>
+
+<h2>Required Data Streams</h2>
+
+<p>The following table indicates the data stream semantics
+required for hardware skinning to be functional.</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Semantic Binding</th>
+
+            <th>Required Access Flags</th>
+
+            <th>Available Formats</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">POSITION_BP0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">FLOAT32_3 FLOAT16_3
+            FLOAT16_4</span></td>
+
+            <td>This vertex stream contains the positions of the
+            vertices when the mesh was originally skinned to the
+            bind pose. Each sub-mesh will be bound to a unique
+            region of the source <span class=
+            "NDLSystemFont">NiDataStream</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NORMAL_BP0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">FLOAT32_3 FLOAT16_3
+            FLOAT16_4</span></td>
+
+            <td>This vertex stream contains the normals of the
+            vertices when the mesh was originally skinned to the
+            bind pose. Each sub-mesh will be bound to a unique
+            region of the source <span class=
+            "NDLSystemFont">NiDataStream</span>. Note that this
+            stream is optional.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BINORMAL_BP0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">FLOAT32_3 FLOAT16_3
+            FLOAT16_4</span></td>
+
+            <td>This vertex stream contains the binormals of the
+            vertices when the mesh was originally skinned to the
+            bind pose. Each sub-mesh will be bound to a unique
+            region of the source <span class=
+            "NDLSystemFont">NiDataStream</span>. Note that this
+            stream is optional.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TANGENT_BP0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">FLOAT32_3 FLOAT16_3
+            FLOAT16_4</span></td>
+
+            <td>This vertex stream contains the tangents of the
+            vertices when the mesh was originally skinned to the
+            bind pose. Each sub-mesh will be bound to a unique
+            region of the source <span class=
+            "NDLSystemFont">NiDataStream</span>. Note that this
+            stream is optional.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BLENDWEIGHT0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">FLOAT32_3 FLOAT32_4
+            FLOAT16_3 FLOAT16_4</span></td>
+
+            <td>This vertex stream contains the weights of the
+            four bones that influence the vertex. These weights
+            are defined when the mesh was originally skinned to
+            the bone hierarchy in bind pose. By convention,
+            Gamebryo only packs 3 of the 4 weights, computing the
+            last weight in the vertex shader (w[3] = 1.0f - w[0]
+            - w[1] - w[2]). If a fourth weight is packed, it will
+            be ignored.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BLENDINDICES0</span></td>
+
+            <td><span class="NDLSystemFont">GPU_READ</span></td>
+
+            <td><span class="NDLSystemFont">F_UINT8_4<br>
+            F_NORMUINT8_4_BGRA F_INT16_1</span></td>
+
+            <td>This vertex stream contains the indices of the
+            four bones that influence the vertex in the
+            BONE_PALETTE array.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BONE_PALETTE0</span></td>
+
+            <td><span class="NDLSystemFont">CPU_READ</span></td>
+
+            <td><span class=
+            "NDLSystemFont">F_UINT16_1</span></td>
+
+            <td>This user stream contains a lookup table for
+            mapping the bones used by this specific sub-mesh to
+            the index of a bone in the <span class=
+            "NDLSystemFont">NiAVObject</span> master bone list.
+            This stream is used when setting shader constants to
+            know which of the matrices defined in <span class=
+            "NDLSystemFont">NiSkinningMeshModifier::GetBoneMatrices</span>
+            to pack into the shader constant buffer.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Note: <span class="NDLSystemFont">F_NORMUINT8_4_BGRA</span>
+should be considered a backwards compatibility path for DX9 cards
+that don't support <span class="NDLSystemFont">F_UINT8_4</span>.
+However, even on these cards, <span class=
+"NDLSystemFont">F_UINT8_4</span> can be used as the format for
+blend indices and can be converted at run-time for FX and FXL
+shaders via the <span class=
+"NDLSystemFont">BlendIndicesAsD3DColor</span> annotation and for
+NSF shaders via requesting blend indices in the packing
+definition as <span class="NDLSystemFont">PDT_UByteColor</span>.
+Therefore, to have a mesh that is compatible across all
+platforms, use the <span class="NDLSystemFont">F_UINT8_4</span>
+format for blend indices.</p><a name="Runtime_Evaluation" id=
+"Runtime_Evaluation"></a>
+
+<h2>Runtime Evaluation</h2>
+
+<p>The following UML sequence diagram outlines the execution path
+of hardware skinning.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/GPUSkinning.jpg" width="939" height="642"
+    alt="GPUSkinning (59K)"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>As seen in the diagram above, there is just one mesh modifier
+operation that occurs in hardware skinning, <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiCalculateBoneMatricesKernel.htm">CalculateBoneMatrices</a></span>.
+This operation is represented as an <span class=
+"NDLSystemFont">NiFloodgate</span> kernel that must be submitted
+at the appropriate time in the application main loop.</p>
+
+<p>The <span class="NDLSystemFont">CalculateBoneMatrices</span>
+kernel gathers all of the world-space <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTransform.htm">NiTransforms</a></span>
+from the <span class="NDLSystemFont">NiAVObjects</span> that make
+up the bone hierarchy, multiplies them by the root bone to skin
+transform and the inverse of the bone's world-space transforms at
+bind time, resulting in an output array of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMatrix3x4.htm">NiMatrix3x4</a></span>
+transforms. Since the <span class="NDLSystemFont">NiMesh</span>
+being skinned may occur before or after the bones in the
+hierarchy that affect it, the <span class=
+"NDLSystemFont">CalculateBoneMatrices</span> kernel cannot be
+executed until the end of the Update loop for the scene graph
+containing both the mesh and the bone hierarchy. This is
+indicated in the above diagram by the call to <span class=
+"NDLSystemFont">FlushTaskGroups</span> on the <span class=
+"NDLSystemFont">NiSPWorkflowManager</span>. This call will submit
+the workflows containing any <span class=
+"NDLSystemFont">NiSyncArgs::SYNC_POST_UPDATE</span> kernels like
+the <span class="NDLSystemFont">CalculateBoneMatrices</span> for
+execution. The kernel will be processed by <span class=
+"NDLSystemFont">NiFloodgate</span> in a separate thread as
+additional CPU's or SPU's are available to do work. The
+application must wait for the bone matrices to submit them as
+shader constants before rendering as indicated by the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshModifier.htm">CompleteTasks</a></span>
+(with <span class="NDLSystemFont">NiSyncArgs::SYNC_RENDER</span>)
+call in the image above.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

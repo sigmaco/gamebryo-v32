@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Peer Game: C++ Code Changes</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Peer Game: C++ Code Changes</h1>
+
+<p>There are several code changes needed to transform Base Game into Peer Game. This section of the
+tutorial will walk you through those changes. If you want to follow along in the context of the
+actual source code, then you should open the PeerGame project in Visual Studio. The project file
+can be found at <span class=
+"NDLSystemFont">%EMERGENT_PATH%\Build\Samples\Win32\VC90\PeerGame\PeerGame.vcproj</span></p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="sso_peer_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="sso_peer_game_tutorial_transform_bg.htm">Transforming Base Game</a></li>
+
+    <li><a href="sso_peer_game_tutorial_more_services.htm">Extending Entities for Online</a></li>
+
+    <li><a href="sso_peer_game_tutorial_world.htm">Populating Your World</a></li>
+
+    <li><b>C++ Code changes&nbsp;&nbsp;&lt;-- You are here</b></li>
+
+    <li><a href="sso_peer_game_tutorial_loading.htm">Starting the Application</a></li>
+
+    <li><a href="sso_peer_game_tutorial_scripts.htm">Fixing Lua Scripts</a></li>
+</ol>
+
+<h2>Updates to C++ Code Files</h2>
+
+<p>The line numbers shown are approximate. These changes can be viewed in the PeerGame.vcproj in
+the source files indicated.</p>
+
+<h3>Add basic services and support for online</h3>
+
+<ol>
+    <li>Add a member variable to Peer Game called m_bHost. This identifies whether or not the
+    current process is hosting the game or participating as a peer. Initialize this variable to
+    false, then in <span class="NDLSystemFont">PeerGame::SetupServices (PeerGame.cpp)</span>, add
+    the following code to set the value appropriately:
+        <pre>
+261     // Determine if the game should be configured to provide game hosting. The first instance
+262     // started will be a Host, unless the configuration sets Game.Role=Peer.
+263     utf8string role;
+264     spConfigManager-&gt;FindValue("Game.Role", role);
+265     m_bHost = (m_processIndex == 1) &amp;&amp; (role != "Peer");
+</pre>
+    </li>
+
+    <li>Add includes for <span class="NDLSystemFont">eon/ServiceAllocator</span> and <span class=
+    "NDLSystemFont">eon/OnlineEntity</span> to <span class=
+    "NDLSystemFont">PeerGame.cpp</span>.</li>
+
+    <li>Add 'using namespace eon' in <span class="NDLSystemFont">PeerGame.cpp</span>.</li>
+
+    <li>Add call to <span class="NDLSystemFont">eon::CreateOnlineServices</span> in
+        <span class="NDLSystemFont">PeerGame::SetupServices()</span>:
+        <pre>
+252     // Online services - replicated entities
+253     EE_VERIFY(eon::CreateOnlineServices(m_spServiceManager));
+</pre>
+    </li>
+
+    <li>Modify the call to <span class="NDLSystemFont">egf::CreateGameServices</span> to require
+    custom Entity Manager:
+        <pre>
+203     UInt32 flags = egf::gsaf_USE_CUSTOM_ENTITY_MANAGER; // We use OnlineEntityManager
+204     if (disableRapidIteration)
+205     {
+206         flags |= egf::gsaf_NO_RAPID_ITERATION;
+207     }
+208     // Game Framework services - 
+209     EE_VERIFY(egf::CreateGameServices(m_spServiceManager, flags));
+</pre>
+        This replaces the regular EntityManager service with OnlineEntityManager, which is
+        necessary to support creation and management of replication-aware entity subclasses.
+    </li>
+
+    <li>Note the existence and contents of the file <span class=
+    "NDLSystemFont">ReplicatedEntityBindings.cpp</span>.
+
+        <p class="indent1">This creates bindings between replicated entity messages in the
+        framework to the handlers in various commonly-used services. The messages are the same
+        (save that they deal with replicas, not originals) and handling is identical for local and
+        replicated messages, so only the bindings are needed.</p>
+    </li>
+
+    <li>In <span class="NDLSystemFont">GamePlayingState::CreateAvatar()</span>, add the following
+    code to handle setting the PeerID property on the avatar and loading the correct KfMAsset:
+        <pre>
+143     // Set PeerID and KfmAsset according to our assigned NetID
+144     UInt32 peerId = pMessageService-&gt;GetNetID();
+145     utf8string kfmAsset(Formatted, "urn:gamebryo-animation:Jack%02d", peerId % 7);
+146 
+147     // Create the avatar. Pass parameter list so we can set the KfmAsset properly.
+148     ParameterListPtr spParams = EE_NEW ParameterList();
+149     spParams-&gt;AddParameter("PeerID", peerId);
+150     spParams-&gt;AddParameter("KfmAsset", kfmAsset);
+151     m_AvatarId = pEM-&gt;CreateEntity(model_name, kCAT_INVALID, spParams);
+</pre>
+    </li>
+
+    <li>At the top of <span class="NDLSystemFont">PeerGame.cpp</span>, add bindings for channel
+    manager connection accepted and closed messages:
+        <pre>
+094 EE_HANDLER_WRAP(
+095     PeerGame, 
+096     HandleConnectionAcceptedMessage, 
+097     StreamMessage, 
+098     kMSGID_ChannelManagerConnectionAccepted);
+099 
+100 EE_HANDLER_WRAP(
+101     PeerGame, 
+102     HandleConnectionClosedMessage, 
+103     StreamMessage, 
+104     kMSGID_ChannelManagerConnectionClosed);
+</pre>
+
+        Then add those handler methods to the PeerGame class:
+        <pre>
+596 void PeerGame::HandleConnectionAcceptedMessage(const StreamMessage* pMessage, Category targetChannel)
+614 void PeerGame::HandleConnectionClosedMessage(const StreamMessage* pMessage, Category targetChannel)
+</pre>
+    </li>
+
+    <li>Also in <span class="NDLSystemFont">PeerGame.cpp</span>, add the following to the
+    <span class="NDLSystemFont">OnInit</span> method. This enables the processes to receive
+    important messages:
+        <pre>
+470     MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+471     EE_ASSERT(pMessageService);
+472     pMessageService-&gt;Subscribe(this, kCAT_LocalMessage);
+473     Category netLocalCategory = MessageService::GetServicePublicCategory(INetService::CLASS_ID);
+474     pMessageService-&gt;Subscribe(this, netLocalCategory);
+</pre>
+    </li>
+</ol>
+
+<h2>Add the lobby state</h2>
+
+<p>Because PeerGame is multiplayer, it adds an additional game state&mdash;the player is in a lobby
+looking for a game to join. This functionality is provided by the <span class=
+"NDLSystemFont">GameLobbyState.h</span> and <span class="NDLSystemFont">GameLobbyState.cpp</span>
+files. You should review the contents of those two files to see how transitioning through the lobby
+state creates the necessary network services for connecting the Host and Peer instances.</p>
+
+<h2>Load the Online Lua Script Module</h2>
+
+<p>Finally, you need to add code to expose Online built-ins to Lua scripts that need them. Look for
+the <span class="NDLSystemFont">luaopen_*</span> declarations in <span class=
+"NDLSystemFont">PeerGame.cpp</span> and add one for <span class=
+"NDLSystemFont">bapiOnline</span>:</p>
+<pre>
+078     extern "C" int luaopen_bapiOnline(lua_State *L);
+</pre>
+
+<p>Similarly, add a call to <span class="NDLSystemFont">AddStaticBuiltinInitFunction</span>:</p>
+<pre>
+312     EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_bapiOnline));
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>Next, we'll see how to launch the application and test out our modified BaseGame content. See
+<a href="sso_peer_game_tutorial_loading.htm">Starting the Application</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../Hello_World/hello_world_tutorial_code_samples.htm">Hello World: Tutorial Code
+    Samples</a></li>
+
+    <li><a href="../Base_Game/base_game_tutorial_code_samples.htm">Base Game: Tutorial Code
+    Samples</a></li>
+
+    <li><a href="../Base_Game/base_game_tutorial_code.htm">Base Game: C++ Code Changes</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

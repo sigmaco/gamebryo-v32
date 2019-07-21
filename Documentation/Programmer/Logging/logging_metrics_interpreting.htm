@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Interpreting Metrics Logs</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Interpreting Metrics Logs</h1>
+
+<p>There are several ways to analyze metrics log data. The most likely means is using a
+number-crunching tool such as a spreadsheet or a SQL database. Parsing the log file format with a
+scripting language such as Python or Perl should be straightforward. You can also use specialized
+log-analysis tools, such as Splunk. For the purpose of this discussion, we will assume that you are
+using a spreadsheet application, such as Microsoft Excel.</p>
+
+<p>Metrics logs are emitted in text format. The log fields are separated by the pipe character
+'|'.</p>
+
+<pre>
+2009/08/09 23:47:31.109|Lvl0|Metrics|||MESSAGESERVICE.SEND.MESSAGE.LOCAL.IMMEDIATE = 1|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||NETWORK.SEND.MESSAGE.0.0x0 = 1|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||NETWORK.SEND.BYTES.0.0x0 = 57|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||SOCKET.SEND.DATASTREAM.6.0x33A4110D7F000001 = 1|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||SOCKET.SEND.BYTES.6.0x33A4110D7F000001 = 61|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||ENTITY.TALLY = -1|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||ENTITY.TOTAL = 9|
+2009/08/09 23:47:31.109|Lvl0|Metrics|||ENTITY.DESTROY.OWNED.HallInnerCorner = 1|
+</pre>
+
+<p>The only fields you really need for metrics logging are the first one (timestamp) and the last,
+which consists of a probe name and a value. The first thing you need to do is isolate the records
+you care about. You do this by searching for the probe name. Note that the hierarchical nature of
+the names makes it possible to "roll up" some data by filtering on only part of the probe name.
+With the example data above, a search on SOCKET.SEND.BYTES.6.0x33A4110D7F000001 will track the
+number of bytes sent on the connection with the ID 0x33A4110D7F000001. Removing the connection ID
+will return bytes sent on all connections with Quality of Service 6 (TCP), and removing the QoS
+will return bytes sent on all connections.</p>
+
+<p>More complex searches are possible using more sophisticated string matching. A hypothetical
+search for SOCKET.*.BYTES.6.* (where * is a wildcard) would return the total number of bytes sent
+and received on all TCP connections, for example.</p>
+
+<p>Some analyses require only counting the number of logged occurrences, but most will require you
+to extract the associated values. This can be accomplished a couple of ways. It is simple enough to
+preprocess the file (with Notepad, for instance), replacing " = " with "|" so the value will end up
+in its own cell on import. If you don't want to split fields on "|", you could add an adjacent
+column containing a formula that extracts the value to its own cell.</p>
+
+<p>The technique for analyzing a particular metrics probe depends on the type of probe in
+question:</p>
+
+<ul>
+    <li><b>Counter</b>&mdash;The most common type of probe, this "ticks" (logs a value of 1) each
+    time a particular code section executes. To extract useful data from this type of probe, simply
+    count the number of times it occurs in the log file.</li>
+
+    <li><b>Time value</b>&mdash;Used for rudimentary profiling, this type of probe logs how much
+    time has elapsed while executing a section of code. It is useful to graph this type of probe
+    over time, to identify places where execution time spikes excessively.</li>
+
+    <li><b>Running total</b>&mdash;Similar to a counter, but typically used to measure an
+    allocatable resource. The counter is ticked up (with a value of 1) when a resource is
+    allocated, and ticked down (value of -1) when a resource is freed. To analyze this type of
+    counter, you should do a rolling sum at a regular time interval. This will show the allocated
+    resources outstanding at any given point in time.</li>
+
+    <li><b>Bytes value</b>&mdash;Usually used for networking; shows the number of bytes sent or
+    received by the networking system. Summing these values over a regularly measured time interval
+    (e.g. 1 second) gives a useful measure of how much data your game is attempting to push across
+    the wire.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="logging_metrics_overview.htm">Metrics Logging Overview</a></li>
+
+    <li><a href="logging_metrics_using.htm">Using Metrics Logging</a></li>
+
+    <li><a href="logging_metrics_extending.htm">Adding Your Own Metrics Probes</a></li>
+
+    <li><a href="logging_metrics_probe_reference.htm">Metrics Probes Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

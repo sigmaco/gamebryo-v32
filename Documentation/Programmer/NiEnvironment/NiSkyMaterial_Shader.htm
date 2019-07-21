@@ -1,0 +1,591 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiSkyMaterial Shader</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+  <h1>
+    NiSkyMaterial Shader
+  </h1>
+  <p>
+    The sky material shader has been developed to accommodate a number of common sky
+    generation use cases and hence allows the quick deployment of basic sky within a
+    scene. The following effects may be achieved through application of the 
+    <span class="NDLSystemFont">NiSkyMaterial</span>.
+  </p>
+  <ul>
+    <li>Procedural atmospheric scattering simulated sky color - As described by Sam O'Neil's
+      article in GPU Gems 2. </li>
+    <li>Gradient sky color. </li>
+    <li>Cube mapped skybox. </li>
+    <li>Blended combinations of the above effects. </li>
+  </ul>
+  <p>
+    The information contained in this documentation will describe how a developer can
+    configure an object with the <span class="NDLSystemFont">NiSkyMaterial</span> shader to achieve the above effects and
+    modify it to fit their application.
+  </p>
+  <h2>
+    Sky Shader Pipeline Overview
+  </h2>
+  <p>
+    The <span class="NDLSystemFont">NiSkyMaterial</span> pipeline is configured as a set of stages. Each stage generates
+    a color and then blends this color with the output from the previous stage according
+    to its configuration. For this reason, the stages of a sky shader are called 'Blend
+    Stages'. The current version of the <span class="NDLSystemFont">NiSkyMaterial</span> shader supports a maximum of 5
+    blend stages.
+  </p>
+  <p>
+    The following diagram represents the <span class="NDLSystemFont">NiSkyMaterial</span> shader pipeline graphically.
+  </p>
+  <p>
+  </p>
+  <div class="FigureContainer">
+    <img alt="Sky material pipeline" src="images/SkyMaterialPipeline.jpg" />
+    <p class="FigureCaption">
+      Figure 1: Sky material pipeline</p>
+  </div>
+  <p>
+    As depicted in the diagram above, the initial color of the sky is generated as the
+    output of an atmospheric scattering calculation. Please note that it is not necessary
+    to include atmospheric scattering (this color can be configured to be black by turning
+    off the scattering calculation). The final output of the shader will be the
+    output color of the final blend stage.
+  </p>
+  <h2>
+    Atmospheric Sky Configuration
+  </h2>
+  <p>
+    The implementation of the <span class="NDLSystemFont">NiSkyMaterial</span> atmospheric scattering shader code is based
+    on Sam O'Neil's article
+    <a href="../../ThirdPartyCode/All/thirdparty_AtmosphericScattering.htm"> <i>"Accurate Atmospheric Scattering"</i> from GPU Gems 2</a>.
+    The configuration of this part of the shader will be outlined in this section. For
+    detailed information on the implementation of the technique, please refer to the
+    article.
+  </p>
+  <p>
+    The atmospheric scattering stage of the sky shader has a large number of configurable
+    properties. The most important of which is the calculation mode. The following calculation
+    modes are available:
+  </p>
+  <ul>
+    <li>None - No atmospheric scattering calculations will be performed. The output color
+      will be black. </li>
+    <li>Pixel based - Because the scattering calculations are extremely directional and
+      non-linear, this mode offers the best effect in all situations, however it gives
+      very poor performance (most of the calculations are performed in the pixel shader).
+    </li>
+    <li>Vertex based - This mode gives much better performance than the pixel based mode,
+      however artifacts may appear that rely upon the geometry of the rendered object.
+      For this reason, the NiSkyDome class has been written such that the vertices can
+      be distributed closer to the horizon for better results when using this mode. This
+      is the recommended mode to use. </li>
+  </ul>
+  <p>
+    Aside from the calculation mode, there a number of variables that can affect the
+    appearance of the atmospheric scattering algorithm. These values can all be configured
+    through the <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiAtmosphere.htm">NiAtmosphere</a></span> object. The following table outlines these variables, their
+    typical values, and what their effect on the appearance of the sky will be. For
+    a visual demonstration of each of these variables, in Toolbench add an Environment
+    entity into the block and adjust the Entity properties.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Variable Name
+        </th>
+        <th>
+          Type (Units)
+        </th>
+        <th>
+          Default Value
+        </th>
+        <th>
+          Usage
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <b>Sun Size</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          1.0f
+        </td>
+        <td>
+          This value is a multiplier to finely tune the size of the sun in the sky. It is
+          recommended that the other variables be tweaked first as they may also have an effect
+          on the sun's size.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Rayleigh Constant</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          0.0025f
+        </td>
+        <td>
+          The Rayleigh scattering constant controls how different colors are scattered in
+          the atmosphere. Higher values will result in more varied colors such as redder sunsets.
+          A value of 0 will result in no scattering, and hence a black sky.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Mie Constant</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          0.0015f
+        </td>
+        <td>
+          The Mie scattering constant controls how the sky responds to dust particles in the
+          atmosphere and largely controls the appearance of the sun in the sky. Higher values
+          will result in higher general haze on the horizon and a larger sun size. Lower values
+          will result in less haze, and a value of 0 will remove the sun from the sky entirely.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Sun Intensity</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          15.0f
+        </td>
+        <td>
+          This value affects the amount of sunlight incident on the atmosphere and hence indirectly
+          affects the brightness of the simulated sky.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>HDR Exposure</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          2.0f
+        </td>
+        <td>
+          This value performs a similar function to the Sun Intensity value, but has the effect
+          of enhancing colors rather than saturating them.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>RGB Wavelengths</b>
+        </td>
+        <td>
+          Float (micro meters)
+        </td>
+        <td>
+          {0.650f, 0.570f, 0.475f}
+        </td>
+        <td>
+          These values have the most effect over the color of the sky shader. They represent
+          the wavelengths of the red, green and blue channels. By default they are set to
+          their physical norms, but by adjusting them, different colors can be replaced giving
+          rise to a range of effects and alien skies. For example, adjusting the green wavelength
+          to be close to the physical red wavelength will cause more green to appear in the
+          sky at sunset.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Phase Constant</b>
+        </td>
+        <td>
+          Float
+        </td>
+        <td>
+          -0.99f
+        </td>
+        <td>
+          This constant controls the directionality of the calculations. The most visible
+          effect that this parameter has on the effect is on the size of the sun at different
+          stages of its travel across the sky.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Up Vector</b>
+        </td>
+        <td>
+          NiPoint3
+        </td>
+        <td>
+          UNIT_Z
+        </td>
+        <td>
+          This value is important and defaults to the standard Gamebryo up direction. If
+          your coordinate system is different, this value should be adjusted appropriately.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Number of Samples</b>
+        </td>
+        <td>
+          Integer
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          The atmospheric scattering algorithm is iteration based. More iterations will increase
+          the accuracy of the calculation, though higher and higher values will make limited
+          difference to the quality of the scene.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Sunlight</b>
+        </td>
+        <td>
+          NiDirectionalLight
+        </td>
+        <td>
+          N/A
+        </td>
+        <td>
+          It is important to note that the shader must use a directional light to process
+          the direction of the sun. The sun used will be the first directional light affecting
+          the rendered object. This property is generally set on the NiEnvironment class.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h2>
+    Blend stage configuration
+  </h2>
+  <p>
+    Each blend stage is capable of performing the same set of operations and as such
+    they are each configured independently though the same interface. As shown in the
+    pipeline overview, there are 3 main configurable options to each blend stage. These
+    options are the 'Blend Method', the 'ColorB', and the 'Blend Modifier', the function
+    of each of these follows. When developing an application using the 
+    <span class="NDLSystemFont">NiSkyMaterial</span>,
+    please refer to the class documentation for the specific syntax to use when configuring
+    these values.
+  </p>
+  <p>
+    The ColorB value for each blend stage can be generated in a number of ways and each
+    way has its own set of configurable options. The following table describes each
+    type of color generation and the variables associated with the generation.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Color generation mode
+        </th>
+        <th>
+          Extra parameters
+        </th>
+        <th>
+          Notes
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <b>Skybox</b>
+        </td>
+        <td>
+        </td>
+        <td>
+          Look up skybox texture using the normals of the object geometry as texture coordinates.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Skybox texture
+        </td>
+        <td>
+          The texture to use as the skybox.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Orientation
+        </td>
+        <td>
+          An optional matrix that will add a rotation offset to the cubemap lookup. This behavior
+          is toggleable through the Oriented parameter.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Oriented
+        </td>
+        <td>
+          If true, the shader will add the rotation defined by the Orientation property to
+          the cubemap lookup within the shader. This has the effect of rotating the texture
+          across the sky.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Gradient</b>
+        </td>
+        <td>
+        </td>
+        <td>
+          Interpolate between two colors from horizon to zenith. Useful for accentuating basic
+          sunsets. The rate of change between the two colors can be adjusted between exponential
+          change and a linear change using the extra parameters.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Horizon Color
+        </td>
+        <td>
+          The color of the gradient at the horizon.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Zenith Color
+        </td>
+        <td>
+          The color of the gradient at the zenith of the sky (directly above the ground).
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Horizon Bias
+        </td>
+        <td>
+          This value controls how linear/exponential the shift between the colors will be.
+          A value of 0.0 will result in a linear shift. A value of 1.0 will result in a purely
+          exponential shift. Values in between will linearly interpolate between the two.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Bias Exponent
+        </td>
+        <td>
+          This exponent value is used to control the rate of change of the exponential calculation.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Fog</b>
+        </td>
+        <td>
+        </td>
+        <td>
+          This method will use the fog color of the NiEnvironment fog property as the ColorB
+          value.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          No extra parameters
+        </td>
+        <td>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The blend method defines the mathematical function that is used to blend the two
+    color values together. The following table describes each type of available blend
+    method and the operation they will perform.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <td>
+          <b>Blend method</b>
+        </td>
+        <td>
+          <b>Equation</b>
+        </td>
+        <td>
+          <b>Notes</b>
+        </td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <b>Multiply</b>
+        </td>
+        <td>
+          ColorA * ColorB * Modifier
+        </td>
+        <td>
+          Useful for applying a filter to the sky color. Modifier default is 1.0f
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Add</b>
+        </td>
+        <td>
+          ColorA + (ColorB * Modifier)
+        </td>
+        <td>
+          Useful for adding some color to a scene or blending with a gradient. Modifier default
+          is 1.0f
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Interpolate</b>
+        </td>
+        <td>
+          Lerp(ColorA, ColorB, Modifier)
+        </td>
+        <td>
+          Useful for many applications. Modifier default is 0.5f.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The table above describing blend methods shows a value termed 'Modifier' in all
+    of the calculations. The final set of options revolves around the generation of
+    this 'Blend Modifier'. The following table describes the different forms of available
+    blend modifier generation.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <td>
+          <b>Modifier generation mode</b>
+        </td>
+        <td>
+          <b>Value source</b>
+        </td>
+        <td>
+          <b>Notes</b>
+        </td>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>
+          <b>Default</b>
+        </td>
+        <td>
+          Blend method default
+        </td>
+        <td>
+          The modifier value specified in the blend method table as the default will be used
+          and may be different for each blend method.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Alpha</b>
+        </td>
+        <td>
+          ColorB.Alpha
+        </td>
+        <td>
+          The modifier value used will be the alpha value of the generated color.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Constant</b>
+        </td>
+        <td>
+          Shader constant
+        </td>
+        <td>
+          A shader constant will be used as the modifier value. This value may be set through
+          interfaces exposed on NiSkyMaterial.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Horizon Bias</b>
+        </td>
+        <td>
+          Horizon bias calculation (See gradient color generation in previous tables)
+        </td>
+        <td>
+          The modifier value is generated using a HorizonBias calculation similar to that
+          used to interpolate between the two colors of the gradient color mode. As such,
+          two extra parameters are used for this mode (HorizonBias and BiasExponent) and can
+          be set through the interfaces exposed on NiSkyMaterial.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The <span class="NDLSystemFont">NiSkyMaterial</span> class provides a basic interface to configure a geometry object
+    for <span class="NDLSystemFont">NiSkyMaterial</span> application, however, a simpler interface has been developed on
+    the <span class="NDLSystemFont">NiSky</span> class to allow the quick construction of an environmental sky.
+  </p>
+  <p>
+    For the specific syntax to use when configuring these values, please consult the
+    <span class="NDLSystemFont"><a href="../../Reference/NiEnvironment/NiSky.htm">NiSky</a></span> and 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiSkyMaterial.htm">NiSkyMaterial</a></span> classes.</p>
+    
+</body>
+</html>

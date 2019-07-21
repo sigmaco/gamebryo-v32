@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPhysXTerrain Usage</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiPhysX Terrain Usage</h1>
+
+<p>This section outlines the steps necessary to use PhysX 
+ with terrain in Gamebryo.</p>
+
+<h2>
+    NiTerrainPhysX Requirements
+  </h2>
+  <p>
+    In order to use NiTerrainPhysX, the following libraries must be linked by the application:
+  </p>
+  <ul>
+    <li>NiPhysX.lib </li>
+    <li>PhysXLoader.lib </li>
+    <li>NiTerrain.lib </li>
+    <li>NiTerrainPhysX.lib </li>
+  </ul>
+  <p>
+    PhysX libraries and include paths must also be defined and the SDK/Runtime installed.
+  </p>
+  <p>
+    The NiTerrainPhysX class must also be initialized by calling the appropriate _SDMInit()
+    functions.
+  </p>
+  <h2>
+    NiTerrainPhysX Usage
+  </h2>
+  <p>
+    In order to use the NiTerrainPhysX library outside of the Game Framework, a 
+    NiTerrainPhysXDataPolicy must be created and added to the terrain before it starts loading. To 
+    do so, first create a NiTerrainPhysXUtils object during the initialization phase of the 
+    application:
+  </p>
+<pre>m_spPXTerrainUtils = NiNew NiTerrainPhysXUtils();</pre>
+  <p>
+    Then define the custom data policy when creating the terrain and before loading it:
+  </p>
+  <pre>// Set the terrain custom policy
+NiTerrainPhysXDataPolicy* pkPhysXPolicy = EE_NEW NiTerrainPhysXDataPolicy(m_spPXTerrainUtils);
+pkPhysXPolicy-&gt;SetPhysXScene(m_spPhysXScene);
+m_spTerrain-&gt;SetCustomDataPolicy(pkPhysXPolicy);</pre>
+
+  <p>
+    As mentioned before, a valid NiPhysXScene object must be given to the policy in
+    order to create the physx actors.<br>
+  </p>
+  <p>
+    When the terrain is loaded, the streaming framework will automatically process the
+    custom data policy. If the appropriate PhysX data is found within the sector file,
+    it will be loaded, however if it is not found, it will be generated. Building the
+    data at run time is fairly time-consuming and should be avoided as no collision
+    will happen with a visible sector that does not have any associated PhysX actors.
+  </p>
+  <h2>
+    Using the NiTerrainPhysXContactModify Class
+  </h2>
+  <p>
+    NiTerrainPhysXContactModify is an example implementation of the NxUserContactModify
+    class. It allows modification of the values to be used during the collision response
+    calculations. In a standard case that does not use NiTerrainPhysXContactModify,
+    the NxMaterial's values (restitution, static friction and dynamic friction) are
+    defined per triangle using only the most dominant terrain material. For instance,
+    if a terrain triangle has three different materials (moss, sand and rock), the NxMaterial
+    values that will be used will be the ones found in the meta data of the single terrain
+    material that is the strongest on that triangle.
+  </p>
+  <p>
+    When using NiTerrainPhysXContactModify, the value of the NxMaterial will be evaluated
+    between the collision detection step and the response resolution step according
+    to the point of collision. The values will be evaluated by blending the meta data
+    values of all the terrain materials available at that point. It is important to
+    note however that this is a usage that is not recommended by PhysX as it can be
+    very inefficient and the class is mainly provided as a demonstration.
+  </p>
+  <p>
+    Before creating the NiTerrainPhysXUtils object, create and set up the 
+    NiTerrainPhysXContactModify:
+  </p>
+<pre>m_spModify = EE_NEW NiTerrainPhysXContactModify();</pre>
+  <p>
+    The scale factor applied to the PhysXScene must also be applied to the contact modifier
+    object
+  </p>
+  <pre>m_spModify-&gt;SetScaleFactor(m_fScaleFactor);</pre>
+  <p>
+    Finally, register it with the PhysX scene:
+  </p>
+<pre>m_spPhysXScene-&gt;GetPhysXScene()-&gt;setUserContactModify(m_spModify);</pre>
+  <p>
+    For the NxActors to take into account the user contact modifier, a custom NxActorDesc
+    must be created with the appropriate options and given to the NiTerrainPhysXUtils
+    object upon creation:
+  </p>
+<pre>
+NxActorDesc kActorDesc;
+kActorDesc.body = NULL;
+kActorDesc.userData = (void*)m_spTerrain;
+kActorDesc.flags |= NX_AF_CONTACT_MODIFICATION;
+m_spPXTerrainUtils = NiNew NiTerrainPhysXUtils(kActorDesc);
+</pre>
+  <p>
+    Once again, these steps must be executed before the terrain starts loading.
+  </p>
+  <h2>
+    Limitations
+  </h2>
+  <p>
+    The present version of PhysXTerrainService does not support the NiTerrainPhysXContactModify
+    class.<br>
+  </p>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 5: Transforms</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 5: Transforms</h1>
+
+<p>In this tutorial, we cover simple transforms that involve translations and rotations. We will
+see how to rotate an object and then reposition it in space.</p>
+
+<h2>The Demo</h2>
+
+<p>In <a href="Tutorial_4__Scene_Attachment.htm">Core Runtime Tutorial 4: Scene Attachment</a>, we
+loaded our village and added a helicopter to the scene. In this demo, we will make the helicopter
+move around in a circle using simple transforms.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a village with a helicopter moving around in a circle. The
+following screen capture was taken from the <span class="NDLSystemFont">Win32</span> platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial5.jpg" width="515" height="400" alt="tutorial5 (63K)">
+
+    <p class="NDLFigureCaption">Using simple transforms</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>In this tutorial we override <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>'s <span class="NDLSystemFont">UpdateFrame</span> loop.
+This is done in order that we have a chance to manipulate and update the scene graph. For our
+purposes, a good object to manipulate is the helicopter! Since we will be manipulating it on a
+frame by frame basis, we make things easier on ourselves by making a static pointer to the
+attachment point.</p>
+<pre>
+void Transforms::UpdateFrame()
+{
+   static NiNode* spkAttachPt = (NiNode*) m_spScene-&gt;GetObjectByName(
+       "AttachmentBox");
+</pre>
+
+<p><a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>'s <span class="NDLSystemFont">UpdateFrame</span> is still
+useful in that it handles input and, although we are not using it in this tutorial, frame rate
+calculations. Therefore, we call this first thing in our new <span class=
+"NDLSystemFont">UpdateFrame</span> function.</p>
+<pre>
+   NiApplication::UpdateFrame();
+</pre>
+
+<p>Now we want to move our object about. Basically, we want to move the helicopter so that it flies
+about in a circle. To do this, we will move the helicopter forward by some velocity and turn it
+along a circular path.</p>
+
+<p>Since we plan on moving the helicopter in circular path, it will be useful to store the center
+point of this circle. We get the center point by storing the original location of the attachment
+point into a static variable.</p>
+<pre>
+   const static NiPoint3 kCenterPoint = spkAttachPt-&gt;GetTranslate();
+</pre>
+
+<p>Next, we create a vector that will have a transformations applied to it in order to create the
+circular motion.</p>
+<pre>
+   NiPoint3 kRadiusVect = NiPoint3(-70.0f, 0.0f, 0.0f);
+</pre>
+
+<p>The direction and magnitude of for this vector have been set for particular reasons. The
+magnitude, <span class="NDLSystemFont">70.0f</span>, defines the radius of the circle the
+helicopter will using. We set the direction to, <span class="NDLSystemFont">-X</span>, so the
+motion of the helicopter will match the local space in which the helicopter was modeled.</p>
+
+<p>To get the helicopter to actually rotate in a circle we create a rotation matrix that will
+rotate the attachment point around the Z-Axis.</p>
+<pre>
+   NiMatrix3 kRotation;
+   kRotation.MakeZRotation(-0.75f * m_fAccumTime);
+</pre>
+
+<p>Just as with <span class="NDLSystemFont">kRadiusVect</span> the direction and magnitude used
+when creating this rotation were chosen for specific reasons. The variable <span class=
+"NDLSystemFont">m_fAccumTime</span> is used to allow us to rotate the helicopter in a circle over
+time and it ensures that the helicopter will move at the same speed regardless of the current frame
+rate. We multiply <span class="NDLSystemFont">m_fAccumTime</span> by the magnitude, <span class=
+"NDLSystemFont">0.75f</span>, to define the speed at which the helicopter will fly. The negative
+applied to the magnitude is used so the helicopter will rotate with the front of the helicopter
+facing forward, this is done to match the local space in which the helicopter was modeled.<br>
+<br>
+Now we have all the information we need to create a transformation that can be applied to
+<span class="NDLSystemFont">kRadiusVect</span> to obtain the final location for the helicopter.<br>
+<br>
+We create the transformation and apply the it to <span class="NDLSystemFont">kRadiusVect</span> as
+follows:</p>
+<pre>
+   NiTransform kXForm;
+   kXForm.m_Rotate = kRotation;
+   kXForm.m_Translate = kCenterPoint;
+   kXForm.m_fScale = 1.0f;
+ 
+   kRadiusVect = kXForm * kRadiusVect;
+</pre>
+
+<p>The transform, <span class="NDLSystemFont">kXForm</span>, is set with the rotation matrix and
+the center point created above. Multiplying <span class="NDLSystemFont">kRadiusVect</span> by this
+transform will rotate <span class="NDLSystemFont">kRadiusVect</span> by the matrix <span class=
+"NDLSystemFont">kRotation</span> creating the circular motion we wanted, along with translating the
+vector by <span class="NDLSystemFont">kCenterPoint</span> setting the center point of our
+circle.</p>
+
+<p>Now all that is left to do is set the new rotation and translation of the object with our
+computed values and update the scene.</p>
+<pre>
+   spkAttachPt-&gt;SetTranslate(kRadiusVect);
+   spkAttachPt-&gt;SetRotate(kRotation);
+   m_spScene-&gt;Update(m_fAccumTime);
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>That's all for this tutorial! We've used simple transforms to move our helicopter around in a
+circle. Next, we'll take a look at how to update objects in the scene graph. See <a href=
+"Tutorial_6__Time_Controllers.htm">Core Runtime Tutorial 6: Time Controllers</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiPoint3.htm">NiPoint3</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiTransform.htm">NiTransform</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

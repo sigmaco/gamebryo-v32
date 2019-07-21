@@ -1,0 +1,342 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Custom Shaders in the Shadowing System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Custom Shaders in the Shadowing System</h1>
+
+<p>While the shadowing system is designed to be used with 
+ the fragment based material system, it also supports custom shaders. New 
+ semantics and annotations have been added to allow for custom shaders 
+ to retrieve shadow maps that have been created by the shadowing system 
+ and assigned to a shadow generator.</p>
+
+<h2>Shadowing System Object Types</h2>
+
+<p>The following object types have been added along with 
+ the shadowing system:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+
+<tr>
+<th>
+<b>Object</b>
+Type<!--kadov_tag{{</ignored>}}--></th>
+<th>
+Corresponding Data Type</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont">OT_EFFECT_SHADOWPOINTLIGHT<!--kadov_tag{{</ignored>}}--></span></td>
+<td>
+<span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiPointLight.htm">NiPointLight</a><!--kadov_tag{{</ignored>}}--></span> 
+ with an active <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a><!--kadov_tag{{</ignored>}}--></span>.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">OT_EFFECT_SHADOWDIRECTIONALLIGHT<!--kadov_tag{{</ignored>}}--></span></td>
+<td>
+<span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiDirectionalLight.htm">NiDirectionalLight</a><!--kadov_tag{{</ignored>}}--></span> 
+ with an active <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a><!--kadov_tag{{</ignored>}}--></span>.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">OT_EFFECT_SHADOWSPOTLIGHT<!--kadov_tag{{</ignored>}}--></span></td>
+<td>
+<span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiSpotLight.htm">NiSpotLight</a><!--kadov_tag{{</ignored>}}--></span> 
+ with an active <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a><!--kadov_tag{{</ignored>}}--></span>.</td></tr>
+</tbody>
+</table>
+
+
+
+<p>If a custom shader wants to use a shadow casting light 
+ instead of a normal light, the appropriate new object type needs to be 
+ used. These new object types allow Gamebryo to easily differentiate between 
+ shadow casting and non-shadow casting lights.</p>
+
+<h2>Shadowing System Object Annotations</h2>
+
+<p>The following object annotations have been added to 
+ allow custom shaders to access shadowing system specific data:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+
+
+
+
+<tr>
+<th>
+Enumeration</th>
+<th>
+String Mappings</th>
+<th>
+Meaning</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_WORLDTOSHADOWMAPMATRIX</span></td>
+<td>
+<span class="NDLSystemFont">"WorldToShadowMapMatrix"</span></td>
+<td>
+Matrix to convert coordinates from world space into 
+ the view space of the shadow map.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOWMAPTEXSIZE</span></td>
+<td>
+<span class="NDLSystemFont">"TexSizeShadow"</span></td>
+<td>
+Dimensions of the shadow map texture.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOWBIAS</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowBias"</span></td>
+<td>
+Shadow depth bias.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_VSM_POWER_EPSILON</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowVSMPowerEpsilon"</span></td>
+<td>
+Power and epsilon values for variance shadow mapping.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_PSSM_SPLITDISTANCES</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowPSSMSplitDistances"</span></td>
+<td>
+A float4 containing the max distance of each of the PSSM slices.  Each
+component of the constant contains the value for a different slice.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_PSSM_SPLITMATRICES</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowPSSMSplitMatrices"</span></td>
+<td>
+An array of float4x4 matrices containing the world-to-view matrix for
+the camera used to render each PSSM slice.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_PSSM_TRANSITIONMATRIX</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowPSSMTransitionMatrix"</span></td>
+<td>
+A float4x4 matrix for adding noise to slice transitions.  The current world
+position can be multiplied against this matrix to get a float2 texture
+coordinate.  This coordinate can be used as an input to a noise texture.  The
+value of this noise texture lookup times the transition size can be added to
+the camera distance for the purposes of determining the current slice.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_PSSM_TRANSITIONSIZE</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowPSSMTransitionSize"</span></td>
+<td>
+A single float value containing the user-specified transition size between PSSM slices.  It is used in combination with the transition matrix.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">SCM_OBJ_SHADOW_PSSM_ATLASVIEWPORTS</span></td>
+<td>
+<span class="NDLSystemFont">"ShadowPSSMAtlasViewports"</span></td>
+<td>
+An array of float4 vectors, which each contain the viewport of a different
+PSSM slice.  This viewport can be used to determine whether or not a shadow
+texel is outside of the shadow texture in the atlas.  If you have a texture
+coordinate (tex) and a viewport (view), then the expression
+<span class=NDLSystemFont>(tex + view.zw) * view.xy</span> will map the texture coordinate to the range [0..1].  If either component of the resulting float2 is outside of this range, then the original texture coordinate is outside of the given viewport.</td></tr>
+
+</tbody>
+</table>
+
+<p><b>Note:</b> The PSSM parameters are not currently supported for NSF
+shaders.</p>
+
+<p>In order to properly use the shader constant map object 
+ entries, they should be used as object properties. They also need to be 
+ used in tandem with a object entry that defines which light type the properties 
+ reference and an object index to specify which light of the specified 
+ light type. This allows custom shaders to specify the exact light they 
+ need to grab the shadow properties from.</p>
+
+<h2>FX/FXL Example Shader Code</h2>
+
+<p>Below is a portion of FX/FXL shader code showing how 
+ to setup shader constant annotations so that the shader parser will properly 
+ assign the shadowing property shader constant entries:</p>
+
+<pre>
+float4x4 kWorldToLightProj
+&lt;
+  string VarType = "Object";
+  string Object = "ShadowSpotLight";
+  int ObjectIndex = 0;    
+  string ObjectProperty = "WorldToShadowMapMatrix";
+&gt;;
+ 
+float fShadowBias
+&lt;
+    string VarType = "Object";
+    string Object = "ShadowSpotLight";
+    int ObjectIndex = 0;        
+    string ObjectProperty = "ShadowBias";
+&gt;;
+ 
+float2 fShadowMapSize
+&lt;
+    string VarType = "Object";
+    string Object = "ShadowSpotLight";
+    int ObjectIndex = 0;        
+    string ObjectProperty = "TexSizeShadow";
+&gt;;
+ 
+texture ShadowTex
+&lt;
+  string VarType = "Object";
+  string Object = "ShadowSpotLight";
+  int ObjectIndex = 0;    
+  string ObjectProperty = "ShadowMap";
+&gt;;
+ 
+sampler2D ShadowSamplerFP
+&lt;
+  string VarType = "Object";
+  string Object = "ShadowSpotLight";
+  int ObjectIndex = 0;    
+  string ObjectProperty = "ShadowMap";
+&gt; = sampler_state
+{
+    Texture = &lt;ShadowTex&gt;;
+    MinFilter = Point;
+    MagFilter = Point;
+    MipFilter = None;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+</pre>
+
+<p>Note that each constant specifies a variable type, object, 
+ object index, and object property. The shader constants above will allow 
+ the shader code to use the shadow bias, the shadow map size, and the shadow 
+ map from the shadow generator assigned to the first spot light applied 
+ to the rendered geometry. A full example FXL file can be found in the 
+ <a href="../../Learn/Demos/Introduction_to_the_ShadowMap_Demo.htm">ShadowMap Demo</a> folder under <span class="NDLSystemFont">Data\Shaders\ShadowMapFP.fxl</span>.</p>
+
+<h2>NSF Example Shader Code</h2>
+
+<p>Setting up an NSF shader to access shadowing system 
+ properties is slightly more involved than with FX/FXL shaders. First, 
+ all the objects used by the shader need to be defined. In our example 
+ we only have one spot light so the <span class="NDLSystemFont">Objects</span> 
+ section is simple.</p>
+
+<pre>
+Objects
+{
+    Effect_ShadowSpotLight   0   Light1
+}
+</pre>
+
+<p>The code segment above defines a simple spot light with 
+ index 0 named as "Light1". Now we need to setup the shader constant 
+ maps for the vertex shader and the pixel shader.</p>
+
+<pre>
+// Vertex Shader constant map
+VS_Constantmap
+{
+    CM_Defined      WorldViewProj   WorldViewProj   0
+    CM_Defined      World   World   4
+    CM_Object       Light1          WorldToShadowMapMatrix   kWorldToLightProj
+}
+// Pixel Shader constant map
+PS_Constantmap
+{
+    CM_Object       Light1          TexSizeShadow   fShadowMapSize
+    CM_Object       Light1          ShadowBias      fShadowBias
+    CM_Object       Light1          WorldPosition   kLightPos
+    CM_Object       Light1          WorldDirection   kLightDir
+    CM_Object       Light1          SpotAttenuation   fSpotAttenuation
+}
+</pre>
+ 
+<p>Notice that all the shader constants that reference 
+ shadowing parameters reference the "Light1" object. This indicates 
+ to the parser that the light object defined in the objects section is 
+ to be used to obtain the needed data. Finally the sampler for the shadow 
+ map needs to be defined.</p>
+
+<pre>
+// Sampler stage 1
+Sampler 1   Sampler1
+{
+    TSS_Texture     = Light1
+    TSAMP_AddressU  = TADDR_Clamp
+    TSAMP_AddressV  = TADDR_Clamp
+    TSAMP_AddressW  = TADDR_Clamp
+    TSAMP_MagFilter = TEXF_Point
+    TSAMP_MinFilter = TEXF_Point
+    TSAMP_MipFilter = TEXF_Point
+} 
+</pre>
+
+<p>Instead of specifying the texture type as a base map, 
+ a detail map, or any of the other common texture map types, the light 
+ object is specified. This tells the system that the required texture will 
+ come from the shadow generator attached to the light object. A full example 
+ NSF file can be found in the <a href="../../Learn/Demos/Introduction_to_the_ShadowMap_Demo.htm">ShadowMap Demo</a> folder under <span class="NDLSystemFont">Data\Shaders\BinShadowMap.NSF</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

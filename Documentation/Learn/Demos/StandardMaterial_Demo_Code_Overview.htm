@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>StandardMaterial Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>StandardMaterial Demo Code Overview</h1>
+
+<p>This section details the functionality of significant member
+functions in the two classes that form the application:
+<span class="NDLSystemFont">StandardMaterial</span> (the demo
+itself), and <span class="NDLSystemFont">ShadowObject</span> (the
+shadow object).</p>
+
+<h2>StandardMaterial::UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> calls the
+<span class="NDLSystemFont">NiSample</span> base class instance
+of the function (to update input, update frame rate stats,
+etc). It updates the scene. Finally, the shadow direction is
+updated to track the spotlight from the scene.</p>
+
+<p>Updating of the scene is done with a custom accumulated time,
+to allow rewind and fast-forward functionality.</p>
+
+<h2>StandardMaterial::RenderFrame</h2>
+
+<p>The shadow texture is rendered using <span class=
+"NDLSystemFont">ShadowObject::ClickAndStuff</span>. Because that
+system uses a custom accumulator, the application's alpha
+accumulator is reapplied onto the renderer. Finally, the base
+class <span class="NDLSystemFont">RenderFrame</span> function is
+called to render the main, on screen scene.</p>
+
+<h2>StandardMaterial::CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> creates all
+aspects of the scene graph. First, it creates an <a href=
+"../../Reference/NiMain/NiAlphaAccumulator.htm"><span class=
+"NDLSystemFont">NiAlphaAccumulator</span></a> object. Then the
+scene NIF file is loaded. This scene includes a snail which has
+many textures specified using <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiStandardMaterial.htm">
+NiStandardMaterial</a></span>. The first camera in the scene is
+found to be used.</p>
+
+<p>The <span class="NDLSystemFont">NiSample</span> navigation
+system is augmented to allow tracking of the animated camera. To
+set tracking up correctly, the animated camera is cloned so that
+the free flying camera will have the same properties (FOV,
+etc).</p>
+
+<p>Finally, the shadow object is created, and configured by
+setting caster and receivers.</p>
+
+<h2>StandardMaterial::CreateNavigationControllers</h2>
+
+<p>The <span class="NDLSystemFont">NiSample</span> navigation
+system is augmented by adding a <a href=
+"../../Reference/NiUserInterface/NiNavInterpToController.htm"><span class="NDLSystemFont">
+NiNavInterpToController</span></a>. The new controller is
+configured to track the animated camera. Finally, the navigation
+system is updated to use the new controller by default.</p>
+
+<h2>ShadowObject::Create</h2>
+
+<p>The <span class="NDLSystemFont">ShadowObject</span> object has
+a protected constructor and a public, static <span class=
+"NDLSystemFont">Create</span> function so that the class can
+"fail" creation if hardware support for rendering to a texture is
+not present. First, the Create function generates a new
+<span class="NDLSystemFont">ShadowObject</span>. Then it attempts
+to create an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedTexture.htm">NiRenderedTexture</a></span>
+object. At this point, the function uses a renderer query in
+order to determine the color depth of the main, onscreen
+buffer. Based on the bit-depth of the backbuffer, it selects
+either a 16 or 32 bit format preference object. While this is not
+technically necessary, it does ensure that we do not render to a
+needlessly deep rendered texture if the main framebuffer is only
+16 bits. If the attempt to create a rendered texture fails, the
+function returns failure.</p>
+
+<p>A render target group is created to allow the renderer to draw
+to the rendered texture. While render target groups can support
+more than one simultaneous rendered texture, in this case we only
+need to render to one, basic rendered texture, a color buffer
+than will serve as the shadow image.</p>
+
+<p>Finally, a parallel projected shadow texture effect is created
+with the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedTexture.htm">NiRenderedTexture</a></span>
+object as the image. The effect uses bilinear filtering (since
+the rendered texture is not mip-mapped), and CLAMP_S_CLAMP_T
+(since the effect should not repeat) texture wrapping. No
+projection is defined at this time as it will be updated
+later.</p>
+
+<h2>ShadowObject::Constructor</h2>
+
+<p>First, the caster is set to NULL, as there is no shadow caster
+by default. Then, the shadow camera is created no values are set
+other than the far and near planes, which are set to distant
+values, since this camera will be centered quite far from its
+subject. Next, a <span class=
+"NDLSystemFont">MasterPropertyAccumulator</span> object is
+created  an accumulator that renders the geometry registered
+with it without changing the order of the objects (i.e. it does
+not "sort"), applying a specified set of properties to all
+rendered objects. Three properties are attached to this sorter
+an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiMaterialProperty.htm">NiMaterialProperty</a></span>
+object, an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiVertexColorProperty.htm">NiVertexColorProperty</a></span>
+object, and an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span>
+object. All of these properties are designed to override the
+properties in the object being drawn as a shadow, so that the
+shadow object is drawn into the shadow map as a flat color.</p>
+
+<h2>ShadowObject::ClickAndStuff</h2>
+
+<p><span class="NDLSystemFont">ClickAndStuff</span> does all of
+the updating of the shadow image and its representations by
+"clicking" the camera (i.e. drawing the shadow caster). It
+returns without doing any work if the caster geometry, renderer,
+or rendered texture is null. It sets the background color to
+white and updates the camera's position, orientation and field of
+view using <span class="NDLSystemFont">UpdateShadowCamera</span>.
+It "opens" the rendered texture as the rendering target and then
+sets the default accumulator (the one attached to the renderer)
+to be the <span class=
+"NDLSystemFont">MasterPropertyAccumulator</span>. Using the
+<span class="NDLSystemFont">NiDrawScene</span> convenience
+function for both steps, it culls the caster scene from the point
+of view of the camera representing the light and then renders the
+resulting geometry with the accumulator.  It then "closes" the
+current render target, effectively drawing the shadow to the
+rendered texture. Finally, it calls <span class=
+"NDLSystemFont">UpdateProjection</span> to update the
+<span class="NDLSystemFont">NiTextureEffect</span> representing
+the projection of the shadow into the scene.</p>
+
+<h2>ShadowObject::SetCaster</h2>
+
+<p><span class="NDLSystemFont">SetCaster</span> caches the caster
+scene graph in a local member pointer. This scene graph comprises
+the objects that cast shadows. Note that if objects in this scene
+graph are sparse (i.e. two characters separated by a large
+distance), then the resolution of the shadow will be poor, as
+most of the texture will consist of the unshadowed area between
+the objects. This method works best when there is a single,
+compact caster.</p>
+
+<h2>ShadowObject::UpdateShadowCamera</h2>
+
+<p><span class="NDLSystemFont">UpdateShadowCamera</span> adjusts
+the camera to aim at the target. The camera is translated so that
+it is 5000 world units away from the center of the shadow
+caster's world bounding sphere along the user-specified light
+direction vector. Then, an "up" vector for the camera is computed
+to be perpendicular to the direction vector. This up vector and
+the caster's center are used as the argument to <span class=
+"NDLSystemFont">LookAtWorldPoint</span>. Then, a field of view
+value is computed such that the camera frustum edges will tightly
+enclose the caster's bounding sphere. These values are set for
+the frustum of the camera and the camera is updated.</p>
+
+<h2>ShadowObject::UpdateProjection</h2>
+
+<p><span class="NDLSystemFont">UpdateProjection</span> updates
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+object that will be used to project the shadow texture out into
+the scene. It computes an orthographic parallel projection matrix
+that uses a view plane normal that is equal to the shadow light
+direction. The view reference point along the ray from the center
+of the caster's bounding sphere in the view plane normal
+direction, and the left/right/top/bottom values are set to make
+the sides of the view volume exactly fit the bounding sphere plus
+5% on each side.</p>
+
+<p>These values are simple to compute, as the shadow camera
+already defines useful "up" and "right" vectors for such a
+projection, and the camera center is on the desired ray.</p>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Time Controller Example</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Time Controller Example</h1>
+
+<p>A sample <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDirectionalLight.htm">NiDirectionalLight</a></span> 
+ object. The controller negates the direction under the assumption that 
+ it will be used as a light vector from the object to the light in the 
+ shader.</p>
+
+<p>This specific time controller class is provided only 
+ as a demonstration of how to keep a shader's global shader constant updated. 
+ Light directions can be used in an <a href="Introduction_to_NSF_NSB_Shaders.htm">NSF</a> 
+ or <a href="Introduction_!FX_Shaders.htm">FX</a> shader directly by 
+ referencing the light object itself. Refer to the shader documentation 
+ for the type of shader you're using for more information.</p>
+
+<h2>GlobalLightDirectionAttributeController Header</h2>
+
+<p>This first section of code outlines the header for such 
+ a controller. Notice that the class is a subclass of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span>. 
+ The implementation, listed next will override certain key methods 
+ of that class. The member variable, <span class="NDLSystemFont">m_pcAttributeString</span>, 
+ will contain the key for the global attribute that this controller will 
+ update. We override <span class="NDLSystemFont">CanBeExtracted</span><span class="NDLSystemFont">TargetIsRequiredType</span>. 
+ The critical logic for this class occurs in the <span class="NDLSystemFont">Update</span> 
+ method where the light direction is grabbed and placed into a global shader 
+ attribute.</p>
+
+<pre>
+#include &lt;NiAVObject.h&gt;
+#include &lt;NiD3DShaderFactory.h&gt;
+#include "GlobalLightDirectionAttributeController.h"
+ 
+NiImplementRTTI(GlobalLightDirectionAttributeController,NiTimeController);
+ 
+//---------------------------------------------------------------------------
+bool GlobalLightDirectionAttributeController::TargetIsRequiredType () const
+{
+    return NiIsKindOf(NiDirectionalLight,m_pTarget);
+}
+//---------------------------------------------------------------------------
+GlobalLightDirectionAttributeController::
+    GlobalLightDirectionAttributeController(
+        const char* pcAttributeString)
+{
+    unsigned int uiLength = strlen(pcAttributeString);
+    m_pcAttributeString = NiAlloc(char, uiLength + 1);
+    strcpy(m_pcAttributeString, pcAttributeString);
+}
+//---------------------------------------------------------------------------
+GlobalLightDirectionAttributeController::
+    ~GlobalLightDirectionAttributeController()
+{
+    delete m_pcAttributeString;
+}
+//---------------------------------------------------------------------------
+void GlobalLightDirectionAttributeController::Update(float fTime)
+{
+    assert(m_pTarget);
+    NiPoint3 kDirection = ((NiDirectionalLight*)m_pTarget)-&gt;
+        GetWorldDirection();
+    kDirection *= -1.0f;
+    NiD3DShaderFactory::UpdateGlobalShaderConstant(
+        m_pcAttributeString, sizeof(NiPoint3), &amp;kDirection);
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

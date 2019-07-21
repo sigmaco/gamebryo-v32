@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Shader Attributes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Shader Attributes</h1>
+
+<p>NSF files allow you to set shader attributes that are either
+global to the shader system or that are attached to the object as
+<span class="NDLSystemFont">NiExtraData</span> subclasses. The
+fragment below shows several global and local attributes for the
+<span class="NDLSystemFont">BaseBumpWithSpatialGlow</span>
+shader.</p>
+
+<pre>
+Global_Attributes
+{
+    Attrib_Point4   GlowLightPosition    Hidden  0.0, 0.0, 0.0, 1.0
+}
+
+Objects
+{
+    Effect_GeneralLight   0   Light1
+    Effect_GeneralLight   1   Light2
+}
+
+Attributes
+{
+    //Constants for the light.
+    Attrib_Point4
+        GlowAttenuation
+        Artist
+        1.0, 1.0, 1.0, 200.0
+        [(0.0, 0.0, 0.0, 0.0) (1.0, 1.0, 10.0, 10000.0)]
+    //The normal map for the bump mapping.
+    Attrib_Texture
+        normalMap
+        Artist
+        0
+        "normals.bmp"
+}
+</pre>
+
+<h2>Distinction Between Global and Local Attributes</h2>
+
+<p>It is important to make the distinction between when you use
+global versus local attributes. Global attributes will be shared
+across all instances of any shader that has a global attribute of
+the same name. Local attributes are directly attached to the
+object that the shader is attached to in the art package.
+Regardless of type, attributes will not be sent to the graphics
+hardware unless they are specified in the shader constant map of
+the NSF file.</p>
+
+<p>Because of the differences in behavior between global and
+local attributes, they are both suited for different tasks.
+Global attributes work well for pieces of information that
+represent world state data. In the above fragment, the global
+attributes are used to store lighting information. Local
+attributes are useful for information that may change on a
+per-object basis. For example, the normal map in the shader above
+is a local attribute since it may be different on every surface
+that the shader is applied to. Additionally, local attributes may
+be animated in the art packages and exported with the NIF file.
+There is no way to control global attributes in the art
+packages.</p>
+
+<h2>Setting Up Attributes for Proper Use in Art Packages</h2>
+
+<p>The NSF format allows local attributes to appear selectively
+in the art packages. The keywords "Artist" and "Hidden" control
+this behavior. As seen above, both of the local attributes are
+available to the artist. All of the global attributes are
+specified as hidden although this is a bit redundant since you
+cannot access global attributes in the art packages.
+Additionally, a default value and sometimes a range can be
+specified for an attribute. It is critical to set meaningful
+defaults for global attributes. The default value for a global
+attribute is the only one available in the art packages.</p>
+
+<p>For some data types, primarily the numeric ones, the shader
+author can specify a range of values for any local attributes.
+Artists cannot set local attributes to any value outside of that
+range. As seen above, the X value for <span class=
+"NDLSystemFont">GlowAttenuation</span> cannot be set outside of a
+range from 0.0 to 1.0. Using intelligent ranges can help you
+optimize your shader program code. For example, since the
+<span class="NDLSystemFont">GlowAttenuation</span> values must
+fall in the positive range, there is no reason to check for
+negative values in the shader program code with the <span class=
+"NDLSystemFont">max</span> instruction. Also note that the range
+restrictions of a shader apply only to the art packages.
+Application code can set local attributes to any value that the
+programmer chooses.</p>
+
+<p>Using these properties of attributes carefully allows a shader
+author to make efficient shaders that are easy for artists to
+use. Observing the following rules will maximize your
+performance, memory usage, and artist experience.</p>
+
+<ul>
+    <li>Explain the usage of any artist visible attributes in the
+    shader description.</li>
+
+    <li>Do not place hidden attributes on an object unless you
+    application intends to change them. Otherwise, you will have
+    duplicate copies of <span class=
+    "NDLSystemFont">NiExtraData</span> objects occupying
+    memory.</li>
+
+    <li>Global attributes that will not change of the course of
+    an application should be coded directly into the constant map
+    of the NSF. See <a href="Constant_Maps.htm">Constant Maps</a>
+    for details.</li>
+
+    <li>Remember that globals sharing names across shaders will
+    also share data. This sharing can be used to create
+    consistent lighting throughout an application.</li>
+
+    <li>Do not have two globals of differing types with the same
+    name. This duplication can cause name collisions and
+    unpredictable behavior.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

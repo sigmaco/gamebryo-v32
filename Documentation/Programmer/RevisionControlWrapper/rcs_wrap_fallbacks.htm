@@ -1,0 +1,340 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Understanding Fallbacks</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="SCM" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Understanding Fallbacks</h1>
+
+<p>Revision control functionality in the provider object can be divided into three tiers as
+described in the table below. Ideally, to implement a new revision control provider, only the
+Simple functions would need to be implemented. The top-level and robust functions are virtual in
+case the revision control system requires additional unique logic.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tr>
+        <td>Add()<br>
+        Edit()<br>
+        Delete()<br>
+        Rename()<br>
+        Revert()</td>
+
+        <td>This is the first level that will be called by the managed layer of the RCS system.
+        This layer should do basic things like logging and properly call retry if the operation
+        fails. Very few providers should need to override the default implementation.</td>
+    </tr>
+
+    <tr>
+        <td>RobustAdd()<br>
+        RobustEdit()<br>
+        RobustDelete()<br>
+        RobustRename()<br>
+        RobustRevert()</td>
+
+        <td>This is the second level that will be called, by both top-level functions as well as
+        other robust functions. This layer should contain all of the fallback logic when moving a
+        file between various states of a revision control system.</td>
+    </tr>
+
+    <tr>
+        <td>SimpleAdd()<br>
+        SimpleEdit()<br>
+        SimpleDelete()<br>
+        SimpleRename()<br>
+        SimpleRevert()</td>
+
+        <td>This is the final step in the chain, this should be a thin wrapper around the actual
+        call to the underlying RCS Provider, and should not perform any fallback logic. It should
+        attempt to do exactly what the Command says it should. A SimpleCommand() may also call
+        other SimpleCommand()&rsquo;s if the underlying RCS Provider does not expose the command as
+        a single operation; for example, Perforce does not expose rename as a single command, in
+        our wrapper it&rsquo;s an integrate -&gt; delete -&gt; edit.</td>
+    </tr>
+</table>
+
+<p>For any given command, there are fallbacks that must be observed by the Robust*() commands. The
+following tables specify the action that should be performed based on the current state of the file
+in revision control.</p>
+
+<p>For example, attempting to edit a file that has already been marked for delete should result in
+a revert of the deleted and then a set the file's current status to edit.</p>
+
+<p>To determine which fallback steps to take the Robust*() should start by requesting the current
+status of the file. This logic is already encoded in the RCSProvider::Robust*() methods and would
+only need to be overridden in a new provider if the underlying revision control system required it
+to mimic the expected behavior detailed in the following tables.</p>
+
+<h2>Robust Add</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Current File Status</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RCS_ACTION_UNKNOWN</td>
+
+            <td>Add</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_NORMAL<br>
+            RCS_ACTION_ADD<br>
+            RCS_ACTION_EDIT<br>
+            RCS_ACTION_BRANCH<br>
+            RCS_ACTION_INTEGRATE</td>
+
+            <td>None</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_DELETE</td>
+
+            <td>Revert<br>
+            Edit</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Robust Edit</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Current File Status</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RCS_ACTION_UNKNOWN</td>
+
+            <td>Add</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_NORMAL</td>
+
+            <td>Edit</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_ADD<br>
+            RCS_ACTION_EDIT</td>
+
+            <td>None</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_BRANCH<br>
+            RCS_ACTION_INTEGRATE</td>
+
+            <td>Edit</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_DELETE</td>
+
+            <td>Revert<br>
+            Edit</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Robust Delete</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Current File Status</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RCS_ACTION_UNKNOWN</td>
+
+            <td>None</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_NORMAL</td>
+
+            <td>Delete</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_ADD</td>
+
+            <td>Revert</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_EDIT</td>
+
+            <td>Revert<br>
+            Delete</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_BRANCH<br>
+            RCS_ACTION_INTEGRATE</td>
+
+            <td>Revert<br>
+            Delete</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_DELETE</td>
+
+            <td>None</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Robust Rename</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>From File Status</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RCS_ACTION_UNKNOWN</td>
+
+            <td>Add (ToFile)</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_NORMAL</td>
+
+            <td>Rename(FromFile, ToFile)</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_ADD</td>
+
+            <td>Revert (FromFile)<br>
+            Add(ToFile)</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_EDIT<br>
+            RCS_ACTION_DELETE</td>
+
+            <td>Revert(FromFile)<br>
+            Rename(FromFile, ToFile)</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_BRANCH<br>
+            RCS_ACTION_INTEGRATE</td>
+
+            <td>If (FromOriginalBranchFile == ToFile) Then<br>
+               Revert(FromFile)<br>
+               Revert(ToFile)<br>
+               Edit(ToFile)<br>
+            Else<br>
+               Revert(FromFile)<br>
+               Rename(FromOriginalBranchFile, ToFile)<br>
+            End</td>
+        </tr>
+    </tbody>
+</table>
+
+<table>
+    <thead>
+        <tr>
+            <th>To File Status</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RCS_ACTION_UNKNOWN<br>
+            RCS_ACTION_NORMAL<br>
+            RCS_ACTION_ADD<br>
+            RCS_ACTION_EDIT<br>
+            RCS_ACTION_BRANCH<br>
+            RCS_ACTION_INTEGRATE</td>
+
+            <td>Error (filename already exists in revision control)</td>
+        </tr>
+
+        <tr>
+            <td>RCS_ACTION_DELETE</td>
+
+            <td>Revert(ToFile)</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="rcs_wrap_overview.htm">Revision Control Wrapper Overview</a></li>
+
+    <li><a href="rcs_wrap_create_rcs_plugin_cplus.htm">Creating a C++ Revision Control Provider
+    Plug-in</a></li>
+    
+    <li><a href="rcs_wrap_building.htm">Building Revision Control</a></li>
+
+    <li><a href="../../Tools/Toolbench/tb_scm_intro.htm">Toolbench Revision Control
+    Integration</a></li>
+
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

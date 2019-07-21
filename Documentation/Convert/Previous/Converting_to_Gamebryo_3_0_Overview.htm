@@ -1,0 +1,357 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Converting to Gamebryo LightSpeed 3.0 Overview</title>
+
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Converting to Gamebryo LightSpeed 3.0 Overview</h1>
+
+<p>Some Gamebryo 2.6 interfaces have changed in Gamebryo LightSpeed 3.0. These changes are listed
+in this section to help you identify actions you might need to take to ensure a smooth conversion
+path from Gamebryo 2.6 to LightSpeed 3.0.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Detailed discussion of the features, fixed issues, and changes in behavior that
+                were added in this release are outlined in the <a href=
+                "../../RelNotes/Release_Notes_Introduction.htm">Release Notes</a>.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>The following notes apply to the 2.6-to-LightSpeed conversion path:</p>
+
+<ul>
+    <li><a href="#DirReorg">Directory structure reorganization</a></li>
+
+    <li><a href="#LinkAndBuild">Changes required for building and compiling Gamebryo
+    LightSpeed</a></li>
+
+    <li><a href="../Announce/Foundation_Bridge_Layer.htm">Classes moved from NiSystem and NiMain to
+    Foundation</a></li>
+
+    <li><a href="#CustomMemoryAllocator">Changes in how the memory allocator is specified</a></li>
+
+    <li><a href="#RenderOrderChanges">Changes in rendering order and the rendering
+    pipeline.</a></li>
+
+    <li><a href="#MemTrackerChanges">Changes in the default behavior of memory tracking</a></li>
+
+    <li><a href="#CustomAssertHandler">Changes in how a custom assert handler is
+    implemented</a></li>
+
+    <li><a href="#CustomFileIO">Changes in how custom file I/O is implemented</a></li>
+
+    <li><a href="#ShaderDirectories">Changes in how shader directories are searched</a></li>
+
+    <li><a href="#ThreadNames">Changes in how thread names are specified</a></li>
+
+    <li><a href="Converting_Particles_Lightspeed.htm">Conversion notes for NiParticle</a></li>
+
+    <li><a href="#SceneDesignerConvert">Conversion notes for Scene Designer users</a></li>
+
+    <li><a href="#PhysXConvert">Conversion notes for Gamebryo-PhysX</a></li>
+
+    <li><a href="#STLPort">Usage of STLPort</a></li>
+</ul>
+
+<a name="DirReorg" id="DirReorg"></a><h2>Directory structure reorganization</h2>
+
+<p>The directory structure in LightSpeed has changed significantly from previous versions of
+Gamebryo.</p>
+
+<p>For more detailed information about the changes, see <a href=
+"../Announce/Directory_Structure_Reorganization.htm">Directory Structure
+Reorganization</a>.</p>
+
+<a name="LinkAndBuild" id="LinkAndBuild"></a><h2>Changes required for building and compiling Gamebryo LightSpeed</h2>
+
+<p>The conversion steps that are required for building and compiling LightSpeed are outlined in the
+following platform-specific sections:</p>
+
+<ul>
+    <li><a href="../../ee_goto.htm#Convert/Previous/Converting_to_Gamebryo_3_0_PC.htm">Converting
+    to LightSpeed - PC</a></li>
+
+    <li><a href="../../ee_goto.htm#Convert/Previous/Converting_to_Gamebryo_3_0_PS3.htm">Converting
+    to LightSpeed - PS3</a></li>
+
+    <li><a href=
+    "../../ee_goto.htm#Convert/Previous/Converting_to_Gamebryo_3_0_Xbox360.htm">Converting to
+    LightSpeed - Xbox 360</a></li>
+</ul>
+
+<a name="CustomMemoryAllocator" id="CustomMemoryAllocator"></a><h2>Changes in how the memory allocator is specified</h2>
+
+<p>Because pre-main allocations are now possible, the memory allocator that is used for all of
+Gamebryo LightSpeed must be specified at compile time instead of when <span class=
+"NDLSystemFont">NiInit()</span> is called.</p>
+
+<h4>Steps to take if Game specifies a custom <span class="NDLSystemFont">NiAllocator</span> class
+to <span class="NDLSystemFont">NiInit()</span></h4>
+
+<p>There are a few additional methods from the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__IAllocator.htm">IAllocator</a></span> interface that will need to be
+implemented. The following block of code should be added to the application (typically in the file
+containing the main entry point):</p>
+<pre>
+// Specify the custom allocator.  When the memory manager is initialized, it will call this
+// method to retrieve an instance of a class implementing the IAllocator interface.  This
+// method will be called pre-main, so the allocator should not rely on the static
+// initialization of any other classes having occurred.
+</pre>
+
+<h4>Steps to take if Game does <em>not</em> specify a custom <span class=
+"NDLSystemFont">NiAllocator</span> class to <span class="NDLSystemFont">NiInit()</span></h4>
+
+<p>If the game is derived from <span class="NDLSystemFont">NiApplication</span> then there are no
+changes required. Otherwise, the following block of code should be added to the application
+(typically in the file containing the main entry point):</p>
+<pre>
+// Make use of the default memory allocator implementation. For instructions
+// on how to use a custom allocator, see the notes in &lt;efd/MemoryDefines.h&gt;.
+#include &lt;efd/DefaultInitializeMemoryManager.h&gt;
+EE_USE_DEFAULT_ALLOCATOR;
+</pre>
+
+<a name="RenderOrderChanges" id="RenderOrderChanges"></a><h2>Changes to rendering order and the rendering pipeline</h2>
+
+<p>The responsibility of rendering an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> object has moved from <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span> to
+<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShader</a></span>. The
+method <span class="NDLSystemFont">NiShader::RenderMeshes()</span> has been introduced, and the
+<span class="NDLSystemFont">NiRenderer::RenderMesh()</span> now calls <span class=
+"NDLSystemFont">NiShader::RenderMeshes()</span> on the render object's active shader. Having
+<span class="NDLSystemFont">NiShader</span> objects be responsible for rendering batches of meshes
+allows for custom NiShader classes that perform the minimum amount of work required to render an
+object.</p>
+
+<p>Additionally, the definition and use of different <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">RenderingPhases</a></span> has been added to <span class=
+"NDLSystemFont">NiRenderer</span> and the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a></span>, respectively. An
+<span class="NDLSystemFont">NiShader</span> object can specify which <span class=
+"NDLSystemFont">RenderingPhases</span> are active as it renders a batch of meshes. For example,
+while rendering the first <span class="NDLSystemFont">NiMesh</span> in batch, all <span class=
+"NDLSystemFont">RenderingPhases</span> would be active. After the first mesh has been rendered, all
+of the <span class="NDLSystemFont">PER_SHADER</span> should be done, so that phase can be disabled.
+Disabling phases while rendering a batch of meshes results in less CPU work and better rendering
+performance.</p>
+
+<p>To take advantage of the different rendering phases, the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderSortProcessor.htm">NiShaderSortProcessor</a></span> class has been
+introduced. The <span class="NDLSystemFont">NiShaderSortProcessor</span> buckets all render objects
+by their active shader. Additionally, all objects in a bucket are sorted by their <span class=
+"NDLSystemFont">NiDynamicEffectState</span>. The entire bucket of meshes is then passed to
+<span class="NDLSystemFont">NiShader::RenderMeshes()</span>. The default <span class=
+"NDLSystemFont">NiShader</span> implementation for all shader-based platforms has been updated to
+take advantage of this by actively disabling <span class="NDLSystemFont">RenderingPhases</span>
+when possible. The combination of these changes helps to improve rendering performance by batching
+objects together and reducing the amount of state changes that are required per object. The
+<span class="NDLSystemFont">NiShaderSortProcessor</span> is now the default <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderListProcessor.htm">NiRenderListProcessor</a></span> for
+applications that are based on <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/NiApplication.htm">NiApplication</a></span>.</p>
+
+<p>Note that the <span class="NDLSystemFont">NiShaderSortProcessor</span> will change the rendering
+order of opaque objects. Scene graphs will no longer be rendered in depth first search order. The
+<span class="NDLSystemFont">NiShaderSortProcessor</span> still sorts alpha blended objects in
+back-to-front order and respects the render ordering of objects located under an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiSortAdjustNode.htm">NiSortAdjustNode</a></span>.
+Applications making use of the <span class="NDLSystemFont">NiShaderSortProcessor</span> may notice
+rendering artifacts if they were relying on objects being rendered in scene graph order. To
+addresses the issues, place any opaque objects that need to be rendered in an explicit order under
+an <span class="NDLSystemFont">NiSortAdjustNode</span>.</p>
+
+<a name="MemTrackerChanges" id="MemTrackerChanges"></a><h2>Changes in the default behavior of memory tracking</h2>
+
+<p>Release and Release DLL configurations no longer include memory related metrics (for memory
+leaks and memory summary statistics), as specified by enabling <span class="NDLSystemFont"><a href=
+"../../GetStart/PC/Gamebryo_Build_Configurations.htm">memory tracking</a></span> as a compile-time
+feature. However, Debug and Debug DLL configurations still include such memory related metrics and
+will cause Memory-Leaks.xml and Memory-Overview.xml reports to be created.</p>
+
+<p>Nevertheless, per-allocation memory logging has been disabled by default in Debug builds. As a
+result, sections other than "Summary" in Memory-Overview.xml are usually empty. Per-allocation
+memory logging can be re-enabled (which will fill in the empty sections in Memory-Overview.xml),
+but keep in mind that it has a significant performance impact, especially on consoles.</p>
+
+<p>See <a href=
+"../../Programmer/General_Topics/Custom_Allocation.htm#MemoryTrackingAndDebugging">Memory Tracking
+and Debugging</a> for details on enabling per-allocation memory logging.</p>
+
+<a name="CustomAssertHandler" id="CustomAssertHandler"></a><h2>Changes to how a custom assert handler is implemented</h2>
+
+<p>The signature for an assert handler has changed from:</p>
+<pre>
+bool Handler(<br>
+    const char* pcExpression,<br>
+    const char* pcFile,<br>
+    const char* pcFunction,<br>
+    const int iLine)<br>
+</pre>
+
+<p>to:</p>
+<pre>
+efd::SInt8 Handler(<br>
+    const char* pcFile,<br>
+    int line,<br>
+    const char* pcFunction,<br>
+    const char* pcPred,<br>
+    const char* pcMsg,<br>
+    const char* pcStack,<br>
+    bool isAVerify)  <br>
+</pre>
+
+<p>Additionally, assert handlers are now registered via <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__AssertHelper.htm">efd::AssertHelper</a>::SetAssertHandler()</span>
+
+</p><a name="CustomFileIO" id="CustomFileIO"></a><h2>Changes in how custom file I/O is implemented</h2>
+
+<p>The constructor for <span class="NDLSystemFont"><a href=
+"../../Reference/NiSystem/NiFile.htm">NiFile</a></span> (<span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__File.htm">efd::File</a></span>) is now private, and all explicit uses of
+the constructor have been replaced with a call to <span class="NDLSystemFont">GetFile()</span>.
+This eliminates the need for special code to override the file I/O in some libraries.</p>
+
+<a name="ShaderDirectories" id="ShaderDirectories"></a><h2>Changes in how shader directories are searched</h2>
+
+<p>If you have shader directories that rely on recursion, note that the default behavior has
+changed in Gamebryo LightSpeed. LightSpeed does not rely on recursion to search shader directories
+by default.</p>
+
+<p>As part of the directory structure reorganization for Gamebryo LightSpeed, shader folders that
+formerly were maintained separately by platform in the SDK directory have been consolidated. These
+folders have been relocated to the Media folder to enable more sharing of identical NSF and FX
+files.</p>
+
+<p>In addition, while Win32 and Xbox360 implementations have often been included in the same NSF
+shaders traditionally, PS3 implementations typically have remained in separate (though identically
+named) NSF files. This arbitrary segregation is merely a result of how the files were authored
+originally, and there is no necessary reason for such segregation. Long term, such NSF files (for
+example, Colorize.NSF) will likely be merged into common NSF files for Win32, Xbox360, and PS3.</p>
+
+<p>Regardless, with the reorganization and consolidation of shader directories in the Media folder,
+LightSpeed no longer searches shader directory locations recursively by default, because both the
+PS3 and the Win32/Xbox360 version of an identically named NSF (e.g., Colorize.NSF) may be found at
+different locations in a directory structure. The option of searching recursively remains, but that
+search option is no longer the default.</p>
+
+<p>The changes throughout the Gamebryo LightSpeed codebase have consisted of changing calls to
+<span class="NDLSystemFont">NiShaderFactory::LoadAndRunParserLibrary()</span> and <span class=
+"NDLSystemFont">NiShaderFactory::LoadAndRegisterShaderLibrary()</span>. Specifically, the last
+argument, which specifies whether to rely on recursion to find shaders and shader programs, has
+been changed from true to false.</p>
+
+<a name="ThreadNames" id="ThreadNames"></a><h2>Thread names</h2>
+
+<p>Setting the debugger name for a thread is now done through <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__Thread.htm">efd::Thread::Create()</a></span>, instead of by calling
+<span class="NDLSystemFont">SetName()</span>. As a result, <span class=
+"NDLSystemFont">SetName()</span> is now protected.</p>
+
+<p>A typical change is from:</p>
+<pre>
+    NiThread* pkThread = NiThread::Create(threadProc);
+   pkThread-&gt;SetName("MyThread");
+</pre>
+
+<p>to:</p>
+<pre>
+    NiThread* pkThread =<br>
+        NiThread::Create(threadProc, NiThread::USEDEF_STACK_SIZE, "MyThread");<br>
+</pre>
+
+<a name="SceneDesignerConvert" id="SceneDesignerConvert"></a><h2>Scene Designer to World Builder Conversion Notes</h2>
+
+<p>The conversion path from Gamebryo Scene Designer (.gsa, .pal) to Gamebryo World Builder (.gsl,
+.block, .emtproj, .preset) is a complex process. The differences in the underlying entity and
+modeling systems are fairly radical. Clear mappings between the two systems are not always present
+and generally require a case-by-case analysis. If you need to convert Scene Designer files to World
+Builder and need guidance, contact Emergent support via our <a href=
+"https://pulse.emergent.net/support/" target="_blank">Online Support System and Knowledge
+Base</a>.</p>
+
+<p>For those developers who have committed to using the Scene Designer system and are not ready to
+switch to World Builder, or for those developers who want to use the Scene Designer tool to aid in
+the conversion process, access to that tool is still available.</p>
+
+<p>If possible, switching to <a href="../../Tools/WorldBuilder/wb_intro.htm">World Builder</a>
+should be considered. World Builder provides access to all of the rapid iteration features that
+come out of the box with Gamebryo LightSpeed. For a discussion of the differences between the tools
+and when to use each one, see Level Editing Options: Choosing Between
+World Builder and Scene Designer.</p>
+
+<a name="PhysXConvert" id="PhysXConvert"></a><h2>Gamebryo-PhysX Conversion Notes</h2>
+
+<p>PhysX functionality that is global in nature, such as SDK management and type conversion, has
+been moved from the <a href=
+"../../Reference/NiPhysX/Introduction_to_NiPhysX_Class_Reference.htm">NiPhysX</a> library to the
+<a href="../../Reference/efdPhysX/Introduction_to_efdPhysX_Class_Reference.htm">efdPhysX</a>
+library. See the <a href="../Announce/Foundation_PhysX.htm">Foundation PhysX</a> conversion page
+for detailed conversion information. Existing applications may continue to use the classes in the
+NiPhysX library, but new applications should move to the new classes.</p>
+
+<p>PhysX-based particle systems have seen some API changes to reflect changes in the underlying
+NiParticle classes. See <a href="Converting_PhysX_Particles_Lightspeed.htm">Converting PhysX
+Particles for LightSpeed</a> for details.</p>
+
+<a name="STLPort" id="STLPort"></a><h2>Usage of STLPort</h2>
+
+<p>A modified version of STLPort is used in Foundation and the Game Framework. This version is
+suitably wrapped so that it will not interfere with the use of a platform vendor STL library (the
+version of STL provided with any of the supported compilers). However, it is not possible to use
+the Emergent-modified STLPort along with another version or copy of STLPort; this combination is
+not supported.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The data structures of one STL library are not compatible with another library. For
+                example, this means that you cannot use a <span class=
+                "NDLSystemFont">std::vector&lt;T&gt;::iterator</span> to iterate over a
+                <span class="NDLSystemFont">efd::vector&lt;T&gt;</span> container.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

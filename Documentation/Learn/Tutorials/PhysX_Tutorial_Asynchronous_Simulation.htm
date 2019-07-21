@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Tutorial - Asynchronous Simulation</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>PhysX Tutorial - Asynchronous Simulation</h1>
+
+<p>The most efficient way to run PhysX is in parallel with 
+ other game processing, particularly rendering. This is referred to as 
+ asynchronous simulation, and is very easy to achieve. This tutorial shows 
+ you how, by modifying the <a HREF="PhysX_Tutorial_Kinematic_Actors.htm">Kinematic 
+ Paddle</a> tutorial. When you start the application, you should see a 
+ paddle rotating in the box, pushing the ball around. </p>
+
+<h2>Asynchronous Updating</h2>
+
+<p>The only functions that we have changed are <span class="NDLSystemFont">CreateScene</span>, 
+ <span class="NDLSystemFont">Initialize</span> and <span class="NDLSystemFont">UpdateFrame</span>.</p>
+
+<p>We set the flag for asynchronous simulation when the 
+ <span class="NDLSystemFont"><a HREF="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object is created in <span class="NDLSystemFont">CreateScene.</span></p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;SetAsynchronousSimulation(true);</span></p>
+
+<p>This flag is necessary because the <span class="NDLSystemFont">NiPhysXScene</span> 
+ object must submit and complete <a HREF="../../Programmer/NiMesh/Introduction_to_Mesh_Modifiers.htm">mesh 
+ modifiers</a>, and the synchronization of those modifiers depends on the 
+ relationship between simulation and rendering,</p>
+
+<p>At the end of <span class="NDLSystemFont">Initialize</span> 
+ we start the first simulation step: </p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;Simulate(0.001f);</span></p>
+
+<p>This is necessary so that we are in a <span class="NDLSystemFont">simulate/fetchResults</span> 
+ block at the time we enter the <span class="NDLSystemFont">UpdateFrame</span> 
+ function. It is not strictly necessary with Gamebryo-PhysX, because Gamebryo 
+ keeps track of the state of the PhysX simulation and will not allow applications 
+ to violate the PhysX rules in this way. Of course, you could violate them 
+ by going direct to PhysX API calls, but we do not recommend it. </p>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> is modified 
+ to bring the <span class="NDLSystemFont">FetchResults</span> call to the 
+ start of the function. This waits for the simulation thread to finish 
+ its work. We must do this before any calls that process input or generate 
+ other PhysX SDK calls, because PhysX requires there be no API calls within 
+ a <span class="NDLSystemFont">simulate/fetchResults</span> block. </p>
+
+<p>We then do input and start the next simulation step. 
+ Note that if the idle loop were unrolled across many frames, the sequence 
+ of function calls would be essentially the same whether asynchronous simulation 
+ is used or not. The rendering call does move slightly, to be after the 
+ start of simulation, hence the parallel processing. </p>
+
+<p>That concludes the Gamebryo-PhysX Tutorial.</p>
+
+<h3><a HREF="PhysX_Tutorial_Kinematic_Actors.htm">Previous</a></h3>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

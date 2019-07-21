@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Introduction to the NiProgramLauncher Library</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Introduction to the NiProgramLauncher Library</h1>
+
+<p>The NiProgramLauncher library is a tool library that is used for
+launching executables on all of the platforms that are supported by Gamebryo.
+It is intended to be used by a Windows-based tool to launch
+platform-specific tools. For example, this library is used by the
+Gamebryo Maya plug-in to launch the <a href=
+"../../Art/Maya/rpi_remote_viewer_intro.htm">Remote Viewer</a> on
+multiple platforms.</p>
+
+<p>The NiProgramLauncher library provides a consistent interface
+for querying available platforms and targets (machines). The
+NiProgramLauncher class is a singleton that loads
+platform-specific launcher DLLs during initialization. There will
+be an NiProgramLauncher DLL library for each console,
+depending on your Gamebryo license.</p>
+
+<p>The NiProgramRunner class is generic interface for launching
+executables. There are platform-specific implementations of
+NiProgramRunner that handle the details of how to run an
+executable on the PC or various development kits.</p>
+
+<p>The NiProgramRunnerFactory class is a generic interface for
+getting information about the platform and creating
+NiProgramRunner objects. NiProgramRunnerFactory is not required
+to create NiProgramRunner objects since the NiProgramLauncher
+singleton can also be used to create them. The
+NiProgramRunnerFactory is useful for creating helper functions
+that programmatically generate filenames of the executable to be
+launched.</p>
+
+<p>Below is pseudo-code that demonstrates the general flow in
+launching an executable:</p>
+<pre>
+// Init the singleton
+NiProgramLauncher::Initialize();
+
+// Get available platform names
+NiStringArray kPlatformNames;
+NiProgramLauncher::GetInstance()-&gt;GetAvailablePlatformNames(kPlatformNames);
+
+// Show platform names to the user and have them select one (kPlatformName)
+
+// Get available target names
+NiStringArray kTargetNames;
+NiProgramLauncher::GetInstance()-&gt;GetAvailableTargetNames(kPlatformName, kTargetNames);
+
+// Show target names to the user and have them select one (kTargetName)
+
+// Run executable. MyGetPlatformExecutableFilename() will create a filename for
+// appropriate for the selected platform.
+NiProgramRunnerPtr spRunner = NiProgramLauncher::GetInstance()-&gt;Create(kPlatformName);
+spRunner-&gt;GetCommandLine() = "-IPAddress ";
+spRunner-&gt;GetCommandLine() += MyGetIPAddress();
+spRunner-&gt;SetOutputWindow(true);
+spRunner-&gt;Start(kTargetName, MyGetPlatformExecutableFilename(kPlatformName)))
+
+// Launched app will now run independently. Deleting spRunner will not stop the app.
+
+// When the launching app shuts down, release the singleton
+NiProgramLauncher::Shutdown();
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

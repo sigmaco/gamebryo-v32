@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How Asset Loading Services Work</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How Asset Loading Services Work</h1>
+
+<p>There are three principal pieces to the asset loading
+infrastructure.</p>
+
+<ul>
+    <li>The <span class="NDLEmphasis"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_asset_factory_mgr.htm">
+    Asset Factory Manager</a></span> service is the central
+    service point for asset creation. System services that
+    require assets (worlds, entities, scripts, etc) send messages
+    to the Asset Factory Manager requesting an instance of an
+    asset. The manager handles all the details of locating the
+    asset, locating any dependencies, and constructing the
+    object. A response message containing the asset is then sent
+    back to the requesting service. The Asset Factory Manager is
+    a required service for any Gamebryo LightSpeed application
+    that uses the Game Framework.</li>
+
+    <li>Instances of an <span class="NDLEmphasis">Asset
+    Factory</span> class (<span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__IAssetFactory.htm">efd::IAssetFactory</a></span>)
+    are registered with the Asset Factory Manager. Each factory
+    is matched to a particular asset via the category for the
+    response messages, found in each request message to the
+    service. When the Asset Factory Manager receives a request,
+    it locates the appropriate factory and invokes it to perform
+    the load. All the logic necessary to load an asset and its
+    dependencies is found in the asset factory for that type of
+    asset. The loader may take multiple ticks to load the file,
+    in which case the Asset Factory Manager will invoke it
+    multiple times until the load is complete.</li>
+
+    <li><span class="NDLEmphasis">Messages</span> of type
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__AssetLoadRequest.htm">efd::AssetLoadRequest</a></span>,
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__AssetLoadResponse.htm">efd::AssetLoadResponse</a></span>
+    and derived classes are used to ask for an asset and to
+    return the asset that is created, or an error status. A
+    matching response is sent for every request.</li>
+</ul>
+
+<p>The sequence diagram below shows the most basic form of
+foreground loading. The Message Service and some internals queue
+management of the classes is ignored in this diagram.</p>
+
+<div class="FigureContainer">
+    <img src="images/ForegroundLoad.png" width="446" height="460"
+    alt=
+    "UML Foreground Loading Sequence Diagram - no asset locate">
+
+    <p class="FigureCaption">The UML sequence diagram for
+    foreground loading, when no asset locate is required.</p>
+</div>
+
+<p>When the asset request contains a URN and no physical path,
+the Asset Factory Manager handles the location of the asset. The
+sequence diagram below shows this.</p>
+
+<div class="FigureContainer">
+    <img src="images/AssetLocateAndForegroundLoad.png" width=
+    "525" height="440" alt=
+    "UML Foreground Loading Sequence Diagram with asset locate">
+
+    <p class="FigureCaption">The UML sequence diagram for
+    foreground loading, when an asset locate is required.</p>
+</div>
+
+<p>Background loading is somewhat more complicated. The following
+sequence diagram shows background loading. There are two
+instances of the Asset Factory Manager, one in the foreground
+thread and another in a thread created explicitly for background
+loading. The background instance is created automatically by the
+foreground instance. The two instances communicate through a
+lock-free queue of messages. This queue communicates the request
+and response messages, but may also be utilized by background
+factories for asset locate and response messages. The diagram
+shows an asset locate, which is skipped when the physical
+location is given in the request.</p>
+
+<div class="FigureContainer">
+    <img src="images/AssetLocateAndBackgroundLoad.png" width=
+    "782" height="700" alt=
+    "UML Background Loading Sequence Diagram with asset locate">
+
+    <p class="FigureCaption">The UML sequence diagram for
+    background loading, when an asset locate is required.</p>
+</div>
+
+<h2>Application Interfaces to Asset Loading</h2>
+
+<p>Applications typically access asset loading functionality in
+one of two ways:</p>
+
+<ul>
+    <li>Indirectly through a system service, such as the <a href=
+    "../../Reference/QuickRef_Services/svc_qckref_entity_loader_svc.htm">
+    Entity Loader Service</a> for loading worlds, or the <a href=
+    "../../Reference/QuickRef_Services/svc_qckref_input_svc.htm">Input
+    Service</a> for loading input action maps. A message is
+    typically sent when the asset is available, and the
+    application must respond to that in some way. For example,
+    Lua script preloading is initiated with the <a href=
+    "../../Reference/egfLua/egf__SchedulerLua.htm">Lua
+    Scheduler</a> <span class=
+    "NDLSystemFont">PreloadModule</span> method, and an
+    application should handle <span class=
+    "NDLSystemFont"><a href="../../Reference/egf/egf__ScriptFactoryResponse.htm">
+    ScriptFactoryResponse</a></span> messages to track when the
+    scripts have loaded. See the <a href=
+    "../../Tutorials/Base_Game/base_game_intro.htm">Base Game</a>
+    tutorial for an example.</li>
+
+    <li>Directly for non-standard asset types. Four basic steps
+    are needed:
+
+        <ul>
+            <li>Create a factory for the asset class and register
+            it with the Asset Factory Manager.</li>
+
+            <li>Define a response message class for the asset,
+            derived from <span class="NDLSystemFont"><a href=
+            "../../Reference/efd/efd__AssetLoadResponse.htm">efd::AssetLoadResponse</a></span>.
+            The response message contains the data that is
+            returned by the loader.</li>
+
+            <li>Send a <span class="NDLSystemFont"><a href=
+            "../../Reference/efd/efd__AssetLoadRequest.htm">efd::AssetLoadRequest</a></span>-derived
+            message to the Asset Factory Manager.</li>
+
+            <li>Handle the response message when the asset is
+            loaded.</li>
+        </ul>A <span class="NDLSystemFont"><a href=
+        "../../Reference/efd/efd__GenericAssetFactory.htm">GenericAssetFactory</a></span>
+        class is provided for loading raw data buffers,
+        simplifying the first two steps above in some cases. See
+        the <a href=
+        "asset_runtime_customize_asset_loaders.htm">Custom
+        Loaders</a> section for more information on loading
+        application specific assets.
+    </li>
+</ul>
+
+<h2>Foreground and Background Loading</h2>
+
+<p>Loading may be done in either the main game thread or a
+background thread. When the Asset Factory Manager instance is
+constructed it creates a background thread running another
+instance of the manager. The two instances communicate via
+thread-safe message queues. The foreground instance of the
+manager handles all interactions with services running in the
+main game thread (via the <a href=
+"../Messages/message_intro.htm">Message Service</a>), and loads
+assets in the foreground. The background instance performs
+loading tasks and provides message forwarding functionality for
+Asset Factories running in the background.</p>
+
+<p>The thread in which loading is done is determined by the load
+request message and the available loaders for the asset type. See
+the <a href="asset_load_loading.htm">Loading Assets with the
+Asset Factory Manager</a> page for more information.</p>
+
+<p>All the system services shipped with Gamebryo use background
+loading for their assets, with the exception of the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_terrain_svc.htm">Terrain
+Service</a> and the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_shader_svc.htm">Shader
+Service</a>.</p>
+
+<h2>Asset Loading Order</h2>
+
+<p>Asset loading is asynchronous, not only due to background
+loading but also because the factory for an asset may need to
+send messages and wait on responses, or wait for a dependent
+asset to load. The loading of any given asset may become blocked
+waiting on a locate or dependent load. Rather than stalling, the
+Asset Factory Manager will try to load any other pending assets
+when one factory is blocked. This allows loads to be completed
+out of order.</p>
+
+<p>The default behavior is to delay the response messages for
+completed requests until any earlier request has been responded
+to. This enables applications to rely on the ordering of asset
+responses based on the request order. In-order loading is only
+enforced on a per-thread basis. Loads that complete in the
+foreground (or background) will not be delayed for an earlier
+request in the other thread.</p>
+
+<p>In-order loading may be preempted via a flag on the request
+message. When the preemptive flag is set the request is processed
+as fast as possible, before any in-order loads are processed.
+Note that this does not mean the load will complete immediately
+or even in a particular number of ticks, because the factory may
+still need to send messages and wait on responses from other
+services. Nor is it guaranteed that a preemptive load will always
+be responded to before a pending in-order load. The latter may
+finish while the preemptive load is blocked.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_load_svcs_overview.htm">Asset Loading
+    Services Overview</a></li>
+
+    <li><a href="asset_load_loading.htm">Loading Assets with
+    the Asset Factory Manager</a></li>
+
+    <li><a href="asset_caching.htm">Caching Assets</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

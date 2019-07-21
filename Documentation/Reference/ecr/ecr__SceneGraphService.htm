@@ -1,0 +1,857 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ecr::SceneGraphService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">ecr::SceneGraphService</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../efd/efd__ISystemService.htm">efd::ISystemService</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;SceneGraphService.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classecr_1_1_scene_graph_service.gif" alt="Inheritance graph for ecr::SceneGraphService"/>
+  <p class="FigureCaption">Inheritance graph for ecr::SceneGraphService</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">The scene graph service is responsible for managing all the Gamebryo scene graphs that are in the system. </p>
+<p class="NDLNormal">Scene graphs come from a variety of sources. Most of the scene graphs are loaded for entities that have the NifAsset property, for use as rendered geometry. Other services may also provide scene graphs that have been loaded (such as the Animation Service) or created in code (such as the Light Service). Functions are provided for such services to register the scene graph with this service.</p>
+<p class="NDLNormal">The scene graph service registers with entity lifetime messages so the scene graphs associated with entities are automatically loaded and prepared for rendering. It also registers for property update messages on entities, and applies relevant property changes to the scene graphs.</p>
+<p class="NDLNormal">The scene graph service requires that a <span class="NDLSystemFont"><a href="../efd/efd__MessageService.htm">efd::MessageService</a></span> object be available at the time the <span class="NDLSystemFont">SceneGraphService</span> object is added to the ServiceManager. Hence, the Message Service must be registered before the Scene Graph Service. </p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d"></a>
+<p class="NDLRefMemberFunction">typedef <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  SceneGraphHandle</p>
+<p class="NDLRefMemberDetailedDescription">A type for referring to entity-less scene graphs. </p>
+<a name="public_static_attributes"></a>
+<p class="NDLRefHead1">Public Static Attributes</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a7504320a74b979f6cd3d9324c5a41627"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span>  kInvalidHandle</p>
+<p class="NDLRefMemberDescription">Invalid scene graph handle. </p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1aa6afa76350447ebac79d8193d350a4e5"></a>
+<p class="NDLRefMemberFunction">SceneGraphService(<br/><span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>* pWorkflowManager = 0, <br/><span class="NDLSystemFont"><a href="../NiMain/NiTexturePalette.htm">NiTexturePalette</a></span>* pTexturePalette = 0, <br/>const <span class="NDLSystemFont">efd::Bool</span> toolMode = false)</p>
+<p class="NDLRefMemberDescription">Constructor. </p>
+<p class="NDLRefMemberDetailedDescription">The constructor prepares data structures for scene graph updating and texture sharing.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pWorkflowManager</span></td>
+    <td>The workflow manager used to coordinate Floodgate task submission. If NULL, the service creates its own workflow manager. In general, all services should use the same workflow manager if they are operating in the same thread, or one manager per-thread otherwise. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pTexturePalette</span></td>
+    <td>The texture palette is used to facilitate texture sharing. The service will create a default palette if one is not provided in this constructor. The palette is stored as a smart pointer, so applications must not explicitly delete it. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">toolMode</span></td>
+    <td>If true, loaded scene graphs will have all data streams set with CPU read access, thus supporting picking on all models. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1ab0f61f31471932d861d3d0f0d2c272c2"></a>
+<p class="NDLRefMemberFunction">virtual ~SceneGraphService()</p>
+<p class="NDLRefMemberDescription">Destructor. </p>
+<p class="NDLRefMemberDetailedDescription">Cleans up any scene graph data that wasn't destroyed as a part of the service shutting down. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a8e809315778a975cd8f54a95882effcb"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>*  GetWorkflowManager() const</p>
+<p class="NDLRefMemberDescription">Get the workflow manager used by this service for updating scene graphs. </p>
+<p class="NDLRefMemberDetailedDescription">This method may be called during PreInit. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a0ff874baf633d8313d91043731fe6399"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiTexturePalette.htm">NiTexturePalette</a></span>*  GetTexturePalette() const</p>
+<p class="NDLRefMemberDescription">Get the texture palette used by this service. </p>
+<p class="NDLRefMemberDetailedDescription">The returned value should be assigned to a smart pointer. This method may be called during PreInit. </p>
+
+<a name="classecr_1_1_scene_graph_service_1adfa84ce0a391072c8546132d03da045a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecr__SceneGraphCache.htm">SceneGraphCache</a></span>*  GetSceneGraphCache() const</p>
+<p class="NDLRefMemberDescription">Get the Scene Graph Cache used by this service. </p>
+<p class="NDLRefMemberDetailedDescription">The cache is necessary to look up data related to <span class="NDLSystemFont"><a href="ecr__SceneGraphCache.htm#classecr_1_1_scene_graph_cache_1afa4066bdc978d6f282a8e93c79c2c990">SceneGraphCache::SceneGraphCacheHandle</a></span> objects. This method may be called during PreInit. </p>
+
+<a name="classecr_1_1_scene_graph_service_1ad2f3449bc3802841eb5bb0020ccd9d89"></a>
+<p class="NDLRefMemberFunction">virtual const char*  GetDisplayName() const</p>
+<p class="NDLRefMemberDescription">Return the name of the service, in this case "SceneGraphService". </p>
+
+<a name="classecr_1_1_scene_graph_service_1a2f67b4ce26e403e01c304033c1940722"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a62e4d1bc94248c629612480b748bfd0e">efd::SyncResult</a></span>  OnPreInit(<span class="NDLSystemFont"><a href="../efd/efd__IDependencyRegistrar.htm">efd::IDependencyRegistrar</a></span>* pDependencyRegistrar)</p>
+<p class="NDLRefMemberDescription">OnPreInit subscribes to messages and reads configuration options. </p>
+<p class="NDLRefMemberDetailedDescription">It also registers the factories for several property types and built-in models that are used by the service. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a26eb3c20542a4dce323e8a1e081c1e14"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnInit()</p>
+<p class="NDLRefMemberDescription">OnInit sets internal pointers to other services and registers for messages. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a6e181325578240f55c85ee940b124748"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnTick()</p>
+<p class="NDLRefMemberDescription">This method will update all dynamic scene graphs currently being managed. </p>
+<p class="NDLRefMemberDetailedDescription">Note, this does not imply the scene graphs are rendered. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a6cec2e65254cd973b69041921904042d"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnShutdown()</p>
+<p class="NDLRefMemberDescription">Shuts down the scene graph service. </p>
+<p class="NDLRefMemberDetailedDescription">All in-memory scene graphs are destroyed. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a43200c61f7128d3d04ff551f338202da"></a>
+<p class="NDLRefMemberFunction">void  ForceMaterialUpdate()</p>
+<p class="NDLRefMemberDescription">Marks all NiRenderObjects associated with the <span class="NDLSystemFont">SceneGraphService</span> to update their material the next time they are rendered. </p>
+<p class="NDLRefMemberDetailedDescription">This forces the material descriptor of <span class="NDLSystemFont"><a href="../NiMain/NiFragmentMaterial.htm">NiFragmentMaterial</a></span> based materials to be recomputed. </p>
+<a name="asset_caching"></a>
+<p class="NDLRefHead1">Asset Caching</p>
+
+<p class="NDLRefMemberDescription">When an asset is cached, this service immediately loads it and will never unload it until it is removed from the cache.</p>
+<p class="NDLRefMemberDescription">When entities with shared scenegraphs request this asset, it will be cloned rather than loaded from disk, which can save having to repeatedly reload assets.</p>
+<p class="NDLRefMemberDescription">Caching is a boolean state, not a reference count. If an asset is repeatedly cached, it will still be uncached during the first RemoveFromCache or RemoveAllFromCache. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a2f7d4baf1050c65b07e35815364d595f"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  Cache(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetID.htm">efd::AssetID</a></span>& assetID, <br/><span class="NDLSystemFont"><a href="../efd/efd__MemObject.htm">SceneGraphCache::ISceneGraphCacheRequestData</a></span>* pRequestData, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> responseCategory, <br/><span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">SceneGraphCache::SceneGraphCacheHandle</a></span>&gt;& handles)</p>
+<p class="NDLRefMemberDescription">Load and cache any assets that match the provided asset ID. </p>
+<p class="NDLRefMemberDetailedDescription">The assets may already be loaded from disk, in which case true is returned and the handles for the asset are returned. Otherwise, the caller must wait for a <span class="NDLSystemFont"><a href="ecr__SceneGraphCacheResponse.htm">SceneGraphCacheResponse</a></span> message on the given category with a list of handles to the cached objects. The identifier in that message will be the urn from the given assetID.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">assetID</span></td>
+    <td>The ID for the asset you wish to cache. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pRequestData</span></td>
+    <td>Data that will be passed back to you in the response to this cache request, if one is sent. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">responseCategory</span></td>
+    <td>The category to send the response on when the recreate is completed. The message will only be sent if this function returns false. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">handles</span></td>
+    <td>A vector of handles to cached scene graphs that will be filled if the assets are already available (only when true is returned by this function). Information about the asset can be obtained by using the handle with functions in the <span class="NDLSystemFont"><a href="ecr__SceneGraphCache.htm">ecr::SceneGraphCache</a></span> returned by GetSceneGraphCache. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True is the assets for the requested ID were already in the cache, or could be cached immediately. False if you must wait on a message indicating the result of the caching operation. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1ac85b2ea616b5d35370d77016f919d93f"></a>
+<p class="NDLRefMemberFunction">void  RemoveAllFromCache()</p>
+<p class="NDLRefMemberDescription">Stop caching all assets. </p>
+
+<a name="classecr_1_1_scene_graph_service_1ae09b3c1deef719f8b68c2168561537f3"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  CacheSceneGraphFileName(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& fileName, <br/><span class="NDLSystemFont"><a href="../efd/efd__MemObject.htm">SceneGraphCache::ISceneGraphCacheRequestData</a></span>* pRequestData, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> responseCategory, <br/><span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">SceneGraphCache::SceneGraphCacheHandle</a></span>&gt;& handles)</p>
+<p class="NDLRefMemberDescription">Manually cache a scene graph file direct from the name, with no associated entity. </p>
+<p class="NDLRefMemberDetailedDescription">This asset will persist (and will be shared by any scene graphs that also use this file) until no other objects are using the cached data and UnCacheHandles is called.</p>
+<p class="NDLRefMemberDetailedDescription">The fileName argument fileName must be an absolute path.</p>
+<p class="NDLRefMemberDetailedDescription">The assets may already be loaded from disk, in which case true is returned and the handles for the asset are returned. Otherwise, the caller must wait for a <span class="NDLSystemFont"><a href="ecr__SceneGraphCacheResponse.htm">SceneGraphCacheResponse</a></span> message on the given category with a list of handles to the cached objects. The identifier in that message will be the given fileName.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">fileName</span></td>
+    <td>File location for the scene graph. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pRequestData</span></td>
+    <td>Data that will be passed back to you in the response to this cache request, if one is sent. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">responseCategory</span></td>
+    <td>The category to send the response on when the recreate is completed. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">handles</span></td>
+    <td>A vector of handles to cached scene graphs that will be filled if the asset is already available (only when true is returned by this function). Information about the asset can be obtained by using the handle with functions in the <span class="NDLSystemFont"><a href="ecr__SceneGraphCache.htm">ecr::SceneGraphCache</a></span> returned by GetSceneGraphCache. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the asset was already in the cache and is immediately available, false otherwise. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1a67c66092644be928e6a9f2499fd97db0"></a>
+<p class="NDLRefMemberFunction">void  UnCacheHandles(<span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">SceneGraphCache::SceneGraphCacheHandle</a></span>&gt;& handles)</p>
+<p class="NDLRefMemberDescription">Un-cache scene graph files direct from the handle that was provided when the scene graph was cached. </p>
+<p class="NDLRefMemberDetailedDescription">This must be called at some point if the asset is ever to leave the cache, but asset will only be removed from the cache when no other objects are using the cached data.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">handles</span></td>
+    <td>The handles for the assets, as returned by CacheSceneGraphFileName or in the response to Cache. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="attachment_management"></a>
+<p class="NDLRefHead1">Attachment Management</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1abbc6eaf7d200b1e76425c063cddc1475"></a>
+<p class="NDLRefMemberFunction">virtual void  CreateAttachedSceneGraphs(<span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity)</p>
+<p class="NDLRefMemberDescription">Create the attached scene graphs for an entity that was not created via entity discovery. </p>
+<p class="NDLRefMemberDetailedDescription">This function is intended for processing the attached scene of an entity that added its primary scene graph via the CreateSceneGraphFilename function (see <span class="NDLSystemFont"><a href="../egmAnimation/egmAnimation__AnimationService.htm">egmAnimation::AnimationService</a></span> for an example). The method looks for the attached objects property on the entity and creates any attached scene graphs.</p>
+<p class="NDLRefMemberDetailedDescription">Once created, the attachments are updated automatically via entity update messages. An alternate to calling this function is to mark the AttachedObjects property as dirty and allow the update method to load the missing attachments. However, the alternate method introduces lag in loading the attached assets. </p>
+
+<a name="classecr_1_1_scene_graph_service_1adff7c32ed46704912fb4df924e747220"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  AttachSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& slotName)</p>
+<p class="NDLRefMemberDescription">Attach one scene graph to another. </p>
+<p class="NDLRefMemberDetailedDescription">One scene graph may be attached to a particular node in another using this function. It is typically invoked during entity discovery when an entity is found with the "AttachedObjects" property and that property is a map of "AttachedNifAsset" type.</p>
+<p class="NDLRefMemberDetailedDescription">The scene graph may not immediately be attached because it may need to be located and loaded. An <span class="NDLSystemFont"><a href="ecr__AttachmentMadeMessage.htm">ecr::AttachmentMadeMessage</a></span> will be sent when the attachment is made.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The entity with the scene graph to which we are attaching. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">slotName</span></td>
+    <td>A name for this attachment location. The name must be one of the key names in the map of attachment points in the "AttachedObjects" property of the entity's model. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the attachment is proceeding. False if a problem is found with the entity or attachment data. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1ac690deb459d29fa07c8aeb7b0e0c8621"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  DetachSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& slotName)</p>
+<p class="NDLRefMemberDescription">Detach any scene graph attached at the named slot. </p>
+<p class="NDLRefMemberDetailedDescription">An <span class="NDLSystemFont"><a href="ecr__AttachmentBrokenMessage.htm">ecr::AttachmentBrokenMessage</a></span> will be sent when the attachment is removed.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The entity with the scene graph to which we are attaching. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">slotName</span></td>
+    <td>A name for this attachment location. The name must be one of the key names in the map of attachment points in the "AttachedObjects" property of the entity's model. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the detachment succeeded. False if a problem is found with the entity or attachment data. True is also returned if there was nothing attached. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1aa816f578cdbe8766f627d33df404b9ff"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>*  GetAttachedSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& slotName) const</p>
+<p class="NDLRefMemberDescription">Return the scene graph attached at the named slot. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The entity with the scene graph that has the attachment </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">slotName</span></td>
+    <td>The name for the attachment location. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The attached scene graph if it exists. NULL if there is none attached, the slot name was invalid, or the attached scene graph is empty. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="entity_scene_graph_functions"></a>
+<p class="NDLRefHead1">Entity Scene Graph Functions</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a2df2671d2dd7081c8568cd162408be3f"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  CreateSceneGraphAssetID(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetID.htm">efd::AssetID</a></span>& assetID, <br/>const <span class="NDLSystemFont">efd::Bool</span> delayInWorld = false, <br/>const <span class="NDLSystemFont">efd::Bool</span> forceSharing = false, <br/>const <span class="NDLSystemFont">efd::Bool</span> updatePose = true)</p>
+<p class="NDLRefMemberDescription">Create a new scene graph for the given entity from the asset with the specified asset ID. </p>
+<p class="NDLRefMemberDetailedDescription">The urn in the asset ID is passed to the Asset Locator Service, if available, for resolution to a file name on disk. The urn is treated as an explicit file name when no asset locator is registered, in which case the function CreateSceneGraphFileName is called by this function.</p>
+<p class="NDLRefMemberDetailedDescription">The scene graph may be loaded asynchronously. The caller of this function should look for an ecr::SceneGraphAdded message, which will be sent when the scene graph is loaded and available. No message will be sent if the scene graph fails to load.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The Entity to which the new scene graph is assigned. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">assetID</span></td>
+    <td>The asset ID for the asset. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">delayInWorld</span></td>
+    <td>When true, the object will not be added to the renderer or updated, regardless of any properties on the entity, and must be explicitly activated for rendering using DisplayEntity. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">forceSharing</span></td>
+    <td>If true, the scene graph will be shared instead of reloaded from disk regardless of whether or not the entity requested sharing. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">updatePose</span></td>
+    <td>When true, the Scene Graph Service will manage pose updates for the entity. When the Placeable model notifies the service of a pose change it is applied to the scene graph. If false, Placeable callbacks will not be applied for this entity. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the scene graph was successfully requested or created, otherwise false. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1a9533736183106baf5e39d7f9c1c71df7"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  CreateSceneGraphFileName(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& fileName, <br/>const <span class="NDLSystemFont">efd::Bool</span> prependDataPath, <br/>const <span class="NDLSystemFont">efd::Bool</span> delayInWorld = false, <br/>const <span class="NDLSystemFont">efd::Bool</span> forceSharing = false, <br/>const <span class="NDLSystemFont">efd::Bool</span> updatePose = true)</p>
+<p class="NDLRefMemberDescription">Create a scene graph direct from the file name. </p>
+<p class="NDLRefMemberDetailedDescription">The scene graph may be loaded asynchronously. The caller of this function should look for an ecr::SceneGraphAdded message, which will be sent when the scene graph is loaded and available. No message will be sent if the scene graph fails to load.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The Entity to which the new scene graph is assigned. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">fileName</span></td>
+    <td>File location for the scene graph. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">prependDataPath</span></td>
+    <td>The file name is used as is if this parameter is false. If true, the path returned by GetDataPath is prepended to the given file name. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">delayInWorld</span></td>
+    <td>When true, the object will not be added to the renderer or updated, regardless of any properties on the entity, and must be explicitly activated for rendering using DisplayEntity. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">forceSharing</span></td>
+    <td>If true, the scene graph will be shared instead of reloaded from disk regardless of whether or not the entity requested sharing. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">updatePose</span></td>
+    <td>When true, the Scene Graph Service will manage pose updates for the entity. When the Placeable model notifies the service of a pose change it is applied to the scene graph. If false, Placeable callbacks will not be applied for this entity. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the asset could be located and requested, otherwise false. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1addffcfd67020e4065822f39ed91b9dc2"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  CreateExternalSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/><span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">NiObjectPtr</a></span>&gt;& objects, <br/>const <span class="NDLSystemFont">efd::Bool</span> callUpdate, <br/>const <span class="NDLSystemFont">efd::Bool</span> delayInWorld = false)</p>
+<p class="NDLRefMemberDescription">Creates a new scene graph entry mapped to the specified entity id. </p>
+<p class="NDLRefMemberDetailedDescription">The Scene Graph Service will manage Add/Remove messaging and rendering of the given objects.</p>
+<p class="NDLRefMemberDetailedDescription">The scene graph added in this way does not have its asset data managed by the service, nor does the service process an property updates. The service only calls <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject::Update</a></span> on the scene graph when the callUpdate parameter is true. It is assumed that the above functionality is provided through another service or mechanism.</p>
+<p class="NDLRefMemberDetailedDescription">An ecr::SceneGraphAdded message is sent when the scene graph is added.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">This method of entity-scenegraph registration is useful for other services that have ownership of the entity, but rely on the scene graph service for managing display of the underlying scene graph data. </p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The Entity to which the scene graph is assigned. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">objects</span></td>
+    <td>List of scene graph objects to map to the specified entity ID. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">callUpdate</span></td>
+    <td>The service will only call <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject::Update</a></span> on the scene graph when this parameter is true. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">delayInWorld</span></td>
+    <td>When true, the object will not be added to the renderer, regardless of any properties on the entity, and must be explicitly activated for rendering using DisplayEntity. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false otherwise.</td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1aef4c1698a82e132e32474fed83142419"></a>
+<p class="NDLRefMemberFunction">virtual void  UpdateDiscoveredEntity(<span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity)</p>
+<p class="NDLRefMemberDescription">Update properties on an entity that has been newly discovered, in case those properties have changed since the entity was created. </p>
+<p class="NDLRefMemberDetailedDescription">This should be called by the Entity Enter World handler of any service that creates scene graphs from entities. Entity Update messages are not sent if properties change between the time the scene graph is created and the time the Entity Enter World is sent out. This method updates all properties that may have changed during this time. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a1fe5f8c24feff19861025341ea256b8a"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  RecreateSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetID.htm">efd::AssetID</a></span>& sceneGraphAssetID)</p>
+<p class="NDLRefMemberDescription">Recreate the scene graph for a given entity from the specified location. </p>
+<p class="NDLRefMemberDetailedDescription">Look for an <span class="NDLSystemFont"><a href="ecr__SceneGraphRemovedMessage.htm">ecr::SceneGraphRemovedMessage</a></span> followed by an <span class="NDLSystemFont"><a href="ecr__SceneGraphAddedMessage.htm">ecr::SceneGraphAddedMessage</a></span> for the entity, on the kCAT_LocalMessage channel. These messages will not be sent when the scene graph in question (the original or the new one) is empty. Applications can rely on only receiving ecr::SceneGraphRemoved messages for scene graphs that also generated ecr::SceneGraphAdded messages.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The Entity to which the new scene graph is assigned. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">sceneGraphAssetID</span></td>
+    <td>Asset location for the scene graph file to load. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the scene graph was successfully recreated, false if it needed to be loaded from disk. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1aba7bc2da88f4be62608a62c141480e88"></a>
+<p class="NDLRefMemberFunction">virtual void  RemoveSceneGraph(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/><span class="NDLSystemFont">efd::Bool</span> forceRemoval = false)</p>
+<p class="NDLRefMemberDescription">Remove all scene graphs for a particular entity. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEntity</span></td>
+    <td>The Entity to remove the scene graph from. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">forceRemoval</span></td>
+    <td>Forces the removal of the entity's scene graph even if the scene graph entity is externally managed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1acdaa024ad23ffd134cc62d128968a5c5"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  ReloadAsset(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& physicalID, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& nifPath)</p>
+<p class="NDLRefMemberDescription">Reload the asset at the specified location. </p>
+<p class="NDLRefMemberDetailedDescription">This function causes all of the entities using this asset to have their scene graph objects refreshed. This function assumes that the given asset location was previously returned by the asset locator or is otherwise the actual location from which to load the asset file.</p>
+<p class="NDLRefMemberDetailedDescription">Look for an <span class="NDLSystemFont"><a href="ecr__SceneGraphRemovedMessage.htm">ecr::SceneGraphRemovedMessage</a></span> followed by an <span class="NDLSystemFont"><a href="ecr__SceneGraphAddedMessage.htm">ecr::SceneGraphAddedMessage</a></span> for each entity or handle that uses the asset, on the kCAT_LocalMessage channel. These messages will not be sent when the scene graph in question (the original or the new one) is empty. Applications can rely on only receiving ecr::SceneGraphRemoved messages for scene graphs that also generated ecr::SceneGraphAdded messages.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">physicalID</span></td>
+    <td>Asset urn. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">nifPath</span></td>
+    <td>Location of the scene graph file to load. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the scene graph was immediately reloaded, otherwise false. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1ab59461c47fb427d9080e4b8dcfe9b921"></a>
+<p class="NDLRefMemberFunction">void  SetDataPath(const char* path)</p>
+<p class="NDLRefMemberDescription">Sets the root path used to load scene graph data. </p>
+<p class="NDLRefMemberDetailedDescription">This method may be called during PreInit.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Only necessary if you will bypass asset manager services. </p></p>
+
+<a name="classecr_1_1_scene_graph_service_1ad54f0e47e076103176ee24fb82dfdee3"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>&  GetDataPath() const</p>
+<p class="NDLRefMemberDescription">Gets the root path used to load scene graph data. </p>
+<p class="NDLRefMemberDetailedDescription">This method may be called during PreInit.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Only necessary if you will bypass asset manager services. </p></p>
+<a name="finding_scene_graphs_and_entities"></a>
+<p class="NDLRefHead1">Finding Scene Graphs and Entities</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1af628627b2939fdce2d9a0747bccba9c9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>*  GetEntityFromSceneGraph(const <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>* pObject) const</p>
+<p class="NDLRefMemberDescription">Search through known scene graphs for the entity that owns the given object as its first object. </p>
+<p class="NDLRefMemberDetailedDescription">This requires iterating, potentially, through all known scene graphs. </p>
+
+<a name="classecr_1_1_scene_graph_service_1aaeacbf8b8b4a3c835008e9f768769636"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>*  GetEntityFromSceneGraphNode(const <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>* pObject) const</p>
+<p class="NDLRefMemberDescription">Search through known scene graphs for the entity that has a primary scene graph that contains the given node. </p>
+<p class="NDLRefMemberDetailedDescription">This requires iterating, potentially, through all known scene graphs. </p>
+
+<a name="classecr_1_1_scene_graph_service_1abd051bebe418bb4c206e8adac76756b3"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>*  GetEntityFromObject(const <span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject</a></span>* pObject) const</p>
+<p class="NDLRefMemberDescription">Search through known scene graphs for the entity that owns the given object as any one of its objects. </p>
+<p class="NDLRefMemberDetailedDescription">This requires iterating, potentially, through all known scene graphs. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a596f60be1dd8b240f7bf2fafb35d4bc7"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>&  GetSceneGraphPathFromEntity(const <span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity) const</p>
+<p class="NDLRefMemberDescription">Returns the scene graph path for the given entity. </p>
+<p class="NDLRefMemberDetailedDescription">Returns the emoty string if the entity is unknown to the service or has no asset. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a7724bbac8e8cfb06501ecf09d0b50384"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>*  GetSceneGraphFromEntity(const <span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity) const</p>
+<p class="NDLRefMemberDescription">Return the first object for an entity, as an <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>. </p>
+<p class="NDLRefMemberDetailedDescription">The first object loaded from a NIF file is traditionally assumed to be a scene graph in Gamebryo. Hence, this function assumes that the first object associated with an entity is the <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span> scene graph. Applications that violate the assumption must take care in using this function.</p>
+<p class="NDLRefMemberDetailedDescription">The function returns NULL when the scene graph for the entity failed to load or otherwise has no objects. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a82cfad72d96a42b87575af173d769742"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetObjectCountFromEntity(const <span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity) const</p>
+<p class="NDLRefMemberDescription">Get the number of objects associated with a given entity. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a7482abfbbc4b5e4ca81cefe0d3cca207"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject</a></span>*  GetObjectFromEntity(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> objectIndex) const</p>
+<p class="NDLRefMemberDescription">Obtain a scene graph object for the given entity. </p>
+<p class="NDLRefMemberDetailedDescription">If the entity is known to the service, the object at the given index is returned. NULL is returned if the entity is unknown or the index is out of range. </p>
+<a name="iterating_over_scene_graphs"></a>
+<p class="NDLRefHead1">Iterating Over Scene Graphs</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a2f626f9354f20a7bfd5efc2292ea5c50"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  ForEachEntitySceneGraph(<span class="NDLSystemFont"><a href="ecr__SceneGraphService__EntitySceneGraphFunctor.htm">EntitySceneGraphFunctor</a></span>& functor)</p>
+<p class="NDLRefMemberDescription">Iterate over all known entities and their scene graph objects. </p>
+<p class="NDLRefMemberDetailedDescription">Returns true if the iteration was terminated early. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a2c77b50d70ef028a8cdd578c6ef719e2"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  ForEachHandleSceneGraph(<span class="NDLSystemFont"><a href="ecr__SceneGraphService__HandleSceneGraphFunctor.htm">HandleSceneGraphFunctor</a></span>& functor)</p>
+<p class="NDLRefMemberDescription">Iterate over all known handles and their scene graph objects. </p>
+<p class="NDLRefMemberDetailedDescription">Returns true if the iteration was terminated early. </p>
+<a name="placeable_property_update"></a>
+<p class="NDLRefHead1">Placeable Property Update</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a8bbf93d7016f9822142985d165465bf0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  EnablePlaceableFeedback(<br/><span class="NDLSystemFont"><a href="../egf/egf__PlaceableModel.htm">egf::PlaceableModel</a></span>* pPlaceable, <br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pSourceEntity, <br/><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>* pSourceNode, <br/><span class="NDLSystemFont"><a href="../egf/egf__IPropertyCallback.htm">egf::IPropertyCallback</a></span>* pIgnoreCallback, <br/><span class="NDLSystemFont">bool</span> ignoreScale = false)</p>
+<p class="NDLRefMemberDescription">Enable Placeable built-in model property updates using the given scene egraph node. </p>
+<p class="NDLRefMemberDetailedDescription">When enabled, the service will set the properties of the given Placeable model with the world transformation of the given scene graph node. Any scene graph node may be given provided that it belongs to a scene graph belonging to an entity that the service knows about. This enables one entity to receive transformation updates for another entity's scene graph.</p>
+<p class="NDLRefMemberDetailedDescription">An entity should only enable Placeable reporting from its own scene graph when the entity has been registered as not requiring pose updates. The service will refuse to enable this Placeable update if the service is actively updating the pose itself.</p>
+<p class="NDLRefMemberDetailedDescription">All Placeable feedback information is destroyed when a NIF file is rapidly iterated or otherwise changed. Placeable feedback for a node that is in an attachment is removed when the attachment is removed. The feedback must be re-enabled with the new scene graph or attachment.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pPlaceable</span></td>
+    <td>The Placeable mdoel to update. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pSourceEntity</span></td>
+    <td>The entity from which the placeable model is to receive feedback. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pSourceNode</span></td>
+    <td>The node from which to pull the world transform. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pIgnoreCallback</span></td>
+    <td>A Placeable model callback to ignore when setting this property. This will typically be the callback for the service that is calling this method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ignoreScale</span></td>
+    <td>Scale is fed back to the Placeable model when this parameter is true; otherwise, scale on the given Placeable is not set. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True on success, or false when the given node is not known to the service or the entity is receiving pose updates via the scene graph service and this request would cause conflicts. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1af79f9982b6a0801f9e7b483e37374a2b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  DisablePlaceableFeedback(<br/><span class="NDLSystemFont"><a href="../egf/egf__PlaceableModel.htm">egf::PlaceableModel</a></span>* pPlaceable, <br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pSourceEntity, <br/><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>* pSourceNode)</p>
+<p class="NDLRefMemberDescription">Disable Placeable model feedback. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false if the Placeable model and node requesting feedback is known to the service. </p>
+<a name="preloading"></a>
+<p class="NDLRefHead1">Preloading</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1aeedc1ea41de3f82005863440ab28f4b5"></a>
+<p class="NDLRefMemberFunction">void  Preload(<br/><span class="NDLSystemFont"><a href="../egf/egf__Entity.htm">egf::Entity</a></span>* pEntity, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& filePath, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>& responseCategory)</p>
+<p class="NDLRefMemberDescription">Preload all assets related to a given entity which uses a scene graph with the given filename. </p>
+<p class="NDLRefMemberDetailedDescription">This function is intended for use by other services that handle models with scene graphs. The path must be an absolute path.</p>
+<p class="NDLRefMemberDetailedDescription">Attached scene graphs are also loaded before the response is sent.</p>
+<p class="NDLRefMemberDetailedDescription">The response category is the category that the EntityPreloadResponse should be sent on. If <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a6da917c147bc983542b35dae5b8513b5">efd::kCAT_INVALID</a></span> no response will be sent. </p>
+<a name="scene_graphs_with_no_entity"></a>
+<p class="NDLRefHead1">Scene Graphs with No Entity</p>
+
+<p class="NDLRefMemberDescription">Scene graphs without associated entities are managed through handles.</p>
+<p class="NDLRefMemberDescription">Operations that create or register a scene graph return a handle, which is subsequently used to locate that scene graph within the service. </p>
+
+<a name="classecr_1_1_scene_graph_service_1aa66332dd2db7b3aa831b9eafa71e57f9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span>  CreateSceneGraphFileName(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& fileName, <br/>const <span class="NDLSystemFont">efd::Bool</span> isDynamic, <br/>const <span class="NDLSystemFont">efd::Bool</span> isRendered, <br/>const <span class="NDLSystemFont">efd::Bool</span> prependDataPath = true)</p>
+<p class="NDLRefMemberDescription">Create a scene graph file direct from the name, with no associated entity. </p>
+<p class="NDLRefMemberDetailedDescription">The fileName argument must be relative to the path that was given to the <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1ab59461c47fb427d9080e4b8dcfe9b921">SetDataPath()</a></span> method.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">fileName</span></td>
+    <td>File location for the scene graph. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">isDynamic</span></td>
+    <td>If true, the scene graph will be updated on each tick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">isRendered</span></td>
+    <td>If true, the object is sent to the <span class="NDLSystemFont"><a href="ecr__RenderService.htm">RenderService</a></span> for rendering. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">prependDataPath</span></td>
+    <td>Determines whether or not the path to the data folder will be prepended to the file name </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>A handle for the scene graph, or <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a7504320a74b979f6cd3d9324c5a41627">SceneGraphService::kInvalidHandle</a></span> if the scene graph needed to be loaded from disk, in which case you should wait for an <span class="NDLSystemFont"><a href="ecr__SceneGraphAddedMessage.htm">ecr::SceneGraphAddedMessage</a></span>. No message will be sent if the scene graph fails to load. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_1_1_scene_graph_service_1af47114c809a0dc3982356dd1c0abf876"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span>  AddSceneGraph(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">NiObjectPtr</a></span>&gt;& objects, <br/>const <span class="NDLSystemFont">efd::Bool</span> isDynamic, <br/>const <span class="NDLSystemFont">efd::Bool</span> isRendered)</p>
+<p class="NDLRefMemberDescription">Add a set of scene graph objects with no entity. </p>
+<p class="NDLRefMemberDetailedDescription">The set of objects is not associated with any asset, and the scene graph objects cannot be shared (although the objects passed in may be clones of other objects). The isDynamic and isRendered flags determine whether the scene graph is to be updated on each tick and rendered on each tick.</p>
+<p class="NDLRefMemberDetailedDescription">A unique handle to this scene graph is returned. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a208b0b6099f25cb1722a7803d183c505"></a>
+<p class="NDLRefMemberFunction">void  RemoveSceneGraph(const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span> handle)</p>
+<p class="NDLRefMemberDescription">Remove all scene graph information for the given handle. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a495cc7b86dbb9f514f2e636ad1b8e951"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>&  GetSceneGraphPathFromHandle(const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span> handle)</p>
+<p class="NDLRefMemberDescription">Returns the <span class="NDLSystemFont">SceneGraphData</span> object. </p>
+<p class="NDLRefMemberDetailedDescription">Returns NULL if the handle is invalid. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a565ceb099c04d12ea863e1f03800cfa6"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>*  GetSceneGraphFromHandle(const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span> handle)</p>
+<p class="NDLRefMemberDescription">Return the first object for a handle, as an <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>. </p>
+<p class="NDLRefMemberDetailedDescription">The first object loaded from a NIF file is traditionally assumed to be a scene graph in Gamebryo. Hence, this function assumes that the first object associated with a handle is the <span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span> scene graph. Applications that violate the assumption must take care in using this function.</p>
+<p class="NDLRefMemberDetailedDescription">Returns NULL if the handle is invalid or the scene graph is empty. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a63d15e61a10326801adcdb67093906df"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetObjectCountFromHandle(const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span> handle)</p>
+<p class="NDLRefMemberDescription">Get the number of objects associated with a given handle. </p>
+
+<a name="classecr_1_1_scene_graph_service_1a0f12a9e242a870503922090a914ff4c0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject</a></span>*  GetObjectFromHandle(<br/>const <span class="NDLSystemFont"><a href="ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a15b7b654f5037dc58de733d1aeb6f97d">SceneGraphHandle</a></span> handle, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> objectIndex)</p>
+<p class="NDLRefMemberDescription">Obtain a scene graph object for a handle. </p>
+<p class="NDLRefMemberDetailedDescription">If the handle is known to the service, the object at the given index is returned. NULL is returned if the handle is unknown. </p>
+<a name="updated_scene_graph_iteration"></a>
+<p class="NDLRefHead1">Updated Scene Graph Iteration</p>
+
+
+<a name="classecr_1_1_scene_graph_service_1a3c0da7d8f221f80f5283a6c20a73204a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  ForEachUpdatedEntity(<span class="NDLSystemFont"><a href="ecr__SceneGraphService__EntitySceneGraphFunctor.htm">EntitySceneGraphFunctor</a></span>& functor)</p>
+<p class="NDLRefMemberDescription">Iterate over all recently updated entities and their scene graph objects. </p>
+<p class="NDLRefMemberDetailedDescription">Returns true if the iteration was terminated early. </p>
+
+<a name="classecr_1_1_scene_graph_service_1ad9bc1ba3a739fd3848748083fd096e5e"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  ForEachUpdatedHandle(<span class="NDLSystemFont"><a href="ecr__SceneGraphService__HandleSceneGraphFunctor.htm">HandleSceneGraphFunctor</a></span>& functor)</p>
+<p class="NDLRefMemberDescription">Iterate over all recently updated handles and their scene graph objects. </p>
+<p class="NDLRefMemberDetailedDescription">Returns true if the iteration was terminated early. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Command Line Parameter Example</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Command Line Parameter Example</h1>
+
+<p>A simple example of command line parsing appears below.</p>
+
+<p>Suppose you have a program for integrating a function <span class="NDLSystemFont">f(x)</span>,
+whose domain is the half-open interval <span class="NDLSystemFont">[a, b)</span>.  The function will be specified as a string
+expression, and the endpoints of the interval will be specified as <span class="NDLSystemFont">float</span>s.  Assume that <span class="NDLSystemFont">0&lt;=a&lt;b&lt;=1</span>.  The application will use Riemann sums to do
+the approximation, so the number of partition points must be specified.  Finally, a <span class="NDLSystemFont">Boolean</span> flag indicates whether
+or not the integration result should be displayed on the screen. The result is
+always written to an output file.</p>
+
+<p>A typical (and correct) command line is:</p>
+
+<p><span class="NDLSystemFont">Integrate display function &quot;sin(x)&quot; a 0.1 b 0.75 partition 10 myresults.txt</span></p>
+
+<p>The processing within a main program, without checking for
+failure of options to appear on the command line, is:</p>
+
+<pre>
+int main(int iArgc, char** ppcArgv)
+{
+NiCommand cmd(iArgc,ppcArgv);
+ 
+float xmin = 0.0f;
+cmd.Min(0).Float("a",xmin);
+ 
+float xmax = 1.0f;
+cmd.Inf(a).Max(1).Float("b",xmax);
+ 
+int points = 1;
+cmd.Integer("partition",points);
+ 
+char function[256];
+cmd.String("function",function);
+ 
+int display = cmd.Boolean("display");
+char filename[256];
+ 
+cmd.Filename(filename);
+if (cmd.ExcessArguments()) { /* do something */ }
+}
+</pre>
+
+<p>Note that the order of processing of arguments does not need
+to be the order in which they are specified on the command line.  Each <span class="NDLSystemFont">'cmd'</span> call returns the index of
+the option within the array <span class="NDLSystemFont">ppcArgv[]</span>. 
+If the option does not appear, then the return value is 0.  Thus, a better choice for processing is:</p>
+
+<pre>
+float xmin = 0.0;
+if (cmd.Min(0).Float("a",xmin))
+{
+// option and argument found, do your stuff.
+}
+else
+{
+char* msg = cmd.GetLastError();
+// msg indicates what problem occurred
+}
+</pre>
+
+<p>If the order of the arguments is important, then the return
+values of the <span class="NDLSystemFont">'cmd'</span>
+calls should be saved and sorted to obtain the information you need.  For example, a command line might have
+options for rotating an object about each of the coordinate axes by specified
+angles.  The order of rotations is
+important, so the order of the command line arguments is important.  The call:</p>
+
+<p><span class="NDLSystemFont">rotate -x 0.5 -y 0.1 inobj.dat outobj.dat</span></p>
+
+<p>produces a different result than:</p>
+
+<p><span class="NDLSystemFont">rotate -y 0.1 -x 0.5 inobj.dat outobj.dat</span></p>
+
+<p>You can process the x option first and the y option second
+as follows.</p>
+
+<pre>
+int main(int iArgc, char** ppCArgv)
+{
+NiCommand cmd(iArgc,ppcArgv);
+double xAngle = 0.0;
+int xIndex = cmd.Double("x",xAngle);
+ 
+double yAngle = 0.0;
+int yIndex = cmd.Double("y",yAngle);
+ 
+char infile[256];
+cmd.Filename(infile);
+ 
+char outfile[256];
+cmd.Filename(outfile);
+ 
+if (xIndex &lt; yIndex)
+{
+// rotate object about x-axis first, y-axis second
+}
+else
+{
+// rotate object about y-axis first, x-axis second
+}
+}
+</pre>
+
+<p>In the <span class="NDLSystemFont">NiApplication's</span> <span class="NDLSystemFont">main</span>, the command line string
+is passed to the <span class="NDLSystemFont">NiApplication</span>
+class and is available for processing anytime during program execution.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

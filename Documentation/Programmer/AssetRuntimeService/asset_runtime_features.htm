@@ -1,0 +1,237 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Asset Infrastructure Features</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Asset Infrastructure Features</h1>
+
+<p>This section describes the major features of the Asset Infrastructure
+and how they are accessed through the API and the various
+configuration files and settings.</p>
+
+<h2>Gamebryo Asset Types</h2>
+
+<p>Gamebryo can utilize many different file types as game assets.
+By default, the Asset Runtime Service recognizes the following
+file types as assets:</p>
+
+<ul>
+    <li>Entity models&mdash;XML model files that are created in
+    the Entity Modeling Tool (EMT) and exported as .flat
+    files</li>
+
+    <li>Entity sets&mdash;XML block files that are created in the
+    World Builder tool and exported as .xblock files</li>
+
+    <li>Game logic scripts&mdash;Scripts for any supported
+    language that are used to implement entity behaviors</li>
+
+    <li>Gamebryo scene graphs&mdash;The .nif files that the
+    Gamebryo art pipeline produces</li>
+
+    <li>Gamebryo animations&mdash;The various animation files
+    (.kfm, .kf, .nif) that the Gamebryo art pipeline
+    produces</li>
+
+    <li>Gamebryo terrain data&mdash;Terrain data and materials
+    that are exported as .dof and .tmpkg files</li>
+    
+    <li>Gamebryo time of day data&mdash;Time of day animation data
+    that are exported as .tod files</li>
+
+    <li>Sounds banks&mdash;Game sounds that are exported to .bnk
+    sound bank files</li>
+
+    <li>Bitmap images&mdash;Various types of bitmaps that can be
+    used in the game</li>
+
+    <li>Many shaders&mdash;Fx, Cg, HLSL, and various other format
+    shader files</li>
+
+    <li>Gamebryo input action maps&mdash; XML files used to define
+    the mappings between input device events and game actions
+    (.actionmap files)</li>
+</ul>
+
+<p>You can extend the Asset Infrastructure to recognize
+additional file types as game assets. This enables you to add new
+asset types quickly and easily. See <a href=
+"asset_runtime_customize_asset_loaders.htm">Adding New Asset Types</a> for details.</p>
+
+<h2>Asset Background Loading</h2>
+
+<p>Almost all asset classe are background loaded by default in the Game Framework.
+See the <a href="asset_load_svcs_overview.htm">Asset Loading Services Overview</a>
+for an introduction.
+</p>
+
+<h2>Gamebryo Asset Organization</h2>
+
+<p>The asset locating services enable you to organize game assets
+into a directory structure that makes sense for your project.
+However, the organization of the files should not be arbitrary or
+improvised. Instead, we recommend that you adhere to a strictly
+consistent process and set of conventions to determine which
+directories are created, their contents, and the naming
+conventions used to identify directories and files. The asset
+locating services adapt to the organizational process and
+conventions that you use.</p>
+
+<h3>Asset Web Root Directory</h3>
+
+<p>The Asset Web Root Directory is the top-level (root) directory
+in which all of your game assets are stored. All assets that the
+game will use must be located somewhere in the hierarchical file
+system below the Asset Web Root. The Configuration Manager (<span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__ConfigManager.htm">efd::ConfigManager</a></span>)
+provides the Asset Web Root Directory configuration value to the
+Asset Location Service as <span class=
+"NDLSystemFont">AssetWeb.Path</span>.</p>
+
+<h2>Asset Tagging</h2>
+
+<p>The asset locating services cannot directly rely on path names
+to locate asset files when they are needed during execution
+because the files may be organized in almost any conceivable way.
+Instead, the services utilize a tagging system that provides a
+layer of organization that is independent from the directory
+hierarchy. All assets that are stored beneath the Asset Web Root
+are tagged so that the services can locate them without additional
+configuration. This tagging information is stored in a
+human-readable text database that is stored in <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-metadata</span>.</p>
+
+<p>An asset tag is simply a text label that is applied to one or
+more assets so that the asset locating services can locate the
+asset(s). Asset tags can be generated automatically by the Asset
+Controller, or they can be created through an external/manual
+process.</p>
+
+<h3>Automatic Tagging</h3>
+
+<p>Automatic tagging occurs when new assets are added to the
+Asset Web Root and the Asset Controller first discovers them. A
+configurable set of policies controls how new assets are
+tagged.</p>
+
+<h3>Automatic Tagging Policies</h3>
+
+<p>The Asset Controller supports a pluggable system for adding
+tagging policies. A C++ interface class (<span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__IAssetTagger.htm">efd::IAssetTagger</a></span>)
+provides the base for the "Auto Tagger" classes, each of which
+applies tags to the asset when it is discovered based upon how
+the class is configured. In general, this functionality is
+customized by editing a set of configuration files. There is one
+configuration file for each Auto Tagger class. These
+configuration files are stored alongside the assets in
+<span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-config</span>
+.</p>
+
+<h3>Logical Assets and Variation</h3>
+
+<p>A <em>logical asset</em> is a single asset in the game that is
+implemented in multiple asset files, where each file provides a
+unique variation. A very common example of this is
+platform-specific graphical assets. Automatic tagging policies
+support the identification of logical assets.</p>
+
+<p>In a typical multi-platform game project, there will be asset
+variations for each platform&mdash;Xbox360, PS3, and PC.
+This represents a single logical asset that is stored as four
+physical asset files, one for each variation. Identification of
+logical assets is done by using conventions for the naming of the
+directories and files where the variation files are stored. This
+policy is expressed through the configuration files that are used
+by the Asset Controller to tag assets as they are discovered.</p>
+
+<h2>Asset Rapid Iteration</h2>
+
+<p>Rapid iteration allows a game to be modified during its
+execution. The Asset Runtime Service provides critical
+functionality for rapid iteration. It does this by managing
+notification messages as the assets that are used in the game are
+modified. The Asset Controller monitors the entire set of assets
+that are stored in the Asset Web Root and provides a channel to
+communicate with the game. As asset files are changed on disk,
+the game can respond to the resulting asset change notifications
+by re-loading those assets, thus making the developer's change
+immediately evident in the game. This allows for far faster
+feedback and iteration of content than is possible with a
+traditional programming cycle that involves restarting the
+application. This can be particularly effective for console
+development.</p>
+
+<p>Rapid iteration works for many types of assets that are used
+in the game. Block and model files, scripts, and serialized scene
+graphs (NIF files) can all be iterated while the game is in
+progress. You can rapidly iterate on the PC development platform
+and on all supported consoles.</p>
+
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">Any assets that are located and loaded as a non-separable
+              part of other files, such as externally referenced textures in NIF files, are not
+              watched for rapid iteration. Rapid iteration on shaders is also unsupported.
+              See the <a href="asset_runtime_limitations.htm"> Asset Runtime Limitations</a>
+              page for a complete list.
+              </div>
+          </td>
+      </tr>
+  </table>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_overview.htm">Asset Infrastructure Overview</a></li>
+
+    <li><a href="asset_runtime_how_work.htm">How the Asset Locating Services Work</a></li>
+
+    <li><a href="asset_runtime_limitations.htm">Asset Runtime
+    Service limitations</a></li>
+
+    <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the Emergent Game Framework</a></li>
+
+    <li><a href="asset_runtime_reqs.htm">Requirements for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_best_practice.htm">Best Practices for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ShadowMap Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>ShadowMap Demo Code Overview</h1>
+
+<p>The following sections detail the low-level code that creates
+the shadow mapping effect. Each important member function is
+described:</p>
+
+<h2>Constructor</h2>
+
+<p>The constructor is similar to most other <span class=
+"NDLSystemFont">NiApplication</span>-based demos. Each component
+gets initialized to a sensible default.</p>
+
+<h2>CreateScene</h2>
+
+<p>The first thing that <span class=
+"NDLSystemFont">CreateScene</span> does is ensure that the
+current hardware is capable of running this sample. It does this
+by checking to see if the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowManager.htm">NiShadowManager</a></span>
+is active and asks the shadow manager if the hardware is capable
+of running the shadowing system. If the hardware is not capable
+of supporting the shadowing system a message box will be
+displayed to inform the user.</p>
+
+<p>This check does not ensure that every <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowTechnique.htm">NiShadowTechnique</a></span>
+is supported by the hardware, instead it simply checks to ensure
+the hardware is capable of supporting SM2.0. Supporting SM2.0 is
+the only directly enforced requirement by the shadowing system.
+If the hardware does not support SM2.0 the shadow manager will
+not be activated. If the hardware does support SM2.0 this still
+does not indicate that every <span class=
+"NDLSystemFont">NiShadowTechnique</span> will work. Each
+<span class="NDLSystemFont">NiShadowTechnique</span> has its own
+set of requirements and if the hardware does not meet the
+requirements for a shadow technique a shadow map will not be
+created for the light that uses that <span class=
+"NDLSystemFont">NiShadowTechnique</span>.</p>
+
+<p>Next, the actual scene construction is ready to start. First a
+new <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiNode.htm">NiNode</a></span> is created
+to hold the various elements of the scene and then the Scene.NIF
+file is loaded. Some scene manipulation takes place to facilitate
+the input-handling code that moves objects around in the scene. A
+pointer to the <span class="NDLSystemFont">NiNode</span> that is
+the parent of the room's camera is saved for later reference, and
+the camera itself is saved in the main <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span> <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiCamera.htm">NiCamera</a></span> smart
+pointer. Then a new <span class="NDLSystemFont">NiNode</span> is
+inserted between the camera and its former parent node. This
+extra node allows the camera to look up and down without
+influencing the translation around the scene, and also provides a
+place for the flashlight geometry to be attached later. The final
+step in this manipulation is to take the camera's transform from
+the parent of the camera's original parent node (which is
+calculated from the local transforms of the camera itself and its
+original parent node). This transform is redistributed in
+components among the camera's original parent node, the camera's
+new parent node, and the camera itself. The original parent gets
+the scale, translation, and the rotation within the horizontal
+place, while the vertical rotation gets put in camera's new
+parent and the camera itself gets an identity transform. The
+function <span class="NDLSystemFont">SeparateUpDownMatrix</span>
+helps with this redistribution.</p>
+
+<p>When this is done, the flashlight geometry is loaded from its
+NIF file and prepared. Next a new node is created so the
+flashlight can have a similar structure to the camera, which
+allows the same input-handling code to manipulate either the
+flashlight or the camera separately. This new structure is then
+added to the scene. Afterwards a new shadow generator is created
+and applied to the flashlight's spotlight. This informs the
+shadowing system that the flashlight's spotlight should cast
+shadows.</p>
+
+<p>The final step in <span class=
+"NDLSystemFont">CreateScene</span> is to iterate through all the
+shadow generator objects in the scene and manually set the near
+and far clipping planes. These are the values that will be used
+when rendering their shadow maps. Since the sample deals with a
+single static scene, valid near and far clipping plane values can
+be pre-determined and used. Using pre-determined values helps to
+improve the precision of the shadow maps. The shadowing system
+can automatically compute valid near and far clipping plane
+values, but these values will not be as tightly fitting as the
+ones that are manually set.</p>
+
+<h2>CreateFrame</h2>
+
+<p>This function sets up the <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">
+render frame</a> for use with the Gamebryo's <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a>. It first calls <span class=
+"NDLSystemFont">CreateFrame</span> of its parent class
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/NiSample.htm">NiSample</a></span> to
+initially setup the main render frame.</p>
+
+<p>Inside of the <span class="NDLSystemFont">CreateFrame</span>
+function for <span class="NDLSystemFont">NiSample</span> a shadow
+<a href="../../Reference/NiMain/NiRenderStep.htm">render step</a>
+is created. The shadow render step then gets the function
+<span class="NDLSystemFont">ShadowRenderStepPre</span> assigned
+as a pre-processing call back function. Since the <span class=
+"NDLSystemFont">ShadowRenderStepPre</span> function is assigned
+as a pre-processing call back function this means that function
+will be called just before the shadow render step is executed.
+The <span class="NDLSystemFont">ShadowRenderStepPre</span>
+function retrieves the set of render click objects need to render
+the shadow maps from the shadow manager and applies those render
+clicks to the shadow render step. When the shadow render step is
+executed the render clicks provided by the shadow manager are
+rendered and the shadows for the scene are updated.</p>
+
+<p>Next, render clicks are created/obtained for screen elements,
+screen textures, and visual trackers. The main scene and
+screen-space elements render clicks are all added to a main
+render step.</p>
+
+<p>The render frame is then created and the shadowing render
+steps are added to it before the main render step. Finally, an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiUserInterface/NiUIManagerRenderClick.htm">NiUIManagerRenderClick</a></span>
+is created and appended in its own render step to the end of the
+render frame. For Win32 builds, an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCursor/NiCursorRenderClick.htm">NiCursorRenderClick</a></span>
+is also appended to the render frame.</p>
+
+<p>Now that the render frame has been created, the multiple
+rendering passes will be completed automatically each frame by
+the frame rendering system.</p>
+
+<h2>CreateCamera</h2>
+
+<p>Since the camera is loaded from the scene in this sample, the
+derived version of <span class=
+"NDLSystemFont">CreateCamera</span> does nothing.</p>
+
+<h2>CreateVisualTrackers</h2>
+
+<p>The <span class="NDLSystemFont">CreateVisualTrackers</span>
+function adds some trackers that measure the time taken to cull
+and render the shadow-map creation pass, and track the number of
+objects visible in that pass.</p>
+
+<h2>Initialize</h2>
+
+<p>The Initialize method first calls Initialize for the parent
+class <span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/NiSample.htm">NiSample</a></span>. Next, a
+PSSM (Parallel Split Shadow Map) Click
+Generator is created. To do this, a <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a></span>
+object is configured and used to create and register a
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a></span>
+object with the shadow manager.  Lastly, shadow map
+pooling is disabled in the shadow manager to reduce GPU memory fragmentation.</p>
+
+<h2>GetPSSMConfig</h2>
+
+<p>This member function returns a <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a></span>
+object pointer from the shadow manager. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a></span>
+object is obtained by iterating through the shadow generators until
+a generator is found that will return a non-null <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a></span>
+object pointer. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a></span>
+object describes the internal state of the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a></span>
+object implementing PSSM. This configuration object is used in
+the demo to manipulate the PSSM exposed features.</p>
+
+<h2>SetPSSMEnabled</h2>
+
+<p>This member function enables or
+disables PSSM. The shadow manager is used to activate either a
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a></span>
+or a <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span>
+object. If a <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a></span>
+object is activated and a pointer to the object can be obtained
+from the shadow manager then the shadow generator of the current
+directional light is set active in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a></span>
+object. After attempting to activate either of the shadow click
+generators, the shadow generators are marked dirty and
+RequestUpdateShadowmapPreview is called to update the preview of
+the shadow map.</p>
+
+<h2>Terminate</h2>
+
+<p><span class="NDLSystemFont">Terminate</span> releases the
+<span class="NDLSystemFont">ShadowMap</span>'s smart pointers.
+All the other smart pointers will be released during <span class=
+"NDLSystemFont">NiApplication</span>'s <span class=
+"NDLSystemFont">Terminate</span> call. It also unregisters the
+reset notification function.</p>
+
+<h2>UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> calls the base
+class and then updates the scene graph.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

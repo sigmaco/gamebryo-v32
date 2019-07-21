@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Type Service Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Type service overview</h1>
+
+<p>The <span class="NDLSystemFont">TypeService</span> is
+responsible for providing plugins with a common way of specifying
+new data types which can be used with entity properties. The
+<span class="NDLSystemFont">TypeService</span> stores all the
+data types, data type restrictions, and data type editors. The
+<span class="NDLSystemFont">TypeService</span> also provides
+access to the descriptors for each of these and provides a method
+for creating the data type editor bound to a specific data
+type.</p>
+
+<h2>Type service</h2>
+
+<p>It may become necessary to create new data types for entity
+properties other than those provided by Toolbench. To facilitate
+this, the <span class="NDLSystemFont">TypeService</span> provides
+extensions for specifying a data type along with the restrictions
+on that data type and the editor used to modify the data (for
+example, a color wheel for a color data type).</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                For a detailed example of adding a custom entity
+                property type, both in Toolbench and the Game
+                Framework, please see <a href=
+                "../Entity_Properties/entity_property_adding.htm">
+                Adding new entity property types</a>.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Data Type</h2>
+
+<p>A data type is composed of the following things:</p>
+
+<ul>
+    <li>A unique name, which is the name that would show up when
+    choosing the type of an entity property.</li>
+
+    <li>An actual type, which is the class that would be
+    instantiated to store the data of the data type.</li>
+
+    <li>An editor. In many cases, a data type can be specified
+    with a text editor, but in some cases (for example, colors,
+    splines) a more complicated editor is necessary.</li>
+
+    <li>An export name, which is the name of the data type when
+    exported to a file.</li>
+
+    <li>Any number of restrictions. These restrictions can
+    confine the range of the data, for instance.</li>
+</ul>
+
+<p>To create a custom data type, you must first create a class
+extending <span class="NDLSystemFont">DataValue</span> which will
+store the data and perform some common operations. Then your
+plugin must create a DataType extension to define the data type.
+For instance, the following extension creates a simple data type
+with no restrictions that uses the default text editor.</p>
+
+<pre>
+&lt;extension point="Emergent.Toolbench.TypeService.DataType"&gt;
+  &lt;datatype name="UInt16" 
+            type="Emergent.Toolbench.TypeService.Types.UInt16"
+            use-text-editor="true"&gt;
+    &lt;restriction&gt;&lt;/restriction&gt;
+  &lt;/datatype&gt;
+&lt;/extension&gt;
+</pre>
+
+<p>When a property of this data type is put on an entity, an
+object of type <span class=
+"NDLSystemFont">Emergent.Toolbench.TypeService.Types.UInt16</span>
+is created to store the data.</p>
+
+<h2>Data Type Restriction</h2>
+
+<p>It is possible to create custom restrictions which can be
+placed on a property. For instance, the user may want a specific
+UInt16 property confined to a range between -100 and 100. For
+this, the <span class="NDLSystemFont">TypeService</span> provides
+the DataTypeRestriction extension-point. This extension-point
+allows you to create extensions that specify a restriction name
+along with a class (which must extend <span class=
+"NDLSystemFont">Restriction</span>) which will be instantiated
+and used to validate a property when the property changes. The
+following is an example range restriction.</p>
+
+<pre>
+&lt;extension point="Emergent.Toolbench.TypeService.DataTypeRestriction"&gt;
+  &lt;restriction name="Range"
+               id="Emergent.Toolbench.TypeService.RangeRestriction"
+               class="Emergent.Toolbench.TypeService.RangeRestriction"&gt;
+  &lt;/restriction&gt;
+&lt;/extension&gt;
+</pre>
+
+<p>This restriction must be specified on the data type that want
+to use it. Modifying the data type example, we get:</p>
+
+<pre>
+&lt;extension point="Emergent.Toolbench.TypeService.DataType"&gt;
+  &lt;datatype name="UInt16" 
+            type="Emergent.Toolbench.TypeService.Types.UInt16"
+            use-text-editor="true"&gt;
+    &lt;restriction&gt;
+        &lt;type id="Emergent.Toolbench.TypeService.RangeRestriction"/&gt;
+    &lt;/restriction&gt;
+  &lt;/datatype&gt;
+&lt;/extension&gt;
+</pre>
+
+<h2>Data Type Editor</h2>
+
+<p>A data type editor allows for more complicated data types to
+be edited within Toolbench. An editor is simply a special
+<span class="NDLSystemFont">UserControl</span>; to create an
+editor you must first create a control that extends <span class=
+"NDLSystemFont">DataTypeEditor</span>. Then, as in the above
+examples, <span class="NDLSystemFont">TypeService</span> provides
+an extension-point to help create an editor, which can then be
+bound to a data type using the "editor" attribute. An example
+extension follows:</p>
+
+<pre>
+&lt;extension point="Emergent.Toolbench.TypeService.DataTypeEditor"&gt;
+  &lt;editor id="Emergent.Toolbench.TypeService.Editors.BooleanEditor"
+          group="TypeService"
+          class="Emergent.Toolbench.TypeService.Editors.BooleanEditor"&gt;
+  &lt;/editor&gt;
+&lt;/extension&gt;
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="efr_extpoint_typeservice_datatype.htm">Developer
+    Guide - DataType extension-point</a></li>
+
+    <li><a href=
+    "efr_extpoint_typeservice_datatypeeditor.htm">Developer Guide
+    - DataTypeEditor extension-point</a></li>
+
+    <li><a href=
+    "efr_extpoint_typeservice_datatyperestriction.htm">Developer
+    Guide - DataTypeRestriction extension-point</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

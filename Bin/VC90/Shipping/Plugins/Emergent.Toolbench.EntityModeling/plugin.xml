@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+  name="Entity Modeling Tool"
+  id="Emergent.Toolbench.EntityModeling"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies"
+  class="Emergent.Toolbench.EntityModeling.Plugin">
+
+  <extension-point id="Emergent.Toolbench.EntityModeling.BehaviorTrait"
+                   schema="Schemas\ExtPoint-BehaviorTrait.xsd"/>
+  <extension-point id="Emergent.Toolbench.EntityModeling.ModelTrait"
+                   schema="Schemas\ExtPoint-ModelTrait.xsd"/>
+  <extension-point id="Emergent.Toolbench.EntityModeling.PropertyTrait"
+                   schema="Schemas\ExtPoint-PropertyTrait.xsd"/>
+
+  <extension-point id="Emergent.Toolbench.EntityModeling.FriendlyTrait"
+                   schema="Schemas\ExtPoint-FriendlyTrait.xsd" />
+
+  <extension point="Emergent.Toolbench.EntityModeling.BehaviorTrait">
+    <behavior-trait name="Extends">
+      <description>The behavior uses the 'extends' invocation policy, in which mixin models are called first.</description>
+    </behavior-trait>
+    <behavior-trait name="ReverseExtends">
+      <description>The behavior uses the 'reverse extends' invocation policy, in which mixin models are called last.</description>
+    </behavior-trait>
+    <behavior-trait name="Private">
+      <description>The behavior can only run on the Master entity.</description>
+    </behavior-trait>
+    <behavior-trait name="ViewOnly">
+      <description>The behavior can only run on a reflected entity.  View behaviors can only write to mutable properties.</description>
+    </behavior-trait>
+    <behavior-trait name="NoBlock">
+      <description>The behavior will never attempt to block.  Any call to a blocking API will fail.</description>
+    </behavior-trait>
+    <behavior-trait name="InWorldOnly">
+      <description>The behavior will only run when the entity is in the world.  Any attempt to run the behavior when the entity is not in the world will fail.</description>
+    </behavior-trait>
+    <!-- Removed for SSO. These may only apply to an LSO game.
+    <behavior-trait name="ServerExecOnly">
+      <description>The behavior is only executed on the server and completely removed on clients.</description>
+    </behavior-trait>
+    <behavior-trait name="ClientExecOnly">
+      <description>The behavior is only executed on clients and completely removed on the server.</description>
+    </behavior-trait>
+    <behavior-trait name="RemotelyVisible">
+      <description>The behavior assumes type 'remote' when on a non-matching program type, such as a ServerExecOnly behavior on a client.</description>
+    </behavior-trait>
+    -->
+    <behavior-trait name="Immediate">
+      <description>The behavior is allowed to be Immediately invoked.  Implies NoBlock.</description>
+    </behavior-trait>
+  </extension>
+
+  <extension point="Emergent.Toolbench.EntityModeling.ModelTrait">
+    <model-trait name="Abstract" tool-time="true">
+      <description>The model cannot be instantiated in a block file.</description>
+    </model-trait>
+    <model-trait name="Active" default-on="true">
+      <description>The model is expected to execute behaviors.</description>
+    </model-trait>
+    <model-trait name="BuiltinModel">
+      <description>The model represents an IBuiltinModel implementation that should be created on the original instance of the entity.</description>
+    </model-trait>
+    <model-trait name="ToolBuiltinModel">
+      <description>The model represents an IBuiltinModel implementation that should be created and used at tool time.</description>
+    </model-trait>
+    <model-trait name="ReplicaBuiltinModel">
+      <description>The model represents an IBuiltinModel implementation that should be created on the replicated instances of this entity.</description>
+    </model-trait>
+    <!-- Removed for SSO. These may only apply to an LSO game.
+    <model-trait name="ServerOnlyBuiltinModel">
+      <description>The model is a built-in on the server and a normal model on clients.  Must be combined with BuiltinModel.</description>
+    </model-trait>
+    <model-trait name="ServerOnlyReplicaBuiltinModel">
+      <description>The model is a built-in for reflected views on the server.  Must be combined with ReplicaBuiltinModel.</description>
+    </model-trait>
+    <model-trait name="ClientOnlyBuiltinModel">
+      <description>The model is a built-in on clients and a normal model on the server.  Must be combined with BuiltinModel.</description>
+    </model-trait>
+    <model-trait name="ClientOnlyReplicaBuiltinModel">
+      <description>The model is a built-in for reflected views on clients.  Must be combined with ReplicaBuiltinModel.</description>
+    </model-trait>
+    -->
+    <model-trait name="Global" tool-time="true">
+      <description>The model may only be instantiated once per block.</description>
+    </model-trait>
+    <model-trait name="PaletteHidden" tool-time="true">
+        <description>The model can be instantiated, but not using the entity model palette.</description>
+    </model-trait>
+  </extension>
+
+  <extension point="Emergent.Toolbench.EntityModeling.PropertyTrait">
+    <property-trait name="Summary" tool-time="true">
+      <description>The property shows up while using the Summary filter in the Entity Editor.</description>
+    </property-trait>
+    <property-trait name="Hidden" tool-time="true">
+      <description>The property is specified on the model but not exposed to the entity editor.</description>
+    </property-trait>
+    <property-trait name="ReadOnly">
+      <description>The property value on entities always matches that of the model or preset and cannot be changed at runtime. Implies the tool time Hidden trait.</description>
+    </property-trait>
+    <property-trait name="Persisted">
+      <description>The property should be persisted when the entity is stored.</description>
+    </property-trait>
+    <property-trait name="Mutable">
+      <description>The property can be written even on replica entities. Changes to a replica entity are local only.</description>
+    </property-trait>
+    <property-trait name="ServerOnly">
+      <description>The property is for use by the server only and is completely stripped from client views.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup00">
+      <description>The property produces updates to replication group 0.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup01">
+      <description>The property produces updates to replication group 1.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup02">
+      <description>The property produces updates to replication group 2.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup03">
+      <description>The property produces updates to replication group 3.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup04">
+      <description>The property produces updates to replication group 4.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup05">
+      <description>The property produces updates to replication group 5.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup06">
+      <description>The property produces updates to replication group 6.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup07">
+      <description>The property produces updates to replication group 7.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup08">
+      <description>The property produces updates to replication group 8.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup09">
+      <description>The property produces updates to replication group 9.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup10">
+      <description>The property produces updates to replication group 10.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup11">
+      <description>The property produces updates to replication group 11.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup12">
+      <description>The property produces updates to replication group 12.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup13">
+      <description>The property produces updates to replication group 13.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup14">
+      <description>The property produces updates to replication group 14.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup15">
+      <description>The property produces updates to replication group 15.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup16">
+      <description>The property produces updates to replication group 16.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup17">
+      <description>The property produces updates to replication group 17.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup18">
+      <description>The property produces updates to replication group 18.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup19">
+      <description>The property produces updates to replication group 19.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup20">
+      <description>The property produces updates to replication group 20.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup21">
+      <description>The property produces updates to replication group 21.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup22">
+      <description>The property produces updates to replication group 22.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup23">
+      <description>The property produces updates to replication group 23.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup24">
+      <description>The property produces updates to replication group 24.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup25">
+      <description>The property produces updates to replication group 25.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup26">
+      <description>The property produces updates to replication group 26.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup27">
+      <description>The property produces updates to replication group 27.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup28">
+      <description>The property produces updates to replication group 28.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup29">
+      <description>The property produces updates to replication group 29.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup30">
+      <description>The property produces updates to replication group 30.</description>
+    </property-trait>
+    <property-trait name="ReplicationGroup31">
+      <description>The property produces updates to replication group 31.</description>
+    </property-trait>
+  </extension>
+    
+  <!-- Friendly names -->
+  <extension point="Emergent.Toolbench.EntityModeling.FriendlyTrait">
+    <friendly-trait trait-name="ReplicationGroup00" trait-group="PropertyTrait" friendly-name="Replication - Global (0)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers.  As a result using this group is fairly expensive as the properties will most likely be replicated to every process.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup01" trait-group="PropertyTrait" friendly-name="Replication - Current Region (1)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers of the same region. A region is assumed to be a fairly large game area so this is also a fairly expensive group to produce into.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup02" trait-group="PropertyTrait" friendly-name="Replication - Current Zone (2)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers of the same zone. A zone is assumed to be a mid-sized area of the game world which would be suitable to produce small infrequent updates into.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup03" trait-group="PropertyTrait" friendly-name="Replication - Current Room (3)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers of the same room. A room is assumed to be a small sized area of the game world which would be suitable to produce small frequent or large infrequent updates into.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup04" trait-group="PropertyTrait" friendly-name="Replication - Visual Near (4)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers within a near distance. Visual information such as position, animation, or sound effects could be produced into this group at a high frequency. Consumers would typically want to consume only one of the Near, Mid and Far groups for the same physical area although they will likely consume many "visual" categories.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup05" trait-group="PropertyTrait" friendly-name="Replication - Visual Mid (5)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers within a mid distance. Visual information such as position, animation, or sound effects could be produced into this group at a moderate frequency. Consumers would typically want to consume only one of the Near, Mid and Far groups for the same physical area although they will likely consume many "visual" categories.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup06" trait-group="PropertyTrait" friendly-name="Replication - Visual Far (6)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by all observers within a far distance. Visual information such as position, animation, or sound effects could be produced into this group at a low frequency. Consumers would typically want to consume only one of the Near, Mid and Far groups for the same physical area although they will likely consume many "visual" categories.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup07" trait-group="PropertyTrait" friendly-name="Replication - Private Player Data (7)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed only by the player who "owns" the entity in question. For example, private information about the player's avatar could be produced into this group.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup08" trait-group="PropertyTrait" friendly-name="Replication - Examination Data (8)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed anyone who is examining the entity. For example, you might produce addition data that is only displayed when the entity is selected or targeted into this group.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup09" trait-group="PropertyTrait" friendly-name="Replication - Group (Party) (9)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by everyone in the same party. This assumes the entity in question is a player controlled avatar. As parties are assumed to be fairly small you could publish relatively detailed information into this group.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup10" trait-group="PropertyTrait" friendly-name="Replication - Group (Guild) (10)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by everyone in the same guild. This assumes the entity in question is a player controlled avatar. As guild are assumed to be potentially large you should not publish too much information into this group.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup11" trait-group="PropertyTrait" friendly-name="Replication - Group (Chat Channel) (11)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by everyone in the same chat channel.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup12" trait-group="PropertyTrait" friendly-name="Replication - Group (Lobby) (12)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by everyone in the same lobby. This could be used to communicate during matchmaking or even to communicate with other players in some area who are looking for a group.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup13" trait-group="PropertyTrait" friendly-name="Replication - Related AI's (13)" priority="200">
+        <friendly-description>The property produces to a replication group that is consumed by other AI entities that share some relationship to the entity. For example, AI entities running on multiple processes might form into an organized group in which case they might need to replicate properties such as internal AI state to one another that otherwise would not be needed.</friendly-description>
+    </friendly-trait>
+
+    <!-- Hiding the following replication groups from the user. To enable, simply override in another plug-in at higher priority.-->
+    <friendly-trait trait-name="ReplicationGroup14" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup15" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup16" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup17" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup18" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup19" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup20" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup21" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup22" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup23" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup24" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup25" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup26" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup27" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup28" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup29" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup30" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+    <friendly-trait trait-name="ReplicationGroup31" trait-group="PropertyTrait" friendly-name="Unused" visible="false" priority="200">
+      <friendly-description>Hiding from user.</friendly-description>
+    </friendly-trait>
+  </extension>
+
+  <!-- Add the content related extensions. -->
+  <extension point="Emergent.Toolbench.ContentService.ContentCategory">
+    <category name="Game Content"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentType">
+    <content-type id="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+                  category="Game Content"
+                  semantic="document/xml"
+                  filter-description="Entity Model Projects"
+                  requires-solution="true"
+                  file-association-allowed="false">
+    </content-type>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentFactory">
+    <document-factory id="Emergent.Toolbench.EntityModeling.ModelingProjectDocumentFactory"
+                      name="Entity Model Project"
+                      description="A project for creating entity model definitions."
+                      content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+                      icon="Icons/model_project.png"
+                      file-extension=".emtproj"
+                      class="Emergent.Toolbench.EntityModeling.ModelingProjectDocumentFactory"
+                      suggest-default-folder="true">
+    </document-factory>
+  </extension>
+
+  <extension point="Emergent.Toolbench.GameSolution.ContentItem">
+    <item id="Emergent.Toolbench.EntityModeling.ProjectItem"
+          name="Entity Modeling Project"
+          content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+          persistence="external"
+          order="10"
+          class="Emergent.Toolbench.EntityModeling.ProjectItem">
+      <child content-type="Emergent.Toolbench.EntityModeling.ReferenceGroupItem" allowed="true"/>
+      <parent content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument" allowed="true"/>
+    </item>
+  </extension>
+
+  <extension point="Emergent.Toolbench.GameSolution.ContentActionMapping">
+    <content-type id="Emergent.Toolbench.EntityModeling.EntityModelingProject">
+      <action id="Emergent.Toolbench.GameSolution.UI.DefaultActivateItemAction" command="activate" />
+      <action id="Emergent.Toolbench.EntityModeling.ExportCurrentFlatAction" />
+      <action id="Emergent.Toolbench.GameSolution.UI.RemoveItemAction" />
+      <action id="Emergent.Toolbench.GameSolution.UI.DeleteItemAction" command="remove"/>
+      <action id="Emergent.Toolbench.GameSolution.UI.RenameItemAction" />
+    </content-type>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Workbench.DynamicContextMenuProvider">
+      <provider name="EntityModelingProjectContextMenuProvider"
+                type="Emergent.Toolbench.GameSolution.GameSolutionItem"
+                key="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+                class="Emergent.Toolbench.EntityModeling.EntityModelingProjectContextMenuProvider"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.GameSolution.ContentItem">
+    <item id="Emergent.Toolbench.EntityModeling.ReferenceGroupItem"
+          name="References"
+          content-type="Emergent.Toolbench.EntityModeling.ReferenceGroupItem"
+          description="Regroups all project references"
+          class="Emergent.Toolbench.EntityModeling.ReferenceGroupItem"
+          persistence="none"
+          classifier="true"
+          uses-file="false"
+          order="-100"
+          icon-collapsed="Icons/folderref.png"
+          icon-expanded="Icons/folderref_open.png">
+      <child content-type="Emergent.Toolbench.EntityModeling.ProjectReferenceItem" allowed="true"/>
+    </item>
+  </extension>
+
+  <extension point="Emergent.Toolbench.GameSolution.ContentItem">
+    <item id="Emergent.Toolbench.EntityModeling.ProjectReferenceItem"
+          name="Project Reference"
+          content-type="Emergent.Toolbench.EntityModeling.ProjectReferenceItem"
+          description="Represents a project used by another project."
+          class="Emergent.Toolbench.GameSolution.ReferenceItem"
+          persistence="none">
+      <child content-type="Emergent.Toolbench.GameSolution.ReferenceItem" allowed="true"/>
+    </item>
+  </extension>
+  <extension point="Emergent.Toolbench.Workbench.DynamicContextMenuProvider">
+    <provider name="ErrorItemContextMenuProvider"
+              type="Emergent.Toolbench.GameSolution.GameSolutionItem"
+              key="Emergent.Toolbench.EntityModeling.ErrorItem"
+              class="Emergent.Toolbench.EntityModeling.UI.ErrorItemContextMenuProvider" />
+  </extension>
+  
+  <extension point="Emergent.Toolbench.ContentService.ContentAspectType">
+    <aspect id="Emergent.Toolbench.EntityModeling.ReferenceOwnerAspect"
+            class="Emergent.Toolbench.EntityModeling.ReferenceOwnerAspect">
+      <supported-content id="Emergent.Toolbench.EntityModeling.EntityModelingProject"/>
+      <supported-content id="Emergent.Toolbench.WorldBuilder.BlockDocument"/>
+      <supported-content id="Emergent.Toolbench.WorldBuilder.LayerDocument"/>
+    </aspect>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentAspectType">
+    <aspect id="Emergent.Toolbench.EntityModeling.ProjectSettingsAspect"
+            class="Emergent.Toolbench.Settings.EmbeddedSettingsAspect">
+      <supported-content id="Emergent.Toolbench.EntityModeling.EntityModelingProject"/>
+    </aspect>
+  </extension>
+
+  <!-- Virtual folder support for models and presets -->
+  <extension point="Emergent.Toolbench.ContentService.ContentAspectType">
+    <aspect id="Emergent.Toolbench.EntityModeling.EntityModelFolderAspect"
+            class="Emergent.Toolbench.EntityModeling.EntityModelFolderAspect">
+      <supported-content id="Emergent.Toolbench.EntityModeling.EntityModelingProject"/>
+    </aspect>
+  </extension>
+
+  <!--Settings-->
+  <!-- ======================================================================================== -->
+  
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.EntityModeling.DefaultBehaviorTarget"
+               path="Entity Modeling"
+               property-type="String"
+               visible="true">
+        <value>Lua</value>
+        <display-name>Default Behavior Target</display-name>
+        <description>Default Target for newly created Entity Model Behaviors.  Valid targets are "Lua", "Python", "C" and "Builtin".</description>
+      </setting>
+
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.EntityModeling.ExportOnSave"
+               path="Entity Modeling"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Export On Save</display-name>
+        <description>Controls whether or not an Entity Model project should automatically export on save.</description>
+      </setting>
+
+      <setting scope="PerContent"
+               content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+               id="Emergent.Toolbench.EntityModeling.FlatModelsOutput"
+               path="Entity Modeling"
+               property-type="String"
+               visible="true">
+        <value>..\Exported</value>
+        <display-name>Flat Models Folder</display-name>
+        <description>Specify the output folder where the flat models are generated. The path is relative to the project location.</description>
+      </setting>
+
+      <setting scope="PerContent"
+               content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+               id="Emergent.Toolbench.EntityModeling.BehaviorScriptsOutput"
+               path="Entity Modeling"
+               property-type="String"
+               visible="true">
+        <value>Behaviors</value>
+        <display-name>Behavior Scripts Folder</display-name>
+        <description>Specify the folder where the behavior scripts are saved. The path is relative to the project location.</description>
+      </setting>
+
+      <setting scope="PerContent"
+         content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+         id="Emergent.Toolbench.EntityModeling.ModelsAndPresetsOutput"
+         path="Entity Modeling"
+         property-type="String"
+         visible="true">
+        <value></value>
+        <display-name>Models/Presets Folder</display-name>
+        <description>Specify the output folder where new models and presets are saved. The path is relative to the project location.</description>
+      </setting>
+
+      <setting scope="PerContent"
+         content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+         id="Emergent.Toolbench.EntityModeling.DiagramsOutput"
+         path="Entity Modeling"
+         property-type="String"
+         visible="true">
+        <value></value>
+        <display-name>Diagrams Folder</display-name>
+        <description>Specify the output folder where new diagrams are saved. The path is relative to the project location.</description>
+      </setting>
+      
+      <setting scope="PerUserPerContent"
+               content-type="Emergent.Toolbench.EntityModeling.EntityModelingProject"
+               id="Emergent.Toolbench.EntityModeling.PreviousSessionActiveContent"
+               path="Entity Modeling"
+               property-type="Guid"
+               visible="false">
+        <value>{00000000-0000-0000-0000-000000000000}</value>
+        <display-name>Previous session active content</display-name>
+        <description>The active content when the previous session ended, so that it can be restored.</description>
+      </setting>
+
+      <setting scope="PerContent"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               id="Emergent.Toolbench.EntityModeling.VersionControlExport"
+               path="Revision Control\Entity Modeling"
+               property-type="Boolean">
+        <value>False</value>
+        <display-name>Version Control Export</display-name>
+        <description>Controls if flat models are version controlled.</description>
+      </setting>
+
+    </settings>
+  </extension>
+
+  <!-- ======================================================================================== -->
+  <!-- Runnable Extensions -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.Runnable">
+    <runnable id="FlatModelExporter"
+              class="Emergent.Toolbench.EntityModeling.FlatModelExporter" />
+  </extension>
+
+  <!-- Data Type Restrictions -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.TypeService.DataTypeRestriction">
+    <restriction name="Model"
+                 id="Emergent.Toolbench.TypeService.ModelRestriction"
+                 class="Emergent.Toolbench.EntityModeling.ModelRestriction">
+    </restriction>
+  </extension>
+
+  <!-- This plugin has unit tests to run. -->
+  <!-- ======================================================================================== -->
+  <extension point="Emergent.Toolbench.TestRunner.Testable"/>
+
+  <requires>
+    <import plugin="Emergent.Toolbench.Assets"/>
+    <import plugin="Emergent.Toolbench.UI.ContentDialogs"/>
+  </requires>
+
+  <runtime>Emergent.Toolbench.EntityModeling.dll</runtime>
+
+</plugin>

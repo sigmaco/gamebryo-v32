@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Initializing NiInput</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Initializing NiInput</h1>
+
+<p><span class="NDLSystemFont">NiInput</span> is a cross-platform
+library, and was written with the goal of having as little
+platform-specific interface code as possible. The result was a
+code base that can be used across all supported platforms with
+the same source <em>except</em> for the initialization of the
+system.</p>
+
+<p>Each platform requires a specific instance of creation
+parameters that are defined in each <span class=
+"NDLSystemFont">Ni&lt;PLATFORM&gt;InputSystem</span> derivations.
+They all implement the same static <span class=
+"NDLSystemFont"><a href=
+"NiInputSystem.htm#NiInputSystem::Create">Create</a></span>
+function so there is no need to alter code to call a
+platform-specific version of the function.</p>
+
+<p>The Win32 platform also requires a <span class=
+"NDLSystemFont">GUID</span> for creating action maps. This is
+supplied via a void* parameter in the <span class=
+"NDLSystemFont"><a href=
+"NiActionMap.htm#NiActionMap%20Constructor">NiActionMap
+constructor</a>. All other platforms can ignore this
+value.</span></p>
+
+<p>The general <span class=
+"NDLSystemFont">NiInputSystem::CreateParams</span> sub-class
+contains the following members which should be initialized:</p>
+<pre>
+// Assuming that pkCreateParams is a platform-specific instance of
+// the CreateParams. This block of code shows the initialization of
+// the common members.
+// Setup the keyboard usage flags
+pkCreateParams-&gt;SetKeyboardUsage(NiInputSystem::FOREGROUND |
+    NiInputSystem::NONEXCLUSIVE);
+// Setup the mouse usage flags
+pkCreateParams-&gt;SetMouseUsage(NiInputSystem::FOREGROUND |
+    NiInputSystem::EXCLUSIVE);
+// Set the game pad count to 4
+pkCreateParams-&gt;SetGamePadCount(4);
+// Set the axis range for game pad analog sticks
+pkCreateParams-&gt;SetAxisRange(-100, +100);
+</pre>
+
+<p>For more information on Win32-specific members of the
+<span class="NDLSystemFont">CreateParams</span> sub-class, please
+refer to the <a href=
+"NiDI8InputSystem.htm#NiDI8InputSystem_The_CreateParams_Sub_Class">
+NiDI8InputSystem</a> documentation.</p>
+
+<p>Once the platform-specific <span class=
+"NDLSystemFont">CreateParams</span> instance is setup, the
+application can create the input system instance via the
+following call:</p>
+<pre>
+// Assuming a pointer to an initialized instance of the CreateParams is
+// contained in pkCreateParams
+NiInputSystemPtr spInputSystem = NiInputSystem::Create(pkCreateParams);
+</pre>
+
+<p>Now, once the system has been initialized, it may take some
+time for the hardware to recognize devices attached. An
+application may take this time to perform other initialization
+tasks, or it can choose to wait for the system to complete the
+task. Once it is ready to verify the input system has completed
+initialization, code similar to the following should be
+executed:</p>
+<pre>
+bool bGotDevices = false;
+while (!bGotDevices)
+{
+    // Check the status of device enumeration. The enumeration
+    // process is kicked off internally just by creating the
+    // system. Applications can not enumerate devices directly.
+    NiInputErr eErr = m_spInputSystem-&gt;CheckEnumerationStatus();
+    switch (eErr)
+    {
+    case NIIERR_ENUM_NOTRUNNING:
+        // This is bad - enumeration should ABSOLUTELY be running
+        // after the system is created. Failed the CreateInputSystem
+        // call.
+        assert(!"EnumerateDevices failed?");
+        return false;
+    case NIIERR_ENUM_FAILED:
+        // Enumeration failed - fail the CreateInputSystem call.
+        assert(!"CheckEnumerationStatus&gt; FAILED!");
+        return false;
+    case NIIERR_ENUM_COMPLETE:
+        // Enumeration completed. Now we can check the attached
+        // devices.
+        bGotDevices = true;
+        break;
+    case NIIERR_ENUM_NOTCOMPLETE:
+    default:
+        // Keep looping...
+        break;
+    }
+}
+</pre>
+
+<p>At this point, enumeration has either failed which means the
+input system creation failed, or we have found devices attached
+to the system. The following code can be used to cycle over the
+found devices. In this case, it logs them out to the debug
+window:</p>
+<pre>
+char acTemp[256];
+NiOutputDebugString("Devices found:\n");
+NiInputDevice::Description* pkNiDesc =
+m_spInputSystem-&gt;GetFirstDeviceDesc();
+while (pkNiDesc)
+{
+    sprintf(acTemp, "    Port %d - %s\n", pkNiDesc-&gt;GetPort(),
+        pkNiDesc-&gt;GetName());
+    NiOutputDebugString(acTemp);
+    pkNiDesc = m_spInputSystem-&gt;GetNextDeviceDesc();
+}
+</pre>
+
+<p>The system is now ready to open any devices found. When a
+'new' device is plugged into a previously empty port, the system
+will return <span class=
+"NDLSystemFont">NIIERR_DEVICECHANGE</span> from the <span class=
+"NDLSystemFont">Update*</span> functions. At this time, an
+application can cycle over the available device descriptions and
+handle the new device as they see fit.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

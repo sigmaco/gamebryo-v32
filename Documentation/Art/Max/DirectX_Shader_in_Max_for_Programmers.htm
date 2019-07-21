@@ -1,0 +1,647 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>DirectX Shader in the Max Plug-in for Programmers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>DirectX Shader in the Max Plug-in for Programmers</h1>
+
+<p>The DirectX Shader is one of the material types available in the Max
+material editor. This material can be used to preview an FX shader in the Max
+viewport as you work and is supported by the Gamebryo Max Plug-in.</p>
+
+<ul>
+    <li><a href="#Intro">Introduction</a></li>
+
+    <li><a href="#Restrictions">Restrictions and Requirements</a></li>
+
+    <li><a href="#KeyDifferences">Key Differences between 3ds Max and
+    Gamebryo</a></li>
+
+    <li><a href="#UsingTextures">Using Textures</a></li>
+
+    <li><a href="#UsingLights">Using Lights</a></li>
+
+    <li><a href="#UsingVertexColors">Using Vertex Colors</a></li>
+
+    <li><a href="#ConvertingGamebryoToMax">Checklist for converting a Gamebryo
+    Shader to a Max Shader</a></li>
+
+    <li><a href="#ConvertingMaxToGamebryo">Checklist for converting a Max
+    Shader to a Gamebryo Shader</a></li>
+
+    <li><a href="#TransformSemantics">Common transform semantics</a></li>
+
+</ul>
+
+<a name="Intro" id="Intro"></a><h2>Introduction</h2>
+
+<p>By using the DirectX Shader material in 3ds Max, you get get viewport
+preview of a selected FX shader including live update of shader parameters.
+This can greatly improve the iteration time for developing shader-driven assets
+because you don't have to wait for an export to preview each parameter change.
+Since the same shader code is being executed in 3ds Max and in Gamebryo, the
+viewport preview is reasonably accurate.</p>
+
+<p>In order for the chosen shader to work, it must be supported by both
+Gamebryo and 3ds Max simultaneously. Information on how to make a shader
+conform to this is described in this document.</p>
+
+<p>Before attempting to make a shader that is compatible with 3ds Max and
+Gamebryo, it is recommended that you are familiar with the FX syntax as well as
+how to integrate FX files with Gamebryo. More information on the FX file syntax
+can be found in the DirectX SDK and information on integrating FX files with
+Gamebryo can be found at <a href=
+"../../Programmer/NiShader/Integrating_D3D_Effect_Files.htm">Integrating D3D FX
+Files</a></p>
+
+<p>For information on how to use the DirectX Shader in Max, see the <a href=
+"DirectX_Shader_in_Max.htm">DirectX Shader in Max</a>
+documentation.</p>
+
+<a name="Restrictions" id="Restrictions"></a><h2>Restrictions and requirements</h2>
+
+<p>The DirectX Shader interface in Max does not have the option of changing
+some settings that would be available in the Gamebryo Shader. When using an
+effect, keep the following restrictions in mind:</p>
+
+<ul>
+    <li>You cannot use a Reflect/Refract map to create a cubemap. If you need
+    to assign a cubemap, you must construct the cubemap as a single DDS file
+    using the DirectX Texture Tool (see DirectX SDK for documentation)</li>
+
+    <li>There is no interface for setting texture transforms</li>
+
+    <li>There is no interface for setting up flipbook textures</li>
+
+    <li>You cannot use texture export custom attributes</li>
+
+    <li>The diffuse, specular, and ambient material colors don't support an
+    alpha component</li>
+
+    <li>Skinning shaders are not supported by 3ds Max</li>
+</ul>
+
+<p>In order to use this feature and have it export correctly into Gamebryo, you
+must conform to many restrictions. The most important thing to remember is that
+the shader you want to use must be supported by both 3ds Max's DirectX Shader
+Material (which has nothing to do with the Gamebryo Max Plug-in) and the
+Gamebryo runtime.</p>
+
+<p>Being supported by the 3ds Max DirectX Shader Material means that it must be
+an FX file that meets certain semantic and annotation requirements discussed
+later in this document. Restrictions on the 3ds Max DirectX Shader Material
+also prevent skinning shaders from being used because 3ds Max does not support
+the necessary semantics.</p>
+
+<p>Being supported by the Gamebryo Runtime means that the shader file must
+exist in your Gamebryo media directory and must contain additional semantics
+and annotations discussed later in this document.</p>
+
+<a name="KeyDifferences" id="KeyDifferences"></a><h2>Key differences between 3ds Max and Gamebryo</h2>
+
+<p>Both 3ds Max and the Gamebryo runtime parse semantics and annotations from
+FX files to determine how to interpret specific parameters. However, 3ds Max
+supports some semantics and annotations that are not supported by Gamebryo and
+vice versa. In order to create a shader that works in both places, you must be
+constrained to only the semantics and annotations that are supported by
+both.</p>
+
+<p>One of the primary differences is an annotation that 3ds Max uses to
+identify an attribute as visible to the artist. All visible attributes are
+required to have the string annotation <span class=
+"NDLSystemFont">UIName</span>. An attribute that is specified without this
+annotation may give a binding warning in 3ds Max.</p>
+
+<p>In order to set the min and max value of a numeric attribute for the artist
+UI, you must use the annotations <span class="NDLSystemFont">UIMin</span> and
+<span class="NDLSystemFont">UIMax</span>.</p>
+
+<p>Gamebryo supports a technique annotation called <span class=
+"NDLSystemFont">UsesNiRenderState</span> which means to set the render states
+defined by that mesh's material properties which is a convenient way of
+ensuring reliable renders. However, this annotation is not supported by 3ds Max
+so it is likely that some render states will be inconsistent unless explicitly
+set by the shader. Because of this, you may need to have the shader explicitly
+set common render states to ensure a consistent preview. Specifically, setting
+the alpha blending, ZMode, and culling states can make a significant
+difference.</p>
+
+<p>3ds Max does not support the <span class=
+"NDLSystemFont">SKINBONEMATRIX3</span> semantic, so skinning shaders cannot
+work in both Gamebryo and 3ds Max.</p>
+
+<p>Gamebryo does not support scripts or rendered textures in custom shaders so
+if you have a shader that depends on this functionality, you will need to
+refactor it.</p>
+
+<p>There are additional differences in the supported semantics for lights and
+vertex colors. These topics are discussed below.</p>
+
+<a name="UsingTextures" id="UsingTextures"></a><h2>Using Textures</h2>
+
+<p>Although texture inputs are specified the same way between 3ds Max and
+Gamebryo, additional steps need to be taken in order to get the exported UV
+data lined up with the assigned map channels.</p>
+
+<p>For each texture that you want a shader to use, you must indicate what UV
+coordinate set and Map Channel it should read its UV data from. This
+association is provided by annotations on the texture attribute that associate
+each UV set with a map channel.</p>
+
+<p>To link a map channel with a UV set, create two integer annotations on the
+texture; <span class="NDLSystemFont">Texcoord</span> and <span class=
+"NDLSystemFont">MapChannel</span>. When both of these annotations are provided,
+3ds Max will generate a UI spinner allowing you to select what Map Channel you
+want the texture to read from. The value assigned to the MapChannel annotation
+is ignored.</p>
+
+<p>Instead of associating these annotations with a specific texture, it is
+possible to specify the mapping using a dummy int attribute instead. When
+specified this way, the attribute must have the <span class=
+"NDLSystemFont">Texcoord</span> semantic. When this is done, the value of the
+attribute is ignored, and only the annotations are considered. This method is
+required to associate vertex colors with UV coordinate data as described later
+in this document.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                UV set indices start at 0 and count up, but Map Channels start
+                at 1 and count up. Using a Map Channel of 0 will refer to 3ds
+                Max's vertex color data As described in the vertex color
+                section of this document.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>A set of semantics can be provided to determine what <span class=
+"NDLSystemFont">NiTexturingProperty</span> Map slot a texture attribute will
+get stored in in the resulting scenegraph. The following semantics are
+supported:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Semantic</th>
+
+            <th>NiTexturingProperty Map slot</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>DiffuseMap</td>
+
+            <td>Base</td>
+        </tr>
+
+        <tr>
+            <td>BumpMap</td>
+
+            <td>Bump</td>
+        </tr>
+
+        <tr>
+            <td>NormalMap</td>
+
+            <td>Normal</td>
+        </tr>
+
+        <tr>
+            <td>LightMap</td>
+
+            <td>Dark</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Although the semantic takes the highest priority when determining what map
+slot to use, if it is absent you can use the <span class=
+"NDLSystemFont">UIName</span> annotation to associate the texture with a
+particular <span class="NDLSystemFont">NiTexturingProperty</span> map slot.
+This will replace the need to provide a string <span class=
+"NDLSystemFont">NTM</span> annotation. The following are acceptable values:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Value in UIName annotation</th>
+
+            <th>NiTexturingProperty Map slot</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>base</td>
+
+            <td>Base</td>
+        </tr>
+
+        <tr>
+            <td>bump</td>
+
+            <td>Bump</td>
+        </tr>
+
+        <tr>
+            <td>normal</td>
+
+            <td>Normal</td>
+        </tr>
+
+        <tr>
+            <td>dark</td>
+
+            <td>Dark</td>
+        </tr>
+
+        <tr>
+            <td>glow</td>
+
+            <td>Glow</td>
+        </tr>
+
+        <tr>
+            <td>gloss</td>
+
+            <td>Gloss</td>
+        </tr>
+
+        <tr>
+            <td>parallax</td>
+
+            <td>Parallax</td>
+        </tr>
+
+        <tr>
+            <td>detail</td>
+
+            <td>Detail</td>
+        </tr>
+
+        <tr>
+            <td>decal*</td>
+
+            <td>Decal</td>
+        </tr>
+
+        <tr>
+            <td>shader*</td>
+
+            <td>Shader</td>
+        </tr>
+    </tbody>
+</table>
+
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">
+                * for decal and shader maps, you may append an integer to the
+                string value in order to specify what index in the array of
+                maps to use. For example, "decal0", "decal1", and "shader0" are
+                valid values for <span class="NDLSystemFont">UIName</span>.
+              </div>
+          </td>
+      </tr>
+  </table>
+
+<p>In addition to specifying <span class="NDLSystemFont">UIName</span>, you may
+still specify the <span class="NDLSystemFont">NTMIndex</span> as a separate
+annotation if it doesn't conflict with an index suffix on the <span class=
+"NDLSystemFont">UIName</span>.</p>
+
+<p>If the <span class="NDLSystemFont">UIName</span> that is provided does not
+match a texture map slot name, the texture will be assigned to the first
+available shader map slot.</p>
+
+<p>Code sample:</p>
+<pre>
+texture NormalTex : NormalMap
+&lt;
+    string UIName = "Normal Map";
+    int Texcoord = 0;
+    int MapChannel = 1;
+&gt;;
+</pre>
+
+<p>For cubemap textures, provide the additional annotation <span class=
+"NDLSystemFont">string Type = "cube"</span></p>
+
+<a name="UsingLights" id="UsingLights"></a><h2>Using Lights</h2>
+
+<p>In order to get light parameters into shader constants, several attributes
+must be associated with the same light. Support having an interface for
+selecting a single light that sets the value of several attributes, you must
+link each attribute associated with a single light object together using
+annotations.</p>
+
+<p>For the attribute that stores the position of a light, add an integer
+annotation called <span class="NDLSystemFont">RefID</span>. The value that you
+assign to this annotation will be used to link other attributes to the same
+light.</p>
+
+<p>For other light attributes, add the integer annotation <span class=
+"NDLSystemFont">LightRef</span> and give it a matching value.</p>
+
+<p>You must provide a semantic for all light attributes. The following
+semantics are supported:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">POSITION</span></li>
+
+    <li><span class="NDLSystemFont">DIRECTION</span></li>
+
+    <li><span class="NDLSystemFont">LIGHTCOLOR</span></li>
+</ul>
+
+<p>One additional required string annotation is <span class=
+"NDLSystemFont">Object</span>. The only values that are supported by both 3ds
+Max and Gamebryo are <span class="NDLSystemFont">PointLight</span> and
+<span class="NDLSystemFont">DirectionalLight</span>.</p>
+
+<p>Code Sample:</p>
+
+<pre>
+float4 LightPosition1 : POSITION
+&lt;
+    string UIName = "Light 1";
+    string Object = "PointLight";
+    string Space = "Model";
+    int refID = 0;
+&gt;;
+
+float4 LightColor1 : LIGHTCOLOR
+&lt;
+    string Object = "PointLight";
+    int LightRef = 0;
+&gt; = {1.0f, 1.0f, 1.0f, 1.0f};
+</pre>
+
+<a name="UsingVertexColors" id="UsingVertexColors"></a><h2>Using Vertex Colors</h2>
+
+<p>3ds Max does not support the <span class="NDLSystemFont">COLOR</span>
+semantic as Gamebryo does so in order to use vertex colors with your shader,
+you must reference vertex colors using different semantics. You do this by
+using the preprocessor conditions.</p>
+
+<p>You can make portions of your code only visible to the 3ds Max FX parser
+usin the statement <span class="NDLSystemFont">#ifdef _3DSMAX_</span>. In order
+to map Max's vertex colors to UV coordinate set 1 and use it in a vertex input
+struct, follow the example of this code:</p>
+
+<pre>
+#ifdef _3DSMAX_
+int texcoord1 : Texcoord
+&lt;
+    int Texcoord = 1;
+    int MapChannel = 0;
+&gt;;
+#endif
+
+// ...
+
+struct VS_IN
+{
+    float4 pos : POSITION0;
+    float3 norm : NORMAL;
+    float2 tex0 : TEXCOORD0;
+#ifdef _3DSMAX_
+    float3 vcol : TEXCOORD1;
+#else
+    float3 vcol : COLOR;
+#endif
+};
+</pre>
+
+<a name="ConvertingGamebryoToMax" id="ConvertingGamebryoToMax"></a><h2>Checklist for converting a Gamebryo Shader to a Max Shader</h2>
+
+<p>When starting with a shader that works in Gamebryo that you want to work in
+the Max viewport, make sure your shader conforms to the following
+restrictions:</p>
+
+<ul>
+    <li>Make sure all visible attributes have the <span class=
+    "NDLSystemFont">UIName</span> annotation</li>
+
+    <li>Replace any <span class="NDLSystemFont">NTM</span> annotations with an
+    appropriately named value in <span class="NDLSystemFont">UIName</span></li>
+
+    <li>Replace any uses of string annotation <span class=
+    "NDLSystemFont">description</span> with <span class=
+    "NDLSystemFont">UIHelp</span></li>
+
+    <li>Replace any uses of numeric annotations <span class=
+    "NDLSystemFont">min</span> or <span class="NDLSystemFont">max</span> with
+    <span class="NDLSystemFont">UIMin</span> and <span class=
+    "NDLSystemFont">UIMax</span> respectively</li>
+
+    <li>If using more than one map channel, add MapChannel and Texcoord
+    annotations as described above</li>
+
+    <li>Modify the semantics used for world, view, or projection matrices to
+    use the semantics that are supported by both 3ds Max and Gamebryo as
+    described below</li>
+
+    <li>For light attributes, replace the <span class=
+    "NDLSystemFont">ObjectIndex</span> annotation with <span class=
+    "NDLSystemFont">RefID</span> for position and <span class=
+    "NDLSystemFont">LightRef</span> for any other attributes</li>
+
+    <li>For cubemap textures specify the annotation <span class=
+    "NDLSystemFont">string Type = "cube"</span></li>
+
+    <li>If using the vertex color semantic, convert to reading vertex colors
+    from Texture coordinates when in Max as described above</li>
+</ul>
+
+<a name="ConvertingMaxToGamebryo" id="ConvertingMaxToGamebryo"></a><h2>Checklist for converting a Max Shader to a Gamebryo Shader</h2>
+
+<p>When starting with a shader that works in 3ds Max's viewport that you want
+to work with Gamebryo, make sure your shader conforms to the following
+restrictions:</p>
+
+<ul>
+    <li>For light attributes, the <span class="NDLSystemFont">Object</span>
+    annotation does not support <span class="NDLSystemFont">TargetLight</span>
+    and <span class="NDLSystemFont">OmniLight</span>; use <span class=
+    "NDLSystemFont">PointLight</span> and <span class=
+    "NDLSystemFont">DirectionalLight</span></li>
+
+    <li>Convert any Pixel Shader 1.1 techniques to 2.0</li>
+
+    <li>Refactor any code as needed if the shader contains scripts</li>
+
+    <li>If necessary, add <span class="NDLSystemFont">NTMIndex</span>
+    annotations to decal or shader textures</li>
+
+    <li>Add the annotations <span class="NDLSystemFont">NBTMethod</span> and
+    <span class="NDLSystemFont">NBTSourceUV</span> to the technique if NBT
+    frames need to be created</li>
+
+    <li>If your shader uses vertex colors, convert them to use the <span class=
+    "NDLSystemFont">COLOR</span> semantic as described above</li>
+
+    <li>Optionally add the <span class="NDLSystemFont">UsesNiRenderState</span>
+    annotation to the technique</li>
+</ul>
+
+<a name="TransformSemantics" id="TransformSemantics"></a><h2>Common Transform Semantics</h2>
+
+<p>Following is a list of matrix semantics that are supported followed by the
+3ds Max equivalent. In order to ensure consistency, always use the semantic
+supported by 3ds Max if possible.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Semantic supported in 3ds Max</th>
+
+            <th>Equivalent semantics in Gamebryo</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>WORLD</td>
+
+            <td>WORLD</td>
+        </tr>
+
+        <tr>
+            <td>WORLDI</td>
+
+            <td>WORLDI, INVWORLD</td>
+        </tr>
+
+        <tr>
+            <td>WORLDIT</td>
+
+            <td>WORLDIT, INVWORLDTRANSPOSE</td>
+        </tr>
+
+        <tr>
+            <td>VIEW</td>
+
+            <td>VIEW</td>
+        </tr>
+
+        <tr>
+            <td>VIEWI</td>
+
+            <td>VIEWI, INVVIEW</td>
+        </tr>
+
+        <tr>
+            <td>VIEWIT</td>
+
+            <td>VIEWIT, INVVIEWTRANSPOSE</td>
+        </tr>
+
+        <tr>
+            <td>PROJECTION</td>
+
+            <td>PROJECTION</td>
+        </tr>
+
+        <tr>
+            <td>PROJECTIONI</td>
+
+            <td>PROJECTIONI, INVPROJECTION</td>
+        </tr>
+
+        <tr>
+            <td>PROJECTIONIT</td>
+
+            <td>PROJECTIONIT, INVPROJECTIONTRANSPOSE</td>
+        </tr>
+
+        <tr>
+            <td>WORLDVIEW</td>
+
+            <td>WORLDVIEW</td>
+        </tr>
+
+        <tr>
+            <td>WORLDVIEWI</td>
+
+            <td>WORLDVIEWI, INVWORLDVIEW</td>
+        </tr>
+
+        <tr>
+            <td>WORLDVIEWPROJ</td>
+
+            <td>WORLDVIEWPROJ, WORLDVIEWPROJECTION</td>
+        </tr>
+
+        <tr>
+            <td>WORLDVIEWPROJI</td>
+
+            <td>WORLDVIEWPROJI, INVWORLDVIEWPROJ, INVWORLDVIEWPROJECTION</td>
+        </tr>
+
+        <tr>
+            <td>WORLDVIEWPROJIT</td>
+
+            <td>WORLDVIEWPROJIT, INVWORLDVIEWPROJTRANSPOSE,
+            INVWORLDVIEWPROJECTIONTRANSPOSE</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="DirectX_Shader_in_Max.htm">DirectX Shader in Max</a></li>
+
+    <li><a href=
+    "../../Programmer/NiShader/Integrating_D3D_Effect_Files.htm">Integrating
+    D3D FX Files</a></li>
+
+    <li><a href=
+    "Introduction_to_Using_Pixel_and_Vertex_Shaders_in_Max.htm">Introduction to
+    Using Pixel and Vertex Shaders in Max</a></li>
+
+    <li><a href="../Other/shaders_intro.htm">Shaders Supplied with
+    Gamebryo</a></li>
+
+    <li><a href="Custom_Shader_Sub_Panel.htm">Custom Shader Sub-panel</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

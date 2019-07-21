@@ -1,0 +1,408 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPSMeshParticleSystem</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiPSMeshParticleSystem</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NiPSMeshParticleSystem.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/class_ni_p_s_mesh_particle_system.gif" alt="Inheritance graph for NiPSMeshParticleSystem"/>
+  <p class="FigureCaption">Inheritance graph for NiPSMeshParticleSystem</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Represents a particle system that uses mesh particles instead of sprite-based particles. </p>
+<p class="NDLNormal">The main purpose of this sub-class of <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span> is to override the rendering and updating functions to deal with mesh particles. It holds a set of master particles, one for each particle generation. A master particle must be set for every generation prior to filling the particle pools, streaming, or cloning.</p>
+<p class="NDLNormal">Each master particle is just a scene graph that in most cases is a single <span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span> object but that could be any arbitrary graph of nodes and mesh objects. Master particles are owned by the <span class="NDLSystemFont">NiPSMeshParticleSystem</span> object, and unexpected behavior may occur if a master particle also exists in the scene graph and is modified there. In general, master particles should be cloned when being added if they also exist in the scene graph so that the particle system has its own copy of each master particle.</p>
+<p class="NDLNormal">When particles are emitted, the master particle of the matching particle generation is cloned, and the instanced particle is placed underneath a container node. Every frame, each particle is updated with its age, allowing time controllers attached in that particle's scene graph to properly animate. The container node is then culled and rendered like any other scene graph.</p>
+<p class="NDLNormal">To mitigate the memory thrashing that may occur when particles are allocated, cloned, and deleted, <span class="NDLSystemFont">NiPSMeshParticleSystem</span> holds pools of deleted mesh particles to be recycled. When a particle is removed from the particle system, it is added into its respective pool. When the system attempts to create a particle, it will first try to get one from the pools. The size of the pools is configurable by the user and is by default set to the maximum number of particles. When a mesh particle system is started for the first time, there may be a performance hit as lots of particles are cloned. To mitigate this problem you can preload the pools in code, or you can specify that the pools be initially filled during PostLinkObject when loading from a NIF (AutoFillPools). </p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+<a name="class_ni_p_s_mesh_particle_system_1ad561c993b9043d0fad0cab9f3e62dc7c"></a>
+<p class=NDLRefHead2>anonymous enum</p>
+
+
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">DEFAULT_POOL_SIZE</span></td>
+    <td>Used to indicate that the maximum number of particles should be used for the pool size. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="class_ni_p_s_mesh_particle_system_1a84502123b1be617caf4249ec623588be"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont">NiPSMeshParticleSystem</span>*  Create(<br/>const <span class="NDLSystemFont">NiUInt32</span> uiMaxNumParticles, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eNormalMethod = ALIGN_LOCAL_FIXED, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kNormalDirection = NiPoint3::UNIT_X, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eUpMethod = ALIGN_LOCAL_VELOCITY, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kUpDirection = NiPoint3::ZERO, <br/>const <span class="NDLSystemFont">bool</span> bHasLivingSpawner = false, <br/>const <span class="NDLSystemFont">bool</span> bHasColors = false, <br/>const <span class="NDLSystemFont">bool</span> bHasRotations = false, <br/>const <span class="NDLSystemFont">bool</span> bWorldSpace = true, <br/>const <span class="NDLSystemFont">bool</span> bDynamicBounds = true, <br/>const <span class="NDLSystemFont">bool</span> bAttachMeshModifiers = true, <br/>const <span class="NDLSystemFont">NiUInt16</span> usNumGenerations = 1, <br/>const <span class="NDLSystemFont">NiUInt32</span> uiPoolSize = DEFAULT_POOL_SIZE, <br/>const <span class="NDLSystemFont">bool</span> bAutoFillPools = false, <br/>const float fScaleAmount = 0.0f, <br/>const float fScaleRest = 1.0f, <br/>const float fScaleLimit = 1e4f)</p>
+<p class="NDLRefMemberDescription">Creates an <span class="NDLSystemFont">NiPSMeshParticleSystem</span> object with the specified parameters. </p>
+<p class="NDLRefMemberDetailedDescription">This function takes care of creating an <span class="NDLSystemFont">NiPSMeshParticleSystem</span> object and attaching an <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> to it.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiMaxNumParticles</span></td>
+    <td>The maximum number of particles allowed by this system. This determines the allocated size of all data arrays and cannot be changed. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eNormalMethod</span></td>
+    <td>The method to use for the normal direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kNormalDirection</span></td>
+    <td>The fixed direction vector to use for the normal direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUpMethod</span></td>
+    <td>The method to use for the "up" direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kUpDirection</span></td>
+    <td>The fixed direction vector to use for the "up" direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasLivingSpawner</span></td>
+    <td>Whether or not living spawner data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasColors</span></td>
+    <td>Whether or not color data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotations</span></td>
+    <td>Whether or not rotation angle, speed, and axis data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bWorldSpace</span></td>
+    <td>Whether or not the particle system will compute its particles in world-space or local-space. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bDynamicBounds</span></td>
+    <td>Whether or not an <span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span> object will be attached to the particle system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bAttachMeshModifiers</span></td>
+    <td>Whether or not the simulator mesh modifier will be attached when it is added. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">usNumGenerations</span></td>
+    <td>The number of generations supported by the particle system. This determines how many master particles must be stored in the system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiPoolSize</span></td>
+    <td>The size to use for the pools of deleted mesh particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bAutoFillPools</span></td>
+    <td>Whether or not the pools of particles are automatically populated during streaming and cloning. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">fScaleAmount</span></td>
+    <td>The amount of scaling increases as the speed increases. If negative, the particle will shrink as the speed increases. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">fScaleRest</span></td>
+    <td>The scale when the speed is zero. This value must not be the same as the limit. If the Scale Amount is positive, this value must be less than the limit. If the Scale Amount is negative, it must be greater than the limit. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">fScaleLimit</span></td>
+    <td>The maximum value for scale (or the minimum if the scale amount is negative). The scale will approach this value as the speed goes to infinity.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The newly created <span class="NDLSystemFont">NiPSMeshParticleSystem</span> object. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_mesh_particle_system_1a476523c5a2e69a41cd26c7a21f09cd06"></a>
+<p class="NDLRefMemberFunction">virtual ~NiPSMeshParticleSystem()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a5b7b8c38c081f6ca86994dc3289a4280"></a>
+<p class="NDLRefMemberFunction">NiPSMeshParticleSystem(<br/><span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span>* pkSimulator, <br/>const <span class="NDLSystemFont">NiUInt32</span> uiMaxNumParticles, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eNormalMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kNormalDirection, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eUpMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kUpDirection, <br/>const <span class="NDLSystemFont">bool</span> bHasLivingSpawner, <br/>const <span class="NDLSystemFont">bool</span> bHasColors, <br/>const <span class="NDLSystemFont">bool</span> bHasRotations, <br/>const <span class="NDLSystemFont">bool</span> bHasRotationAxes, <br/>const <span class="NDLSystemFont">bool</span> bWorldSpace, <br/><span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>* pkBoundUpdater, <br/>const <span class="NDLSystemFont">NiUInt16</span> usNumGenerations, <br/>const <span class="NDLSystemFont">NiUInt32</span> uiPoolSize, <br/>const <span class="NDLSystemFont">bool</span> bAutoFillPools)</p>
+<p class="NDLRefMemberDescription">Protected main constructor. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Instances of this class should be created with the static Create function instead of with this constructor.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkSimulator</span></td>
+    <td>A pointer to the simulator mesh modifier that will be attached to this particle system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiMaxNumParticles</span></td>
+    <td>The maximum number of particles allowed by this system. This determines the allocated size of all data arrays. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">usNumGenerations</span></td>
+    <td>The number of generations supported by the particle system. This determines how many master particles must be stored in the system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eNormalMethod</span></td>
+    <td>The method to use for the normal direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kNormalDirection</span></td>
+    <td>The fixed direction vector to use for the normal direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUpMethod</span></td>
+    <td>The method to use for the "up" direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kUpDirection</span></td>
+    <td>The fixed direction vector to use for the "up" direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasLivingSpawner</span></td>
+    <td>Whether or not living spawner data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasColors</span></td>
+    <td>Whether or not color data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotations</span></td>
+    <td>Whether or not rotation angle and speed data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotationAxes</span></td>
+    <td>Whether or not rotation axis data will be allocated. This value should not be true if bHasRotations is false. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bWorldSpace</span></td>
+    <td>Whether or not the particle system will compute its particles in world-space or local-space. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkBoundUpdater</span></td>
+    <td>A pointer to the bound updater to use with this particle system. This should be NULL if the particle system is to have a static bounding volume. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiPoolSize</span></td>
+    <td>The size to use for the pools of deleted mesh particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bAutoFillPools</span></td>
+    <td>Whether or not the pools of particles are automatically populated during streaming and cloning. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_mesh_particle_system_1aa346ca7c8a70d76e9e9282f8527f133c"></a>
+<p class="NDLRefMemberFunction">NiPSMeshParticleSystem()</p>
+<p class="NDLRefMemberDescription">Protected default constructor for cloning and streaming only. </p>
+<a name="base_class_overrides"></a>
+<p class="NDLRefHead1">Base Class Overrides</p>
+
+
+<a name="class_ni_p_s_mesh_particle_system_1ab83dc6d22611abbb3233739e35c74722"></a>
+<p class="NDLRefMemberFunction">virtual void  ResetParticleSystem(const float fNewLastTime = -NI_INFINITY)</p>
+<p class="NDLRefMemberDescription">Removes all particles from the particle system and resets the last known update time to the given parameter. </p>
+<p class="NDLRefMemberDetailedDescription">In most cases the parameter should be left as the default, which will cause the system to set the last known update time when the system is next updated, to the time of that update. The argument is provided for cases in which the particle system is reset by a time controller, in which case the last update time must be explicitly set so that subsequent controllers see the correct time. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a960233b742938b7a59f380ba21451313"></a>
+<p class="NDLRefMemberFunction">virtual void  PostUpdate(<span class="NDLSystemFont"><a href="../NiMain/NiUpdateProcess.htm">NiUpdateProcess</a></span>& kUpdate)</p>
+<p class="NDLRefMemberDescription">Called during Update after invoking mesh modifiers (but possibly before they have completed). </p>
+<p class="NDLRefMemberDetailedDescription">The function can be overridden in derived classes to perform additional post update operations. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a9fc2aec35292869623fff0b25e537658"></a>
+<p class="NDLRefMemberFunction">virtual void  RemoveParticle(<span class="NDLSystemFont">NiUInt32</span> uiIndexToRemove)</p>
+<p class="NDLRefMemberDescription">Removes the particle at the specified index. </p>
+<p class="NDLRefMemberDetailedDescription">This function copies the particle data from the last valid index in the data arrays to the index of the removed particle to ensure that the data arrays remain packed. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1abba6ed6e725ad7a83c3461462e693be8"></a>
+<p class="NDLRefMemberFunction">virtual void  ResolveAddedParticles(const <span class="NDLSystemFont">bool</span> bUpdateBound)</p>
+<p class="NDLRefMemberFunction"></p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a598c6b50339aeeaa35255528391255ce"></a>
+<p class="NDLRefMemberFunction">virtual void  UpdateWorldData()</p>
+<p class="NDLRefMemberFunction"></p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a19007cb2c9ced698bf5de0eefafce0d4"></a>
+<p class="NDLRefMemberFunction">virtual void  UpdateWorldBound()</p>
+<p class="NDLRefMemberDescription">update the world bounds. </p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="class_ni_p_s_mesh_particle_system_1af656db9df9975603bdb22ce56379d262"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">NiUInt16</span>  GetNumGenerations() const</p>
+<p class="NDLRefMemberDescription">Returns the number of particle generations supported by this particle system. </p>
+<p class="NDLRefMemberDetailedDescription">This determines the number of generations for which there is a distinct mesh. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a48639e71a84788f6e610f1ab01a788ee"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">NiAVObjectPtr</a></span>  SetMasterParticle(<br/><span class="NDLSystemFont">NiUInt16</span> usGeneration, <br/><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>* pkMasterParticle)</p>
+<p class="NDLRefMemberDescription">Sets the master particle for the specified generation. </p>
+<p class="NDLRefMemberDetailedDescription">These master particles are used to fill the particle pools.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">A master particle must be set for every generation prior to filling the pools, streaming, or cloning.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">usGeneration</span></td>
+    <td>The generation at which to set the master particle. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkMasterParticle</span></td>
+    <td>The master particle to set. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The old master particle for the generation, if one had already been set. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_mesh_particle_system_1a7eb1c68c6cf454bf6066f0e07ecc5032"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiAVObject.htm">NiAVObject</a></span>*  GetMasterParticle(<span class="NDLSystemFont">NiUInt16</span> usGeneration) const</p>
+<p class="NDLRefMemberDescription">Gets the master particle for the specified generation. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">usGeneration</span></td>
+    <td>The generation of the desired master particle. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The master particle at the specified generation or NULL if none exists. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_mesh_particle_system_1a9561e30d84788560324e9ecff1bcd471"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetAutoFillPools() const</p>
+<p class="NDLRefMemberDescription">Gets whether or not the pools of particles are automatically populated during streaming and cloning. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a6c7f9fac72242738f88fa75c4a93f291"></a>
+<p class="NDLRefMemberFunction">void  SetAutoFillPools(<span class="NDLSystemFont">bool</span> bAutoFillPools)</p>
+<p class="NDLRefMemberDescription">Sets whether or not the the pools of particles are automatically populated during streaming and cloning. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1ace4d205fa1dfb251e3a0074c708361f7"></a>
+<p class="NDLRefMemberFunction">void  FillPools()</p>
+<p class="NDLRefMemberDescription">Fills up the internal particle pools using the master particles that have been set for this particle system. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">A master particle must be set for every generation prior to calling this function. </p></p>
+<a name="particle_data_accessors"></a>
+<p class="NDLRefHead1">Particle Data Accessors</p>
+
+
+<a name="class_ni_p_s_mesh_particle_system_1a4612468a34da85ef866886a5de97a9ee"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetRotations()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotations. </p>
+<p class="NDLRefMemberDetailedDescription">The columns of the matrices are stored and returned. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a26bd741703f1ca3eb26bd4a221bb9d0b"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetRotations() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotations. </p>
+<p class="NDLRefMemberDetailedDescription">The columns of the matrices are stored and returned. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1aecc791078b04edd995b4952d0bcb2f44"></a>
+<p class="NDLRefMemberFunction">float*  GetScales()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle velocities. </p>
+
+<a name="class_ni_p_s_mesh_particle_system_1a98b4e8c28bdcbe047062bf4a8246650a"></a>
+<p class="NDLRefMemberFunction">const float*  GetScales() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle velocities. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

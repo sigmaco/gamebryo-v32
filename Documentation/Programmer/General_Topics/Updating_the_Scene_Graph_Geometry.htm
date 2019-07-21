@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Updating the Scene Graph Geometry</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Updating the Scene Graph Geometry</h1>
+
+<p>An application may change the local transformations of a node as needed. The
+computation of the world transformation for the node and any transformations of
+descendants of that node are deferred until the application makes a call to an
+update routine.</p>
+
+<p>The update is efficient in that it does a single depth-first traversal of
+the subgraph to compute world transformations and world bounding spheres,
+thereby minimizing the number of nodes visited. While recursing down a path,
+the transformations are updated. Once a node's transformations are updated, the
+recursion continues to each child of the node. After updating the matrices, the
+world bounding spheres are updated on the upward return from the recursive
+calls.</p>
+
+<p>In summary, transformations are updated while recursing down a path, and
+bounding spheres are updated while returning up a path.</p>
+
+<p>Usually most objects in a world are not moving, so the updates are
+restricted to only a few moving objects. To initialize the processing of a
+scene graph, the update routine must be called at least once at the root of the
+graph before an application uses the scene graph. This approach guarantees
+that all the local and world information at the nodes is up-to-date.</p>
+
+<p>During frame-to-frame application runtime, applications must call
+<span class="NDLSystemFont">Update</span> on an object "O" if any of the
+following criteria are met:</p>
+
+<ul>
+    <li>O is attached to or detached from a parent (direct parent only not a
+    "grandparent", and so on)</li>
+
+    <li>O has a new child attached or a current child detached (direct children
+    only not "grandchildren", and so on)</li>
+
+    <li>Any of O's transforms are changed</li>
+</ul>
+
+<p>Note that a call to <span class="NDLSystemFont">Update</span> on the current
+parent or any current ancestor can substitute for a call to <span class=
+"NDLSystemFont">Update</span> on the object itself. For example, if object A
+attaches children B and C, then a call to <span class=
+"NDLSystemFont">A-&gt;Update</span> will suffice. It is not necessary to call
+<span class="NDLSystemFont">Update</span> on all three objects. Applications
+can and should "batch" calls to update in this way.</p>
+
+<p>For example, if an application makes changes to all of the "joint"
+transforms of an articulated character, it should defer calling update until
+all changes are made. It can then call <span class=
+"NDLSystemFont">Update</span> once, at the root node of the character.</p>
+
+<p>However, note that <span class="NDLSystemFont">Update</span> should be
+called as low on the scene graph as possible. Calling <span class=
+"NDLSystemFont">Update</span> on the root of the scene graph every frame when
+only a single leaf has changed is excessive, and will lower performance.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

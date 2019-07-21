@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Gamebryo Update Slowdowns</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Gamebryo Update Slowdowns</h1>
+
+<p>The <span class="NDLSystemFont">Update</span> function 
+ in Gamebryo performs a variety of tasks and is often a source of slowdown 
+ for developers. Understanding what <span class="NDLSystemFont">Update</span> 
+ does can help you optimize around some of the more expensive operations. 
+ This document outlines some of the things you can do to speed up <span 
+ class="NDLSystemFont">Update</span>.</p>
+
+<h2>What does Update do?</h2>
+
+<p>At its core, <span class="NDLSystemFont">Update</span> 
+ prepares the scene graph for rendering. However, <span class="NDLSystemFont">Update</span> 
+ performs several operations during this process such as updating the transforms 
+ on <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ based classes, updating <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> 
+ objects and updating the bounds on objects. Because of this, <span class="NDLSystemFont">Update</span> 
+ can become a very expensive function call and should be used only where 
+ necessary. Listed below are several ways to optimize calls to <span class="NDLSystemFont">Update</span>.</p>
+
+<h3>Don't Call Update</h3>
+
+<p>It doesn't make much sense at first, but the fastest 
+ way to speed up a call to <span class="NDLSystemFont">Update</span> is not 
+ to call it. <span class="NDLSystemFont">Update</span> handles changes to 
+ transforms, bounds, and time controllers. If some subsection of your scene 
+ graph never has any of these changes, consider updating it separately 
+ from the dynamic portion of your scene graph. In general, this means that 
+ scenery in a game that never moves and has no animations can be updated 
+ once and rendered every frame from a new camera angle. Separate your scene 
+ graph into static and dynamic components. Update the static component 
+ once and update the dynamic component as needed.</p>
+
+<h3>Use UpdateSelected</h3>
+
+<p><span class="NDLSystemFont"><a href="UpdateSelected_Overview.htm">UpdateSelected</a></span> 
+ is a variant on <span class="NDLSystemFont">Update</span> that tries to 
+ avoid expensive calculations when they are unnecessary. For example, <span 
+ class="NDLSystemFont"><a href="UpdateSelected_Overview.htm">UpdateSelected</a></span> 
+ may skip the work of updating transforms if there are no <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> 
+ objects attached that could change the transform. Assets exported from 
+ the art plugins should already be configured for use with <span class="NDLSystemFont"><a 
+ href="UpdateSelected_Overview.htm">UpdateSelected</a></span>. 
+ In general, using <span class="NDLSystemFont"><a href="UpdateSelected_Overview.htm">UpdateSelected</a></span> 
+ will give some but not all of the benefits of segmenting a scene graph 
+ into components and updating only the dynamic components as suggested 
+ in the "Don't Call Update" section. It is also important to 
+ note that if every <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ in a hierarchy is animated such as a character with skeletal animation, 
+ <span class="NDLSystemFont"><a href="UpdateSelected_Overview.htm">UpdateSelected</a></span> 
+ can sometimes actually be more expensive than Update since it must perform 
+ branching operations based off of the data for each object.</p>
+
+<h3>Simplify the Scene Graph Hierarchy</h3>
+
+<p>Every node inserted into the scene graph costs some 
+ CPU time to update. Removing unnecessary nodes can increase the speed 
+ of <span class="NDLSystemFont">Update</span> operations. By default, the 
+ <a href="../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">optimization 
+ plugin</a> tries to do this coming out of the art packages. If there are 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ objects in a scene graph that only serve to hold a name and a single child, 
+ they can easily be removed by pushing the name and the transform down 
+ to that child.</p>
+
+<h3>Use Linear Animation Keys</h3>
+
+<p>There are several types of animation keys in the Gamebryo 
+ animation system, but linear keys are the simplest to interpolate between 
+ and take the least amount of CPU time. If possible, consider exporting 
+ art with linear keys to increase performance. </p>
+
+<h3>Use Fewer Bones</h3>
+
+<p>Characters with skeletal animation often represent the 
+ most expensive portion of a scene graph because each <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ represents a bone that has to be animated and then updated correctly. 
+ Consider reducing the number of bones in a character either permanently 
+ in the art package or dynamically using the Bone LOD system. The Bone 
+ LOD system allows you to turn off animation of subtrees which will decrease 
+ the amount of time needed in Update. Bone LOD is further discussed in 
+ the NiAnimation documents for <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiSkinningLODController.htm">NiSkinningLODController</a></span> 
+ and documents for the <a href="../../Art/Max/BoneLOD.htm">3ds 
+ max</a> and <a href="../../Art/Maya/Bone_LOD_.htm">Maya</a> 
+ plugins. </p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

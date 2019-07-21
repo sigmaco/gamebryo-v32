@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Animation Blending Guidelines</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Animation Blending Guidelines</h1>
+
+<p>There are several guidelines and pitfalls to watch out 
+ for when designing sequences to be blended together. The following rules 
+ and their discussion should help prevent some of these common and sometimes 
+ unintuitive pitfalls.</p>
+
+<h4>Rule #1: Blending affects the amplitude of an animation, 
+ not its frequency</h4>
+
+<p>Let's take two sequences as an example. The first sequence 
+ is of a ball moving forward over time as if it was just pushed. The second 
+ sequence is of the ball not moving. When blending the two sequences together, 
+ as the influence of the stationary ball is increased, the ball still moves 
+ forward but at smaller increments. The timing, or frequency, of the forward 
+ movement does not change. Only the distance traveled, or amplitude, changes 
+ in this case. Please see Rule 3 to see how to affect the frequency of 
+ the animation.</p>
+
+<h4>Rule #2: Blending only interpolates between sequences</h4>
+
+<p>Take the look up, down, left, and right sequences described 
+ in the introduction. It is intuitive that combining up, down, left, and 
+ right will not allow the actor to look backwards. However, it is less 
+ intuitive that just using up, down, left, and right will not allow the 
+ actor to look at a target on a rafter directly above the actor, yet slightly 
+ to the left. The reason why this pose is impossible is because the sequence 
+ group containing up, down, left, and right essentially defines a cone 
+ directly in front of the actor. The target position in this case is outside 
+ of the cone and therefore unreachable by the blending operation within 
+ the sequence group. In order to achieve this final target position, an 
+ additional sequence would need to be added to the sequence group, looking 
+ all the way above the actor and to the left. Alternatively, the application 
+ could move the actor backwards so that the position is within the target 
+ cone.</p>
+
+<h4>Rule #3: Blending often requires additional information 
+ about sequences</h4>
+
+<p>Let's take a common example, transitioning from a walk 
+ to a run. In each of these sequences, the right and left feet of the character 
+ will likely hit the ground at different times, since the run sequence 
+ has a faster pace than the walk sequence. The two sequences may also have 
+ different time ranges. A simple cross fade transition between the sequences 
+ produces an odd result: the character appears to be moving forward by 
+ shuffling his feet. This is because the foot plants are in a different 
+ order or the times at which they occur in the sequences do not match. 
+ To transition between these two sequences effectively, the time ranges 
+ must be synchronized. Annotating the sequences so that it is clear when 
+ the left foot and right foot are planted in each allows the animation 
+ system to synchronize the two sequences. Essentially, time will be warped 
+ so that the foot plants occur at the same time in both sequences.</p>
+
+<h4>Rule #4: Blending involves normalized weights on each 
+ animated attribute</h4>
+
+<p>Different sequences affect different parts of the scene 
+ graph. Depending on which sequences are currently activated, some scene 
+ objects may be affected by many sequences while others are affected by 
+ only one sequence. For example, let's take two sequences. One sequence 
+ is a full body walk cycle. This walk cycle affects every scene object 
+ in the scene graph. The second sequence is a wave sequence. It only affects 
+ scene objects below the left shoulder in the scene graph. Blending both 
+ with a weight of 1.0 each produces an animation where the walk cycle is 
+ completely in effect everywhere except below the left shoulder in the 
+ scene graph. Only at this point in the hierarchy is blending actually 
+ occurring. Each scene object below the left shoulder takes the weight 
+ of each sequence affecting it and normalizes its result on the final value. 
+ In this case, the normalized weights end up being 0.5 walk and 0.5 wave 
+ for the scene objects in common. In the scene objects where only walk 
+ is active, the normalized weight is 1.0 walk. Now, let's try blending 
+ the two sequences at 0.5 each. Nothing changes! Because the final weight 
+ on each scene object is normalized to a total of 1.0, the final weights 
+ are exactly the same as the previous example.</p>
+
+<h4>Rule #5: Blending always uses Forward Kinematics</h4>
+
+<p>There are two main methods available to most animators 
+ in art packages, forward kinematics and inverse kinematics. Forward kinematics, 
+ or FK, is the traditional process of &quot;tweening&quot; between two 
+ key frames. Inverse Kinematics, or IK, attempts to resolve the transforms 
+ necessary for a link in the hierarchy to reach a goal position. Animators 
+ used to IK animation may enforce relationships such as two hands being 
+ firmly attached to a staff. When blending in the animation system, only 
+ FK is performed between the sequences. If the artist specified their animations 
+ in IK, these animations are baked into keyframes for FK upon export from 
+ their art tool. When blending the previously mentioned two-handed staff 
+ sequence with an idle animation, it is entirely possible that the IK hand 
+ placement will not be observed. When this occurs, it may be necessary 
+ to add additional sequences to the blend to help smooth out these inconsistencies.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

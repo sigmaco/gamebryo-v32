@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiSmallObjectAllocator</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiSmallObjectAllocator</p>
+
+<p class="NDLRefParentage">&lt;NiSmallObjectAllocator.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>A platform-independent class designed to support pooling of small allocations. This allocator is
+based on the SmallObjectAlloctor described by Alexei Alexandrescu in Modern C++ Design. The latest
+code for Loki (the codebase containing the SmallObjectAllocator) can be found at <a href=
+"http://sourceforge.net/projects/loki-lib/" target=
+"_blank">http://sourceforge.net/projects/loki-lib/</a>. The licensing information for this class
+can be found in the <a href="../../GetStart/All/Third_Party_Code.htm">Third Party Code</a> section
+of the documentation. Please see the <a href="NiSmallObjectAllocator.htm#Notes">notes</a> below for
+more information about the functionality of this class. Also of importance is the fact that
+allocation thread safety responsibility is passed onto the <a href=
+"NiSmallObjectAllocator.htm#NiFixedAllocator"><span class=
+"NDLSystemFont">NiFixedAllocator</span></a> objects.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiSmallObjectAllocator(size_t stChunkSize = DEFAULT_CHUNK_SIZE)</p>
+
+<p class="NDLRefMemberDescription">Creates an <span class=
+"NDLSystemFont">NiSmallObjectAllocator</span> object with a set of pools up to <span class=
+"NDLSystemFont">MAX_SMALL_OBJECT_SIZE</span>. Each pool, once it receives a request for memory for
+the first time, will allocate space for 256 entries or however many entries can fit into
+<span class="NDLSystemFont">DEFAULT_CHUNK_SIZE</span>, whichever is lesser.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void* Allocate(size_t stNumBytes)</p>
+
+<p class="NDLRefMemberDescription">This method will allocate the appropriately sized piece of
+memory from its internal pool of fixed-size pools.</p>
+
+<p class="NDLRefMemberFunction">void Deallocate(void* p, size_t stSize)</p>
+
+<p class="NDLRefMemberDescription">This method will return the piece of memory to its internal pool
+of fixed-size pools.</p>
+
+<a name="Notes" id="Notes"></a><p class="NDLRefHead1">Notes</p>
+
+<a name="Size" id="Size"></a><p class="NDLRefHead2">Size</p>
+
+<p>All sizes from 1 to <span class="NDLSystemFont">MAX_SMALL_OBJECT_SIZE</span> will receive their
+own internal allocation pool. This will help conserve memory, since this is a small object
+allocator. The current track of Alexandrescu's code enforces alignment restrictions that bloat the
+size for small object allocations. Please see the <a href=
+"NiSmallObjectAllocator.htm#Alignment">alignment</a> notes below for more justification for this
+design decision.</p>
+
+<p>Also note that the size of an allocation must be known at deallocation time. Absence of this
+knowledge will currently make it impossible to delete the allocation. Please see "Modern C++
+Design" by Andrei Alexandrescu for strategies that allow the deallocator to know how large the
+allocation was without storing a size per instance.</p>
+
+<a name="Alignment" id="Alignment"></a><p class="NDLRefHead2">Alignment</p>
+
+<p>The allocations for a given size are only guaranteed to be aligned if the size of the request
+itself is aligned. For instance, all 8-byte allocations will be aligned to at least an 4 byte
+boundary, since the beginning of a pool is aligned to <span class="NDLSystemFont"><a href=
+"NiMemoryDefines.htm#Preprocessor_Definitions">NI_MEM_ALIGNMENT_DEFAULT</a></span>. However, 7 byte
+allocations are not guaranteed to be aligned. This works in practice for classes since the class
+size will be a multiple of the largest alignment requirement for the members of the class.</p>
+
+<p class="NDLRefHead1">Utility Classes</p>
+
+<p>The following classes are used by <span class="NDLSystemFont">NiSmallObjectAllocator</span>
+internally for allocation management.</p>
+
+<a name="NiFixedAllocator" id="NiFixedAllocator"></a><p class="NDLRefHead2">NiFixedAllocator</p>
+
+<p>This class allocates memory of a particular size from an internal pool of memory chunks. When no
+more chunks have open slots, a new <a href="NiSmallObjectAllocator.htm#Chunk"><span class=
+"NDLSystemFont">Chunk</span></a> will be allocated. Note that each <span class=
+"NDLSystemFont">NiFixedAllocator</span> has a critical section that manages its various chunks.
+This can improve memory performance in a multi-threaded environment.</p>
+
+<p class="NDLRefMemberFunction">NiFixedAllocator()</p>
+
+<p class="NDLRefMemberDescription">Creates an <span class="NDLSystemFont">NiFixedAllocator</span>
+that is uninitialized.</p>
+
+<p class="NDLRefMemberFunction">void Init(size_t stBlockSize)</p>
+
+<p class="NDLRefMemberDescription">Create a <span class="NDLSystemFont">NiFixedAllocator</span>
+able to manage blocks of <span class="NDLSystemFont">'stBlockSize'</span> size</p>
+
+<p class="NDLRefMemberFunction">void* Allocate()</p>
+
+<p class="NDLRefMemberDescription">Allocate a memory block of the fixed size supported by this
+instance of <span class="NDLSystemFont">NiFixedAllocator</span>. If no current <a href=
+"NiSmallObjectAllocator.htm#Chunk"><span class="NDLSystemFont">Chunk</span></a>s are available to
+service a request, a new <a href="NiSmallObjectAllocator.htm#Chunk"><span class=
+"NDLSystemFont">Chunk</span></a> is created.</p>
+
+<p class="NDLRefMemberFunction">void Deallocate(void* p)</p>
+
+<p class="NDLRefMemberDescription">Deallocate a piece of memory previously allocated with
+<span class="NDLSystemFont">Allocate</span>. If the allocation was not made with <span class=
+"NDLSystemFont">Allocate</span> for this <span class="NDLSystemFont">NiFixedAllocator</span>, the
+behavior is undefined.</p>
+
+<p class="NDLRefMemberFunction">size_t BlockSize() const</p>
+
+<p class="NDLRefMemberDescription">Returns the block size with which the <span class=
+"NDLSystemFont">NiFixedAllocator</span> was initialized</p>
+
+<p class="NDLRefMemberFunction">bool operator&lt;(size_t rhs) const</p>
+
+<p class="NDLRefMemberDescription">Comparison operator for sorting.</p>
+
+<p class="NDLRefMemberFunction">size_t GetNumChunks() const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of chunks allocated.</p>
+
+<a name="Chunk" id="Chunk"></a><p class="NDLRefHead2">Chunk</p>
+
+<p>This struct is used by <a href="NiSmallObjectAllocator.htm#NiFixedAllocator"><span class=
+"NDLSystemFont">NiFixedAllocator</span></a> objects to pre-allocate several instances of a single
+element size. It stores the pointer to the beginning of the memory block in <span class=
+"NDLSystemFont">m_pucData</span>. The first free slot in the list is stored in <span class=
+"NDLSystemFont">m_ucFirstAvailableBlock</span>. The number of free slots is stored in <span class=
+"NDLSystemFont">m_ucBlocksAvailable</span>.</p>
+
+<p class="NDLRefMemberFunction">void Init(size_t stBlockSize, unsigned char ucBlocks)</p>
+
+<p class="NDLRefMemberDescription">Allocate a piece of memory large enough to hold <span class=
+"NDLSystemFont">ucBlocks</span> slots of size <span class="NDLSystemFont">stBlockSize.</span></p>
+
+<p class="NDLRefMemberFunction">void* Allocate(size_t stBlockSize)</p>
+
+<p class="NDLRefMemberDescription">Allocate a piece of data of the appropriate size from the
+<span class="NDLSystemFont">Chunk</span>.</p>
+
+<p class="NDLRefMemberFunction">void Deallocate(void* p, size_t stBlockSize)</p>
+
+<p class="NDLRefMemberDescription">Return a piece of memory to the current <span class=
+"NDLSystemFont">Chunk</span>'s free pool.</p>
+
+<p class="NDLRefMemberFunction">void Reset(size_t stBlockSize, unsigned char ucBlocks)</p>
+
+<p class="NDLRefMemberDescription">Reset the <span class="NDLSystemFont">Chunk</span> to its
+initial state of having all blocks free.</p>
+
+<p class="NDLRefMemberFunction">void Release()</p>
+
+<p class="NDLRefMemberDescription">Free all memory associated with this <span class=
+"NDLSystemFont">Chunk</span>.</p>
+
+<p class="NDLRefMemberFunction">bool HasAvailable(unsigned char ucNumBlocks) const</p>
+
+<p class="NDLRefMemberDescription">Returns whether or not there are exactly <span class=
+"NDLSystemFont">ucNumBlocks</span> slots available.</p>
+
+<p class="NDLRefMemberFunction">bool HasBlock(unsigned char * p, size_t stChunkLength) const</p>
+
+<p class="NDLRefMemberDescription">Tests whether the block contains the memory block of size
+<span class="NDLSystemFont">stChunkLength</span> pointed to by <span class=
+"NDLSystemFont">p</span>.</p>
+
+<p class="NDLRefMemberFunction">bool IsFilled( void ) const</p>
+
+<p class="NDLRefMemberDescription">Returns whether or not all the slots are currently used.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

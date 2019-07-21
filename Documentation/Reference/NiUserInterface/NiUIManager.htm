@@ -1,0 +1,319 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiUIManager</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiUIManager</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiUIManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiUIManager</span> is a singleton class which manages all input
+sampling, manages locks on UI resources, etc. None of the UI elements will initialize properly
+until after the <span class="NDLSystemFont">NiUIManager</span> singleton has been initialized.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>Although there are no public constructors for <span class="NDLSystemFont">NiUIManager</span>,
+the following functions are provided to create, initialize, retrieve and destroy the singleton.</p>
+
+<p class="NDLRefMemberFunction">static void Create()</p>
+
+<p class="NDLRefMemberFunction">static void Shutdown()</p>
+
+<p class="NDLRefMemberFunction">static NiUIManager* GetUIManager()</p>
+
+<p class="NDLRefMemberDescription">These functions manage the singleton pointer. Local pointers
+which hold the address returned from <span class="NDLSystemFont">GetUIManager</span> should be
+considered temporary since <span class="NDLSystemFont">Shutdown</span> explicitly deletes the
+pointer. A <span class="NDLSystemFont">NiUIManager</span> may not be created before the
+<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span>
+has been initialized.</p>
+
+<p class="NDLRefMemberFunction">bool Initialize(<span class="NDLSystemFont"><a href=
+"../../Reference/NiInput/NiInputSystem.htm">NiInputSystem</a></span>* pkInputSystem, const char*
+pcAtlasFilename, <a href="../../Reference/NiCursor/NiCursor.htm">NiCursor</a>* pkCursor)</p>
+
+<p class="NDLRefMemberDescription">This must be called before any other UI elements are
+instantiated. If no cursor is desired for the application, set <span class=
+"NDLSystemFont">pkCursor</span> to NULL. All other input must contain valid values. The
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiInput/NiInputSystem.htm">NiInputSystem</a></span> must be in immediate mode, and
+the atlas must be completely valid at the specified filename or else this function fails. For each
+frame, the application should update the <span class="NDLSystemFont"><a href=
+"../../Reference/NiInput/NiInputSystem.htm">NiInputSystem</a></span> object outside of the
+NiUIManager.</p>
+
+<p class="NDLRefHead1">Supported Enumerations</p>
+
+<p class="NDLRefMemberFunction">NiUIManager::ButtonState</p>
+
+<p class="NDLRefMemberDescription">This enumeration set serves to communicate the current state of
+any reserved buttons/keys. This is the value placed in the <span class="NDLSystemFont">unsigned
+char</span> which all hotkey slots must receive. The <span class="NDLSystemFont">unsigned
+char</span> passed in to the reserve/release functions also use this values to state which signals
+are requested.</p><!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+
+                <th>Value</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>ISPRESSED</td>
+
+                <td>0x01</td>
+
+                <td>This state continues across all frames including and between a button being
+                pressed and released.</td>
+            </tr>
+
+            <tr>
+                <td>WASPRESSED</td>
+
+                <td>0x02</td>
+
+                <td>This state is set in the frame immediately after the button was initially
+                pressed.</td>
+            </tr>
+
+            <tr>
+                <td>WASRELEASED</td>
+
+                <td>0x04</td>
+
+                <td>This state is set in the frame immediate after the button was released.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void PrepareRenderer()</p>
+
+<p class="NDLRefMemberDescription">This function must be called after all UI elements have been
+created, added to <span class="NDLSystemFont"><a href="NiUIGroup.htm">NiUIGroups</a></span> or
+<span class="NDLSystemFont"><a href="NiUIRenderGroup.htm">NiUIRenderGroups</a></span> and all
+hotkey bindings initialized. Any UI elements created after this function is called may not render
+properly.</p>
+
+<p class="NDLRefMemberFunction">void UpdateUI()</p>
+
+<p class="NDLRefMemberDescription">This function should be called once per frame, preferably before
+the draw call so that all recent input will display in this frame.</p>
+
+<p class="NDLRefMemberFunction">void Draw(<a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>* pkRenderer)</p>
+
+<p class="NDLRefMemberDescription">This function must be called once per frame or no UI elements
+will be drawn. This function then tells all <span class="NDLSystemFont"><a href=
+"NiUIRenderGroup.htm">NiUIRenderGroups</a></span> (and derived classes) to draw.</p>
+
+<p class="NDLRefMemberFunction">void SetVisible(bool bVisible)</p>
+
+<p class="NDLRefMemberDescription">Sets whether or not the UI is visible.</p>
+
+<p class="NDLRefMemberFunction">bool IsVisible()</p>
+
+<p class="NDLRefMemberDescription">Returns true if the UI is visible.</p>
+
+<p class="NDLRefMemberFunction">bool ReserveMouse(<a href=
+"NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt; &amp;kLeftMouseSlot)</p>
+
+<p class="NDLRefMemberFunction">void UnreserveMouse(<a href=
+"NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt; &amp;kLeftMouseSlot)</p>
+
+<p class="NDLRefMemberFunction">bool ReserveMouseButton(<a href=
+"../../Reference/NiInput/NiInputDevice__Button.htm">NiInputMouse::Button</a> eHotkey, <a href=
+"NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, unsigned char ucButtonState,
+<a href=
+"../../Reference/NiInput/NiInputMouse.htm#NiInputMouse::Modifiers">NiInputMouse::Modifiers</a>
+eModifier = NiInputMouse::MMOD_NONE)</p>
+
+<p class="NDLRefMemberFunction">void UnreserveMouseButton(<a href=
+"../../Reference/NiInput/NiInputDevice__Button.htm">NiInputMouse::Button</a> eHotkey, <a href=
+"NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, <a href=
+"../../Reference/NiInput/NiInputMouse.htm#NiInputMouse::Modifiers">NiInputMouse::Modifiers</a>
+eModifier = NiInputMouse::MMOD_NONE)</p>
+
+<p class="NDLRefMemberFunction">bool ReserveGamePadButton(<a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::Button">NiInputGamePad::Button</a>
+eHotkey, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, unsigned
+char ucButtonState, <a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::ButtonMask">NiInputGamePad::ButtonMask</a>
+eModifier = NiInputGamePad::NIGP_MASK_NONE)</p>
+
+<p class="NDLRefMemberFunction">void UnreserveGamePadButton(<a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::Button">NiInputGamePad::Button</a>
+eHotkey, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, <a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::ButtonMask">NiInputGamePad::ButtonMask</a>
+eModifier = NiInputGamePad::NIGP_MASK_NONE)</p>
+
+<p class="NDLRefMemberFunction">bool ReserveGamePadAxis(<a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::DefaultAxis">NiInputGamePad::DefaultAxis</a>
+eAxis, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot)</p>
+
+<p class="NDLRefMemberFunction">void UnreserveGamePadAxis(<a href=
+"../../Reference/NiInput/NiInputGamePad.htm#NiInputGamePad::DefaultAxis">NiInputGamePad::DefaultAxis</a>
+eAxis, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot)</p>
+
+<p class="NDLRefMemberFunction">bool ReserveKeyboardButton(<a href=
+"../../Reference/NiInput/NiInputKeyboard.htm#NiInputKeyboard::KeyCode">NiInputKeyboard::KeyCode</a>
+eHotkey, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, unsigned
+char ucButtonState, <a href=
+"../../Reference/NiInput/NiInputKeyboard.htm#NiInputKeyboard::Modifiers">NiInputKeyboard::Modifiers</a>
+eModifier = NiInputKeyboard::KMOD_NONE)</p>
+
+<p class="NDLRefMemberFunction">void UnreserveKeyboardButton(<a href=
+"../../Reference/NiInput/NiInputKeyboard.htm#NiInputKeyboard::KeyCode">NiInputKeyboard::KeyCode</a>
+eHotkey, <a href="NiUIBaseSlot.htm">NiUIBaseSlot1</a>&lt;unsigned char&gt;&amp; kSlot, <a href=
+"../../Reference/NiInput/NiInputKeyboard.htm#NiInputKeyboard::Modifiers">NiInputKeyboard::Modifiers</a>
+eModifier = NiInputKeyboard::KMOD_NONE)</p>
+
+<p class="NDLRefMemberDescription">The above functions will reserve/unreserve a specified input
+resource. Note that in the case of axes, the input slot never receives a signal, but is used as a
+key in identifying who can release a reserved axis. Also note that buttons/keys are considered
+separate resources from modifiers + buttons/keys. Therefore, one can reserve CTRL+KEY_1 while KEY_1
+may be already bound elsewhere. The reserve functions return false if the desired resource is
+already reserved or is unavailable.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiInput/NiInputKeyboard.htm">NiInputKeyboard</a>* GetKeyboard()</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiInput/NiInputMouse.htm">NiInputMouse</a>* GetMouse()</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiInput/NiInputSystem.htm">NiInputSystem</a>* GetInputSystem()</p>
+
+<p class="NDLRefMemberDescription">These functions allow any element to obtain these resources for
+sampling. While this completely circumvents the reserve/release system set up with the functions
+above, it is recommended that these functions only be used to sample resources already reserved
+(such as a GamePad axis)</p>
+
+<p class="NDLRefMemberFunction">bool KeyboardExists()</p>
+
+<p class="NDLRefMemberFunction">bool MouseExists()</p>
+
+<p class="NDLRefMemberFunction">bool GamepadExists()</p>
+
+<p class="NDLRefMemberDescription">These functions may be used to determine if an attempt to
+reserve a resource failed because the specific resource is already reserved or if they device does
+not exist.</p>
+
+<p class="NDLRefMemberFunction">const <a href="NiUIAtlasMap.htm">NiUIAtlasMap</a>*
+GetAtlasMap()</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiFont/NiFont.htm">NiFont</a>*
+GetFont()</p>
+
+<p class="NDLRefMemberDescription">These functions allow all UI elements access to the "look and
+feel" definitions of the UI system. The <a href="../../Reference/NiFont/NiFont.htm"><span class=
+"NDLSystemFont">NiFont</span></a> returned from <span class="NDLSystemFont">GetFont</span> is that
+specified by the atlas for the current resolution.</p>
+
+<p class="NDLRefMemberFunction">float GetMaxCharWidthInNSC() const</p>
+
+<p class="NDLRefMemberFunction">float GetMaxCharHeightInNSC() const</p>
+
+<p class="NDLRefMemberDescription">These functions return the maximum width and height of the
+current font in normalized screen coordinates.</p>
+
+<p class="NDLRefMemberFunction">void AddUIGroup(<a href="NiUIGroup.htm">NiUIGroup</a>*
+pkUIGroup)</p>
+
+<p class="NDLRefMemberFunction">void RemoveUIGroup(<a href="NiUIGroup.htm">NiUIGroup</a>*
+pkUIGroup)</p>
+
+<p class="NDLRefMemberDescription">These functions add/remove a UI group to the focus and mouse I/O
+events.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiUIGroup.htm">NiUIGroup</a>* GetUIGroupAt(unsigned int
+ui) const</p>
+
+<p class="NDLRefMemberDescription">Get a specific UI group owned by the manager.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetUIGroupCount() const</p>
+
+<p class="NDLRefMemberDescription">Get the total number of UI groups owned by the manager.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSeletedUIGroup() const</p>
+
+<p class="NDLRefMemberFunction">NiUIGroup* SetSelectedUIGroup(unsigned int ui)</p>
+
+<p class="NDLRefMemberDescription">Get and set the currently active UI group. Note that this will
+be immediately overridden if the mouse is over another group. Get will return UINT_MAX if there is
+no currently selected group.</p>
+
+<p class="NDLRefMemberFunction">void RegisterUIRenderGroup(<a href=
+"NiUIRenderGroup.htm">NiUIRenderGroup</a>* pkRenderGroup)</p>
+
+<p class="NDLRefMemberDescription">This function is called by all <span class=
+"NDLSystemFont"><a href="NiUIRenderGroup.htm">NiUIRenderGroup</a></span>s on construction.</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiCursor/NiCursor.htm">NiCursor</a>*
+GetCursor()</p>
+
+<p class="NDLRefMemberDescription">This function returns the value input to the <span class=
+"NDLSystemFont">NiUIManager</span> when initialized.</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiMain/NiRect.htm">NiRect</a>&lt;float&gt;
+ConvertNSCToNDC(const <a href="../../Reference/NiMain/NiRect.htm">NiRect</a>&lt;float&gt;&amp;
+kNSCRect)</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiMain/NiRect.htm">NiRect</a>&lt;unsigned
+int&gt; ConvertNSCToPixels(const <a href=
+"../../Reference/NiMain/NiRect.htm">NiRect</a>&lt;float&gt;&amp; kNSCRect)</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiMain/NiPoint2.htm">NiPoint2</a>
+ConvertPixelDimensionsToNSCDimensions(unsigned int uiWidth, unsigned int uiHeight)</p>
+
+<p class="NDLRefMemberFunction"><a href="../../Reference/NiMain/NiPoint2.htm">NiPoint2</a>
+ConvertNDCDimensionsToNSCDimensions(float fWidth, float fHeight)</p>
+
+<p class="NDLRefMemberDescription">These functions are provided in order to simplify safe zone
+rendering of the UI elements. See the <a href="Safe_Zone_Rendering_in_the_UI.htm">discussion</a>
+for further details.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiD3DShader</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiD3DShader</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiD3DShaderInterface.htm">NiD3DShaderInterface</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiD3DShader.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiD3DShader</span> implements an
+<span class="NDLSystemFont"><a href=
+"NiD3DShaderInterface.htm">NiD3DShaderInterface</a></span> with
+some added members that aid in creating and using a shader in the
+rendering pipeline. These members include an array of
+<span class="NDLSystemFont"><a href=
+"NiD3DPass.htm">NiD3DPass</a></span> instances, 'global' render
+state settings, and pixel and vertex shader constant mappings
+which may also be considered 'global' to the complete rendering
+effect. Finally, there is a Boolean flag that indicates whether
+the <span class="NDLSystemFont"><a href=
+"NiDX9RenderState.htm">NiDX9RenderState</a>::UpdateRenderState</span>
+function should be called to apply any <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiProperty.htm">NiProperty</a></span>
+instances attached to the object.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiD3DShader()</p>
+
+<p class="NDLRefMemberDescription">The constructor for the class
+initializes the member functions to appropriate states, and
+allocates two passes in the pass array.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction"><span style=
+"color: #000000;">virtual bool IsInitialized()</span></p>
+
+<p class="NDLRefMemberDescription">Returns the Boolean flag,
+<span class="NDLSystemFont">m_bInitialized</span>, which
+indicates if the shader has had its <span class=
+"NDLSystemFont">Initialize</span> function called.</p>
+
+<p class="NDLRefMemberFunction">virtual bool Initialize()</p>
+
+<p class="NDLRefMemberDescription">This function is provided to
+allow a derived shader the chance to perform any additional
+initialization required prior to its first use. The function is
+called by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiMaterial.htm">NiMaterial</a></span>
+prior to using the shader for an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a></span>
+instance.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+RenderMeshes(<a href=
+"../NiMain/NiVisibleArray.htm">NiVisibleArray</a>*
+pkVisibleArray)</p>
+
+<p class="NDLRefMemberDescription">Renders a list of meshes in a
+visible array using this shader. It can be assumed that the
+shader of the active material for each mesh is the same as
+<span class="NDLSystemFont">this</span>. </p>
+
+<p class="NDLRefMemberDescription">The default implementation of
+this method on each platform is what is responsible for calling
+the other shader rendering methods (<span class=
+"NDLSystemFont">PreProcessPipeline</span>, <span class=
+"NDLSystemFont">UpdatePipeline</span>, and so on).</p>
+
+<p class="NDLRefMemberDescription">By overriding this method, it
+is possible to create an optimized rendering path for a specific
+shader or shader+geometry combination which doesn't do any work
+which isn't necessary for that particular combination.</p>
+
+<p class="NDLRefMemberDescription">Note: The implementation of this
+method is also responsible for completing any mesh modifiers that
+have work to do in the render phase.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PreProcessPipeline(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">If the shader has not been
+initialized, this function will return <span class=
+"NDLSystemFont">-1</span>, indicating the situation. If the
+<span class="NDLSystemFont">m_bUsesNIRenderState</span> flag is
+<span class="NDLSystemFont">true</span>, <span class=
+"NDLSystemFont"><a href=
+"NiDX9RenderState.htm">NiDX9RenderState</a></span><span class=
+"NDLSystemFont">::UpdateRenderState</span> is called with the
+supplied <span class="NDLSystemFont">pkState</span>. If the
+<span class="NDLSystemFont">m_bUsesNILightState</span> flag is
+<span class="NDLSystemFont">true</span>, <span class=
+"NDLSystemFont"><a href=
+"NiDX9LightManager.htm">NiD3DLightManager</a>::SetState</span> is
+called with the supplied <span class=
+"NDLSystemFont">pkEffects</span>. If any 'global' rendering
+states are present, ie <span class=
+"NDLSystemFont">m_pkRenderStateGroup</span> is not <span class=
+"NDLSystemFont">NULL</span>, then <span class=
+"NDLSystemFont"><a href=
+"NiD3DRenderStateGroup.htm">NiD3DRenderStateGroup</a>::SetRenderStates</span>
+is called to configure the device with them.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+UpdatePipeline(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">This implementation of the
+function simply returns 0, as it assumes that any preparation of
+the pipeline occurred during initialization.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+FirstPass()</p>
+
+<p class="NDLRefMemberDescription">Sets the <span class=
+"NDLSystemFont">m_uiCurrentPass</span> member to 0, and sets the
+<span class="NDLSystemFont">m_spCurrentPass</span> pointer to the
+first pass in the <span class="NDLSystemFont">m_kPasses</span>
+array. Returns <span class="NDLSystemFont">m_uiPassCount</span>,
+which is the total number of passes required for the effect.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupRenderingPass(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">Simply calls <span class=
+"NDLSystemFont"><a href=
+"NiD3DPass.htm">NiD3DPass</a>::SetupRenderingPass</span> on the
+<span class="NDLSystemFont">m_spCurrentPass</span> pointer,
+returning the result.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupTransformations(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">If the object being rendered
+has partitions, and this is the first pass, then <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiD3DRenderer</a>::CalculateBoneMatrices</span>
+is called to have the bones matrices setup for the object. On
+both the first and subsequent passes, the bone count is then set
+with the bones per vertex used for the object, and the
+transformations are set via a call to <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiD3DRenderer</a>::SetSkinnedModelTransforms</span>.
+If the object does not have partitions, and this is the first
+pass, then the bone count is set to 0 and <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiD3DRenderer</a>::SetModelTransform</span>
+is called.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupShaderPrograms(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">This function is responsible
+for setting up the shader programs required for the pass. This is
+accomplished via a call to <span class="NDLSystemFont"><a href=
+"NiD3DPass.htm">NiD3DPass</a>::SetupShaderPrograms</span> on the
+current pass pointer. If this is the first pass, then the
+'global' shader constants are set. This must be done after the
+shader programs have been set, as some hardware does not allow
+for setting constants if a valid shader handle has not been set.
+IT IS IMPORTANT TO NOTE THAT THE GLOBAL SETTINGS OVERRIDE THOSE
+OF THE INDIVIDUAL PASSES.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PreRenderSubmesh(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">This function sets the
+appropriate index and vertex stream sources and frequencies from
+the mesh data stored in <span class=
+"NDLSystemFont">kRCC</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PostRenderSubmesh(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">This function resets stream
+source frequencies if needed.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+NextPass()</p>
+
+<p class="NDLRefMemberDescription">Calls <span class=
+"NDLSystemFont">PostProcessRenderingPass</span> on the current
+pass, then increments the <span class=
+"NDLSystemFont">m_uiCurrentPass</span> member. If the current
+pass is then equal to the <span class=
+"NDLSystemFont">m_uiPassCount</span>, the function will return 0
+to indicate to the renderer that all passes have been completed.
+Otherwise, the <span class="NDLSystemFont">m_spCurrentPass</span>
+pointer is set to the correct pass (the next one to be rendered),
+and the function returns (<span class=
+"NDLSystemFont">m_uiPassCount m_uiCurrentPass</span>), the
+remaining passes in the effect.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PostProcessPipeline(<a href=
+"../../Reference/NiMain/NiRenderCallContext.htm">NiRenderCallContext</a>&amp;
+kRCC)</p>
+
+<p class="NDLRefMemberDescription">If the shader contained
+'global' render states, indicated by a non-NULL <span class=
+"NDLSystemFont">m_pkRenderStateGroup</span>, then <span class=
+"NDLSystemFont"><a href=
+"NiD3DRenderStateGroup.htm">NiD3DRenderStateGroup</a>::RestoreRenderStates</span>
+is called to pop any saved states back to their original
+value.</p>
+
+<p class="NDLRefMemberFunction">virtual void ResetPasses()</p>
+
+<p class="NDLRefMemberDescription">Clears the array of passes;
+sets the current pass to empty; sets the pass count to 0.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"../../Reference/NiMain/NiVertexDeclarationCache.htm">NiVertexDeclarationCache</a>
+SetupGeometry(<a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a>*
+pkGeometry, <a href=
+"../../Reference/NiMain/NiMaterialInstance.htm">NiMaterialInstance</a>*
+pkMaterialInstance)</p>
+
+<p class="NDLRefMemberDescription">This function is called by the
+system whenever a shader is attached to a piece of geometry. It
+allows for verification of the geometry as well as performing any
+special processing the geometry may need to be usable with the
+shader.</p>
+
+<p class="NDLRefMemberFunction">void ResetSCMExtraData(<a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a>*
+pkGeometry)</p>
+
+<p class="NDLRefMemberDescription">Resets the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSCMExtraData.htm">NiSCMExtraData</a></span>
+object on the geometry if there is one. This function is called
+by <span class="NDLSystemFont">SetupShaderPrograms</span> and
+should only be called in a derived shader if it does not call the
+<span class="NDLSystemFont">NiD3DShader</span> version of
+<span class="NDLSystemFont">SetupShaderPrograms</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+DestroyRendererData()</p>
+
+<p class="NDLRefMemberDescription">The function will cycle
+through all passes, checking for shader programs. If they are
+present, it calls the corresponding <span class=
+"NDLSystemFont">DestroyRendererData</span> function on them.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+RecreateRendererData()</p>
+
+<p class="NDLRefMemberDescription">The function will cycle
+through all passes, checking for shader programs. If they are
+present, it calls the corresponding <span class=
+"NDLSystemFont">RecreateRendererData</span> function on them.</p>
+
+<p class="NDLRefMemberFunction">bool GetUsesNiRenderState()
+const</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetUsesNiRenderState(bool bUses)</p>
+
+<p class="NDLRefMemberDescription">Gets/sets the flag indicating
+if the shader should update the render state using the Gamebryo
+properties attached to the object during the <span class=
+"NDLSystemFont">PreProcessPipeline</span> call.</p>
+
+<p class="NDLRefMemberFunction">bool GetUsesNiLightState()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetUsesNiLightState(bool
+bUses)</p>
+
+<p class="NDLRefMemberDescription">Gets/sets the flag indicating
+if the shader should update the light state using the Gamebryo
+properties attached to the object during the <span class=
+"NDLSystemFont">PreProcessPipeline</span> call.</p>
+
+<p class="NDLRefMemberFunction">bool
+GetConvertBlendIndicesToD3DColor() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetConvertBlendIndicesToD3DColor(bool bConvert)</p>
+
+<p class="NDLRefMemberDescription">Gets/sets a flag indicating
+the shader will be expecting blend indices to be packed in the
+vertex buffer as D3DCOLOR objects rather than UBYTE4.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+GetVSPresentAllPasses() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if all passes in
+the shader are set up to use vertex shaders, and false
+otherwise.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+GetVSPresentAnyPass() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if any pass in
+the shader is set up to use a vertex shaders, and false
+otherwise.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+GetPSPresentAllPasses() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if all passes in
+the shader are set up to use pixel shaders, and false
+otherwise.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+GetPSPresentAnyPass() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if any pass in
+the shader is set up to use a pixel shaders, and false
+otherwise.</p>
+
+<p class="NDLRefMemberFunction">void UseWorldSpaceSphereMaps(bool
+bWorldSpace)</p>
+
+<p class="NDLRefMemberDescription">If <span class=
+"NDLSystemFont">bWorldSpace</span> is true, sets default packing
+for <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a>::SPHERE_MAP</span>
+to <span class="NDLSystemFont">PackWorldSphereEffect</span>, else
+sets it to <span class=
+"NDLSystemFont">PackCameraSphereEffect</span>.</p>
+
+<p class="NDLRefHead1">Supported Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static void InitializePools()</p>
+
+<p class="NDLRefMemberFunction">static void ShutdownPools()</p>
+
+<p class="NDLRefMemberDescription">These are internal functions
+used to initialize and shutdown the pools of passes and stages.
+They are called by the renderer, and should never be called by an
+application.</p>
+
+<p class="NDLRefMemberFunction">static void
+SetupSCMExtraData(NiD3DShader* pkD3DShader, <a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a>*
+pkGeometry)</p>
+
+<p class="NDLRefMemberDescription">This static function sets up
+an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSCMExtraData.htm">NiSCMExtraData</a></span>
+instance on <span class="NDLSystemFont">pkGeometry</span> to
+accelerate <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>
+lookups during rendering. It is called automatically by
+<span class="NDLSystemFont">SetupGeometry</span>. Users should
+only call this function if they remove and attach <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>
+objects to geometry objects during execution. This call recreates
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSCMExtraData.htm">NiSCMExtraData</a></span>
+object so that the program does not dereference dangling
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>
+pointers.</p>
+
+<p class="NDLRefHead1">Supported Protected Functions</p>
+
+<p>Derived <span class="NDLSystemFont">NiD3DShader</span> objects
+can also make use of the following internal functions to help
+construct a texture pipeline.</p>
+
+<p class="NDLRefMemberFunction">void
+PackWorldParallelEffect(const <a href=
+"../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberFunction">void
+PackWorldPerspectiveEffect(const <a href=
+"../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberFunction">void PackWorldSphereEffect(const
+<a href="../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberFunction">void PackCameraSphereEffect(const
+<a href="../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberFunction">void PackSpecularCubeEffect(const
+<a href="../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberFunction">void PackDiffuseCubeEffect(const
+<a href="../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a>&amp;
+kWorldMat, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kWorldTrans, <a href=
+"NiD3DTextureStage.htm">NiD3DTextureStage</a>* pkStage)</p>
+
+<p class="NDLRefMemberDescription">These functions are used by
+the system to determine the texture transformation matrix for
+each particular projection method.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Picking Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Picking Code Overview</h1>
+
+<h2>Initialize</h2>
+
+<p>This method initializes the parent class and then calls the
+<span class="NDLSystemFont">CreateNiPick</span> and <span class=
+"NDLSystemFont">CreateShaderPicking</span> functions.</p>
+
+<h2>UpdateFrame</h2>
+
+<p>This method calls the parent class <span class=
+"NDLSystemFont">UpdateFrame</span> function as well as updating
+the scene graph with the current time.</p>
+
+<h2>CreateScene</h2>
+
+<p>This method loads the scene from disk and finds the first
+camera in the scene. Additionally, this method creates the
+geometry that will be used to indicate the picked triangle as
+well as the rendering properties that will be used to adjust how
+the selected objects are rendered. It also creates an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span>
+object that will be used to draw the selected objects. This
+<a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_View.htm">
+render view</a> will be added to the <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">
+render frame</a> in the <span class=
+"NDLSystemFont">CreateFrame</span> function.</p>
+
+<h2>CreateFrame</h2>
+
+<p>This function first calls the parent class <span class=
+"NDLSystemFont">CreateFrame</span> function to create a <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">
+render frame</a> that renders the main scene and all screen-space
+elements using the Gamebryo <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a>. It then creates a <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render click</a> that uses the render view created in
+CreateScene. This render click will be used to draw selected
+objects to the screen. A new <span class="NDLSystemFont"><a href=
+"PropertySwapProcessor.htm">PropertySwapProcessor</a></span> is
+created and added to the render click that uses the property list
+created in <span class="NDLSystemFont">CreateScene</span> to swap
+out the property state on all selected objects when it renders
+them. This render click is inserted into the render frame
+immediately after the main scene render click.</p>
+
+<h2>Terminate</h2>
+
+<p>This method deletes all of the scene graph and picking data
+structures used by this demo.</p>
+
+<h2>CreateCamera</h2>
+
+<p>This method does nothing since the camera is found in the
+<span class="NDLSystemFont">CreateScene</span> method.</p>
+
+<h2>CreateNiPick</h2>
+
+<p>This method creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a></span> object
+and initializes it to find the triangle intersection point of the
+closest triangle to the pick ray origin. Please see the class
+reference for <a href=
+"../../Reference/NiCollision/NiPick.htm"><span class=
+"NDLSystemFont">NiPick</span></a> for more details on how to
+configure a pick object.</p>
+
+<h2>CreateShaderPicking</h2>
+
+<p>This method creates a <span class="NDLSystemFont"><a href=
+"ColorPicker.htm">ColorPicker</a></span> with the dimensions of
+the back buffer. Please see the <a href=
+"ColorPicker.htm"><span class=
+"NDLSystemFont">ColorPicker</span></a> reference for more
+details.</p>
+
+<h2>PickPress</h2>
+
+<p>This method uses the <span class=
+"NDLSystemFont">PickObjects_ShaderObjectPick</span> function to
+perform a shader pick from the center position of the screen. If
+an object was picked, it sets the translation of the smoke effect
+to be at the location of that object and culls the object, making
+it disappear.</p>
+
+<h2>PickHeld</h2>
+
+<p>This method uses the <span class=
+"NDLSystemFont">PickObjects_NiPick</span> function to perform an
+<span class="NDLSystemFont">NiPick</span> pick from the center
+position of the screen.</p>
+
+<h2>PickObjects_NiPick</h2>
+
+<p>This method converts the cursor position into a ray in world
+space using the <a href=
+"../../Reference/NiMain/NiCamera.htm#Point_Mapping_Functions"><span class="NDLSystemFont">
+NiCamera::WindowPointToRay</span></a> method. The <span class=
+"NDLSystemFont">NiPick::PickObjects</span> method is called on
+the pick ray. Note that the scene graph was already set in the
+<span class="NDLSystemFont">CreateNiPick</span> method. The
+application then searches over the returned pick records. Since
+picking will only search the bind-pose positions of skinned
+objects, we reject skinned geometry from our search. <span class=
+"NDLSystemFont">FindPickableObject</span> is called on the pick
+result to see if the artist annotated the object or one of its
+parents as a pickable object for this demo. If it was found to be
+pickable, we duplicate the triangle that was intersected into
+another piece of geometry. This is done to visually display the
+picked triangle.</p>
+
+<h2>PickObjects_ShaderObjectPick</h2>
+
+<p>This method first clamps the picking to a fixed time step.
+This is done to prevent picking from becoming too large of an
+application bottleneck. If picking can be performed, an offscreen
+render frame is initialized and the color picked is told to
+render the scene graph into the offscreen buffer using the
+<a href="ColorPicker.htm">StartPick</a> and <a href=
+"ColorPicker.htm">RecursivePickRender</a> methods. The picked
+object is returned as a result of the <a href=
+"ColorPicker.htm">EndPick</a> method. <span class=
+"NDLSystemFont">FindPickableObject</span> is called on the pick
+result to see if the artist annotated the object or one of its
+parents as a pickable object for this demo. Since the shader
+picking method cannot return the picked triangle, this method
+does not update the picked triangle geometry.</p>
+
+<h2>FindPickableObject</h2>
+
+<p>This method traverses up the hierarchy looking for a piece of
+<a href=
+"../../Reference/NiMain/NiBooleanExtraData.htm"><span class=
+"NDLSystemFont">NiBooleanExtraData</span></a> named "target" on
+an object in the scene graph. If this extra data is found and the
+value of the data is true, the object can be effectively picked.
+If not, NULL is returned.</p>
+
+<h2>RegisterShaderParsers</h2>
+
+<p>This method tells NiSample to register the NSFParserLib for
+loading shader parsers.</p>
+
+<h2>RegisterShaderLibraries</h2>
+
+<p>This method tells NiSample to register the NSBShaderLib for
+loading shaders. It also register the
+CreateNiBinaryShaderCallback function of this demo when creating
+NiBinaryShaders.</p>
+
+<h2>CreateNiBinaryShaderCallback</h2>
+
+<p>This method will create an instance of the <a href=
+"ObjectPickBinaryShader.htm">ObjectPickBinaryShader</a> on
+request from the shader factory.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

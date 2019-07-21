@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Changing NiSourceTexture Contents Dynamically</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Changing NiSourceTexture Contents Dynamically</h1>
+
+<p>Applications can change the values of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span>s by
+modifying the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> that is
+associated with it. Most of the work described below pertains to any
+application that would modify pixel data, independent of how the pixels are
+actually modified. The sections below describe how to indicate to the
+renderer(s) that the pixel data has been changed and needs to be updated to the
+renderer.</p>
+
+<h2>NiSourceTextures and "Static" Pixel Data</h2>
+
+<p>By default, every <span class="NDLSystemFont">NiSourceTexture</span> is
+created as "static". This means that, by default, the renderers do not check
+revision IDs or other information to determine if the texture image data has
+changed since the texture was created. This is a significant performance
+improvement, since, in most applications, well over 90% of the textures are
+static.</p>
+
+<p>However, this does mean that any texture that needs to be updated on the fly
+must have the static switch turned off prior to any changes to the pixel data
+or palette. This switch may be turned off using <span class=
+"NDLSystemFont">NiSourceTexture::SetStatic(false)</span>. If this is not turned
+off, the processes described in the following sections will not work.</p>
+
+<h2>Changing NiPixelData-based NiSourceTexture Contents</h2>
+
+<p>The easiest form of <span class="NDLSystemFont">NiSourceTexture</span> to
+change dynamically is that created from an <span class=
+"NDLSystemFont">NiPixelData</span> object. The contents of this object may be
+changed using the following steps:</p>
+
+<ol>
+    <li>Access the application-level pixel data using <span class=
+    "NDLSystemFont">NiSourceTexture::GetPixelData.</span></li>
+
+    <li>Change the pixel data (using <span class=
+    "NDLSystemFont">NiPixelData</span> functions for data retrieval) as desired
+    (noting the pixel format of the pixel data, to ensure that the update data
+    matches this pixel data).</li>
+
+    <li>Call <span class="NDLSystemFont">NiPixelData::MarkAsChanged</span>
+    prior to the next rendering involving the <span class=
+    "NDLSystemFont">NiSourceTexture</span>.</li>
+</ol>
+
+<p>In the case of palettized <span class="NDLSystemFont">NiPixelData</span>
+objects, the values inside of the palette entries may also be changed&mdash;the
+following steps should be used:</p>
+
+<ol>
+    <li>Access the application-level pixel data using <span class=
+    "NDLSystemFont">NiSourceTexture::GetPixelData.</span></li>
+
+    <li>Access the pixel data's palette using <span class=
+    "NDLSystemFont">NiPixelData::GetPalette.</span></li>
+
+    <li>Change the palette entries (using <span class=
+    "NDLSystemFont">NiPalette</span> functions for data retrieval) as
+    desired.</li>
+
+    <li>Call <span class="NDLSystemFont">NiPalette::MarkAsChanged</span> prior
+    to the next rendering involving the <span class=
+    "NDLSystemFont">NiSourceTexture</span>.</li>
+</ol>
+
+<p>The palette itself may be swapped using <span class=
+"NDLSystemFont">NiPixelData::SetPalette</span>. No revision IDs needs to be
+changed in this case.</p>
+
+<h2>Changing Filename-based NiSourceTexture Contents</h2>
+
+<p>Applications may change the pixel data associated with <span class=
+"NDLSystemFont">NiSourceTexture</span>s created from filenames just as they
+change the data associated with those created from <span class=
+"NDLSystemFont">NiPixelData</span> by making one additional call. The function
+<span class="NDLSystemFont">NiSourceTexture::LoadPixelDataFromFile</span> will
+cause the file to be read into a block of <span class=
+"NDLSystemFont">NiPixelData</span>. The <span class=
+"NDLSystemFont">NiPixelData</span> will then be stored in the <span class=
+"NDLSystemFont">NiSourceTexture</span> object, and will be used to refresh the
+renderer cache when the above pixel-changing method is used. The application
+may revert to the file version at any time using <span class=
+"NDLSystemFont">NiSourceTexture::DestroyAppPixelData</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

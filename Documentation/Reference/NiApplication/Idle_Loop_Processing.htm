@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Idel Loop Processing</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Idle Loop Processing</h1>
+
+<p>After the window is created and displayed, the message loop must be started for processing messages from the OS. Under Win32, the standard way for getting idle time is to use <span class="NDLSystemFont">PeekMessage</span> rather than <span class="NDLSystemFont">GetMessage</span>. The idle loop in <span class="NDLSystemFont">WinMain</span> is essentially the following:</p>
+
+
+<pre>
+MSG msg;
+
+ 
+
+if (pTheApp->Initialize())
+
+{
+
+    while (TRUE)
+
+    {
+
+        if (PeekMessage(&amp;msg,NULL,0,0,PM_REMOVE))
+
+        {
+
+            if (msg.message == WM_QUIT)
+
+                break;
+
+ 
+
+            HACCEL hAccel = pTheApp->GetAcceleratorHandle();
+
+ 
+
+            if (!TranslateAccelerator(hWnd,hAccel,&amp;msg))
+
+            {
+
+                TranslateMessage(&amp;msg);
+
+                DispatchMessage(&amp;msg);
+
+            }
+
+        }
+
+        else
+
+        {
+
+            pTheApp->OnIdle();
+
+        }
+
+    }
+
+}
+
+ 
+
+pTheApp->Terminate();
+
+delete pTheApp;
+
+return msg.wParam;
+</pre>
+
+<p>The idle loops for the other platforms are similar.</p>
+
+<p>The <span class="NDLSystemFont">NiApplication</span> object is given a chance to perform any initializations via the call to <span class="NDLSystemFont">Initialize</span>. A typical application will create Gamebryo objects such as the renderer, cameras, lights, and scene graph(s). The object is also given a chance to clean up and free resources in the call to <span class="NDLSystemFont">Terminate</span>.</p>
+
+<p>The real-time work the application does is via the callback <span class="NDLSystemFont">OnIdle</span>. Minimally, a Gamebryo application will render a frame to the screen. Additional work for animation updates and collision system calls is done in <span class="NDLSystemFont">OnIdle</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

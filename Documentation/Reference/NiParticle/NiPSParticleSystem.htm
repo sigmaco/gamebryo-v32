@@ -1,0 +1,740 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPSParticleSystem</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiPSParticleSystem</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NiPSParticleSystem.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/class_ni_p_s_particle_system.gif" alt="Inheritance graph for NiPSParticleSystem"/>
+  <p class="FigureCaption">Inheritance graph for NiPSParticleSystem</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Represents a particle system. </p>
+<p class="NDLNormal">This class is derived from <span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span> and overrides its update and rendering functions to implement a particle system simulation. It requires an <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object to be attached to it in order for the simulation to work properly. In most cases, a particle generator mesh modifier, such as <span class="NDLSystemFont"><a href="NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span>, will also be attached to convert particle data into renderable data streams.</p>
+<p class="NDLNormal">All per-particle data is stored in dynamically allocated arrays owned by this object. These arrays are not shared between <span class="NDLSystemFont">NiPSParticleSystem</span> clones. Several checks are in place to ensure that the particle data is not accessed by more than one thread simultaneously. If an application needs to access the particle data, it must first call ForceSimulationToComplete to ensure that all mesh modifiers that may be using the data are forced to complete.</p>
+<p class="NDLNormal">
+<p class="NDLNormal">The <span class="NDLSystemFont">NiPSParticleSystem</span> constructor is protected and cannot be called directly. The static Create function should be used instead. </p></p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+<a name="class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8"></a>
+<p class=NDLRefHead2>NiPSParticleSystem::AlignMethod</p>
+
+
+<p class="NDLRefMemberDescription">The AlignMethod enumeration defines the various methods that may be used to specify the orientation of the particles. </p>
+
+<p class="NDLRefMemberDetailedDescription">The associated values encode properties of the alignment. The 1-bit represents local or world, the 2 bit represents fixed or per-particle, and subsequent bits represent the specific form of alignment. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_INVALID</span></td>
+    <td>Invalid alignment used to indicate an error situation. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_PER_PARTICLE</span></td>
+    <td>An invalid type used to specify the bit pattern for fixed/per-particle. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_LOCAL_FIXED</span></td>
+    <td>Align to a fixed direction in the particle system's frame of reference. A specific direction must be provided when this method is used. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_LOCAL_POSITION</span></td>
+    <td>Align in the direction of local position, relative to the particle system object. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_LOCAL_VELOCITY</span></td>
+    <td>Align in the direction of local velocity, relative to the particle system object. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ALIGN_CAMERA</span></td>
+    <td>Align in the direction of a camera position. The normal is always aligned to the view plane normal, and up aligned to view up. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+<a name="public_static_attributes"></a>
+<p class="NDLRefHead1">Public Static Attributes</p>
+
+
+<a name="class_ni_p_s_particle_system_1afea14cd82bf92d523ec0d7dd18d08580"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont">NiUInt32</span>  INVALID_PARTICLE</p>
+<p class="NDLRefMemberDescription">Used to indicate failure for the AddParticle function. </p>
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="class_ni_p_s_particle_system_1a1b6f236e9204808005d77485d27d3c80"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont">NiPSParticleSystem</span>*  Create(<br/>const <span class="NDLSystemFont">NiUInt32</span> uiMaxNumParticles, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eNormalMethod = ALIGN_CAMERA, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kNormalDirection = NiPoint3::ZERO, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eUpMethod = ALIGN_CAMERA, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kUpDirection = NiPoint3::ZERO, <br/>const <span class="NDLSystemFont">bool</span> bHasLivingSpawner = false, <br/>const <span class="NDLSystemFont">bool</span> bHasColors = false, <br/>const <span class="NDLSystemFont">bool</span> bHasRotations = false, <br/>const <span class="NDLSystemFont">bool</span> bHasAnimatedTextures = false, <br/>const <span class="NDLSystemFont">bool</span> bWorldSpace = true, <br/>const <span class="NDLSystemFont">bool</span> bDynamicBounds = true, <br/>const <span class="NDLSystemFont">bool</span> bCreateDefaultGenerator = true, <br/>const <span class="NDLSystemFont">bool</span> bAttachMeshModifiers = true)</p>
+<p class="NDLRefMemberDescription">Creates an <span class="NDLSystemFont">NiPSParticleSystem</span> object with the specified parameters. </p>
+<p class="NDLRefMemberDetailedDescription">This function takes care of creating an <span class="NDLSystemFont"><a href="NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span> object, attaching an <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> to it, and optionally creating and attaching an <span class="NDLSystemFont"><a href="NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span> mesh modifier.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiMaxNumParticles</span></td>
+    <td>The maximum number of particles allowed by this system. This determines the allocated size of all data arrays and cannot be changed. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eNormalMethod</span></td>
+    <td>The method to use for the normal direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kNormalDirection</span></td>
+    <td>The fixed direction vector to use for the normal direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUpMethod</span></td>
+    <td>The method to use for the "up" direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kUpDirection</span></td>
+    <td>The fixed direction vector to use for the "up" direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasLivingSpawner</span></td>
+    <td>Whether or not a living spawner data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasColors</span></td>
+    <td>Whether or not color data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotations</span></td>
+    <td>Whether or not rotation angle and speed data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasAnimatedTextures</span></td>
+    <td>Whether or not this particle system has per-particle animated textures applied to the particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bWorldSpace</span></td>
+    <td>Whether or not the particle system will compute its particles in world-space or local-space. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bDynamicBounds</span></td>
+    <td>Whether or not an <span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span> object will be attached to the particle system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bCreateDefaultGenerator</span></td>
+    <td>Whether or not an <span class="NDLSystemFont"><a href="NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span> will be created and attached to the particle system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bAttachMeshModifiers</span></td>
+    <td>Whether or not the simulator and generator mesh modifiers will be attached when they are added. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The newly created <span class="NDLSystemFont">NiPSParticleSystem</span> object. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_particle_system_1ad399dd021d3f9fb031ce6409a9392c33"></a>
+<p class="NDLRefMemberFunction">virtual ~NiPSParticleSystem()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+
+<a name="class_ni_p_s_particle_system_1a1d6a0fbafbddfefb34d086f7273b1e8b"></a>
+<p class="NDLRefMemberFunction">NiPSParticleSystem()</p>
+<p class="NDLRefMemberDescription">Protected default constructor for cloning and streaming only. </p>
+
+<a name="class_ni_p_s_particle_system_1a7cfac04b7e9fe760e8bab3502a42714c"></a>
+<p class="NDLRefMemberFunction">NiPSParticleSystem(const <span class="NDLSystemFont">NiPSParticleSystem</span>& )</p>
+<p class="NDLRefMemberDescription">Protected copy constructor to disable copy construction. </p>
+
+<a name="class_ni_p_s_particle_system_1a86dcabafbefc94e017f1ac116538dcee"></a>
+<p class="NDLRefMemberFunction">NiPSParticleSystem(<br/><span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span>* pkSimulator, <br/>const <span class="NDLSystemFont">NiUInt32</span> uiMaxNumParticles, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eNormalMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kNormalDirection, <br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eUpMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kUpDirection, <br/>const <span class="NDLSystemFont">bool</span> bHasLivingSpawner, <br/>const <span class="NDLSystemFont">bool</span> bHasColors, <br/>const <span class="NDLSystemFont">bool</span> bHasRotations, <br/>const <span class="NDLSystemFont">bool</span> bHasRotationAxes, <br/>const <span class="NDLSystemFont">bool</span> bHasAnimatedTexture, <br/>const <span class="NDLSystemFont">bool</span> bWorldSpace, <br/><span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>* pkBoundUpdater)</p>
+<p class="NDLRefMemberDescription">Protected main constructor. </p>
+<p class="NDLRefMemberDetailedDescription">Instances of this class should be created with the static Create function instead of with this constructor.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkSimulator</span></td>
+    <td>A pointer to the simulator mesh modifier that will be attached to this particle system. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiMaxNumParticles</span></td>
+    <td>The maximum number of particles allowed by this system. This determines the allocated size of all data arrays. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eNormalMethod</span></td>
+    <td>The method to use for the normal direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kNormalDirection</span></td>
+    <td>The fixed direction vector to use for the normal direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUpMethod</span></td>
+    <td>The method to use for the "up" direction when orienting particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kUpDirection</span></td>
+    <td>The fixed direction vector to use for the "up" direction when orienting particles with a fixed direction method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasLivingSpawner</span></td>
+    <td>Whether or not living spawner data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasColors</span></td>
+    <td>Whether or not color data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotations</span></td>
+    <td>Whether or not rotation angle and speed data will be allocated. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasRotationAxes</span></td>
+    <td>Whether or not rotation axis data will be allocated. This value should not be true if bHasRotations is false. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bHasAnimatedTexture</span></td>
+    <td>Whether or not this particle system has per-particle animated textures applied to the particles. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bWorldSpace</span></td>
+    <td>Whether or not the particle system will compute its particles in world-space or local-space. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkBoundUpdater</span></td>
+    <td>A pointer to the bound updater to use with this particle system. This should be NULL if the particle system is to have a static bounding volume. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="class_ni_p_s_particle_system_1a3c59981798292f097f559c0455d26a63"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span>*  GetSimulator() const</p>
+<p class="NDLRefMemberDescription">Returns the simulator mesh modifier attached to the particle system. </p>
+<p class="NDLRefMemberDetailedDescription">The simulator is responsible for actually simulating the particle system, including the application of forces and colliders. </p>
+
+<a name="class_ni_p_s_particle_system_1a21cf1f5528f27f90eb628336a388e9c5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>*  GetBoundUpdater() const</p>
+<p class="NDLRefMemberDescription">Returns the bound updater for the particle system. </p>
+<p class="NDLRefMemberDetailedDescription">If this function returns NULL, the particle system has a static bounding volume. </p>
+
+<a name="class_ni_p_s_particle_system_1aef1b7c8978bc54c81e0d6cfcc02743a0"></a>
+<p class="NDLRefMemberFunction">void  SetBoundUpdater(<span class="NDLSystemFont"><a href="NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>* pkBoundUpdater)</p>
+<p class="NDLRefMemberDescription">Sets the bound updater for the particle system. </p>
+<p class="NDLRefMemberDetailedDescription">Setting the bound updater to NULL will result in a particle system with a static bounding volume. </p>
+
+<a name="class_ni_p_s_particle_system_1a3b21c0b10ade834c8c295ac4fb01ce9e"></a>
+<p class="NDLRefMemberFunction">virtual void  ResetParticleSystem(const float fNewLastTime = -NI_INFINITY)</p>
+<p class="NDLRefMemberDescription">Removes all particles from the particle system and resets the last known update time to the given parameter. </p>
+<p class="NDLRefMemberDetailedDescription">In most cases the parameter should be left as the default, which will cause the system to set the last known update time when the system is next updated, to the time of that update. The argument is provided for cases in which the particle system is reset by a time controller, in which case the last update time must be explicitly set so that subsequent controllers see the correct time. </p>
+
+<a name="class_ni_p_s_particle_system_1a2c94fdeb208c18b468044ca55348d40f"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>*  GetDeathSpawner() const</p>
+<p class="NDLRefMemberDescription">Returns the spawner that should be used when spawning on particle death. </p>
+<p class="NDLRefMemberDetailedDescription">If this function returns false, then particles will not spawn on death.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The death spawner may be owned by another particle system and thus may not be contained in this particle system's array of spawners. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a8e47f1aca18697ce1b02fd411680dec9"></a>
+<p class="NDLRefMemberFunction">void  SetDeathSpawner(<span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>* pkDeathSpawner)</p>
+<p class="NDLRefMemberDescription">Sets the spawner to use when spawning on particle death. </p>
+<p class="NDLRefMemberDetailedDescription">To disable spawning on death, the death spawner should be set to NULL.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">It is valid to set a death spawner owned by another particle system if particles should be spawned from that other system. </p></p>
+
+<a name="class_ni_p_s_particle_system_1ab8d4cb8e51f790de94259423638804d6"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>*  GetLivingSpawner() const</p>
+<p class="NDLRefMemberDescription">Returns the spawner that should be used while the particle lives death. </p>
+<p class="NDLRefMemberDetailedDescription">If this function returns false, then particles will not spawn while alive.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The living spawner may be owned by another particle system and thus may not be contained in this particle system's array of spawners. </p></p>
+
+<a name="class_ni_p_s_particle_system_1aa6520abb4f0cab9314c2f7fa9d71cb8b"></a>
+<p class="NDLRefMemberFunction">void  SetLivingSpawner(<span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>* pkLivingSpawner)</p>
+<p class="NDLRefMemberDescription">Sets the spawner to use while the particle lives. </p>
+<p class="NDLRefMemberDetailedDescription">To disable spawning while living, the living spawner should be set to NULL.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">It is valid to set a living spawner owned by another particle system if particles should be spawned from that other system. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a7f104c196cc1d3e763eee3a6f06d8e69"></a>
+<p class="NDLRefMemberFunction">void  ForceSimulationToComplete()</p>
+<p class="NDLRefMemberDescription">Forces the particle simulation to complete. </p>
+<p class="NDLRefMemberDetailedDescription">This function forces all mesh modifiers to complete, ensuring that no Floodgate tasks are currently active that might be accessing the particle data.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">This function must be called by an application prior to attempting to access any particle data to ensure that mesh modifiers are not attempting to simultaneously use that data. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a6e764b0c44800bd92d9f232a6b0026c8"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSKernelFloatKey.htm">NiPSKernelFloatKey</a></span>*  GetSpawnRateKeys(<span class="NDLSystemFont">NiUInt8</span>& ucNumSpawnRateKeys) const</p>
+<p class="NDLRefMemberDescription">Get the spawn rate keys that have been assigned to the particle system. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">ucNumSpawnRateKeys</span></td>
+    <td>Returns the size of the returned spawn rate key array. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>A pointer to an array of spawn rate keys. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_particle_system_1a090a5e40cd6007b1c4e2716985a16305"></a>
+<p class="NDLRefMemberFunction">void  CopySpawnRateKeys(<br/>const <span class="NDLSystemFont"><a href="NiPSKernelFloatKey.htm">NiPSKernelFloatKey</a></span>* pkSpawnRateKeys, <br/>const <span class="NDLSystemFont">NiUInt8</span> ucNumKeys)</p>
+<p class="NDLRefMemberDescription">Copies the input array of spawn rate keys, allocating aligned memory internally and copying the data. </p>
+<p class="NDLRefMemberDetailedDescription">It is valid to specify NULL for pkSpawnRateKeys, but ucNumKeys must also be zero. If pkSpawnRateKeys is not NULL, ucNumKeys must be greater than zero.</p>
+<p class="NDLRefMemberDetailedDescription">Is it valid to provide a single key representing a constant spawn rate value.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">This function does not take ownership of pkSpawnRateKeys. The calling code is responsible for memory management of that data.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkSpawnRateKeys</span></td>
+    <td>A pointer to the array of spawn rate keys to copy. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ucNumKeys</span></td>
+    <td>The number of keys in the pkSpawnRateKeys array. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="emitter_management_functions"></a>
+<p class="NDLRefHead1">Emitter Management Functions</p>
+
+
+<a name="class_ni_p_s_particle_system_1a64be6ec08989f6acc1576569f58caed5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetEmitterCount() const</p>
+<p class="NDLRefMemberDescription">Returns the number of emitter objects owned by the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1aa1aabb4f8954ea3624482658f780048b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSEmitter.htm">NiPSEmitter</a></span>*  GetEmitterAt(<span class="NDLSystemFont">NiUInt32</span> uiIndex) const</p>
+<p class="NDLRefMemberDescription">Returns the emitter object stored at the specified index, which must be less than the value returned by GetEmitterCount. </p>
+
+<a name="class_ni_p_s_particle_system_1af8e41aa2649c5bb450e234f2b4c6e887"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSEmitter.htm">NiPSEmitter</a></span>*  GetEmitterByName(const <span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>& kName) const</p>
+<p class="NDLRefMemberDescription">Returns the first emitter object found with the specified name or NULL if no emitter is found with that name. </p>
+
+<a name="class_ni_p_s_particle_system_1a63590e0365de2a66a2131cf703cd1143"></a>
+<p class="NDLRefMemberFunction">void  AddEmitter(<span class="NDLSystemFont"><a href="NiPSEmitter.htm">NiPSEmitter</a></span>* pkEmitter)</p>
+<p class="NDLRefMemberDescription">Adds the specified emitter object to the array of emitters for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a095bd76b6fb29b0b4f9834ab0cd32525"></a>
+<p class="NDLRefMemberFunction">void  RemoveEmitterAt(<br/><span class="NDLSystemFont">NiUInt32</span> uiIndex, <br/><span class="NDLSystemFont">bool</span> bMaintainOrder = false)</p>
+<p class="NDLRefMemberDescription">Removes the emitter object stored at the specified index, which must be less than the value returned by GetEmitterCount. </p>
+
+<a name="class_ni_p_s_particle_system_1a928f496e4459628ba70e0d8e6c18f1c6"></a>
+<p class="NDLRefMemberFunction">void  RemoveAllEmitters()</p>
+<p class="NDLRefMemberDescription">Removes all emitter objects from the particle system. </p>
+<a name="particle_alignment_accessors"></a>
+<p class="NDLRefHead1">Particle Alignment Accessors</p>
+
+<p class="NDLRefMemberDescription">These functions provide access to the alignment properties of the particles.</p>
+<p class="NDLRefMemberDescription">The orientation of the particles is determined by the following parameters: each of the normal and "v" texture coordinate (up) directions must be specified. These directions can be fixed for all particles or computed per-particle. The "u" texture direction is perpendicular to both the normal and up direction. Specifying the same method with a matching direction for both up and normal will result in undefined behavior, as will specifying the same per-particle method (velocity or position) for the alignment. Such setting fail to define a correct 3D reference frame.</p>
+<p class="NDLRefMemberDescription">Mesh particles use the normal direction as the x-axis of the mesh default reference frame and the "up" direction as the z-axis.</p>
+<p class="NDLRefMemberDescription">Any properties related to alignment of sprite particles must be specified before an NiSPAlignedQuadGenerator mesh modifier objects is attached to the system. Settings adjusted after the mesh modifier has attached will be ignored unless the modifier is detached and re-attached. </p>
+
+<a name="class_ni_p_s_particle_system_1a202d93ab22e42d890b764bb948c81049"></a>
+<p class="NDLRefMemberFunction">static const char*  GetMethodString(const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eMethod)</p>
+<p class="NDLRefMemberDescription">Obtain a string representing the alignment method. </p>
+
+<a name="class_ni_p_s_particle_system_1a5619cc9d2c4f3f1d640b5ad1858f9686"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span>  GetNormalMethod() const</p>
+<p class="NDLRefMemberDescription">Get the normal alignment method. </p>
+
+<a name="class_ni_p_s_particle_system_1ac3e3b33e036aa92c7e1caddd00bb7451"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>  GetNormalDirection() const</p>
+<p class="NDLRefMemberDescription">Get the normal alignment direction. </p>
+<p class="NDLRefMemberDetailedDescription">This will be the zero vector if the alignment method does not have an associated direction. </p>
+
+<a name="class_ni_p_s_particle_system_1add149d98efcd8ab44bc0a2ee501c97bf"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span>  GetUpMethod() const</p>
+<p class="NDLRefMemberDescription">Get the up alignment method. </p>
+
+<a name="class_ni_p_s_particle_system_1a4225ab70d76bf5ce43adfd55ec7aa048"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>  GetUpDirection() const</p>
+<p class="NDLRefMemberDescription">Get the up alignment direction. </p>
+<p class="NDLRefMemberDetailedDescription">This will be the zero vector if the alignment method does not have an associated direction. </p>
+
+<a name="class_ni_p_s_particle_system_1a6a0943148241dc1094de47f8cc33ea8c"></a>
+<p class="NDLRefMemberFunction">void  SetNormalMethod(const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eMethod)</p>
+<p class="NDLRefMemberDescription">Specify the normal alignment method. </p>
+<p class="NDLRefMemberDetailedDescription">Use this form when the alignment does not need an fixed direction. This function has no effect if the modifier is attached to a mesh. </p>
+
+<a name="class_ni_p_s_particle_system_1a0b4e7b09219d8b7cee72d5a4514bd6ea"></a>
+<p class="NDLRefMemberFunction">void  SetNormalMethod(<br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kDirection)</p>
+<p class="NDLRefMemberDescription">Specify the normal alignment method. </p>
+<p class="NDLRefMemberDetailedDescription">Use this form when the alignment must have an associated direction. This function has no effect if the modifier is attached to a mesh. </p>
+
+<a name="class_ni_p_s_particle_system_1a68cd6f22aa11426d325ac67092c18811"></a>
+<p class="NDLRefMemberFunction">void  SetUpMethod(const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eMethod)</p>
+<p class="NDLRefMemberDescription">Specify the up alignment method. </p>
+<p class="NDLRefMemberDetailedDescription">Use this form when the alignment does not need an fixed direction. This function has no effect if the modifier is attached to a mesh. </p>
+
+<a name="class_ni_p_s_particle_system_1a5ad36a94fcae981a22a2c7edcf9f41cb"></a>
+<p class="NDLRefMemberFunction">void  SetUpMethod(<br/>const <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1a8d4c132118f58b76d54cd2a7264c78c8">AlignMethod</a></span> eMethod, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>& kDirection)</p>
+<p class="NDLRefMemberDescription">Specify the up alignment method. </p>
+<p class="NDLRefMemberDetailedDescription">Use this form when the alignment must have an associated direction. This function has no effect if the modifier is attached to a mesh. </p>
+<a name="particle_data_accessors"></a>
+<p class="NDLRefHead1">Particle Data Accessors</p>
+
+<p class="NDLRefMemberDescription">These functions provide access to the per-particle data for all active particles.</p>
+<p class="NDLRefMemberDescription">Each data array is of size MaxNumParticles, but only the first part of each array, up to NumParticles, contains valid data. The proper way to access data in these arrays it to iterate over their entries from 0 to <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm#class_ni_p_s_particle_system_1aa5d66d604845c760b49926334f754ac8">GetNumParticles()</a></span>.</p>
+<p class="NDLRefMemberDescription">
+<p class="NDLRefMemberDescription">These functions should only be called by an application after ForceSimulationToComplete has been called in order to avoid thread concurrency issues. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a3264437611a06a9961356c9949ca487e"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetPositions()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle positions. </p>
+
+<a name="class_ni_p_s_particle_system_1a21158f0f2d422415c96f5da0cdca2dbd"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetPositions() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle positions. </p>
+
+<a name="class_ni_p_s_particle_system_1a6e7caae7c4140ee530c25df0b171a57d"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetVelocities()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle velocities. </p>
+
+<a name="class_ni_p_s_particle_system_1a2d3e00e07b3d4c849182485fd46e8082"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetVelocities() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle velocities. </p>
+
+<a name="class_ni_p_s_particle_system_1adbbe9a62d91338a45d867bcc48503035"></a>
+<p class="NDLRefMemberFunction">float*  GetAges()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle ages. </p>
+
+<a name="class_ni_p_s_particle_system_1afdf8a1b51107abd83f361adb8195aa5f"></a>
+<p class="NDLRefMemberFunction">const float*  GetAges() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle ages. </p>
+
+<a name="class_ni_p_s_particle_system_1a84008dc596c5344116e9272b3df0c0f0"></a>
+<p class="NDLRefMemberFunction">float*  GetLifeSpans()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle life spans. </p>
+
+<a name="class_ni_p_s_particle_system_1ad87331b6cb49d169fb50a9497afe9503"></a>
+<p class="NDLRefMemberFunction">const float*  GetLifeSpans() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle life spans. </p>
+
+<a name="class_ni_p_s_particle_system_1a09eb26cfe8b51e17d8f45888c0fde79f"></a>
+<p class="NDLRefMemberFunction">float*  GetLastUpdateTimes()</p>
+<p class="NDLRefMemberDescription">Returns the array of the last time each particle was updated. </p>
+
+<a name="class_ni_p_s_particle_system_1a48847dc569056a6a13fa35c9b6f3abf4"></a>
+<p class="NDLRefMemberFunction">const float*  GetLastUpdateTimes() const</p>
+<p class="NDLRefMemberDescription">Returns the array of the last time each particle was updated. </p>
+
+<a name="class_ni_p_s_particle_system_1a6995b2c8a482f51268ab2b8c41dfe1ca"></a>
+<p class="NDLRefMemberFunction">float*  GetNextSpawnTimes()</p>
+<p class="NDLRefMemberDescription">Returns the array of the next time each particle will spawn. </p>
+
+<a name="class_ni_p_s_particle_system_1a3b77475f9ad5d90c1af1b66c6de66620"></a>
+<p class="NDLRefMemberFunction">const float*  GetNextSpawnTimes() const</p>
+<p class="NDLRefMemberDescription">Returns the array of the next time each particle will spawn. </p>
+
+<a name="class_ni_p_s_particle_system_1a756e2c4842673689d4ff7c21546c6c69"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetNextSpawnTime(<br/>float fTime, <br/>float fAge, <br/>float fLifeSpan, <br/>float& fSpawnTime) const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle positions. </p>
+
+<a name="class_ni_p_s_particle_system_1a20085b1e0fdd857718690ddc7533cd3a"></a>
+<p class="NDLRefMemberFunction">float  GetRunUpTime(<span class="NDLSystemFont">bool</span> bIncludeSpawners = true) const</p>
+<p class="NDLRefMemberDescription">Returns the amount of time it would take to fully run up this particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1aa1b9f439f28ffafb36628ead62f0a1fc"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>*  GetFlags()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle flags. </p>
+<p class="NDLRefMemberDetailedDescription">A particle flag is a 32-bit bitfield that holds various information, such as the particle generation and whether or not the particle should be killed or spawned during the next update.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Particle flags are meant to be used internally only, but the data within them can be accessed with the <span class="NDLSystemFont"><a href="NiPSFlagsHelpers.htm">NiPSFlagsHelpers</a></span> class. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a3a97f34e358b584f5fa63b0dfdda09d7"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont">NiUInt32</span>*  GetFlags() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle flags. </p>
+<p class="NDLRefMemberDetailedDescription">A particle flag is a 32-bit bitfield that holds various information, such as the particle generation and whether or not the particle should be killed or spawned during the next update.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Particle flags are meant to be used internally only, but the data within them can be accessed with the <span class="NDLSystemFont"><a href="NiPSFlagsHelpers.htm">NiPSFlagsHelpers</a></span> class. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a8ea21f30b6ae35fa06e0e22f1652f5b9"></a>
+<p class="NDLRefMemberFunction">float*  GetInitialSizes()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle initial sizes. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle initial size is multiplied by the particle size and any animated size to arrive at the final size for the particle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a93da7c36b90220e41ce8f504042d99fc"></a>
+<p class="NDLRefMemberFunction">const float*  GetInitialSizes() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle initial sizes. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle initial size is multiplied by the particle size and any animated size to arrive at the final size for the particle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1af5d99a08c92ac1b637c10c216314a6c7"></a>
+<p class="NDLRefMemberFunction">float*  GetSizes()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle sizes. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle size is multiplied by the particle radius to arrive at the final size for the particle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1acfaf00e6d634126f685a3bb8ad62e829"></a>
+<p class="NDLRefMemberFunction">const float*  GetSizes() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle sizes. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle size is multiplied by the particle radius to arrive at the final size for the particle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a185c2949a5cf5a6b4ce0f78f11cd5ba6"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiRGBA.htm">NiRGBA</a></span>*  GetColors()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle colors. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no colors exist. </p>
+
+<a name="class_ni_p_s_particle_system_1aef47da805886a7f795a066311da29fd5"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiRGBA.htm">NiRGBA</a></span>*  GetColors() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle colors. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no colors exist. </p>
+
+<a name="class_ni_p_s_particle_system_1a6f41db97122fb708e0a7f9287989304e"></a>
+<p class="NDLRefMemberFunction">float*  GetInitialRotationAngles()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle initial rotation angles. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle initial rotation angle has the angle due to rotation speed added to it, along with any keyed rotation, to produce the final particle rotation angle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a382b4cf020a42c6d468922b5bf4ec8cf"></a>
+<p class="NDLRefMemberFunction">const float*  GetInitialRotationAngles() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle initial rotation angles. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The particle initial rotation angle has the angle due to rotation speed added to it, along with any keyed rotation, to produce the final particle rotation angle. </p></p>
+
+<a name="class_ni_p_s_particle_system_1ad672de39526ec3ebecf3e4153efca807"></a>
+<p class="NDLRefMemberFunction">float*  GetRotationAngles()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation angles. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist. </p>
+
+<a name="class_ni_p_s_particle_system_1ae5e59427e3504b703bccc4a8daf02305"></a>
+<p class="NDLRefMemberFunction">const float*  GetRotationAngles() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation angles. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist. </p>
+
+<a name="class_ni_p_s_particle_system_1ac0c961889bf4160c8c67173e19c33967"></a>
+<p class="NDLRefMemberFunction">float*  GetRotationSpeeds()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation speeds. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist. </p>
+
+<a name="class_ni_p_s_particle_system_1a34dee8289ba003330bb1a0b1ed45d209"></a>
+<p class="NDLRefMemberFunction">const float*  GetRotationSpeeds() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation speeds. </p>
+<p class="NDLRefMemberDetailedDescription">This array may be NULL if no rotations exist or speeds were not given. </p>
+
+<a name="class_ni_p_s_particle_system_1a6210e1f834cc0b177fb1b9af610d9855"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetRotationAxes()</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation axes. </p>
+<p class="NDLRefMemberDetailedDescription">This array will be NULL for all sprite-based particle systems. It may be NULL for mesh particles, also, if no rotations exist. </p>
+
+<a name="class_ni_p_s_particle_system_1af708ff95214ea3b2fdea2061cd9e1536"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiPoint3.htm">NiPoint3</a></span>*  GetRotationAxes() const</p>
+<p class="NDLRefMemberDescription">Returns the array of particle rotation axes. </p>
+<p class="NDLRefMemberDetailedDescription">This array will be NULL for all sprite-based particle systems. It may be NULL for mesh particles, also, if no rotations exist. </p>
+
+<a name="class_ni_p_s_particle_system_1af73d0699a7fa707d3bb803a8d6417db8"></a>
+<p class="NDLRefMemberFunction">float*  GetVariance()</p>
+<p class="NDLRefMemberDescription">Returns the array of per particle variance. </p>
+<p class="NDLRefMemberDetailedDescription">This array will be NULL for all non-animated texture particle systems. </p>
+
+<a name="class_ni_p_s_particle_system_1ac6d18b57ea5a0d1f8893efce1c30feac"></a>
+<p class="NDLRefMemberFunction">const float*  GetVariance() const</p>
+<p class="NDLRefMemberDescription">Returns the array of per particle variance. </p>
+<p class="NDLRefMemberDetailedDescription">This array will be NULL for all non-animated texture particle systems. </p>
+<a name="particle_system_attribute_accessors"></a>
+<p class="NDLRefHead1">Particle System Attribute Accessors</p>
+
+
+<a name="class_ni_p_s_particle_system_1af17745afd9e8bc0261dad31480355dfe"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetMaxNumParticles() const</p>
+<p class="NDLRefMemberDescription">Returns the maximum number of particles in the system. </p>
+
+<a name="class_ni_p_s_particle_system_1aa5d66d604845c760b49926334f754ac8"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetNumParticles() const</p>
+<p class="NDLRefMemberDescription">Returns the number of currently active particles in the system. </p>
+
+<a name="class_ni_p_s_particle_system_1a6ff3c338a8682bf2038a9db0522617bd"></a>
+<p class="NDLRefMemberFunction">float  GetLastTime() const</p>
+<p class="NDLRefMemberDescription">Returns the last time at which the particle system was updated. </p>
+<p class="NDLRefMemberDetailedDescription">This will be -NI_INFINITY if the particle system has not yet been updated. </p>
+
+<a name="class_ni_p_s_particle_system_1afb267ba6e5e63fdd4dc3e2f3872ec540"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasLivingSpawner() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not living spawner data exist for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1ac1210e5ba10f86c7c9cb11c76fe84596"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasColors() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not color data exist for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a2f051c908eae9ea4ce47f89264d30f94"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasRotations() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not rotation angle and speed data exist for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a637e2cece52cab68d213cc0224bad269"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasRotationSpeeds() const</p>
+<p class="NDLRefMemberDescription">system. </p>
+
+<a name="class_ni_p_s_particle_system_1a9f558eb91e17af0f2f68c0ecb55168bf"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasRotationAxes() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not rotation axis data exist for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1aa28bc2675867f950457bbbd926ad400c"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  HasAnimatedTextures() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not the particle system supports animated textures. </p>
+
+<a name="class_ni_p_s_particle_system_1aa6b91f732d9576837044366c58f6b1c1"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetWorldSpace() const</p>
+<p class="NDLRefMemberDescription">Returns whether or not the particle system computes its particles in world-space instead of local-space. </p>
+<p class="NDLRefMemberDetailedDescription">If this function returns true, the world transformation of the <span class="NDLSystemFont">NiPSParticleSystem</span> object has its translation and rotation set to the identity, and the particle positions are stored in world-space. Translating or rotating a world-space <span class="NDLSystemFont">NiPSParticleSystem</span> object has no effect on the particles.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">The world scale is still taken into effect with world-space particles in order to allow an entire scene to be scaled up or down. When the world scale is changed for a world-space particle system, an inverse scale is applied to all active particles so that they remain in the same world-space location. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a67cbd2adf085d6198a5d45e3550cc8c0"></a>
+<p class="NDLRefMemberFunction">void  SetWorldSpace(<span class="NDLSystemFont">bool</span> bWorldSpace)</p>
+<p class="NDLRefMemberDescription">Sets whether or not the particle system computes its particles in world-space instead of local-space. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Changing this value at runtime does not modify the positions of any particles that already exist. Thus, it may cause the particles to display in a different location. It is recommended that this function not be used at runtime and instead the proper value be provided to the static Create function. </p></p>
+
+<a name="class_ni_p_s_particle_system_1a278b8f763a0348e260f3600864186c4b"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiTransform.htm">NiTransform</a></span>&  GetOriginalWorldTransform() const</p>
+<p class="NDLRefMemberDescription">Return the original world space transform, before it is reset for world space particles. </p>
+<p class="NDLRefMemberDetailedDescription">When a particle system is using world space particles the world rotation and translation is explicitly set to the identity on each update. This returns the world transform as computed using standard scene graph techniques, before the world space particle changes are applied. </p>
+<a name="spawner_id_functions"></a>
+<p class="NDLRefHead1">Spawner ID Functions</p>
+
+<p class="NDLRefMemberDescription">The set of spawners that may spawn particles from this particle system is updated at each simulation step from information provided by colliders and the particle system itself.</p>
+<p class="NDLRefMemberDescription">These functions are used to manage a dynamic mapping between the spawner ID stored in particle flags and pointers to the actual spawner object. </p>
+
+<a name="class_ni_p_s_particle_system_1a96756ee0d5be83811616fb00276f3d0f"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt16</span>  GetSpawnerID(<span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>* pkSpawner)</p>
+<p class="NDLRefMemberDescription">Returns the number of spawner objects owned by the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a5639a33e0906a9ee4490bc837c2eb836"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>*  GetSpawnerFromID(<span class="NDLSystemFont">NiUInt16</span> uiID) const</p>
+<p class="NDLRefMemberDescription">Returns the number of spawner objects owned by the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a735b118f7e546772aed993318e57ffdc"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt16</span>  GetMaxValidSpawnerID() const</p>
+<p class="NDLRefMemberDescription">Return the maximum valid ID. </p>
+<p class="NDLRefMemberDetailedDescription">All IDs [0, ..., max - 1] are valid. The value will only be non-zero between the time the particle system is updated and the time simulation completes. </p>
+<a name="spawner_management_functions"></a>
+<p class="NDLRefHead1">Spawner Management Functions</p>
+
+<p class="NDLRefMemberDescription">These functions manage spawners that spawn new particles into this particle system.</p>
+
+<a name="class_ni_p_s_particle_system_1a879d4b20625b48cc8fd2a26d74379e06"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetSpawnerCount() const</p>
+<p class="NDLRefMemberDescription">Returns the number of spawner objects owned by the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a5b4007224cebe24649ffe04cb9b9f65a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>*  GetSpawnerAt(<span class="NDLSystemFont">NiUInt32</span> uiIndex) const</p>
+<p class="NDLRefMemberDescription">Returns the spawner object stored at the specified index, which must be less than the value returned by GetSpawnerCount. </p>
+
+<a name="class_ni_p_s_particle_system_1a13a571b6251ae014d331e9197f2f2f9b"></a>
+<p class="NDLRefMemberFunction">void  AddSpawner(<span class="NDLSystemFont"><a href="NiPSSpawner.htm">NiPSSpawner</a></span>* pkSpawner)</p>
+<p class="NDLRefMemberDescription">Adds the specified spawner object to the array of spawners for the particle system. </p>
+
+<a name="class_ni_p_s_particle_system_1a6aa4a397a359cf79a164796f16d95819"></a>
+<p class="NDLRefMemberFunction">void  RemoveSpawnerAt(<br/><span class="NDLSystemFont">NiUInt32</span> uiIndex, <br/><span class="NDLSystemFont">bool</span> bMaintainOrder = false)</p>
+<p class="NDLRefMemberDescription">Removes the spawner object stored at the specified index, which must be less than the value returned by GetSpawnerCount. </p>
+
+<a name="class_ni_p_s_particle_system_1a07102903eec1bb50017fb19f507b3358"></a>
+<p class="NDLRefMemberFunction">void  RemoveAllSpawners()</p>
+<p class="NDLRefMemberDescription">Removes all spawner objects from the particle system. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

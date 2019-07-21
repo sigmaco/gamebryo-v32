@@ -1,0 +1,268 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiDataStream Primer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiDataStream Primer</h1>
+
+<a name="Creating_Data_Streams" id="Creating_Data_Streams"></a><h2>Creating Data Streams</h2>
+
+<p>To create an instance of <span class="NDLSystemFont">NiDataStream</span>, 
+ the class that owns the stream data, memory appropriate for the storage 
+ of the data must be allocated. Determining the memory pool (typically 
+ main memory or VRAM) from which to allocate a stream of vertex data is 
+ not a clear decision in all cases. Any CPU side processing  software 
+ morphing, software skinning, etc.  suggests placement in main memory, 
+ otherwise VRAM may be better. Selection of the memory pool is abstracted 
+ from the user, but assisted by the access requirements and usage flags 
+ selected by content creators and application authors.</p>
+
+<p>The first requirement of note is the data stream's Usage. 
+ There are three primary use cases for data streams:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">USAGE_VERTEX_INDEX</span> 
+ - The data specifies an index buffer for use in defining renderer primitives. 
+ Note that this isn't necessarily visible to the GPU, the correct access 
+ flags (<span class="NDLSystemFont">GPU_READ</span>) must be specified for 
+ the application to use this buffer on the GPU.</li>
+	
+	<li><span class="NDLSystemFont">USAGE_VERTEX</span> 
+ - The data specifies data associated with each vertex of a mesh. Positions, 
+ normals, and UV coordinates are examples of per-vertex data. Note that 
+ this isn't necessarily visible to the GPU, the correct access flags (<span 
+ class="NDLSystemFont">GPU_READ</span>) must be specified for the application 
+ to use this buffer on the GPU. All streams with <span class="NDLSystemFont">USAGE_VERTEX 
+ </span>must have the same number of elements, unless the elements are 
+ <a href="Introduction_to_Instancing.htm">per-instance</a>. 
+ It is important to identify vertex usage data streams even when they are 
+ not visible to the GPU so that the tool pipeline can properly manipulate 
+ the data when performing operations like vertex cache reordering.</li>
+	
+	<li><span class="NDLSystemFont">USAGE_USER</span> 
+ - This is arbitrary application data stored on the mesh. <a href="Introduction_to_Mesh_Modifiers.htm">Mesh 
+ modifiers</a> are examples of classes that need to store per-mesh data. 
+ For an example, the <span class="NDLSystemFont">MORPHWEIGHTS</span> are 
+ stored in a <span class="NDLSystemFont">USAGE_USER</span> stream when using 
+ <span class="NDLSystemFont">NiMorphMeshModifier</span>.</li>
+</ul>
+
+<p>Access flags also help determine which memory pool is 
+ used by defining how the application intends to read and write to the 
+ buffer. The access flags are discussed in detail in the <a href="Data_Stream_Access.htm">Data 
+ Stream Access</a> topic.</p>
+
+<a name="NiDataStreamElements" id="NiDataStreamElements"></a><h4>NiDataStreamElements</h4>
+
+<p>Before a <span class="NDLSystemFont">NiDataStream</span> 
+ can be instantiated, a clear understanding of the contents of the buffer 
+ is needed. The <a href="../../Reference/NiMesh/NiDataStreamElement.htm"><span 
+ class="NDLSystemFont">NiDataStreamElement</span></a> class is designed to 
+ describe a single element in a data stream. It contains data about the 
+ underlying C++ type (float, int, short, etc) and its position in the structure 
+ defined by all other elements in the stream. </p>
+
+<a name="CreateSingleElementDataStream" id="CreateSingleElementDataStream"></a><h4>CreateSingleElementDataStream</h4>
+
+<p>It is fairly common to create a data stream that only 
+ has one element. <span class="NDLSystemFont">NiDataStream</span> has a static 
+ creation method specifically for this purpose, <span class="NDLSystemFont">CreateSingleElementDataStream</span>. 
+ Please see the <a href="../../Reference/NiMesh/NiDataStream.htm">API 
+ reference</a> for more details.</p>
+
+<a name="CreateDataStream" id="CreateDataStream"></a><h4>CreateDataStream</h4>
+
+<p>When a user wishes to create a data stream that has 
+ interleaved elements, <span class="NDLSystemFont">NiDataStream</span> has 
+ a static creation method specifically for this purpose, <span class="NDLSystemFont">CreateDataStream</span>. 
+ This method takes an array of <span class="NDLSystemFont">NiDataStreamElements</span> 
+ as input. Please see the <a href="../../Reference/NiMesh/NiDataStream.htm">API 
+ reference</a> for more details.</p>
+
+<a name="NiDataStreamFactory" id="NiDataStreamFactory"></a><h4>NiDataStreamFactory</h4>
+
+<p>The <span class="NDLSystemFont">NiDataStream</span> create 
+ methods forward the instantiation of the correct derived class to a singleton 
+ factory. This factory can be set or retrieved using the <span class="NDLSystemFont">Get/SetFactory</span> 
+ methods on <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span>. 
+ Each renderer implements its own version of this method to allow it to 
+ create custom renderer-specific data stream classes.</p>
+ 
+<p>In some cases, a user 
+ may want to tweak the flags upon creation of a data stream. In this usage 
+ scenario, it is possible to install a callback on the data stream factory 
+ using the <span class="NDLSystemFont">Get/SetCallback</span> methods on 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamFactory.htm">NiDataStreamFactory</a></span>. 
+ A convenience callback, <span class="NDLSystemFont">ForceCPUReadAccessCallback,</span> 
+ is provided for the scenario where CPU read is required by the application 
+ on all data streams.</p>
+
+<a name="NiToolDataStream" id="NiToolDataStream"></a><h4>NiToolDataStream</h4>
+
+<p>Gamebryo provides a custom <span class="NDLSystemFont">NiDataStream</span> 
+ derivate, <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiToolDataStream.htm">NiToolDataStream</a></span>, 
+ &nbsp;for use 
+ inside the tools pipeline. This stream class is far more flexible than 
+ its siblings in that it provides full unfettered access to the data through 
+ the <span class="NDLSystemFont">LOCK_TOOL_READ</span> and <span class="NDLSystemFont">LOCK_TOOL_WRITE</span> 
+ lock flags. These can be seen as "back-door" access flags in 
+ scenarios where the tools will not be using the data for rendering but 
+ instead want access to the data for processing purposes. If the tools 
+ were limited to the same flags as other applications, it would not be 
+ possible to properly process the data. These data streams are the default 
+ return type from factories that have yet to be replaced by their renderer-specific 
+ counterparts.</p>
+
+<a name="Platform_Specific_Data_Streams" id="Platform_Specific_Data_Streams"></a><h4>Platform-Specific 
+ Data Streams</h4>
+
+<p>Each renderer implements its own version of the <span 
+ class="NDLSystemFont">NiDataStream</span> API that conforms to the underlying 
+ data representation required by the renderer API. In some cases, additional 
+ functionality is provided by the renderer. For more details, please see 
+ each renderer's documentation.</p>
+
+<a name="NiDataStreamLockPolicy" id="NiDataStreamLockPolicy"></a><h4>NiDataStreamLockPolicy</h4>
+
+<p>Several helper classes, found in <span class="NDLSystemFont">NiDataStreamLockPolicy.h</span>, 
+ are provided to encapsulate the requirements for thread safety for <span 
+ class="NDLSystemFont">NiDataStream</span> derivatives. Each class is templated 
+ to allow for the data stream derivate to change the implementation and 
+ allow the class to be reused by each renderer. If a user wishes to create 
+ their own custom derivatives of <span class="NDLSystemFont">NiDataStream</span>, 
+ it is suggested that they also embed the appropriate lock policy inside 
+ their classes. See <a href="../../Reference/NiMesh/StaticLockPolicy.htm"><span 
+ class="NDLSystemFont">StaticLockPolicy</span></a>, <a href="../../Reference/NiMesh/VolatileLockPolicy.htm"><span 
+ class="NDLSystemFont">VolatileLockPolicy</span></a>, and <a href="../../Reference/NiMesh/MutableLockPolicy.htm"><span 
+ class="NDLSystemFont">MutableLockPolicy</span></a> for more details.</p>
+
+<a name="Regions" id="Regions"></a><h4>Regions</h4>
+
+<p>Once a data stream has been created, it is often useful 
+ to carve it into smaller sections for use in rendering. These smaller 
+ sections allow the renderer to reuse the same buffer when rendering a 
+ different object or parts of an object. This can offer a substantial performance 
+ gain. <span class="NDLSystemFont">NiDataStream::Region</span> objects encapsulate 
+ this idea. <span class="NDLSystemFont">Regions</span> consist of a starting 
+ index with respect to the entire buffer and range of indices contained 
+ within the region. The <span class="NDLSystemFont">Region</span> class also 
+ contains several helper methods for working with the return value of <span 
+ class="NDLSystemFont">NiDataStream::Lock</span> on the entire buffer, allowing 
+ the user to get the start and end pointers from a base data stream pointer. 
+ Please see <a href="../../Reference/NiMesh/NiDataStream__Region.htm">NiDataStream::Region</a> 
+ for more details.</p>
+
+
+
+<a name="Adding_NiDataStreams_to_a_Mesh" id="Adding_NiDataStreams_to_a_Mesh"></a><h2>Adding NiDataStreams 
+ to a Mesh</h2>
+
+<p>Once an <span class="NDLSystemFont">NiDataStream</span> 
+ has been defined, in order to be used it has to be attached to an <span 
+ class="NDLSystemFont">NiMesh</span>. A how-to guide for the specific API's 
+ can be found at <a href="Creating_an_NiMesh_Object.htm">Creating 
+ an NiMesh Object</a> and a general overview is provided in <a href="NiMesh_Primer.htm">NiMesh 
+ Primer</a>. This documentation will focus on details missed in those documents.</p>
+
+<a name="NiDataStreamRef" id="NiDataStreamRef"></a><h4>NiDataStreamRef</h4>
+
+<p>In order for a mesh to make use of a data stream, it 
+ needs to know the following pieces of information:</p>
+
+<ul>
+	
+	<li>What are the contents 
+ of the data stream and how are they differentiated from other data streams 
+ attached to the mesh?</li>
+	
+	<li>What <a href="NiDataStream_Primer.htm#Regions">Region</a> 
+ to use when rendering a specific sub-mesh?</li>
+</ul>
+
+<p>The class responsible for answering these questions 
+ is <a href="../../Reference/NiMesh/NiDataStreamRef.htm"><span 
+ class="NDLSystemFont">NiDataStreamRef</span></a>. Meshes contain a set of 
+ stream reference objects, which in turn contain a smart pointer to data 
+ streams.</p>
+
+<p><span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> answers the first question 
+ through the concept of semantic name/index pairs. These semantic names 
+ are <a href="../../Reference/NiMain/NiFixedString.htm"><span 
+ class="NDLSystemFont">NiFixedString</span></a> objects that tie the bytes 
+ in the <span class="NDLSystemFont">NiDataStream</span> to some larger concept 
+ like vertex positions, normals, indices, or morph targets. The index helps 
+ to disambiguate situations where multiple copies of the same name exist 
+ on the mesh, such as texture coordinates. These name/index pairs are completely 
+ customizable by the developer. The Gamebryo API does depend on certain 
+ known name/index pairs, defined in <a href="../../Reference/NiMain/NiCommonSemantics.htm"><span 
+ class="NDLSystemFont">NiCommonSemantics</span></a>, so that it can perform 
+ collision detection and other services that rely on the existence of specific 
+ semantics.</p>
+
+<p><span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> answers the second question 
+ by requiring regions to be bound to specific sub-meshes. This data is 
+ stored internally to the class but can be accessed using the <span class="NDLSystemFont">GetRegionForSubmesh</span> 
+ and <span class="NDLSystemFont">BindRegionToSubmesh</span> methods. Some 
+ of the use cases for this functionality are discussed in the <a href="NiMesh_Primer.htm#Use_Cases">Use 
+ Cases</a> section of <a href="NiMesh_Primer.htm">NiMesh 
+ Primer</a>.</p>
+
+<p>Additionally, the stream reference contains whether 
+ or not the data is per-instance. This is required for <a href="Introduction_to_Instancing.htm">instancing</a> 
+ support in Gamebryo. </p>
+
+<p>It is often useful to interact with the stream reference 
+ directly as it shadows most of the <span class="NDLSystemFont">NiDataStream</span> 
+ API for user convenience.</p>
+
+<h4>NiMesh::AddStreamRef and AddStream</h4>
+
+<p>Generally speaking, users do not manually create <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> objects. These classes 
+ are usually created internal to the <span class="NDLSystemFont">NiMesh</span> 
+ in the <span class="NDLSystemFont">AddStreamRef</span> and <span class="NDLSystemFont">AddStream</span> 
+ methods. <a href="Creating_an_NiMesh_Object.htm">Creating 
+ an NiMesh Object</a> outlines how to use these methods to properly attach 
+ an <span class="NDLSystemFont">NiDataStream</span> to a <span class="NDLSystemFont">NiMesh</span>.</p>
+
+<a name="Data_Streams_and_Mesh_Modifiers" id="Data_Streams_and_Mesh_Modifiers"></a><h2>Data Streams 
+ and Mesh Modifiers</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#Public_NiMeshModifier_Helper_Methods">NiMesh::ResetModifiers</a></span> 
+ function should be called for any mesh when the data streams on it are 
+ added, removed or otherwise changed and the modifiers on the mesh have 
+ already been attached. It causes all modifiers to be detached and then 
+ attached again, thus resetting any references the modifiers might have 
+ into the data streams.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

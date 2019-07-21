@@ -1,0 +1,448 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Adding a new enemy type to MangledMetal</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Adding a new enemy type to MangledMetal</h1>
+
+<p>Physics, animation, and scripting give us all of the tools that we need to
+add characters to our levels. In this tutorial, we will add more enemies to the
+game; we'll use an existing rigged character, but in order to have different
+behavior, we'll create a new model in EMT and a new AI script.</p>
+
+<p>We will start by creating new behavior: pseudo-flocking AI.</p>
+
+<ol>
+    <li>Start Toolbench, and open <span class=
+    "NDLSystemFont">MangledMetal.gsl</span> from the directory <span class=
+    "NDLSystemFont">%EMERGENT_PATH%\Samples\GameDemos\MangledMetal\Data</span>.
+    For this project, the files <span class=
+    "NDLSystemFont">MangledMetal.emtproj</span> and <span class=
+    "NDLSystemFont">Level01.block</span> must be writeable, as well as the
+    contents of the directories <span class=
+    "NDLSystemFont">MangledMetal\Exported</span>, <span class=
+    "NDLSystemFont">MangledMetal\Models</span>, and <span class=
+    "NDLSystemFont">MangledMetal\Flats</span>.</li>
+
+    <li>Double-click on <span class="NDLSystemFont">MangledMetal.emtproj</span>
+		in the Game Solution pane to open the content.</li>
+
+    <li>Switch to the EMT Project Explorer tab and create a new model named
+    <span class="NDLSystemFont">AIFlock</span>. The screen will display the
+		new model with no properties.</li>
+
+    <li>Drag the <span class="NDLSystemFont">AISimple</span> into the top of
+		the center EMT content pane. This mixes <span class="NDLSystemFont">
+		AISimple</span> into the <span class="NDLSystemFont">AIFlock model</span>.</li>
+
+    <li>Fill in the description field <span class="NDLSystemFont">AI for a
+		social creature</span>.
+
+        <div class="FigureContainer">
+            <img src="images/create-aiflock.PNG" alt=
+            "Create AIFlock">
+        </div>
+    </li>
+
+    <li>We're only going to make one change. Open the
+		Mixin Behaviors sub-panel of the
+		Entity Model Editor on the right side.
+		Select <span class="NDLSystemFont">AIStatePatrolling</span> and check the
+		checkbox to indicate that we want to override the inherited behavior, then
+		press the Edit button to open the script editor and a skeleton
+		implementation of the behavior.
+
+        <ol>
+            <li>You can click on the arrow icon to the left of the checkbox to
+            check the behavior's traits and descriptions. Since
+            <span class="NDLSystemFont">AIStatePatrolling</span> is not set to
+						Extends or ReverseExtends, our new
+            script will override the inherited behavior.</li>
+        </ol>
+
+        <div class="FigureContainer">
+            <img src="images/override-patrolling.png"
+            alt="override-patrolling (15K)">
+        </div>
+    </li>
+
+    <li>Paste the following script into the script editor. This script is a
+		modified form of the script <span class="NDLSystemFont">EseAISimple.lua</span>.
+    Since movement needs to be be handled every frame, it is handled by C++ code.
+    The script is called occasionally to handle high-level navigation. The
+    script communicates with C++ through the
+		<span class="NDLSystemFont">DoMoveTo</span>,
+		<span class="NDLSystemFont">TargetSpeed</span>,
+		<span class="NDLSystemFont">MoveToPoint</span>, and
+		<span class="NDLSystemFont">MoveToEntity</span> properties.<br>
+        <pre>
+module("EseAIFlock", package.seeall)
+
+function CheckFaction(hateFactions, victimFactions)
+   if(hateFactions == nil or victimFactions == nil) then return false end
+
+   local vlen = string.len(victimFactions)
+   local hlen = string.len(hateFactions)
+
+   if vlen == 0 or hlen == 0 then return false end
+
+   for vindex=1,vlen do
+     for hindex=1,hlen do
+       if string.byte(victimFactions, vindex) == string.byte(hateFactions, hindex) then return true end
+     end
+   end
+
+   return false
+end
+
+function EnterState(self, state)
+    local val = self.IsExecuting
+    if(val == true) then
+       return true
+    end
+
+    self.IsExecuting = true
+    return false
+end
+
+function ExitState(self, state)
+    self.IsExecuting = false
+    return false
+end
+
+function Compute2DDistanceSquared(v1, v2)
+   return (v1[1]-v2[1])^2 + (v1[2]-v2[2])^2
+end
+
+function GetPropertyWithDefault(self, varname, default)
+    local val = self[varname]
+    if (val == nil) then val=default end
+    return val
+end
+
+function GetPerceptionRadius(self)
+    return GetPropertyWithDefault(self, "PerceptionRadius", 2000.0)
+end
+
+function GetPerceptionRadiusSqr(self)
+    local val = GetPerceptionRadius(self)
+    return val*val
+end
+
+function DoTransition(self, fromState, toState)
+   self:SendEvent(toState)
+   ExitState(self, fromState)
+end
+
+-- Behavior
+function AIStatePatrolling(self, params)
+    if(EnterState(self, "AIStatePatrolling")) then return end
+
+    local currentWaypoint = Point3.Point3()
+    local currentWaypointID = nil
+    local myName = "ID" .. self.ID
+
+    -- Clear the MoveToEntity property so it doesn't override our MoveToPoint
+    self.MoveToEntity = 0
+
+    -- Set our movement to walk speed and animation
+    local walkSpeed = GetPropertyWithDefault(self, "WalkSpeed", 400)
+    self.TargetSpeed = walkSpeed
+
+    local perceptionRadius = GetPerceptionRadius(self)
+    local perceptionRadiusSquared = GetPerceptionRadiusSqr(self)
+
+    local hateFactions = GetPropertyWithDefault(self, "HateFactions", "")
+
+    local doMoveTo = false
+    local shouldDoMoveTo = false
+    self.DoMoveTo = false
+
+    local sleepTime = GetPropertyWithDefault(self, "SleepTime", 200)
+
+    -- We've done a lot to initialize, take a break for a while
+    -- Break for a random period of time so if a bunch of AIs got created
+    -- at the same time they don't all wake up at the same time.
+    local startupDelay = MmWorldServiceBuiltins.Random() * 500
+
+    BehaviorAPI.Sleep(startupDelay)
+    BehaviorAPI.LogMessage(0, "EseAIFlock starting up")
+
+    while 1 do
+        local myPos = self.Position
+        doMoveTo = self.DoMoveTo
+
+        -- TRANSITIONS
+        BehaviorAPI.LogMessage(0, "EseAIFlock checking transitions")
+        local isDying = self.IsDead
+        if (isDying == true) then
+            ExitState(self, "AIStatePatrolling")
+            return
+        end
+
+        local nearestAllyID = self
+        local allyDistanceSquared = -1
+        local centroid = Point3.Point3()
+        local herdDestination = Point3.Point3()
+        local herdHeading = 0
+        local numAllies = 0
+
+        local CombatDisabled = self.CombatDisabled
+        if(CombatDisabled ~= nil and CombatDisabled ~= true) then
+            local outVal = {}
+            outVal = MmWorldServiceBuiltins.GetEntitiesByProximity(self, perceptionRadius)
+            for i,victimID in pairs(outVal) do
+			    local victim = Emergent:GetEntity(victimID)
+			
+                if victim:ContainsMixin("MMActor") == true then
+                    local victimFactions = GetPropertyWithDefault(victimID, "MyFactions", "")
+                    local victimName = "ID" .. victimID
+                    local victimDead = GetPropertyWithDefault(victimID, "IsDead", false)
+                    local isEnemy = CheckFaction(hateFactions, victimFactions)
+
+                    if(victimDead == false) then
+                        local victimPos = victim.Position
+                        local victimRadius = victim.Radius
+                        local distanceSquared = Compute2DDistanceSquared(myPos, victimPos)
+
+                        if(distanceSquared &lt; perceptionRadiusSquared) then
+                            if (isEnemy == true) then
+                                -- Transition to AIStateMoveToCombat
+                                self.MoveToEntity = victimID
+                                runSpeed = GetPropertyWithDefault(self, "RunSpeed", 1000)
+                                self.MovementSpeed = runSpeed
+                                DoTransition(self, "AIStatePatrolling", "AIStateMoveToCombat")
+                                return
+                            else -- not enemy
+                            -- Since we don't check the enemy's type, we'll "flock" with *anything*
+                            -- This could be desired behavior - a couple of Social Rippers following at the
+                            -- heels of a patrolling Death Ripper, or playing at the feet of an idle
+                            -- Bloat Thrall...
+                                if (allyDistanceSquared &lt; 0 or distanceSquared &lt; allyDistanceSquared) then
+                                    nearestAlly = victim:Clone()
+                                    allyDistanceSquared = distanceSquared
+                                end -- nearest ally
+                                centroid.x = centroid.x + victimPos.x
+                                centroid.y = centroid.y + victimPos.y
+                                local victimRotation = victim.Rotation
+                                herdHeading = herdHeading + victimRotation.z
+                                local victimTarget = victim.MoveToEntity
+                                local victimDest = victim.MoveToPoint
+                                if (victimTarget ~= Entity.InvalidEntity) then
+                                    victimDest = victimTarget.Position
+                                end
+                                herdDestination.x = herdDestination.x + victimDest.x
+                                herdDestination.y = herdDestination.y + victimDest.y
+                                numAllies = numAllies + 1
+                            end -- if isEnemy
+                        end -- if distance &lt; percept
+                    end -- if ~victimDead
+                 end -- if is MMActor
+            end -- for victim loop
+           end -- if CombatDisabled ~= true
+           -- END TRANSITIONS
+
+        -- At this point we haven't seen anybody, so interact with the flock
+        -- This is not original Reynolds-style flocking, but a reasonable approximation.
+        --if (nearestAlly == self) then
+        if (numAllies == 0) then
+            -- if we don't see anybody, move randomly
+            shouldDoMoveTo = true
+            local randomPoint = myPos
+            randomPoint.x = randomPoint.x + math.random(-400, 400)
+            randomPoint.y = randomPoint.y + math.random(-400, 400)
+            -- we may not be able to reach there, but we'll determine a new random point next AI tick,
+            -- so we won't get hung up for long
+            self.MoveToPoint = randomPoint
+        else
+             if (allyDistanceSquared &lt; 10000) then
+                -- SEPARATION
+                -- If our closest friend is too close, move away from them
+                -- If we move directly away, we can end up with "chasing" behavior - they think we're
+                -- just far enough away to approach, they approach us, we move away from them, and we end
+                -- up buried in an obstruction.
+                -- Add a tiny random component to avoid that trap. This means that the creatures may
+                -- approach one another, but should then move away
+                shouldDoMoveTo = true
+                local avoidancePoint = Point3.Point3()
+                local allyPoint = nearestAlly.Position
+                avoidancePoint.x = myPos.x * 2 - allyPoint.x --+ math.random(-100, 100)
+                avoidancePoint.y = myPos.y * 2 - allyPoint.y --+ math.random(-100, 100)
+                -- we may not be able to reach there, but we'll determine a new avoidance point next AI tick,
+                -- so we won't get hung up for long
+                self.MoveToPoint = avoidancePoint
+            else
+                -- COHESION
+                -- move towards the rest of the herd
+                shouldDoMoveTo = true
+                centroid.x = centroid.x / numAllies
+                centroid.y = centroid.y / numAllies
+
+                -- ALIGNMENT
+                -- a flock stays together, but not too close together, and *moving in the same direction*
+                -- adjust the direction we're moving to account for our neighbors.
+                -- since the AISimple entity model doesn't expose heading to us, we compute the average
+                -- destination of our flock to get their average heading
+                herdHeading = herdHeading / numAllies
+
+                local target = centroid
+                target.x = target.x + math.cos(herdHeading) * 1000
+                target.y = target.y + math.sin(herdHeading) * 1000
+
+                self.MoveToPoint = target
+            end
+        end
+
+        if(doMoveTo ~= shouldDoMoveTo) then
+            self.DoMoveTo = shouldDoMoveTo
+        end
+
+        BehaviorAPI.Sleep(sleepTime)
+    end -- while 1
+end -- function
+</pre>
+    </li>
+</ol>
+
+<p>Now, modify a creature to have this behavior:</p>
+
+<ol>
+    <li>We'd like to apply this AI to a <span class="NDLSystemFont">DeathRipper
+		</span>. However, <span class="NDLSystemFont">EnemyDeathRipper</span>
+    is a preset and cannot be extended. We can get around that by converting
+    the preset to a model:
+
+        <ol>
+            <li>Double-click on <span class="NDLSystemFont">EnemyDeathRipper</span>
+						in the EMT Project Explorer to edit it.</li>
+
+            <li>Right click on the <span class="NDLSystemFont">EnemyDeathRipper</span>
+						node in the diagram and choose Convert to Model so that we can
+						extend it further. You'll see the diamond icon next to the
+						<span class="NDLSystemFont">EnemyDeathRipper</span> in the Details
+						view of the EMT Project Explorer turn from blue to green.</li>
+        </ol>
+
+        <div class="FigureContainer">
+            <img src="images/modelize-ripper.png" alt=
+            "Convert DeathRipper to Model">
+        </div>
+    </li>
+
+    <li>Add a new model and name it
+		<span class="NDLSystemFont">EnemySocialRipper</span>.</li>
+
+    <li>The order in which we mix-in models controls how conflicting properties
+    and behaviors are resolved. Mix <span class="NDLSystemFont">AIFlock</span>
+		into the new model, and then <span class="NDLSystemFont">EnemyDeathRipper</span>; this
+    guarantees that our new <span class="NDLSystemFont">AIStatePatrolling</span>
+		behavior takes precedence.
+
+        <ol>
+            <li>On the model diagram, precedence increases right-to-left. You
+            can use the Entity Model Editor pane on the right to reorder
+            mix-ins if you need to change precedence.</li>
+        </ol>
+    </li>
+
+    <li>Override the Mix-in Property <span class="NDLSystemFont">PerceptionRadius</span>
+		to reduce it by 50% so that we can observe the rippers more easily without
+		being attacked.
+
+        <ol>
+            <li>We could set the Player faction to B to make the rippers
+            friendly, but being able to break up their scrum by running nearby,
+            then running away and watching the flock re-form, gives this
+            behavior a bit more punch.</li>
+
+            <li>An even more interesting AI would have the rippers peaceful
+            until one is attacked, whereupon all of them in perception range
+            turn aggressive. This can be handled by adding a single boolean to
+            the model, setting that boolean when we take damage, propagating
+            that boolean during AIStatePatrolling, and only entering
+            AIStateMoveToCombat when the boolean was true.</li>
+        </ol>
+
+        <div class="FigureContainer">
+            <img src="images/set-perceptionradius.PNG" alt="Set PerceptionRadius">
+        </div>
+    </li>
+</ol>
+
+<p>Place the creature in the world:</p>
+
+<ol>
+    <li>Open <span class="NDLSystemFont">Level01.block</span> in World Builder.</li>
+
+    <li>From the Palette View tab, drag five
+		<span class="NDLSystemFont">EnemySocialRippers</span> into the
+    world just on the near side of the gate.</li>
+</ol>
+
+    <div class="FigureContainer">
+        <img src="images/FiveSocialRippers.PNG" width="652" alt="Add Social Rippers">
+    </div>
+
+<p>Run the game. You should be able to observe the flocking from your initial
+position in the world, and run around the level to interact with the herd.</p>
+
+<ul>
+    <li>To start on Level 01, use the
+    command-line argument <span class="NDLSystemFont">Configuration=Level01</span>
+		without the quotes. The executable is located in
+    <span class="NDLSystemFont">%EMERGENT_PATH%\Samples\GameDemos\MangledMetal\Win32\&lt;Compiler&gt;\&lt;Configuration&gt;</span>.</li>
+
+    <li>Although rapid iteration will reload scripts into the running game
+    every time they are edited, the AI design for MangledMetal is not
+    particularly friendly to rapid iteration: since the script function is an
+    endless loop with sleep() calls, reloaded scripts will only take effect
+    when the AI shifts to a new state. If you want to continue tweaking your
+    script, you'll need to run close to the enemy, then escape, to see the new
+    flocking behavior trigger.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="mm_adding_custom_trigger.htm">Adding a custom trigger type to
+    MangledMetal</a></li>
+
+    <li><a href="mm_adding_physical_prop.htm">Adding a new physical prop to
+    MangledMetal</a></li>
+
+    <li><a href="mm_block_mangledmetal.htm">Mangled Metal Blocks
+    Detail</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

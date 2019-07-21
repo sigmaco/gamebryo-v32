@@ -1,0 +1,607 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPick</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiPick</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiSystem/NiMemObject.htm"><span>NiMemObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiPick.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is the entry point into the picking intersection
+system. With the specification of a ray, the class allows an
+application to perform picking operations on a scene graph or any
+subtree within a scene graph. Given a ray and a subtree, the
+subtree is traversed and any intersected objects satisfying
+user-defined constraints are added to an array. Each array item
+is of the nested class type <span class="NDLSystemFont"><a href=
+"NiPick__Record.htm">NiPick::Record</a></span>. The application
+may iterate through the pick records using the interface call
+<span class="NDLSystemFont">GetResults</span> after the picking
+operation is completed which returns a <span class=
+"NDLSystemFont"><a href=
+"NiPick__Results.htm">NiPick::Results</a></span> object.
+Intersections can be computed with bounding spheres (coarse scale
+operation), collision data, or with triangle geometry itself
+(fine scale operation). Ideally, <span class=
+"NDLSystemFont">NiPick</span> objects are created as member
+variables and reused, in order to minimize reallocations of the
+<span class="NDLSystemFont">Results</span> array.</p>
+
+<p>The root of the scene graph subtree at which the picking
+operation starts is specified by <span class=
+"NDLSystemFont">NiPick::SetTarget</span>.</p>
+
+<p>The constraints for the intersection search that the user can
+select are:</p>
+
+<ul>
+    <li>Find first intersected item (by scene graph traversal),
+    find closest item (by distance), or find all intersected
+    items. See <span class=
+    "NDLSystemFont">NiPick::QueryType</span>.</li>
+
+    <li>Sorted or unsorted pick records (sorting based on
+    projection of intersection points onto the picking ray). See
+    <span class="NDLSystemFont">NiPick::SortType</span>.</li>
+
+    <li>Compute intersection for bounding sphere only, collision
+    data, or down to the triangle level. See <span class=
+    "NDLSystemFont">NiPick::IntersectType</span>.</li>
+
+    <li>Compute intersections with front-facing triangles only or
+    compute intersections with triangles regardless of
+    orientation. See <span class=
+    "NDLSystemFont">NiPick::SetFrontOnly</span> and <span class=
+    "NDLSystemFont">NiPick::GetFrontOnly</span>.</li>
+</ul>When intersections are sought at the triangle level,
+additional attributes may be returned at the points of
+intersection, such as: texture coordinates, a normal vector
+(facet plane or interpolated from vertices of triangle), and the
+color.
+
+<p>To get any of these attributes, the application should use the
+methods:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiPick::SetReturnTexture</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::SetReturnNormal</span> (return normal
+    vectors)</li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::SetReturnSmoothNormal</span>
+    (<span class="NDLSystemFont">true</span> = interpolated from
+    vertices, <span class="NDLSystemFont">false</span> = facet
+    plane normal)</li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::SetReturnColor</span></li>
+</ul>
+
+<p>The actual picking is accomplished by calling <span class=
+"NDLSystemFont">NiPick::PickObjects</span>. This method takes as
+input the origin and direction of the ray. It has an additional
+parameter that specifies whether or not to append the pick
+records for the current operation to the list of those found from
+previous operations. The default is not to append (the internal
+list is cleared out before starting the subtree traversal).</p>
+
+<p>Applications can override the per-<span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a></span>
+picking logic by using a custom <span class=
+"NDLSystemFont">NiPick::PickObjectPolicy</span> class. This class
+can be set per pick instance using <span class=
+"NDLSystemFont">SetPickObjectPolicy</span> or it can be set for
+all subsequently created picks using <span class=
+"NDLSystemFont">SetDefaultPickObjectPolicy</span>.</p>
+
+<h2>IMPORTANT:</h2>
+
+<p>A mesh that are being picked against must follow these
+criteria:</p>
+
+<ul>
+    <li>The primitive type must be <span class=
+    "NDLSystemFont">NiPrimitiveType::PRIMITIVE_TRISTRIPS</span>
+    or <span class=
+    "NDLSystemFont">NiPrimitiveType::PRIMITIVE_TRIANGLES</span>.</li>
+
+    <li>The index stream must be CPU readable.</li>
+
+    <li>The position stream must be CPU readable.</li>
+
+    <li>Any other streams that are requested, such as color,
+    normal or texture, must also be CPU readable.</li>
+</ul>
+
+<p>The access flags will typically be set in the art packages
+(<a href="../../Art/Max/Precache_Custom_Attributes.htm">3ds
+max</a> or <a href=
+"../../Art/Maya/Geometry_Attributes.htm">Maya</a>) when the NIF
+files are created. The PosNormPicking.xml mesh profile is an
+example of a <a href=
+"../../Art/Other/Introduction_to_Mesh_Profiles.htm">Mesh
+Profile</a> that sets a mesh for picking and the return of
+position and normal information.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiPick(unsigned int
+uiResultsArraySize = 0, unsigned int uiResultsArrayGrowBy =
+8)</p>
+
+<p class="NDLRefMemberDescription">Constructs an <span class=
+"NDLSystemFont">NiPick</span> object with the following default
+settings:</p>
+
+<ul>
+    <li>All intersections are computed ( <span class=
+    "NDLSystemFont">QueryType</span> is <span class=
+    "NDLSystemFont">QUERY_ALL</span>)</li>
+
+    <li>Intersections are sorted ( <span class=
+    "NDLSystemFont">SortType</span> is <span class=
+    "NDLSystemFont">SORT_ON</span>)</li>
+
+    <li>Intersections are computed at the collision data level (
+    <span class="NDLSystemFont">IntersectType</span> is
+    <span class="NDLSystemFont">INTERSECT_COLLISION_DATA</span>),
+    falling back to triangles (<span class=
+    "NDLSystemFont">FallbackType</span> is <span class=
+    "NDLSystemFont">FALLBACK_TRIANGLE</span>) when collision data
+    is not present.</li>
+
+    <li>Points are returned in world coordinates ( <span class=
+    "NDLSystemFont">CoordinateType</span> is <span class=
+    "NDLSystemFont">COORDINATES_WORLD</span>)</li>
+
+    <li>Only front-facing triangles are considered for
+    intersection testing.</li>
+</ul>
+
+<p class="NDLRefMemberDescription">App culling is not observed. 
+Picking intersections may be found with app-culled objects.
+Texture-coordinates, normals, and colors at the points of
+intersection are not computed.</p>
+
+<p class="NDLRefMemberDescription">Additionally, the <span class=
+"NDLSystemFont">uiResultsArraySize</span> and the <span class=
+"NDLSystemFont">uiResultsGrowBy</span> determine the initial size
+of the results array and the amount it should grow by whenever
+that size is exceeded.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">NiPick::QueryType GetQueryType()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetQueryType(QueryType
+eType)</p>
+
+<p class="NDLRefMemberDescription">Allows the application to set
+and get the current query type.</p>
+
+<p class="NDLRefMemberDescription">Valid query types are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">NiPick::QUERY_ALL</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::QUERY_FIRST</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::QUERY_CLOSEST</span></li>
+</ul>
+
+<p class="NDLRefMemberDescription">The default value is
+<span class="NDLSystemFont">NiPick::QUERY_ALL</span>.</p>
+
+<p class="NDLRefMemberFunction">NiPick::SortType GetSortType()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetSortType(SortType
+eType)</p>
+
+<p class="NDLRefMemberDescription">Allows the application to set
+and get the current sort type. This is only used if the query
+type is <span class="NDLSystemFont">QUERY_ALL</span>.</p>
+
+<p class="NDLRefMemberDescription">Valid sort types are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">NiPick::SORT_ON</span></li>
+
+    <li><span class="NDLSystemFont">NiPick::SORT_OFF</span></li>
+</ul>
+
+<p class="NDLRefMemberDescription">The default value is
+<span class="NDLSystemFont">NiPick::SORT_ON</span>.</p>
+
+<p class="NDLRefMemberFunction">NiPick::IntersectType
+GetIntersectType() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetIntersectType(IntersectType eType)</p>
+
+<p class="NDLRefMemberDescription">Allows the application to set
+and get the current intersect type.</p>
+
+<p class="NDLRefMemberDescription">Valid intersect types are:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiPick::INTERSECT_BOUND</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::INTERSECT_TRIANGLE</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::INTERSECT_COLLISION_DATA</span></li>
+</ul>
+
+<p class="NDLRefMemberDescription">The default value is
+<span class=
+"NDLSystemFont">NiPick::INTERSECT_COLLISION_DATA</span>.</p>
+
+<p class="NDLRefMemberFunction">NiPick::FallbackType
+GetFallbackType() const</p>
+
+<p class="NDLRefMemberFunction">void SetFallbackType(FallbackType
+eType)</p>
+
+<p class="NDLRefMemberDescription">Allows the application to set
+and get the current fallback type. This setting is only used if
+the intersect type is <span class=
+"NDLSystemFont">INTERSECT_COLLISION_DATA</span>.</p>
+
+<p class="NDLRefMemberDescription">Valid fallback types are:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiPick::FALLBACK_BOUND</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::FALLBACK_TRIANGLE</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::FALLBACK_FALSE</span></li>
+</ul>
+
+<p class="NDLRefMemberDescription">The default value is
+<span class="NDLSystemFont">NiPick::FALLBACK_TRIANGLE</span>.</p>
+
+<p class="NDLRefMemberFunction">NiPick::CoordinateType
+GetCoordinateType() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetCoordinateType(CoordinateType eType)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the current coordinate type of the returned points of
+intersection.</p>
+
+<p class="NDLRefMemberDescription">Valid types are:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiPick::COORDINATES_MODEL</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiPick::COORDINATES_WORLD</span></li>
+</ul>
+
+<p class="NDLRefMemberDescription">The default value is
+<span class="NDLSystemFont">NiPick::COORDINATES_WORLD</span>.</p>
+
+<p class="NDLRefMemberFunction">bool GetFrontOnly() const</p>
+
+<p class="NDLRefMemberFunction">void SetFrontOnly(bool
+bFrontOnly)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the current front only mode. When <span class=
+"NDLSystemFont">true</span>, back face triangles (those with
+clockwise winding order) are culled prior to intersection
+calculations. When <span class="NDLSystemFont">false</span>,
+intersections of ray with triangles are computed regardless of
+triangle orientation.</p>
+
+<p class="NDLRefMemberFunction">bool GetObserveAppCullFlag()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetObserveAppCullFlag(bool
+bObserveAppCullFlag)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the observe app cull flag mode. When <span class=
+"NDLSystemFont">true</span>, if an object or node having the 'app
+culled' flag set is encountered, than that object (and perhaps
+sub-scenegraph) is skipped entirely. When <span class=
+"NDLSystemFont">false</span>, the value of the 'app culled'
+setting on the object or node is not observed and picking
+continues as normal.</p>
+
+<p class="NDLRefMemberFunction">void RemoveTarget()</p>
+
+<p class="NDLRefMemberFunction">void SetTarget(NiAVObject*
+pkObject)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+or remove the scene graph subtree for future picking operations. 
+Note that the <span class="NDLSystemFont">NiPick</span> object
+has only one target node at a time; multiple calls to
+<span class="NDLSystemFont">SetTarget</span> with different
+objects will only change the target.</p>
+
+<p class="NDLRefMemberFunction">bool GetReturnTexture() const</p>
+
+<p class="NDLRefMemberFunction">void SetReturnTexture(bool
+bReturnTexture)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the current return texture mode. When <span class=
+"NDLSystemFont">true</span>, texture coordinates are returned for
+the point of intersection of triangles intersected during the
+picking operation. This value is returned in the <span class=
+"NDLSystemFont">NiPick::Record</span> object (see below).</p>
+
+<p class="NDLRefMemberFunction">bool ReturnNormal() const</p>
+
+<p class="NDLRefMemberFunction">void SetReturnNormal(bool
+bReturnNormal)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the current return normal mode. When <span class=
+"NDLSystemFont">true</span>, a unit-length normal is returned for
+the point of intersection of triangles intersected during the
+picking operation. The <span class=
+"NDLSystemFont">bReturnNormal</span> flag determines the type of
+normal. This value is returned in the <span class=
+"NDLSystemFont">NiPick::Record</span> object (see below).</p>
+
+<p class="NDLRefMemberFunction">bool ReturnSmoothNormal()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetReturnSmoothNormal(bool
+bReturnSmoothNormal)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to set
+and get the current type of normal returned. If this flag is
+<span class="NDLSystemFont">true</span> and if vertex normals
+exist, then a unit-length normal vector is interpolated from the
+vertex normals and returned. Otherwise, the returned normal
+vector is the unitized facet normal for the intersected
+triangle. This value is returned in the <span class=
+"NDLSystemFont">NiPick::Record</span> object (see below).</p>
+
+<p class="NDLRefMemberFunction">bool ReturnColor() const</p>
+
+<p class="NDLRefMemberFunction">void SetReturnColor(bool
+bReturnColor)</p>
+
+<p class="NDLRefMemberDescription">Enables the application to get
+and set the current return color mode. When "On", a vertex color
+value is returned for the point of intersection of triangles
+intersected during the picking operation. This color is not the
+final triangle color at that point; only source vertex colors are
+used. Lighting, texturing, and specular effects are ignored. 
+This value is returned in the <span class=
+"NDLSystemFont">PickRecord</span> object (see below).</p>
+
+<p class="NDLRefMemberFunction">void SetRayInsideABV(const bool
+bRayInsideABV)</p>
+
+<p class="NDLRefMemberFunction">const bool GetRayInsideABV()
+const</p>
+
+<p class="NDLRefMemberDescription">These functions get and set
+whether or not the ray from the origin to the point stored in
+this <span class="NDLSystemFont">Record</span> are within the ABV
+of the picked object.</p>
+
+<p class="NDLRefMemberFunction">bool PickObjects(const
+NiPoint3&amp; kOrigin, const NiPoint3&amp; kDir,
+bool bAppend = false)</p>
+
+<p class="NDLRefMemberDescription">Performs the picking
+operation. Forms an array of objects intersected by the ray
+defined by <span class="NDLSystemFont">kOrigin</span> and
+<span class="NDLSystemFont">kDir</span>. This ray is in world
+coordinates. The current <span class=
+"NDLSystemFont">QueryType</span>, <span class=
+"NDLSystemFont">SortType</span>, <span class=
+"NDLSystemFont">IntersectType</span>, and front-only mode
+determine the type of array formed. The <span class=
+"NDLSystemFont">bAppend</span> parameter indicates whether the
+new results are appended onto those intersections already
+contained in the results array, or if a new array is formed
+clearing those results already contained in the results
+array.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiPick__PickObjectPolicy.htm">PickObjectPolicy</a>*
+GetPickObjectPolicy() const</p>
+
+<p class="NDLRefMemberFunction">void SetPickObjectPolicy(<a href=
+"NiPick__PickObjectPolicy.htm">PickObjectPolicy</a>*
+pkPolicy)</p>
+
+<p class="NDLRefMemberDescription">Get/Set the policy used when
+trying to pick on render objects directly. Note that the NiPick
+constructor defaults to the static default pick object policy. A
+NULL policy is never valid, and will result in using the static
+default policy.</p>
+
+<p class="NDLRefMemberFunction">NiPick::Results&amp;
+GetResults()</p>
+
+<p class="NDLRefMemberDescription">Returns a reference to the
+results array of pick records obtained by the last call to
+<span class="NDLSystemFont">PickObjects</span>. See <a href=
+"NiPick__Results.htm"><span class=
+"NDLSystemFont">NiPick::Results</span></a> for the semantics of
+iterating an array of this type.</p>
+
+<p class="NDLRefMemberFunction">void ClearResultsArray()</p>
+
+<p class="NDLRefMemberDescription">Clears all of the records from
+the results array so that the next picking operation will start
+with a fresh array. The array will also be cleared before any
+pick operation that has the append flag set to false.</p>
+
+<p class="NDLRefHead1">Supported Static Functions</p>
+
+<p class="NDLRefMemberFunction">static <a href=
+"NiPick__PickObjectPolicy.htm">PickObjectPolicy</a>*
+GetDefaultPickObjectPolicy()</p>
+
+<p class="NDLRefMemberFunction">static void
+SetDefaultPickObjectPolicy(<a href=
+"NiPick__PickObjectPolicy.htm">PickObjectPolicy</a>*
+pkPolicy)</p>
+
+<p class="NDLRefMemberDescription">Get/Set the default policy
+used when instantiating <span class="NDLSystemFont">NiPick</span>
+objects. Note that NULL is never a valid value for the static
+policy, and will result in an instantiation of the default policy
+class.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">IntersectType, QueryType, FallbackType,
+and SortType</p>
+
+<p>In <span class="NDLSystemFont">INTERSECT_COLLISION_DATA</span>
+mode, instead of using the implicit bounding sphere for each
+object, the picking algorithm attempts to use collision data that
+has been explicitly created. Unlike <span class=
+"NDLSystemFont">INTERSECT_BOUND</span> mode, <span class=
+"NDLSystemFont">INTERSECT_COLLISION_DATA</span> mode will record
+a valid intersection point, distance, and normal for any
+successful picks.</p>
+
+<p>For objects that do not have any collision data, the
+<span class="NDLSystemFont">FallbackType</span> setting
+determines the behavior. <span class=
+"NDLSystemFont">FALLBACK_BOUND</span> uses the implicit bounding
+sphere. <span class="NDLSystemFont">FALLBACK_TRIANGLE</span> uses
+the mesh position data itself. <span class=
+"NDLSystemFont">FALLBACK_FALSE</span> mode will not return any
+collisions for objects without collision data. With regard to
+query modes, <span class="NDLSystemFont">QUERY_FIRST</span> will
+always halt at the first intersection, whether or not it occurs
+at an interior or a leaf node. Whether or not <span class=
+"NDLSystemFont">QUERY_ALL</span> and <span class=
+"NDLSystemFont">QUERY_CLOSEST</span> will descend to a leaf node
+or halt at an interior node depends on the propagation flags on
+each node's collision data.</p>
+
+<p>In <span class="NDLSystemFont">INTERSECT_BOUND</span> mode,
+intersection calculations are performed on the bounding spheres
+of objects. In this mode, intersections are either hit or miss,
+and calculations for the exact intersection point are not
+performed. Upon intersection of a bounding sphere two possible
+behaviors can result. If the pick mode is <span class=
+"NDLSystemFont">QUERY_FIRST</span> or <span class=
+"NDLSystemFont">QUERY_CLOSEST</span>, the picking operations
+halts at the first positive intersection whether it occurs at an
+interior node or leaf node and a <span class=
+"NDLSystemFont">PickRecord</span> is added to the array logging
+the intersection. If the pick mode is <span class=
+"NDLSystemFont">QUERY_ALL</span>, picking operations halt only at
+leaf nodes where a <span class="NDLSystemFont">PickRecord</span>
+is added to the array logging the intersection. For interior
+nodes, the children of intersected nodes are processed but the
+interior nodes themselves are not added to the intersection
+array.</p>
+
+<p>In <span class="NDLSystemFont">INTERSECT_TRIANGLE</span> mode,
+intersection calculations are performed on the triangles that
+compose the objects. In this mode, intersections are exact. 
+Calculations for the exact intersection point are performed and
+the intersection point, parametric distance from the ray origin,
+and index of the intersected triangle are stored in the
+<span class="NDLSystemFont">PickRecord</span>. Once all
+intersections are calculated the array is sorted based on the
+sort mode. Since only triangles are processed, <span class=
+"NDLSystemFont">PickRecord</span>s are only added for the leaf
+nodes. Note that more than one pick record could be added per
+leaf node if more than one triangle intersection occurs.</p>
+
+<p class="NDLRefHead2"><a href=
+"NiPick__Record.htm">NiPick::Record</a> &amp; <a href=
+"NiPick__Results.htm">NiPick::Results</a></p>
+
+<p>Intersection results are stored in <span class=
+"NDLSystemFont"><a href=
+"NiPick__Record.htm">NiPick::Record</a></span> objects where
+<span class="NDLSystemFont"><a href=
+"NiPick__Record.htm">NiPick::Record</a></span> is a nested class
+of <span class="NDLSystemFont">NiPick</span>. Upon initiating a
+new picking operation, any previous <span class=
+"NDLSystemFont"><a href=
+"NiPick__Record.htm">NiPick::Record</a></span>s stored in the
+<a href="NiPick__Results.htm"><span class=
+"NDLSystemFont">NiPick::Results</span></a> array are invalidated
+and their memory potentially reused if the <span class=
+"NDLSystemFont">bAppend</span> parameter is set to <span class=
+"NDLSystemFont">false</span>. Thus <span class=
+"NDLSystemFont">NiPick::Record</span>s do not persist over the
+course of multiple picking operations unless the <span class=
+"NDLSystemFont">bAppend</span> parameter is set to <span class=
+"NDLSystemFont">true</span>.</p>
+
+<p>The <span class="NDLSystemFont">NiPick::PickObjects</span>
+function, if the append flag is false, will reuse all of the
+<span class="NDLSystemFont"><a href=
+"NiPick__Record.htm">NiPick::Record</a></span> objects in the
+picking array. This is to minimize allocations and deallocations
+of records. However, the caveat is that it is not possible to
+hold onto a pointer to a record across multiple (non-appending)
+pick calls and have that pointer still point to the same record
+data. Although this is an uncommon operation, if it is desired to
+keep a record in this manner and not have it be reused, you can
+use the <a href="NiPick__Results.htm"><span class=
+"NDLSystemFont">NiPick::Results</span></a>::RemoveAndFill
+function.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

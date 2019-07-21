@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>BackgroundLoad Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>BackgroundLoad Demo Code Overview</h1>
+
+<p>The following <span class="NDLSystemFont">NiStream</span> 
+ functions are used to perform the background load in the BackgroundLoad demo:</p>
+
+<p class="NDLRefMemberFunction">void NiStream::BackgroundLoadBegin(const char* pcFileName);</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">BackgroundLoadBegin</span> is used to launch the background load.</p>
+
+<p class="NDLRefMemberFunction">NiStream::ThreadStatus NiStream::BackgroundLoadPoll(LoadState* pkState);</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ is used to poll the status of the background load. It returns <span class="NDLSystemFont">NiStream::IDLE</span> when 
+ the background load has finished. It returns <span class="NDLSystemFont">NiStream::LOADING</span> while 
+ the background load is in progress. If a non-<span class="NDLSystemFont">NULL</span> pointer is passed 
+ as the <span class="NDLSystemFont">pkState</span> 
+ argument to <span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ and <span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ returns <span class="NDLSystemFont">NiStream::LOADING</span>, 
+ the structure pointed to by <span class="NDLSystemFont">pkState</span> 
+ is filled in with values that indicate the progress of the background 
+ load. These values are used in this sample to calculate the values displayed 
+ on the screen that indicate the progress of the background load. </p>
+
+<p class="NDLRefMemberFunction">bool NiStream::BackgroundLoadGetExitStatus() const;</p>
+
+<p class="NDLRefMemberDescription">After <span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ indicates that the background load has finished, <span class="NDLSystemFont">BackgroundLoadGetExitStatus</span> 
+ is used to determine whether the background load succeeded. It returns 
+ <span class="NDLSystemFont">true</span> 
+ if the load succeeded and <span class="NDLSystemFont">false</span> 
+ if it failed.</p>
+
+<p class="NDLRefMemberFunction">bool NiStream::BackgroundLoadFinish();</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ blocks until a background load runs to completion. In this sample, we 
+ call it before allowing the application to exit. If the user quits the 
+ application before the background load finishes, calling <span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ is necessary. It is an error to destroy an <span class="NDLSystemFont">NiStream</span> object while 
+ a background load is in progress. If the background load has already finished 
+ before <span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ is called, <span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ will return immediately.</p>
+
+<p class="NDLRefMemberDescription">On some single-processor console platforms, a background 
+ load will not receive any cycles unless the foreground thread yields the 
+ processor by calling <span class="NDLSystemFont">NiSleep</span>, 
+ a global function declared in <span class="NDLSystemFont">NiSystem.h</span>:</p>
+
+<p class="NDLRefMemberFunction">void NiSleep(unsigned int uiMilliseconds);</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">NiSleep</span> 
+ puts the calling thread to sleep for the number of milliseconds specified 
+ by its <span class="NDLSystemFont">uiMilliseconds</span> 
+ argument. If a background load has been launched, it will wake up and 
+ run while the foreground thread is asleep.</p>
+
+<p>The BackgroundLoad sample loads its NIF files using 
+ an <span class="NDLSystemFont">NiStream</span>-derived 
+ class called <span class="NDLSystemFont">CallbackStream</span>. 
+ <span class="NDLSystemFont">CallbackStream</span> 
+ overloads the virtual <span class="NDLSystemFont">NiStream</span> 
+ function <span class="NDLSystemFont">BackgroundLoadOnExit</span>. 
+ <span class="NDLSystemFont">BackgroundLoadOnExit</span> 
+ is called by the background loading code in <span class="NDLSystemFont">NiStream</span> when a background 
+ load completes. The default implementation, <span class="NDLSystemFont">NiStream::BackgroundLoadOnExit</span>, 
+ does nothing. The purpose of the function is to allow applications to 
+ override it in classes derived from <span class="NDLSystemFont">NiStream</span> 
+ and do work that should be done in the background thread to avoid frame 
+ rate hits that would happen if the work was done in the application's 
+ main thread. <span class="NDLSystemFont">CallbackStream::BackgroundLoadOnExit</span> 
+ creates property states and effect states for the objects extracted from 
+ ROOM.NIF.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><a href="Sample_Overview.htm">BackgroundLoad Demo Overview</a></li>
+<li><a href="Sample_Functional_Overview.htm">BackgroundLoad Demo Functional Overview</a></li>
+</ul>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiCalculatingOutput</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiCalculatingOutput</p>
+
+<p class="NDLRefParentage">: public <span><a href=
+"../../Reference/NiMain/NiMetricsOutputModule.htm">NiMetricsOutputModule</a></span></p>
+
+<p class="NDLRefHeaderFile">&lt;NiCalculatingOutput.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is not designed to be used directly as a metrics
+output module. Instead, it is designed to be used as a subclass
+to base other output modules on that depend on calculating
+functions of metrics (mean, sum, etc...) over some arbitrary time
+period. This class performs those calculations.</p>
+
+<p>One thing to take note of is that if multiple output modules
+derive from this class, the calculated metrics will not be shared
+between modules. This is because those output modules may
+calculate the metrics over a different period or be interested in
+a different set of metrics. Although this duplicates some of the
+work that could be done if the data were shared, it provides
+maximum flexibility to deriving output modules.</p>
+
+<p>This class uses a data structure of <span class=
+"NDLSystemFont">MetricContainer</span> objects (described below).
+Derived classes can use the protected member functions to
+register interest in particular metrics or to look them up to get
+their values. This class itself will not register any metrics by
+default. Once a metric has been registered, then the <span class=
+"NDLSystemFont">NiCalculatingOutput::AddValue</span> function
+will start routing the <span class=
+"NDLSystemFont">AddValue</span> value calls into that registered
+<span class="NDLSystemFont">MetricContainer</span> and will
+periodically have it calculate the values after the frame period.
+The <span class=
+"NDLSystemFont">MetricContainer::GetPointerToValue</span> and
+<span class="NDLSystemFont">MetricContainer::GetValue</span>
+functions can then be used to get the calculated values.</p>
+
+<p>See <span class="NDLSystemFont"><a href=
+"NiVisualTrackerOutput.htm">NiVisualTrackerOutput</a></span> and
+<span class="NDLSystemFont"><a href=
+"NiXMLMetricsOutput.htm">NiXMLMetricsOutput</a></span> for
+examples of deriving from this class.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiCalculatingOutput(unsigned int
+uiFramePeriod, unsigned int uiHashSize = 127)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">uiFramePeriod</span> is the amount of frames
+(calls to <span class="NDLSystemFont">Update</span> that metrics
+should be calculated over. The <span class=
+"NDLSystemFont">uiHashSize</span> argument is the initial size of
+the string to metric container hash table.</p>
+
+<p class="NDLRefHead1">Virtual Member Functions</p>
+
+<p class="NDLRefMemberFunction">virtual void AddValue(const char*
+pcName, float fValue)</p>
+
+<p class="NDLRefMemberFunction">virtual void
+EndTimer(NiMetricsTimer&amp; kTimer)</p>
+
+<p class="NDLRefMemberFunction">virtual void
+AddImmediateEvent(const char* pcName, float fValue)</p>
+
+<p class="NDLRefMemberFunction">virtual void Update()</p>
+
+<p class="NDLRefMemberDescription">These functions all implement
+the <span class="NDLSystemFont">NiMetricsOutputModule</span>
+interface. In addition, <span class="NDLSystemFont">Update</span>
+will calculate metrics if the frame period has been reached. If
+subclasses of this class override <span class=
+"NDLSystemFont">Update</span>, then they should call <span class=
+"NDLSystemFont">NiCalculatingOutput::Update</span> as part of
+that function.</p>
+
+<p class="NDLRefHead1">Member Functions</p>
+
+<p class="NDLRefMemberFunction">void CalculateValues()</p>
+
+<p class="NDLRefMemberDescription">This function is called by
+<span class="NDLSystemFont">Update</span> after the frame period
+when it needs to calculate functions of metrics.</p>
+
+<p class="NDLRefMemberFunction">void SetFramePeriod(unsigned int
+uiFramePeriod)</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetFramePeriod()</p>
+
+<p class="NDLRefMemberDescription">These functions are getters
+and setters for the frame period.</p>
+
+<p class="NDLRefHead1">Protected Member Functions</p>
+
+<p>These functions are all protected and designed to be used by
+derived classes. Pointers to <span class=
+"NDLSystemFont">MetricContainer</span> should not be deleted by
+derived classes. The memory is cleaned up by the <span class=
+"NDLSystemFont">NiCalculatingOutput</span> base class.</p>
+
+<p class="NDLRefMemberFunction">MetricContainer*
+RegisterMetric(const char* pcName)</p>
+
+<p class="NDLRefMemberDescription">Register the metric
+<span class="NDLSystemFont">pcName</span> as a metric to
+calculate. If the metric is already registered, it will increment
+the count of how many times it has been registered. This function
+returns a pointer to the registered <span class=
+"NDLSystemFont">MetricContainer</span>.</p>
+
+<p class="NDLRefMemberFunction">void UnregisterMetric(const char*
+pcName)</p>
+
+<p class="NDLRefMemberDescription">Unregister the metric
+represented by <span class="NDLSystemFont">pcName</span>. If the
+registration count drops to zero, then this metric will no longer
+be calculated.</p>
+
+<p class="NDLRefMemberFunction">MetricContainer* FindMetric(const
+char* pcName)</p>
+
+<p class="NDLRefMemberDescription">Return the <span class=
+"NDLSystemFont">MetricContainer</span> represented by
+<span class="NDLSystemFont">pcName</span>. Returns NULL if not
+found.</p>
+
+<p class="NDLRefMemberFunction">MetricContainer*
+FindOrRegisterMetric(const char* pcName)</p>
+
+<p class="NDLRefMemberDescription">This is a convenience function
+to avoid the double lookup required by the operation "find a
+metric and only if it doesn't exist, register it." It will either
+find the metric or register it, but will not increase the
+registration of the metric.</p>
+
+<p class="NDLRefHead1">Function Enum</p>
+
+<p>This table describes all of the functions that are calculated
+per metric and the enums that are used to reference them.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>NiCalculatingOutput::MetricsFunction Enum
+            Value</th>
+
+            <th>Meaning</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_MIN</span></td>
+
+            <td>The minimum value found over the frame
+            period.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_MAX</span></td>
+
+            <td>The maximum value found over the frame
+            period.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_SUM</span></td>
+
+            <td>The sum of all values over the frame period.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_SUM_PER_FRAME</span></td>
+
+            <td>The sum of all values over the frame period
+            divided by the number of frames.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_MEAN</span></td>
+
+            <td>The mean of all values over the frame
+            period.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiCalculatingOutput::FUNC_COUNT</span></td>
+
+            <td>The number of times <span class=
+            "NDLSystemFont">AddValue</span> was called over the
+            frame period.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHeadClassTitle">
+NiCalculatingOutput::MetricContainer</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This is a small utility subclass designed to handle light
+calculations of a metric.</p>
+
+<p class="NDLRefHead1">Constructor</p>
+
+<p class="NDLRefMemberFunction">MetricContainer(const char*
+pcName)</p>
+
+<p class="NDLRefMemberDescription">Create a metric container for
+a metric with name <span class="NDLSystemFont">pcName</span>.</p>
+
+<p class="NDLRefHead1">Member Functions</p>
+
+<p class="NDLRefMemberFunction">float*
+GetPointerToValue(MetricsFunction eFunc)</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the
+calculated data represented by this function. Returns NULL if
+<span class="NDLSystemFont">eFunc</span> is invalid. This pointer
+is always to the calculated data and so will never return
+intermediate results.</p>
+
+<p class="NDLRefMemberFunction">float GetValue(MetricsFunction
+eFunc)</p>
+
+<p class="NDLRefMemberDescription">Returns the calculated value
+for function <span class="NDLSystemFont">eFunc</span> for this
+metric.</p>
+
+<p class="NDLRefMemberFunction">void AddValue(float fValue)</p>
+
+<p class="NDLRefMemberDescription">Add a value for this metric on
+this frame period.</p>
+
+<p class="NDLRefMemberFunction">void StoreCurrent(unsigned int
+uiFramePeriod)</p>
+
+<p class="NDLRefMemberDescription">Store the current temporary
+calculated values of this metric and reset the temporaries so
+that they can be calculated for the next frame. <span class=
+"NDLSystemFont">uiFramePeriod</span> is the number of frames this
+metric was calculated over and must be greater than zero.</p>
+
+<p class="NDLRefMemberFunction">const char* GetName()</p>
+
+<p class="NDLRefMemberDescription">Returns the name of the metric
+this <span class="NDLSystemFont">MetricContainer</span> is
+concerned with.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

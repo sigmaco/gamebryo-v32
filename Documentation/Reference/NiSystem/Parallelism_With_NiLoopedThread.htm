@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Parallelism With NiLoopedThread</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Parallelism With NiLoopedThread</h1>
+
+<p><span class="NDLSystemFont"><a href=
+"NiLoopedThread.htm">NiLoopedThread</a></span> is a thread class
+that facilitates repeated, parallelizable tasks. It can be
+restarted multiple times to do a task with potentially different
+inputs. This class is designed to parallelize and improve
+performance for updating or culling a scene. The rest of this
+documentation will mostly consider the update call, but
+culling is both directly analogous and easier to parallelize.
+<span class="NDLSystemFont"><a href=
+"../../Learn/Demos/CharacterPerformanceDemo_intro.htm">CharacterPerformanceDemo</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Learn/Demos/BadSushi_intro.htm">BadSushi</a></span> are
+working examples of parallel update.</p>
+
+<p><span class=
+"NDLSystemFont">NiLoopedThread</span> uses a helper class called
+<span class="NDLSystemFont"><a href=
+"NiLoopedThreadProcedure.htm">NiLoopedThreadProcedure</a></span>
+that does all the work specific to the task. To parallelize some
+task, the first step is to derive a subclass from <span class=
+"NDLSystemFont">NiLoopedThreadProcedure</span> and override the
+<span class="NDLSystemFont">LoopedProcedure</span> function. This
+is the function that will do all the work. This subclass should
+also contain member variables that hold the information that a
+task needs to know. In the case of an update call, this could
+potentially be a list of nodes or actor managers. The
+<span class="NDLSystemFont">LoopedProcedure</span> will reference
+these member variables to do the task in parallel.</p>
+
+<p>The second step is to partition the data for
+the task into chunks. This step could be done as a preprocessing
+step or on-the-fly, depending on the dynamic nature of the data.
+For a scene graph, this data will be subgraphs that are ideally
+wholly independent of each other. Partitioning a scene is not
+always an easy task and is probably the largest hurdle to
+parallelizing the update of a general scene. It is important to
+be careful of objects that reference parts of the scene graph in
+a non-hierarchical manner, such as <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiLookAtInterpolator.htm">NiLookAtInterpolator</a></span>
+objects, or particle system emitter controllers. These types of
+objects could cause problems if they are attached in a different
+partition than their target. A parallel update of this scenario
+will have a race condition between the update of that object and
+the update of the target. If possible, these objects should be
+partitioned with their target to avoid that race condition. If
+that is not possible, then a secondary solution would be to
+update them only after it is known that their target has been
+updated. It is important to note that <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>-derived
+objects do not have this problem, even though they may have a
+scope that points to arbitrary places in the scene graph.
+However, that link is not referenced until the rendering
+pass.</p>
+
+<p>There is a caveat about the <span class=
+"NDLSystemFont">NiRandom</span> function. It wraps a call to
+<span class="NDLSystemFont">rand</span>, which is non-reentrant.
+The only parts of Gamebryo that uses this call during
+<span class="NDLSystemFont">Update</span> are particle system
+emitters, which randomly create particles. Simultaneous calls to
+<span class="NDLSystemFont">NiRandom</span> may potentially
+return the same value. It is not likely, but is something to be
+aware of.</p>
+
+<p>In <span class="NDLSystemFont"><a href=
+"../../Learn/Demos/CharacterPerformanceDemo_intro.htm">CharacterPerformanceDemo</a></span>,
+because of the homogenous nature of the scene graph, the scene is
+partitioned equally between threads, with each one of <em>n</em>
+threads handling 1/<em>n</em>th of the scene. All the characters
+are attached at a single node, which means that they are not
+strict partitions, because the parent node (which will be updated
+as part of <span class="NDLSystemFont">Update</span>'s upward
+pass) will be updated multiple times. However, for the upward
+pass on an <span class="NDLSystemFont">NiNode</span>, only the
+bound will be updated. Because of this, that parent's bound could
+be entirely inaccurate. This may not be a problem, such as in the
+case of this <span class=
+"NDLSystemFont">CharacterPerformanceDemo</span> where that bound
+isn't used at all. If it is, then the function <span class=
+"NDLSystemFont">UpdateWorldBound</span> could be called after all
+of the parallel updates have finished on any shared parent.
+(Similar considerations apply for the <span class=
+"NDLSystemFont"><a href=
+"../../Learn/Demos/BadSushi_intro.htm">BadSushi</a></span>
+demo.)</p>
+
+<p>Partitioning with one thread per partition
+is certainly not the only way to do a parallel update. It would
+be fairly easy to modify this scheme to make the partitions
+smaller and have many more partitions than threads. in that case,
+the looped threads could request smaller chunks from some shared
+repository of data within some fast critical section. They could
+then signal that they were complete when there were no more
+chunks left to process. This sort of scheme would be more suited
+for a system where processors might not have equal processing
+time available or for scenes that have parts that may take longer
+to update than others. This would also help to automatically
+balance the work a little more fairly between threads.</p>
+
+<p>The last step is to actually tie together
+and use the threads and the data. During the <span class=
+"NDLSystemFont">Update</span> call, the member variables in the
+derived <span class=
+"NDLSystemFont">NiLoopedThreadProcedure</span> are set. At the
+start of the call, all of the threads are suspended while waiting
+to start their loop. After their member variables have been set,
+the next step is to wake all of the threads up by calling their
+<span class="NDLSystemFont">DoLoop</span> function which will run
+a single iteration of the loop in the background. After the
+threads have been woken up, then the <span class=
+"NDLSystemFont">Update</span> call can loop through all of the
+threads and call the <span class=
+"NDLSystemFont">WaitForLoopCompletion</span> function. This
+function will suspend the main thread until a thread completes
+its loop. By waiting for all the looped threads at the end of the
+function, it is guaranteed that the update has finished and all
+the update threads are suspended. All the threads are now ready
+to be re-used for the next <span class=
+"NDLSystemFont">Update</span> call.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

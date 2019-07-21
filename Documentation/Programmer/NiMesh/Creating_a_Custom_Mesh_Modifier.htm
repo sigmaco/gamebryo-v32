@@ -1,0 +1,509 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a Custom Mesh Modifier</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a Custom Mesh Modifier</h1>
+
+<p>Applications may create new mesh modifiers to perform any task
+that modifies mesh data at runtime. We use the <span class=
+"NDLSystemFont">NiWaterModifier</span> class from the <a href=
+"../../Learn/Demos/MeshCreation_Demo_Overview.htm">Mesh
+Creation</a> demo as an example.</p>
+
+<p>Mesh modifiers will typically over-ride all of the following
+virtual functions defined in the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span>
+class:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">virtual bool Attach(NiMesh*
+    pkMesh)</span></li>
+
+    <li><span class="NDLSystemFont">virtual bool Detach(NiMesh*
+    pkMesh)</span></li>
+
+    <li><span class="NDLSystemFont">virtual bool
+    SubmitTasks(NiMesh* pkMesh, NiSyncArgs* pkArgs,
+    NiSPWorkflowManager* pkWFManager, const bool bReset =
+    false)</span></li>
+
+    <li><span class="NDLSystemFont">virtual bool
+    CompleteTasks(NiMesh* pkMesh, NiSyncArgs* pkArgs)</span></li>
+
+    <li><span class="NDLSystemFont">virtual bool
+    AreRequirementsMet(NiMesh* pkMesh, NiSystemDesc::RendererID
+    ePlatform) const</span></li>
+</ul>
+
+<p>In addition, modifiers that will be created in the Gamebryo
+tool chain should implement the following:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">virtual void
+    RetrieveRequirements(NiMeshRequirements&amp; kRequirements)
+    const</span></li>
+</ul>
+
+<p>The default implementations for these functions specify no
+requirements in <span class=
+"NDLSystemFont">RetrieveRequirements</span> and always return
+true for <span class=
+"NDLSystemFont">AreRequirementsMet</span>.</p>
+
+<h2>Data Typically Stored in a Mesh Modifier object</h2>
+
+<p>The issue of data ownership is very important when working
+with mesh modifiers. In general, mesh modifiers should store, in
+member variables, the following types of data:</p>
+
+<ul>
+    <li>Flags and other per-modifier data will almost always be
+    stored in the modifier class. It is also possible to store
+    modifier flags or local data in data streams on the mesh to
+    which the modifier is attached. However, this data will not
+    be available in the <span class=
+    "NDLSystemFont">RetrieveRequirements</span> function or
+    constructors. It is also a Gamebryo convention that modifiers
+    should not <em>add</em> data
+    streams to a mesh. Rather, the code that creates the modifier
+    and attaches it to the mesh should add the necessary streams.
+    This is to avoid bugs in the art pipeline.</li>
+
+    <li>Floodgate objects are stored in the modifier class. There
+    are several objects that might be needed if a modifier uses
+    Floodgate, listed below. In general, the modifier will either
+    keep smart pointers to objects or it will own the objects and
+    be responsible for deleting them.</li>
+
+    <li style="list-style: none">
+        <ul>
+            <li><span class="NDLSystemFont"><a href=
+            "../../Reference/NiFloodgate/NiSPTask.htm">NiSPTask</a></span>
+            objects: Tasks are the smallest divisible unit of
+            Floodgate work. Task objects are persistent across
+            multiple submissions, so modifiers that use Floodgate
+            will typically allocate tasks in their <span class=
+            "NDLSystemFont">Attach</span> functions and delete
+            them in their <span class=
+            "NDLSystemFont">Detach</span> functions.</li>
+
+            <li><span class="NDLSystemFont"><a href=
+            "../../Reference/NiFloodgate/NiSPStream.htm">NiSPStream</a></span>
+            objects: These objects hold the data on which
+            Floodgate operates. Modifiers typically create these
+            streams in their <span class=
+            "NDLSystemFont">Attach</span> function, using either
+            data streams on the mesh as the source of the data,
+            or using local members. Floodgate streams should be
+            deleted in the <span class=
+            "NDLSystemFont">Detach</span> function, or, if a
+            <span class="NDLSystemFont">NiSPStream</span> object
+            is a member variable of a modifier, it is essential
+            that the <span class=
+            "NDLSystemFont">NiSPStream::ClearTaskArrays</span>
+            function be called on the member stream during the
+            <span class="NDLSystemFont">Detach</span>
+            function.</li>
+
+            <li><span class="NDLSystemFont"><a href=
+            "../../Reference/NiFloodgate/NiSPKernel.htm">NiSPKernel</a></span>-derived
+            objects: Each Floodgate task has a kernel associated
+            with it. The kernel should be owned by the owner of
+            the task, which is the modifier.</li>
+
+            <li><span class="NDLSystemFont"><a href=
+            "../../Reference/NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span>
+            objects: Modifiers should store smart pointers to any
+            outstanding <span class=
+            "NDLSystemFont">NiSPWorkflow</span> objects that
+            Floodgate is processing. The pointer should be set
+            when a task is submitted and set to 0 (released) when
+            the task is completed. Note that the functions for
+            submitting tasks in the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiFloodgate/NiSPWorkflowManager.htm">
+            NiSPWorkflowManager</a></span> class all return the
+            workflow that the task has been placed in.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>The <span class="NDLSystemFont">NiWaterModifier</span> stores
+all of the above forms of data. Note that most pointers are
+allocated in <span class="NDLSystemFont">Attach</span> and they
+are all deleted in <span class="NDLSystemFont">Detach</span>.
+That enables the sequence <span class="NDLSystemFont">Attach -
+Detach - Attach</span> to be called without leaking memory.</p>
+
+<p>Be very careful when using static data members and Floodgate -
+bugs arise when multiple modifiers access the same static data
+from multiple Floodgate threads. The <span class=
+"NDLSystemFont">NiWaterModifier</span> class can use a static
+member for its data because only one is ever executing in any
+application.</p>
+
+<h2>The Attach Function</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshModifier.htm#Updating_and_Managing_Parallel_Tasks">
+NiMeshModifier::Attach</a></span> function must be implemented by
+all sub-classes. It takes the <span class=
+"NDLSystemFont">NiMesh</span> object for the modifier and it
+should return true if the modifier successfully attached, false
+otherwise. <span class="NDLSystemFont">Attach</span> functions
+typically do all of the one-off initialization for the modifier.
+For example, the <span class=
+"NDLSystemFont">NiWaterMeshModifier::Attach</span> function
+performs the following actions:</p>
+
+<ul>
+    <li>Sets sync points. The water should only be computed if it
+    is visible, so that is when we submit the task. If the water
+    was always visible, we would be better off submitting during
+    update to provide more time for the computation to proceed.
+    In either case, the modifier must complete its work in time
+    to render.</li>
+</ul>
+<pre class="indent1">
+AddSubmitSyncPoint(NiSyncArgs::SYNC_VISIBLE);
+AddCompleteSyncPoint(NiSyncArgs::SYNC_RENDER);
+</pre>
+
+<ul>
+    <li>Allocate a Floodgate task to compute the water. Floodgate
+    tasks are persistent objects, so we can allocate one now at
+    initialization and use it throughout the lifetime of the
+    modifier. Note that <span class=
+    "NDLSystemFont">NiSPTask</span> objects are reference
+    counted, so it is very important to use a smart pointer.</li>
+</ul>
+<pre class="indent1">
+m_spTask = NiSPTask::GetNewTask();
+</pre>
+
+<ul>
+    <li>Create a Floodgate kernel. The kernel is defined in a
+    separate class and contains the code that computes the water
+    surface and shading.</li>
+</ul>
+<pre class="indent1">
+m_pkWaterKernel = NiNew NiWaterKernel;
+m_spTask-&gt;SetKernel(m_pkWaterKernel);
+</pre>
+
+<ul>
+    <li>Set up Floodgate streams. Most of the data for the
+    Floodgate task comes from <span class=
+    "NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">
+    NiDataStream</a></span> objects on the mesh. The modifier
+    sets up several <span class="NDLSystemFont"><a href=
+    "../../Reference/NiFloodgate/NiTSPStream.htm">NiTSPStream</a></span>
+    objects and assigns the <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span>
+    object as the source of data for the Floodgate stream, as
+    shown below. The modifier owns the pointer to the Floodgate
+    data stream because it knows about the expected lifetime of
+    the stream (until the Floodgate task is released). This code
+    also demonstrates why setup work is not done during modifier
+    construction or when it is first added to the mesh: the
+    Floodgate stream holds a pointer to the <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span>
+    object from the mesh. If that pointer were to change, we
+    would have no easy way of knowing that the Floodgate stream
+    needs to be updated. The use of <span class=
+    "NDLSystemFont">Attach</span> and <span class=
+    "NDLSystemFont">Detach</span> enforces a guarantee that data
+    streams will not change between their invocation.</li>
+</ul>
+<pre class="indent1">
+NiDataStreamRef*pkDSRef = pkMesh-&gt;FindStreamRef(NiCommonSemantics::POSITION(), 0);
+m_pkOutputPositionsSPStream = NiNew NiTSPStream&lt;NiPoint3&gt;;
+m_pkOutputPositionsSPStream-&gt;SetDataSource(pkDSRef-&gt;GetDataStream());
+m_pkOutputPositionsSPStream-&gt;SetBlockCount(pkDSRef-&gt;GetTotalCount());
+m_spTask-&gt;AddOutput(m_pkOutputPositionsSPStream);
+</pre>
+
+<p>Other work might also be done in the <span class=
+"NDLSystemFont">Attach</span> function. For example, the <a href=
+"../../Reference/NiMesh/NiSkinningMeshModifier.htm"><span class=
+"NDLSystemFont">NiSkinningMeshModifier</span></a> class allocates
+arrays of bone matrices for later use.</p>
+
+<p>Conversely, a modifier that does not use Floodgate might not
+do anything at all in <span class="NDLSystemFont">Attach</span>,
+or may only cache pointers into the mesh.</p>
+
+<h2>The Detach Function</h2>
+
+<p>The Detach function should undo any work done in the Attach
+function so that Attach may be called again without leaking
+resources or errors. The <span class=
+"NDLSystemFont">NiWaterModifier</span> object deletes all of the
+memory it allocated in <span class="NDLSystemFont">Attach</span>
+and sets all pointers to <span class="NDLSystemFont">NULL</span>.
+Be particularly careful when a modifier has member variables of
+type <a href=
+"../../Reference/NiFloodgate/NiSPStream.htm"><span class=
+"NDLSystemFont">NiSPStream</span></a>. These objects store
+internal arrays that must be explicitly released to free memory,
+using the <a href=
+"../../Reference/NiFloodgate/NiSPStream.htm"><span class=
+"NDLSystemFont">NiSPStream::ClearTaskArrays</span></a> function.
+Gamebryo's skinning, instancing and particle system simulator
+modifiers all make use of this function.</p>
+
+<p>It is guaranteed that the <span class=
+"NDLSystemFont">CompleteTasks</span> function is called before
+<span class="NDLSystemFont">Detach</span>, and that the modifier
+is currently attached to the mesh.</p>
+
+<p>There is no need to remove the sync points registered for the
+modifier. The modifier's <span class=
+"NDLSystemFont">SubmitTasks</span> and <span class=
+"NDLSystemFont">CompleteTasks</span> functions will never be
+called if the modifier is not attached.</p>
+
+<h2>The SubmitTasks Function</h2>
+
+<p>The <span class="NDLSystemFont">SubmitTasks</span> function is
+called each time processing for the modifier's mesh reaches a
+submit sync point that the modifier has registered for. It is
+hence the gateway through which all the modifier's per-frame
+actions must pass. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>
+object passed as an argument contains information about the sync
+points for which we are being asked to submit. The <span class=
+"NDLSystemFont">SubmitTasks</span> function may be called
+multiple times in one frame with different sync arguments.</p>
+
+<p>Modifiers that do not use Floodgate can do any work in the
+<span class="NDLSystemFont">SubmitTasks</span> function. The
+modifier will operate serially in that case.</p>
+
+<p>Modifiers that use Floodgate typically do some per-frame setup
+for the Floodgate task (such as setting variable data) and then
+submit the Floodgate tasks for parallel processing. There are
+several important items to consider when submitting the task:</p>
+
+<ul>
+    <li>The <span class="NDLSystemFont">SubmitTasks</span>
+    function takes a <span class="NDLSystemFont"><a href=
+    "../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>
+    object as an argument. This workflow manager must be used for
+    all task submission. It is necessary to place all of the
+    tasks for a single mesh in the same <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span>
+    object in case there are dependencies between modifiers.
+    Hence, all modifiers should use the <span class=
+    "NDLSystemFont">NiSPWorkflowManager::AddRelatedTask</span>
+    function when adding tasks, and the mesh is responsible for
+    calling <span class=
+    "NDLSystemFont">NiSPWorkflowManager::FinishRelatedTasks.</span>
+    This is vital for correct task execution.</li>
+
+    <li>The <span class=
+    "NDLSystemFont">NiSPWorkflowManager::AddRelatedTask</span>
+    takes a task group as a parameter. Only tasks with the same
+    task group are placed in the same workflow for Floodgate.
+    This task group should always be constructed from the sync
+    points for the task using the functions in <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>.
+    For example, the <span class=
+    "NDLSystemFont">NiWaterModifier::Attach</span> function
+    includes the line:</li>
+</ul>
+<pre class="indent1">
+NiUInt32 uiTaskGroup = NiSyncArgs::GetTaskGroupID(NiSyncArgs::SYNC_VISIBLE, NiSyncArgs::SYNC_RENDER);
+</pre>
+
+<ul>
+    <li>When using the <span class=
+    "NDLSystemFont">SYNC_POST_UPDATE</span> sync point, a
+    modifier must use the <span class=
+    "NDLSystemFont">NiSPWorkflowManager::AddRelatedTask</span>
+    function with the <span class=
+    "NDLSystemFont">bDelaySubmission</span> argument set to
+    <span class="NDLSystemFont">true</span>. This causes the
+    tasks to be queued for submission at a later point, in this
+    case after update has completed. The update process will
+    ensure that all of these delayed tasks are flushed after
+    update has completed on the scene graph.</li>
+
+    <li>The <span class="NDLSystemFont">SubmitTasks</span>
+    function must check that the task it is about to submit has
+    been completed. If not, it should call <span class=
+    "NDLSystemFont">CompleteTasks</span> with arguments designed
+    to complete the outstanding tasks. Typically, the value of
+    the smart pointer to the floodgate workflow will be used to
+    check for task completion: if the workflow smart pointer is
+    non-zero then the task has not completed.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">NiWaterModifier</span> object
+stores the workflow in a smart pointer. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>
+object returns the <span class="NDLSystemFont"><a href=
+"../../Reference/NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span>
+object into which the task has been placed. All modifiers that
+use Floodgate will store their workflows in this manner, because
+it is the only handle available to force completion of the
+tasks.</p>
+
+<p>The <span class="NDLSystemFont">NiWaterModifier</span> object
+asserts that the workflow is NULL in <span class=
+"NDLSystemFont">SubmitTasks</span>. This will be the case because
+tasks are only submitted if the object is visible, and if an
+object is visible it is always rendered, so the task is always
+completed. Other Gamebryo modifiers, such as morphing or
+skinning, can not make such assumptions. Those modifiers check
+the value of their workflow smart pointers and complete the
+workflow if it is not already <span class=
+"NDLSystemFont">NULL</span>.</p>
+
+<h2>The CompleteTasks Function</h2>
+
+<p>The <span class="NDLSystemFont">CompleteTasks</span> function
+is called each time processing for the modifier's mesh reaches a
+complete sync point that the modifier has registered for. The
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>
+object passed as an argument contains information about the sync
+points, and typically includes a submit sync point of
+<span class="NDLSystemFont">SYNC_ANY</span>, indicating that any
+outstanding tasks that complete at the given sync point should be
+completed, regardless of when they were submitted.</p>
+
+<p>Modifiers that do not use Floodgate can do any work in the
+<span class="NDLSystemFont">CompleteTasks</span> function. The
+modifier will operate serially in that case.</p>
+
+<p>Modifiers that use Floodgate typically wait for any Floodgate
+tasks to complete and then do any post-Floodgate processing such
+as updating bounds or other data that depends on the Floodgate
+operation. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span>
+object returned by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>
+object in <span class="NDLSystemFont">SubmitTasks</span> is the
+handle for accessing Floodgate. Modifiers typically check for a
+non-<span class="NDLSystemFont">NULL</span> value for the
+workflow (<span class="NDLSystemFont">NULL</span> would indicate
+no outstanding tasks) and then wait on the workflow to
+complete:</p>
+<pre>
+if (m_spWorkflow)
+{
+    NiStreamProcessor::Get()-&gt;Wait(m_spWorkflow);
+    m_spWorkflow = 0;
+}
+</pre>
+
+<p>It is important to set the workflow to NULL to indicate that
+there is no outstanding task and to allow the workflow to return
+to the free object pool.</p>
+
+<h2>The RetrieveRequirements Function</h2>
+
+<p>The <span class="NDLSystemFont">RetrieveRequirements</span>
+function is called by the Gamebryo tool chain to determine the
+properties that modifiers demand from meshes. It is only required
+if the modifier will be created in the tool chain. The only
+argument to the <span class=
+"NDLSystemFont">RetrieveRequirements</span> function is a
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshRequirements.htm">NiMeshRequirements</a></span>
+object that should be filled with additional sets of requirements
+imposed by the modifier. For example, the following code from the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMorphMeshModifier.htm">NiMorphMeshModifier</a></span>
+class sets one of many requirements, in this case on the weights
+for the morph targets:</p>
+<pre>
+NiUInt32 uiReqIndex;
+NiUInt32 uiSet1Index = kRequirements.CreateNewRequirementSet();
+NiUInt32 uiStreamID = 1;
+// Weights
+uiReqIndex = kRequirements.AddRequirement(uiSet1Index, NiCommonSemantics::
+    MORPHWEIGHTS(), 0, NiMeshRequirements::STRICT_INTERLEAVE,
+    uiStreamID++, NiDataStream::USAGE_USER, NiDataStream::ACCESS_CPU_READ |
+    NiDataStream::ACCESS_CPU_WRITE_MUTABLE, NiDataStreamElement::
+    F_FLOAT32_1);
+</pre>
+
+<h2>The AreRequirementsMet Function</h2>
+
+<p>The <span class="NDLSystemFont">AreRequirementsMet</span>
+function is called every time a modifier is considered for
+attachment to a mesh. The modifier will not be attached if this
+function returns false.</p>
+
+<p>The function should return false if the modifier does not
+expect to be able to execute with the given mesh, for any reason.
+Correct implementation of this function will ensure that there
+are not crashes inside the <span class=
+"NDLSystemFont">Attach</span> function or the Floodgate kernel
+due to missing or incorrectly formatted data streams. In theory,
+there is no need for data stream error checking in the
+<span class="NDLSystemFont">Attach</span> function if the
+<span class="NDLSystemFont">AreRequirementsMet</span> function is
+implemented correctly.</p>
+
+<p>Core Gamebryo modifiers (skinning, morphing, and so on) check the
+mesh for every data stream that they will later access in the
+<span class="NDLSystemFont">Attach</span> function, and check
+that the stream contains the correct format, access, and so on.
+For example, this is just a small part of the <span class=
+"NDLSystemFont">AreRequirementsMet</span> function for the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiSkinningMeshModifier.htm">NiSkinningMeshModifier</a></span>
+class that checks for the presence of position data suitable for
+skinning:</p>
+<pre>
+NiDataStreamElement::Format akFormats[4];
+akFormats[0] = NiDataStreamElement::F_FLOAT32_3;
+akFormats[1] = NiDataStreamElement::F_FLOAT16_3;
+bInvalid |= !NiMeshUtilities::ValidateStream(
+    "NiSkinningMeshModifier(Hardware)", pkMesh,
+    NiCommonSemantics::POSITION_BP(), 0,
+    akFormats, 2,
+    NiDataStream::ACCESS_GPU_READ);
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

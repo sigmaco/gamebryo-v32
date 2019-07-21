@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Instancing Common Usage</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Instancing Common Usage</h1>
+
+<p>In general, there are only a few different situations 
+ where an application should use hardware instancing. This section attempts 
+ to cover these common use cases and describe which instancing options 
+ should be used for each.</p>
+
+<h2>Many sparsely packed static objects</h2>
+
+<p>Imagine a scene with large a number of static instanced 
+ objects spaced all through out the level, such as a forest. In this situation 
+ there will most likely be instances surrounding the camera in all directions. 
+ This means that the bounding volume for the instanced mesh will likely 
+ always be visible, eliminating the possibility of culling out all the 
+ instances in one pass. For this situation, making use of per-instance culling 
+ would be ideal. This will ensure that only the visible instances are passed 
+ to the GPU.</p>
+
+<p>Another important detail to note is that the location 
+ of all the geometry is static. We can take advantage of this fact and 
+ help save resources. Instead of using <a href="../../Reference/NiMesh/NiMeshHWInstance.htm">NiMeshHWInstance</a> 
+ objects to help manage the transformations of the instances, the transformations 
+ can be manually set and then never touched again. Avoiding using <span 
+ class="NDLSystemFont">NiMeshHWInstance</span> objects can greatly reduce 
+ the amount of memory required to manage the instance objects as well as 
+ help reduce memory fragmentation. </p>
+
+<h2>Many densely packed static objects</h2>
+
+<p>Imagine a scene with a large number of static instanced 
+ objects spaced near each other, such as a brick wall were each brick is 
+ an instance. In this scenario, the bounding volume that represents all 
+ the instanced meshes will only be visible when some of the instances are 
+ visible. When the bounding volume is visible its very likely that the 
+ majority of the instances are visible as well. For this case, only one 
+ pass of culling should be necessary, as performing per-instance culling 
+ would likely not provide much of a benefit. </p>
+
+<p>Similar to the sparsely packed static scene, there is 
+ not much need to use <a href="../../Reference/NiMesh/NiMeshHWInstance.htm">NiMeshHWInstance</a> 
+ objects for a densely packed static scene, or any other static scene. 
+ Instead the transformations should be set manually. Avoiding using <span 
+ class="NDLSystemFont">NiMeshHWInstance</span> objects can greatly reduce 
+ the amount of memory required to manage the instance objects as well as 
+ help reduce memory fragmentation. </p>
+
+<h2>Many dynamic objects</h2>
+
+<p>What fun is a brick wall constructed of hundreds of 
+ brick instances if the bricks cannot move? A little more care needs to 
+ be used for scenes that will have instances with changing transformations. 
+ When the transform for an instance changes the bounding volume for the 
+ instanced mesh needs to be recomputed. This can be a rather expensive 
+ operation, especially when the instanced mesh represents thousands of 
+ instances. To avoid having to recompute the bounding volume every time 
+ a transformation is changed simply specify the bounding volume to be static. 
+ Since, setting the bounding volume to static can result in incorrect bounds 
+ and culling, care needs to be taken when switching to static bounds. If 
+ the transformations of the instances are going to change greatly it may 
+ be better to not use static bounds or possibly use a static bound that 
+ is large enough to encapsulate the entire area that any of the instances 
+ may move too.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

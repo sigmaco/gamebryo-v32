@@ -1,0 +1,335 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>XML Mesh Profile Authoring Example</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>XML Mesh Profile Authoring Example</h1>
+
+<p>The following documentation provides a walk through
+ for creating a basic XML mesh profile from scratch. It then moves on to
+ illustrate how that profile can be tweaked to achieve various results.</p>
+
+<h2>Creating a Basic Mesh Profile from Scratch</h2>
+
+<ol>
+
+	<li>Create a blank plain
+ text file called '<span class="NDLSystemFont">TutorialProfile.xml</span>'
+ and save it to your <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\ToolPluginsData\MeshProfiles</span>
+ directory. The xml file is placed in this directory because Gamebryo's
+ exporters and tools will scan all the files in this directory for mesh
+ profiles.</li>
+
+	<li>Add the following XML
+ declaration to the beginning of the file.
+
+<pre>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+</pre>
+
+</li>
+
+	<li>Next, add a <span class="NDLSystemFont">MeshProfiles</span>
+ XML Element.
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+<span class="CodeHighLight">&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;&lt;/MeshProfiles&gt;</span>
+</pre>
+
+<p class="indent1">In the above line, the <span class="NDLSystemFont">NiMeshProfileSchema.xsd</span>
+ file is referenced only to detect common syntax errors while editing the
+ XML file.</p>
+
+</li>
+
+	<li>Now, start the <span
+ class="NDLSystemFont">MeshProfile</span> block within the <span class="NDLSystemFont">MeshProfiles</span>
+ (plural) block.
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    <span class="CodeHighLight">&lt;MeshProfile name="TutorialProfile" description="A very simple profile"&gt;&lt;/MeshProfile&gt;</span>
+&lt;/MeshProfiles&gt;
+</pre>
+
+<p class="indent1">In the line added above, the mesh profile
+ is given the name &quot;<span class="NDLSystemFont">TutorialProfile</span>&quot;
+ and a short description that exporters and tools may display to the user.</p>
+ </li>
+
+	<li>In this profile, we
+ will create two streams, one for the index buffer and another for the
+ vertex data. Rendering indexed primitives requires that indices and vertex
+ data be in separate streams.
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfile" description="A very simple profile"&gt;
+        <span class="CodeHighLight">&lt;FinalizeStream name="IndexStream"&gt;&lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream"&gt;&lt;/FinalizeStream&gt;</span>
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+</li>
+
+
+	<li>The index stream will
+ contain one element&mdash;the indices. We want the vertex stream to contain
+ two elements&mdash;position and normal. We accomplish this by declaring Element
+ blocks within the FinalizeStream blocks.
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfile" description="A very simple profile"&gt;
+        &lt;FinalizeStream name="IndexStream"&gt;
+            <span class="CodeHighLight">&lt;Element&gt;INDEX&lt;/Element&gt;</span>
+        &lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream"&gt;
+            <span class="CodeHighLight">&lt;Element&gt;POSITION&lt;/Element&gt;
+            &lt;Element&gt;NORMAL&lt;/Element&gt;</span>
+        &lt;/FinalizeStream&gt;
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+<p class="indent1">One thing to note is that the <span class="NDLSystemFont">INDEX</span>,
+ <span class="NDLSystemFont">POSITION</span>, and <span class="NDLSystemFont">NORMAL</span>
+ elements have already been defined in the global scope. Their global element
+ definitions can be found in the <span class="NDLSystemFont">GamebryoDefaultElements.xml</span> file.
+ Hence, in the lines above, we reference those existing element definitions
+ instead of redefining them. If it was desired, however, we could redefine
+ them as needed.</p>
+
+</li>
+
+	<li>The mesh profile is
+ now complete. If we launch Max or Maya, it should automatically be listed
+ in the available profiles per-scene and per-object. By assigning this
+ profile to a simple object and exporting, the resulting mesh will have
+ a single stream that has positions and normals interleaved as well as
+ another stream containing only the indices. If additional data is on the
+ mesh in Max or Maya such as UV coordinates, that data will be removed.
+ If it was desired to have unspecified streams kept, then the <em>keepUnspecifiedFinalizeStreams</em>
+ attribute on the <span class="NDLSystemFont">MeshProfile</span> tag may
+ be used to control that behavior. By making the following modification,
+ we can ensure that unspecified data like UV coordinates and such will
+ be kept on the mesh:
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfile" description="A very simple profile" <span class="CodeHighLight">keepUnspecifiedFinalizeStreams="false"</span>&gt;
+        &lt;FinalizeStream name="IndexStream"&gt;
+            &lt;Element&gt;INDEX&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream"&gt;
+            &lt;Element&gt;POSITION&lt;/Element&gt;
+            &lt;Element&gt;NORMAL&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+</li>
+</ol>
+
+<h2>Changing Access Flags</h2>
+
+<p>By setting the access flags, you can set whether the
+ CPU or GPU can read or write to a particular data stream. This has an
+ influence on where the data is stored in memory since all data that is
+ GPU-accessible must be in video memory and all data that is CPU-accessible
+ must be in system memory.</p>
+
+<p>By default, the access flags for vertex data streams
+ are <span class="NDLSystemFont">CPU_WRITE_STATIC</span> and <span class="NDLSystemFont">GPU_READ</span>.
+ This means that the CPU only writes to the stream once (upon creation)
+ and does not read from the stream, so it does not need to stay in system
+ memory. Since the GPU must be able to read it, the data will only live
+ in video memory.</p>
+
+<p>One of the most common uses of access flags is to make
+ vertex data accessible to the CPU for picking. If you know that the application
+ loading the mesh will need to have CPU read access to the data, we can
+ simply set that access flag in the mesh profile. Adding this flag to the
+ profile we created above makes it now look like this:</p>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfile" description="A very simple profile"&gt;
+        &lt;FinalizeStream name="IndexStream"&gt;
+            &lt;Element&gt;INDEX&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream" <span class="CodeHighLight">access="CPU_READ;GPU_READ"</span>&gt;
+            &lt;Element&gt;POSITION&lt;/Element&gt;
+            &lt;Element&gt;NORMAL&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+<p>Note that the write access was not specified. If no
+ write access is specified the <span class="NDLSystemFont">CPU_WRITE_STATIC</span>
+ is assumed. This helps facilitate the default case and to reduce errors
+ by not specifying a <span class="NDLSystemFont">WRITE</span> flag.</p>
+
+<h2>Adding Platform-specific properties</h2>
+
+<p>Most XML Elements in a mesh profile can be made platform-specific.
+ This can be useful for creating assets that are optimized for different
+ platforms. </p>
+
+<p>Let us say that we want to compress the normals from
+ our previous example profile. Since Xenon and PS3 have limited memory,
+ we want to compress their normals, but we want to have our DirectX assets
+ have uncompressed normals. </p>
+
+<p>Since Xenon supports normalized signed bytes (with four
+ components) and the PS3 supports normalized signed shorts (with any number
+ of components), we can use these as the data formats of our normals instead
+ of the full floating point numbers. For a full list of which formats are
+ supported on which renderers, see the <a href="Mesh_Profile_Supported_Formats.htm">supported
+ formats</a> documentation. </p>
+
+<p>The default format of vertex data is float which means
+ that each component will take up 32 bits. By compressing to a byte or
+ short, we can reduce this to 8 or 16 bits per component respectively.
+ Here is what the profile looks like with per-platform compressed normals:</p>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfile" description="A very simple profile"&gt;
+        &lt;FinalizeStream name="IndexStream"&gt;
+            &lt;Element&gt;INDEX&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream" access="CPU_READ;GPU_READ;CPU_WRITE_STATIC"&gt;
+            &lt;Element&gt;POSITION&lt;/Element&gt;
+            <span class="CodeHighLight">&lt;Element convertformat="INT16" converttype="NORMALIZE" renderer="PS3" type="NORMAL"&gt;
+                &lt;Component value="NORMAL.X"/&gt;
+                &lt;Component value="NORMAL.Y"/&gt;
+                &lt;Component value="NORMAL.Z"/&gt;
+            &lt;/Element&gt;
+            &lt;Element convertformat="INT8" converttype="NORMALIZE" renderer="XENON" type="NORMAL"&gt;
+                &lt;Component value="NORMAL.X"/&gt;
+                &lt;Component value="NORMAL.Y"/&gt;
+                &lt;Component value="NORMAL.Z"/&gt;
+                &lt;Component value="0"/&gt;
+            &lt;/Element&gt;
+            &lt;Element renderer="DX9"&gt;NORMAL&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+<p>In the lines modified above, we have overridden the
+ global definitions for the <span class="NDLSystemFont">NORMAL</span> element
+ for both the <span class="NDLSystemFont">PS3</span> and <span class="NDLSystemFont">XENON</span>
+ platforms. On both platforms, we set the converttype to be <span class="NDLSystemFont">NORMALIZE</span>.
+ For the <span class="NDLSystemFont">XENON</span> renderer, we inject a literal
+ value of 0 for the 4th component. This ensures that we'll have the write
+ component count for that platform.</p>
+
+<h2>Making profiles compatible with mesh modifiers</h2>
+
+<p>In the example profile above, our mesh would work fine
+ for static geometry, but if we wanted it to be applied to a mesh that
+ has skinning applied, the skinning would not be able to work because the
+ data that it needs is not stored on the mesh.</p>
+
+<p>It is usually necessary to add elements to a mesh profile
+ in order to make it compatible with mesh modifiers. In the case of skinning,
+ we need to have streams for bind pose data, bone weights, bone indices,
+ and a bone remapping array. Morphing also has requirements. Particularly,
+ it must have data for each of the morph targets and a weights array. Let
+ us take our previous profile and make it compatible with morphing. After
+ we have added the necessary data it should look like this:</p>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;MeshProfiles version="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./NiMeshProfileSchema.xsd"&gt;
+    &lt;MeshProfile name="TutorialProfileMorphing" description="A very simple profile that supports morphing"&gt;
+        &lt;FinalizeStream name="IndexStream"&gt;
+            &lt;Element&gt;INDEX&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;
+        &lt;FinalizeStream name="VertexStream"&gt;
+            &lt;Element&gt;POSITION&lt;/Element&gt;
+            &lt;Element&gt;NORMAL&lt;/Element&gt;
+            <span class="CodeHighLight">&lt;Element range="0-31"&gt;MORPH_POSITION&lt;/Element&gt;</span>
+        &lt;/FinalizeStream&gt;
+        <span class="CodeHighLight">&lt;FinalizeStream name="MorphingStream"&gt;
+            &lt;Element&gt;MORPHWEIGHTS&lt;/Element&gt;
+        &lt;/FinalizeStream&gt;</span>
+    &lt;/MeshProfile&gt;
+&lt;/MeshProfiles&gt;
+</pre>
+
+<p>This profile is now useful for both static geometry
+ and morphed meshes. Note that this time, we specified the range attribute
+ for the <span class="NDLSystemFont">MORPH_POSITION</span> element. This
+ is done because there will be one array of morph position data for each
+ morph target that the mesh has, but each target will have a different
+ index. By specifying a range, we have indicated the profile will allow
+ up to 32 unique morph targets to be added to the mesh.</p>
+
+<p>Note that we've decided to place the <span class="NDLSystemFont">MORPHWEIGHTS</span>
+ element is in a separate stream. We do this because we know that morph
+ weights are not per-vertex data. There is only one morph weight per morph
+ target so this data cannot be interleaved with vertex data.</p>
+
+<p>In reality, we could have placed the <span class="NDLSystemFont">MORPHWEIGHTS</span>
+ into the same <span class="NDLSystemFont">FinalizeStream</span> block since
+ we are <em>not</em> specifying &quot;<span
+ class="NDLSystemFont">STRICT_INTERLEAVE</span>&quot; for the elements strict
+ attribute. In other words, the <span class="NDLSystemFont">MORPHWEIGHTS</span>
+ would have been broken out anyway during the finalize process. And in
+ fact, it turns out that morphing requires that the <span class="NDLSystemFont">MORPH_POSITION</span>
+ and <span class="NDLSystemFont">POSITION</span> elements to be in their
+ own separate data-streams. Since the above profile is not strict about
+ its interleaving requirements, an exported mesh with a morph will be successful
+ and will have those streams broken out.</p>
+
+<p>Any additional elements that we add to our profile will
+ only show up on the exported mesh if the necessary data was created by
+ the exporter or plug-ins. This means that if we applied our new profile
+ to a static mesh without morphing, the static mesh would not have the
+ <span class="NDLSystemFont">MORPH_POSITION</span> or <span class="NDLSystemFont">MORPHWEIGHTS</span>
+ and we would end up with just positions and normals. Also note that if
+ we wanted to ensure that no unspecified data-streams were removed during
+ the finalize stage, we could always set the <span class="NDLSystemFont">MeshProfile keepUnspecifiedFinalizeStreams</span>
+ attribute to &quot;<span class="NDLSystemFont">true</span>&quot;.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

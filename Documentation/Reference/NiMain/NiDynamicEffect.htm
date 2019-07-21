@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiDynamicEffect</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<p class="NDLRefHeadClassTitle">NiDynamicEffect</p>
+
+<p class="NDLRefParentage">: public <u><span><a href="NiAVObject.htm"><span>NiAVObject</span></a></span></u></p>
+
+<p class="NDLRefHeaderFile">&lt;NiDynamicEffect.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiDynamicEffect</span> 
+ is a base class for dynamic effects such as <span class="NDLSystemFont"><a 
+ href="NiLight.htm">NiLight</a>s</span> or projected texture effects. It 
+ is a subclass of <span class="NDLSystemFont"><a href="NiAVObject.htm">NiAVObject</a></span> 
+ since most dynamic effects are spatial in nature and can therefore be 
+ attached to a scene graph. Applications can specify any desired set of 
+ subtrees in a scene graph that a given dynamic effect will affect. Additionally, 
+ the application can specify precisely which children in a subtree will 
+ not be affected by the dynamic effect even though their parents are affected.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p><span class="NDLSystemFont">NiDynamicEffect</span> is an abstract base class, and should never have its constructor 
+ called directly. The only effect of the constructor is to set the enable 
+ flag to <span class="NDLSystemFont">true</span>.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiDynamicEffect.htm#EffectType">EffectType</a> 
+ GetEffectType() const</p>
+
+<p class="NDLRefMemberDescription">Returns an enumerated constant indicating 
+ what type of dynamic effect an object is.&nbsp; This function enables 
+ the engine and applications to determine the type of the effect without 
+ having to use general-purpose RTTI. This value is stored internally to 
+ <span class="NDLSystemFont">NiDynamicEffect</span> allowing the function 
+ to be non-virtual. Subclasses should set the effect type appropriately 
+ in their constructors.</p>
+
+<p class="NDLRefMemberFunction">bool GetSwitch() const</p>
+
+<p class="NDLRefMemberFunction">void SetSwitch(bool bOn, bool bSetShadowGenerator 
+ = false)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the value of the enable 
+ flag for the effect. If the flag is set to <span class="NDLSystemFont">true 
+ </span>, then the dynamic effect is applied to affected nodes during rendering. 
+ If the flag is set to <span class="NDLSystemFont">false </span>, the effect 
+ is not applied. If <span class="NDLSystemFont">bSetShadowGenerator</span> 
+ is true and the <span class="NDLSystemFont">NiDynamicEffect</span> has a 
+ <span class="NDLSystemFont">NiShadowGenerator</span> attached then the active 
+ state of the <span class="NDLSystemFont">NiShadowGenerator</span> will be 
+ set to <span class="NDLSystemFont">bOn</span>.</p>
+ 
+<p class="NDLRefMemberDescription">There are issues with dynamic effect sequencing confusion
+ relative to NiStandardMaterial if lights are removed from the dynamic effect list, so an early
+ decision was not to disturb that sequencing as part of implementing a switch capability.
+ As a result, the implementation consists of merely setting the diffuse, ambient, and specular
+ color of the switched off lights to black, which is very inefficient at run-time. So consider the following:</p>
+  <ul>
+    <li>To remove the effects of a light in a scene, ideally it should be detached from the scene
+    graph, followed by a call to UpdateEffects().</li>
+ 
+    <li>To have a blinking light, it is usually preferable to animate the light.</li>
+ 
+    <li>Although the switch, as currently implemented, has some usefulness in tools, it is not
+    recommended for use at run-time, since any light that is turned off via SetSwitch() is still
+    evaluated in any shaders, with adverse performance impact.</li>
+  </ul>
+
+
+<p class="NDLRefMemberFunction">const <a href="NiTList.htm">NiNodeList</a>&amp; 
+ GetAffectedNodeList()</p>
+
+<p class="NDLRefMemberDescription">Returns the list of nodes that a given 
+ dynamic effect will affect.</p>
+
+<p class="NDLRefMemberFunction">bool AttachAffectedNode(<a href="NiNode.htm">NiNode</a>* 
+ pkAffectedNode) </p>
+
+<p class="NDLRefMemberDescription">Add a node to a list of nodes to be affected 
+ by a given dynamic effect. If a node appears on this list, then its entire 
+ subtree will be affected by the effect. </p>
+    <p class="NDLRefMemberDescription">Returns true if the node was added to the list, 
+        false if the node was already on the list.</p>
+
+<p class="NDLRefMemberFunction">bool DetachAffectedNode(<a href="NiNode.htm">NiNode</a>* 
+ pkAffectedNode)</p>
+
+<p class="NDLRefMemberDescription">Remove a node from a list of nodes to 
+ be affected by a given dynamic effect.</p>
+    <p class="NDLRefMemberDescription">Returns true if the node was removed, false if 
+        the node was not found on the list.</p>
+
+<p class="NDLRefMemberFunction">bool DetachAllAffectedNodes()</p>
+
+<p class="NDLRefMemberDescription">Remove all nodes from the list of nodes 
+ to be affected by a given dynamic effect.</p>
+    <p class="NDLRefMemberDescription">Returns true if nodes were removed, false if 
+        there were no nodes to remove.</p>
+
+<p class="NDLRefMemberFunction">const <a href="NiTList.htm">NiNodeList</a>&amp; 
+ GetUnaffectedNodeList()</p>
+
+<p class="NDLRefMemberDescription">Returns the list of nodes that a given 
+ dynamic effect will not affect.</p>
+
+<p class="NDLRefMemberFunction">bool AttachUnaffectedNode(<a href="NiNode.htm">NiNode</a>* 
+ pkAffectedNode) </p>
+
+<p class="NDLRefMemberDescription">Add a node to a list of nodes that will 
+ not be affected by a given dynamic effect. If a node appears on this list, 
+ then its entire subtree will not be affected by the effect.</p>
+    <p class="NDLRefMemberDescription">Returns true if the node was added to the list, 
+        false if the node was already on the list.</p>
+
+<p class="NDLRefMemberFunction">bool DetachUnaffectedNode(<a href="NiNode.htm">NiNode</a>* 
+ pkAffectedNode)</p>
+
+<p class="NDLRefMemberDescription">Remove a node from a list of nodes that 
+ are not affected by a given dynamic effect.</p>
+    <p class="NDLRefMemberDescription">Returns true if the node was removed, false if 
+        there were no nodes to remove.</p>
+
+<p class="NDLRefMemberFunction">bool DetachAllUnaffectedNodes()</p>
+
+<p class="NDLRefMemberDescription">Remove all nodes from the list of nodes 
+ that are not affected by a given dynamic effect.</p>
+    <p class="NDLRefMemberDescription">Returns true if nodes were removed, false if 
+        there were no nodes to remove.</p>
+
+<p class="NDLRefMemberFunction">bool IsUnaffectedNode(<a HREF="NiNode.htm">NiNode</a>* 
+ pkPossibleNode)</p>
+
+<p class="NDLRefMemberDescription">Indicates whether or not the specified 
+ node is unaffected.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name=EffectType></a><p class="NDLRefHead2">EffectType</p>
+
+<p><span class="NDLSystemFont">NiDynamicEffect::EffectType</span> is the type returned from <span 
+ class="NDLSystemFont">GetEffectType</span>, 
+ and allows applications and the engine to quickly determine the exact 
+ type of effect without resorting to RTTI. The values are:</p>
+
+<!--(Table)=========================================================-->
+<table>
+  <thead>
+	<tr>
+        <th>Enumeration</th>
+	    <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">AMBIENT_LIGHT</span></td>
+    <td><span class="NDLSystemFont"><a href="NiAmbientLight.htm">NiAmbientLight</a></span></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">DIR_LIGHT</span></td>
+    <td><span class="NDLSystemFont"><a href="NiDirectionalLight.htm">NiDirectionalLight</a></span></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">POINT_LIGHT</span></td>
+    <td><span class="NDLSystemFont"><a href="NiPointLight.htm">NiPointLight</a></span></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">SPOT_LIGHT</span></td>
+    <td><span class="NDLSystemFont"><a href="NiSpotLight.htm">NiSpotLight</a></span></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">TEXTURE_EFFECT</span></td>
+    <td><span class="NDLSystemFont"><a href="NiTextureEffect.htm">NiTextureEffect</a></span></td>
+</tr>
+</tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

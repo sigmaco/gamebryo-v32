@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Anatomy of a Frame</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Anatomy of a Frame</h1>
+
+<p>The frame rendering system allows you to set up complex 
+ rendering effects in advance and then automatically perform those effects 
+ each frame. It does this with a series of objects that can be activated 
+ and deactivated or re-configured each frame and that provide hooks for 
+ an application to easily customize their behavior. It is also possible 
+ to extend many of these objects to perform completely custom operations 
+ but still have them work within the confines of the system. This helps 
+ enable more portable code, as frame rendering system objects from one 
+ application can be easily dropped into another application that uses the 
+ frame rendering system.</p>
+
+<p>This section describes, at a high level, what each object 
+ in the frame rendering system does and how they relate to each other. 
+ For a more detailed description of the various frame rendering system 
+ components, see the <a href="Frame_Rendering_System_Components.htm">System 
+ Components</a> section.</p>
+
+<h2>Render Frame</h2>
+
+<p>The top-level object in the system is the <a href="Frame_Rendering_System_Render_Frame.htm">render 
+ frame</a>. A render frame represents an entire rendering process. Multiple 
+ render frames may be held by an application, but only one is required. 
+ An application sets up the render frame at initialization time and then 
+ tells it to draw and display itself each frame in its idle processing 
+ loop.</p>
+
+<p>The render frame doesn't perform any rendering itself. 
+ Instead, it holds a collection of render steps. Each frame, it iterates 
+ through the render steps, telling each one to render. You can hook pre- 
+ and post-processing callback functions to a render frame that are invoked 
+ before and after it renders and can be used to abort the rendering process.</p>
+
+<h2>Render Step</h2>
+
+<p>A <a href="Frame_Rendering_System_Render_Step.htm">render 
+ step</a> is a single rendering effect. Multiple steps are strung together 
+ to render the entire frame. Render steps do the actual rendering work 
+ in the system. They can do this with a single pass or with multiple passes.</p>
+
+<p>Render steps store an active state that the render frame 
+ observes when telling them to render. Thus, entire render steps can be 
+ easily turned off by application code. They also provide pre- and post-processing 
+ callbacks that can be used to perform custom configuration each frame 
+ or even to abort execution of the render step.</p>
+
+<p>Render steps can optionally provide access to the render 
+ target group that will contain the final result of their rendering operations. 
+ This feature can be used to swap out the render target groups used for 
+ various rendering effects, which can be handy when ping-ponging render 
+ buffers during full-screen post processing, for example.</p>
+
+<p>Completely custom render steps can be created by an 
+ application, but the most common type of render step performs one or more 
+ rendering passes via render click objects.</p>
+
+<h2>Render Click</h2>
+
+<p>A <a href="Frame_Rendering_System_Render_Click.htm">render 
+ click</a> is a single rendering pass. It encapsulates any number of rendering 
+ operations that all occur to the same render target group. Multiple clicks 
+ can be combined together in a render step to produce a complete rendering 
+ effect. Each render click is associated with a single render target group, 
+ to which it renders its output.</p>
+
+<p>Render clicks can be easily enabled or disabled each 
+ frame in several ways. First, each render click contains an active state 
+ that can be changed by applications to easily disable rendering of that 
+ click. Alternatively, a <a href="Frame_Rendering_System_Render_Click_Validator.htm">render 
+ click validator</a> object can be associated with the render click that 
+ uses some criteria to determine whether or not the render click should 
+ be executed for a particular frame. Finally, pre- and post-processing 
+ callbacks are available that can be used to perform additional operations 
+ or customize behavior each frame. The callbacks can also be used to abort 
+ rendering on any particular render click.</p>
+
+<p>Several stock render click objects ship with the frame 
+ rendering system that know how to render particular types of Gamebryo 
+ objects. For <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>-based 
+ objects, however, there is another method that can be used. A particular 
+ type of render click will render an array of <span class="NDLSystemFont">NiMesh</span> 
+ objects that are provided to it by one or more render view objects. A 
+ <a href="Frame_Rendering_System_Render_List_Processor.htm">render 
+ list processor</a> can be attached to such a render click, which is given 
+ a chance to process and potentially render the array of geometry objects 
+ both before and after the render click tries to render that array. This 
+ allows geometry objects to be sorted prior to rendering or even to have 
+ their materials or properties easily swapped out for rendering and then 
+ replaced.</p>
+
+<h2>Render View</h2>
+
+<p><a href="Frame_Rendering_System_Render_View.htm">Render 
+ view</a> objects provide a certain type of render click with an array 
+ of geometry to render. They can do this by culling a scene graph against 
+ a camera or by using some other algorithm to determine which geometry 
+ objects need to be rendered. Each render view caches an array of this 
+ geometry so that it can be shared between render clicks but only have 
+ to compute the array a single time for any given frame.</p>
+
+<p>Several stock render view objects ship with the frame 
+ rendering system that deal with different types of Gamebryo objects. The 
+ most common of these culls an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ scene graph against a particular camera's frustum using a particular culling 
+ process. Other render views exist to generate an array of screen elements 
+ or even a single, screen-filling quad useful for full-screen post-processing 
+ effects.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

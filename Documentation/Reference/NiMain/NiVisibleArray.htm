@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiVisibleArray</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiVisibleArray</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiSystem/NiMemObject.htm"><span>NiMemObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiVisibleArray.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiVisibleArray</span> is an
+array-based container class that is designed to hold an ordered
+collection of references to <font><a href=
+"NiRenderObject.htm"><span class=
+"NDLSystemFont">NiRenderObject</span></a></font> objects. The
+container serves as the data communication between culling and
+rendering or accumulating. Culling operations (either manual or
+automated via <a href="NiCullingProcess.htm"><span class=
+"NDLSystemFont">NiCullingProcess</span></a>) populate these
+containers, and rendering entities such as <a href=
+"NiAccumulator.htm"><span class=
+"NDLSystemFont">NiAccumulators</span></a> and some of the
+<a href="NiDrawSceneUtility.htm"><span class=
+"NDLSystemFont">NiDrawSceneUtility</span></a> functions consume
+them. They are always packed arrays, since references cannot
+represent "NULL". This is enforced by the <span class=
+"NDLSystemFont">Add</span> and <span class=
+"NDLSystemFont">Set</span> functions, which take references, not
+pointers, making it impossible to place a NULL object into the
+array.</p>
+
+<p>The container grows automatically during insertion, based on a
+growth rate that can be adjusted. The class is intentionally
+built to be lightweight, avoiding the addition of rarely-used
+"helper" functions that can be written using the existing
+interfaces.</p>
+
+<p>Objects referred to by this array do not have their reference
+counts incremented. For reasons of performance, the class
+assumes that the objects are referred to by other
+reference-counted system for the duration of their lifetime in
+the container. Applications are responsible for ensuring that
+objects added to these containers are removed from the container
+before the objects are destroyed.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiVisibleArray()</p>
+
+<p class="NDLRefMemberDescription">This constructor creates an
+object with initial allocated size and grow by increment set to
+the class defaults, which may be found in the header as
+<span class="NDLSystemFont">DEF_MAX_SIZE</span> and <span class=
+"NDLSystemFont">DEF_GROW_BY</span>, respectively. The count is
+initially 0, as the container is empty (but the array storage is
+pre-allocated according to the default size).</p>
+
+<p class="NDLRefMemberFunction">NiVisibleArray(unsigned int
+uiMaxSize, unsigned int uiGrowBy)</p>
+
+<p class="NDLRefMemberDescription">This constructor creates an
+object with initial allocated size and grow by increment set to
+the given function parameters. The count is initially 0, as the
+container is empty (but the array storage is pre-allocated
+according to the given initial size).</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void Add(NiRenderObject&amp;
+kObj)</p>
+
+<p class="NDLRefMemberDescription">Adds the given renderable
+object to the end of the array, growing the array if the
+allocated storage is already filled. The array will grow (if
+needed) by the class's grow by increment. A larger increment
+will result in fewer allocations/deallocations, but can waste
+more memory if the allocated storage is never used. Note that
+reallocation is transparent to the user, as the active objects in
+the reallocated array will not change. The reference count of
+the given object is not changed by this operation.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAll()</p>
+
+<p class="NDLRefMemberDescription">Resets the array to have an
+object count of 0 (i.e. the next call to Add will add the object
+to the head of the array). This is an extremely fast operation. 
+It does not delete any of the array storage, and does not change
+the reference count of any object in the container.</p>
+
+<p class="NDLRefMemberFunction">void SetAt(unsigned int uiIndex,
+NiRenderObject&amp; kObj)</p>
+
+<p class="NDLRefMemberDescription">Replaces the element at the
+given index with the given renderable object. This function
+cannot add past the end of the container. It can only replace an
+active element with a new value. As a result, it is the
+application's responsibility to ensure that <span class=
+"NDLSystemFont">uiIndex &lt; GetCount()</span>. In debugging
+builds, failure to do so will result in an assertion failure. 
+This policy is in place to ensure that the array remains
+packed. </p>
+
+<p class="NDLRefMemberFunction">NiRenderObject&amp;
+RemoveAtAndFill(unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberDescription">This function represents a
+fast way to delete an element from the container while keeping
+the packed array invariant. The item at the given index is
+replaced by the last element in the array, and the count of
+active objects is decremented by one. It is the application's
+responsibility to ensure that <span class="NDLSystemFont">uiIndex
+&lt; GetCount()</span>, which also implies that the container is
+not already empty. In debugging builds, failure to do so will
+result in an assertion failure. This function does not preserve
+the order of elements, since the last item on the array is moved
+to <span class="NDLSystemFont">uiIndex</span>. In conjunction
+with <span class="NDLSystemFont">Add</span>, this function can be
+used to implement a stack, with Pop being implemented as:</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">kObj = RemoveAtAndFill(GetCount() - 1)</span></p>
+
+<p class="NDLRefMemberFunction">NiRenderObject&amp;
+GetAt(unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberFunction">NiRenderObject&amp;
+GetAt(unsigned int uiIndex) const</p>
+
+<p class="NDLRefMemberDescription">Returns the object at the
+given index. It is the application's responsibility to ensure
+that <span class="NDLSystemFont">uiIndex &lt; GetCount()</span>. 
+In debugging builds, failure to do so will result in an assertion
+failure.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetCount() const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of items
+currently in the container.</p>
+
+<p class="NDLRefMemberFunction">inline unsigned int
+GetAllocatedSize() const</p>
+
+<p class="NDLRefMemberDescription">Returns the current size of
+the internal array storage (in elements).</p>
+
+<p class="NDLRefMemberFunction">void SetAllocatedSize(unsigned
+int uiSize)</p>
+
+<p class="NDLRefMemberDescription">Reallocates the internal array
+storage to the given size (in elements). If the new size is
+smaller than the current object count, then the object count will
+be set to the new allocated size. Setting this value to 0 will
+delete the internal array. This function is called automatically
+by <span class="NDLSystemFont">Add</span> as needed to grow the
+array.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetGrowBy()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the quantum (in
+elements) that the Add function will grow the array by each time
+it runs out of existing storage.</p>
+
+<p class="NDLRefMemberFunction">void SetGrowBy(unsigned int
+uiGrowBy)</p>
+
+<p class="NDLRefMemberDescription">Sets the quantum (in
+elements) that the Add function will grow the array by each time
+it runs out of existing storage. If 0 is passed in to this
+function, the grow by quantum will be set to 1 for safety.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Insertion and Deletion Policy</p>
+
+<p>The array is designed to be packed as an invariant, meaning
+that there is no need to check each active element against NULL
+for safety. The interfaces reflect this, accepting and returning
+only references to the renderable objects, not pointers. 
+Internally, the objects are stored in the array as pointers, but
+the interfaces ensure that these are non-NULL pointers. In
+addition, new elements can only be added or removed from the end
+of the array, so that there is no "blank" space in the array.</p>
+
+<p>This invariant allows for a lightweight class that supports
+its primary purpose (culling and rendering) well - a class that
+allows fast addition of new items to the end of the array, allows
+for extremely fast clearing of the array, and allows for fast,
+random read/write access to the elements of the array.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

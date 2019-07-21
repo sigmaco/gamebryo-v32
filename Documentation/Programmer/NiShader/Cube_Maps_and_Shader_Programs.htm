@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cube Maps and Shader Programs</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Cube Maps and Shader Programs</h1>
+
+<p>There are some special considerations that must be taken 
+ when writing shader programs that make use of cube maps in Gamebryo. The 
+ problem is that Direct3D uses a left-handed coordinate system, while Gamebryo 
+ uses a right-handed coordinate system. For the most part, this has no 
+ effect on writing shader programs: transforms, lighting calculations, 
+ texture lookups, and nearly all other calculations will work the same 
+ whether the space is left-handed or right-handed, as long as the Gamebryo-provided 
+ projection matrix will take care of the conversion when the vertices are 
+ written to screen space. For this reason, nearly all shader programs can 
+ be used by Gamebryo directly as written.</p>
+
+<p>One exception to this fact comes up when dealing with 
+ cube maps. Because of the difference in coordinate systems between Direct3D 
+ and Gamebryo, the way Direct3D organizes cube maps is somewhat different 
+ than the way Gamebryo organizes them. This means that when using <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span> 
+ objects, the lookup needs to be slightly different. When using the fixed 
+ function pipeline to do reflection mapping, Gamebryo automatically compensates 
+ for the difference by passing in a texture transform to correct for the 
+ problem. But when using vertex shaders, there's no way Gamebryo can automatically 
+ compensate. For this reason, the vertex shader will need to correct the 
+ problem itself.</p>
+
+<p>The way to correct the problem is to swizzle the vector 
+ used to look up into the cube map using the swizzle <span class="NDLSystemFont">.xzy</span>. 
+ Often, this can be done simply when looking up the cube map in the pixel 
+ shader. But in some situations, including the Glass.hlsl shader and the 
+ Chrome.fx shaders that ship with Gamebryo, the pixel shaders cannot be 
+ altered in that manner. In those cases, the vertex shader will need to 
+ swizzle the vector itself, and pass the result to the pixel shader. This 
+ often requires swizzling the other vectors that will be used with that 
+ vector, though, since all calculations will need to be done in the same 
+ space.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How the Asset Locating Services Work</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How the Asset Locating Services Work</h1>
+
+<p>The Asset Runtime Service comprises the Asset Locator Service,
+Asset Controller application, the metadata that is created for
+each asset set and the Rapid Iteration Service.</p>
+
+<h2>Asset Locator Service</h2>
+
+<p>Each application should include an instance of the Asset
+Locator system service (<span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__AssetLocatorService.htm">efd::AssetLocatorService</a></span>).
+This service allows asset IDs to be resolved at run-time,
+returning the location of the needed asset file(s). This asset
+location functionality is provided by the service's <span class=
+"NDLSystemFont">efd::AssetLocatorService::AssetLocate</span>
+method.</p>
+
+<p>All assets are referenced by the game through an asset ID. The
+asset ID is provided in the form of a Uniform Resource Identifier
+(URI) that is prefixed by the string "urn:", followed by one or
+more specifiers. The additional specifiers for the asset ID may
+be tag values, asset names, or logical or physical asset numeric
+identifiers. Each specifier is separated by a colon.</p>
+
+<p>Examples:</p>
+
+<ul>
+    <li><em>urn:gamebryo-scenegraph:Precache</em>&mdash;All assets
+    that are tagged with <em>both</em> "gamebryo-scenegraph" and
+    "Precache", which might be used to identify every asset that
+    should be pre-loaded during application startup.</li>
+
+    <li><em>urn:emergent-world:Level1</em>&mdash;An asset that is tagged with "emergent-world" and
+        has the name of "Level1", which might be used to load all the entities needed in the
+        first level of a game.</li>
+
+    <li><em>urn:llid:0716a14d-81ca-46f2-9e7e-7dc30ff2c561:PS3</em>&mdash;A logical asset with the
+        indicated unique ID <em>and also tagged</em> "PS3", which might be used to load the PS3
+        variation of an asset selected with an asset-picker in a tool.</li>
+</ul>
+
+<p>Asset IDs may be used (or constructed) directly in C++ code or
+scripts, but in most cases they will come from the contents of
+other assets. For example, a block file will reference graphical
+assets that are used by the entities that it contains. Therefore,
+most asset IDs will be selected using a tool GUI in a way very
+similar to selecting a file. Asset IDs will not normally be
+manipulated or otherwise "handled" by the developers. It is
+likely that most developers will not see asset IDs unless they
+specifically look for them in data files or logs.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The tag value that represents the asset type of
+                the asset being queried has special importance.
+                Unless you are using a Logical Asset ID (which
+                always starts with "urn:llid"), all asset ID
+                values should include the tag for the asset type.
+                Asset type tags are the tags that correspond to
+                the MIME type that is defined for the asset in
+                the <span class="NDLSystemFont"><em>&lt;Asset Web
+                Root
+                Directory&gt;</em>/asset-web-config/MimeTagger.ini</span>
+                configuration file.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Asset Controller</h2>
+
+<p>The Asset Controller is a Windows application that provides
+additional runtime asset services for games and tools. It is also
+the application that generates the metadata files that are used
+by the game runtime to identify assets. The Gamebryo tools
+require an Asset Controller to resolve asset files that are
+selected in the tool by the developer. For this reason, the
+Toolbench application automatically starts the Asset Controller
+if it is not already running.</p>
+
+<p>The fundamental reason for using a shared Asset Controller
+over a distributed connection is so that all processes involved
+in the session, such as editors and on-target previewers, will
+see a consistent set of assets, even as they are being modified
+in real time.</p>
+
+<p>A game can run without connecting to an Asset Controller. If
+there is no Asset Controller, then all asset IDs are resolved
+locally by the Asset Locator. However, if the game is connected
+to an Asset Controller, then all lookups are forwarded to it, and
+the Asset Controller is able to provide results based on the
+current state of the assets stored in the Asset Web Root. So
+assets may be added, removed, or modified, and these changes are
+available immediately within the context of the running game. It
+is this connectivity that is used to support rapid iteration
+workflows.</p>
+
+<p>In summary, the Asset Controller has three main purposes:</p>
+
+<ul>
+    <li>Create and update the metadata that is needed for
+    locating assets. This is normally done by invoking the Asset
+    Controller in a build step for the project.</li>
+
+    <li>Serve asset lookup requests that the Toolbench initiates.
+    Toolbench will ensure that there is always an Asset
+    Controller running for this purpose.</li>
+
+    <li>Monitor assets during rapid iteration workflows, making
+    up-to-the-moment changes available to a running game.</li>
+</ul>
+
+<h2>Asset Metadata</h2>
+
+<p>The Asset Runtime Service, normally within the Asset
+Controller, creates source metadata about each asset that is
+discovered in the Asset Web Root directory. This metadata is
+stored in text files (.nt extension) within specially named
+sub-directories under the Asset Web Root directory. The metadata
+defines the various tags and property values associated with each
+asset. These tags and values allow the assets to be queried by
+the Asset Locator service using the URI syntax. The system
+optimizes and caches metadata derived from the persisted source
+metadata.</p>
+
+<h3>Optimized Metadata</h3>
+
+<p>The Asset Controller produces an optimized, indexed copy of
+all the metadata and stores it in the <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root
+Directory&gt;</em>/asset-web-metadata</span> directory. This
+optimized metadata is required for both the application and the
+Asset Controller. The Asset Locator service will fail to find any
+assets unless it either has access to local metadata or is
+connected to an Asset Controller with valid metadata. For this
+reason, we recommend that your build environment be setup to run
+the Asset Controller as a build step. This will ensure that the
+optimized metadata is up-to-date for each content build and that
+the application can run successfully without requiring Toolbench
+and the Asset Controller. When using pre-built optimized metadata
+incremental changes will be folded into the application as a
+developer changes the assets and re-builds the project.</p>
+
+<h3>Persisted Metadata</h3>
+
+<p>The optimized metadata can always be regenerated by the Asset
+Controller. It does not need to be shared between developers or
+committed to any central repository or revision control system.
+However for certain projects there may be advantages to
+persisting some or all of the asset metadata. For example, one
+advantage of persisted metadata is the ability to arbitrarily
+arrange files under the content directory root and move files
+without invalidating asset references; this can be convenient
+especially for very large projects. However, the Toolbench tools
+do not currently assist in managing persistent metadata. None of
+the samples included in LightSpeed are using persisted metadata.
+For further information on the use of persisted metadata, see
+<a href="asset_runtime_persist_metadata.htm">Persisting Your Asset Metadata</a>.</p>
+
+<h2>Rapid Iteration Service</h2>
+
+<p>The Rapid Iteration service provides the application side of
+the communication channel between a running application and the
+Asset Controller. This allows the game to receive notifications
+when assets that it uses are added, removed, or updated. Many
+types of assets can be hot-loaded into the game when such changes
+are detected, thus providing a very efficient feedback cycle
+during development. The Rapid Iteration service should be
+instanced in your application during development, but not for
+shipping versions.</p>
+
+<h3>Limitations</h3>
+
+<p>Any assets that do not get loaded via the Asset Runtime
+service are not watched for rapid iteration. This includes files
+referenced from within a NIF file, such as externally referenced
+textures.</p>
+
+<p>The Gamebryo core runtime components that load assets are
+designed to be capable of safely replacing those assets in a
+running game. Equivalent intelligence is required for new loaders
+that want to take advantage of the rapid iteration feature.</p>
+
+<p>Rapid iteration on shaders is currently unsupported.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_overview.htm">Asset Infrastructure Overview</a></li>
+
+    <li><a href="asset_runtime_features.htm">Asset Infrastructure Features</a></li>
+
+    <li><a href="asset_runtime_limitations.htm">Asset Runtime
+    Service limitations</a></li>
+
+    <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the Emergent Game Framework</a></li>
+
+    <li><a href="asset_runtime_reqs.htm">Requirements for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_best_practice.htm">Best Practices for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

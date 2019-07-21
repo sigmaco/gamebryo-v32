@@ -1,0 +1,323 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional "http://www.w3.org/TR/html4/loose.dtml>
+
+<html>
+<head>
+
+<title>Creating built-in models</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+        WriteNavLink(2);
+</script>
+
+<h1>Creating built-in models</h1>
+
+<p>A built-in model is an Entity model which implements properties and
+behaviors in C++. You can create your own built-in model suitable for mixing
+into other models. Your built-in model properties are made available as if they
+were generic model properties; they behave as if they were generic properties
+while the implementation of these properties is left up to you. For example,
+you might want to expose a EMT model property that is the result of performing
+a CPU intensive calculation. Rather than update this property in script, you
+create a built-in model in C++ and expose the property via this model.</p>
+
+<p>Creating built-in models comprises two phases. First, you use the Entity
+Modeling Tool (EMT) to declare the model and export its flat file. Then, you
+create the C++ class that implements the accessors and defines any
+properties.</p>
+
+<p class="NDLHeadingProcedure">To create a model in the Entity Modeling
+Tool</p>
+
+<ol>
+    <li>Run Toolbench (<span class="NDLGUILabel">Start &gt; Emergent &gt;
+    Gamebryo LightSpeed &gt; Tools &gt; Toolbench</span>).</li>
+
+    <li>Open your game solution. If you do not already have a game solution,
+    see <a href=
+    "../../Tools/Toolbench/tb_game_soln_create_open.htm">Creating/Opening Game
+    Solutions</a> for general guidelines that describe how to create and/or
+    open game solutions.</li>
+
+    <li>Open your project (<span class="NDLSystemFont">.emtproj</span>) in the
+    Entity Modeling Tool.</li>
+
+    <li>Create a new model, call it <em>MyBuiltinModel.</em> (See <a href=
+    "../../Tools/EntityModelingTool/emt_model_create_add.htm">Creating/Adding
+    Entity Models to a Project</a>.)</li>
+
+    <li>Check <em>BuiltinModel</em> as one of the Traits for the model
+    MyBuiltinModel</li>
+
+    <li>Add the Properties that <em>MyBuiltinModel</em> will provide. In this
+    example, we will add two UInt32 properties named prop1_DirectBind and
+    prop2_Accessor, and a Float32 map named prop3_AssociativeArray.</li>
+</ol>
+<div class="indent1">
+        <table class="NDLNoteContainer" width="100%">
+            <tr align="left">
+                <td class="NDLNoteContainerTD">
+                    <p class="NDLHeadingNoteContainer">Note</p>
+
+                    <div class="NDLNote">
+                        All EMT list and map properties are implemented as
+                        associative arrays (maps).
+                    </div>
+                </td>
+            </tr>
+        </table>
+</div>
+<ol start="7">
+
+    <li>Save the model. (This creates the flat file that corresponds to the
+    entity model.</li>
+</ol>
+
+<p class="NDLHeadingProcedure">To create the C++ implementation</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                IBuiltinModel is the C++ interface class that is used by all
+                built-in models. IBuiltinModelImpl provides a default
+                implementation of this interface.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<ol>
+    <li>Create a C++ class that extends the <a href=
+    "../../Reference/egf/egf__IBuiltinModelImpl.htm">egf::IBuiltinModelImpl</a>
+    class. You only need to indicate how your properties are bound and
+    implement any behavior dispatching that is needed.
+    
+        <pre>
+#include &lt;egf/BuiltinModelHelper.h&gt;
+
+// Determine// Determine the PropertyID values by inspecting the exported flat model.
+static const egf::PropertyID kPropertyID_prop1_DirectBind = ???;
+static const egf::PropertyID kPropertyID_prop2_Accessor= ???;
+static const egf::PropertyID kPropertyID_prop3_AssociativeArray = ???;
+
+// MyBuiltinModel implements much of the interface for IBuiltinModel for accessing Properties,
+// based on the macros called inside this application class.
+class MyBuiltinModel : public egf::IBuiltinModelImpl
+{
+    // Built-in models are efd::IBase derived objects so they need to be assigned a unique ClassID
+    // and implement reference counting.
+    EE_DECLARE_CLASS1(MyBuiltinModel, kCLASSID_MyBuiltinModel, egf::IBuiltinModelImpl);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+
+    // Properties can be implemented using the various EE_BUILTINMODELPROPERTY* macros.
+    // See egf/BuiltinModelHelper.h for details on these macros.
+    // These macros bind application member variables to the Model's Properties.
+    EE_DECLARE_BUILTINMODEL_PROPERTIES
+    
+        // Here we directly bind the property description to the address of m_prop1_DirectBindInt:
+        EE_BUILTINMODELPROPERTY(
+            MyBuiltinModel,
+            kPropertyID_prop1_DirectBind, 
+            efd::UInt32, 
+            MyBuiltinModel, 
+            m_prop1_DirectBindInt)
+    
+        // In this example we bind the property using a pair of application Get/Set accessor methods
+        EE_BUILTINMODELPROPERTY_ACCESSOR(
+            MyBuiltinModel, 
+            kPropertyID_prop2_Accessor, 
+            efd::UInt32, 
+            MyBuiltinModel, 
+            GetProp2, 
+            SetProp2)
+    
+        // In this example we bind an associative array property descriptor directly to m_array:
+        EE_BUILTINMODELASSOCPROPERTY(
+            MyBuiltinModel, 
+            kPropertyID_prop3_AssociativeArray, 
+            Float32, 
+            MyBuiltinModel, 
+            m_array)
+   
+    EE_END_BUILTINMODEL_PROPERTIES
+
+public:
+    MyBuiltinModel()
+        : m_prop1_DirectBindInt(0)
+        , m_prop2_Accessor(0)
+        , m_array()
+    {
+    }
+
+protected:
+    virtual bool Dispatch(
+        const BehaviorDescriptor* pBehaviorToInvoke,
+        efd::ParameterList* pParams)
+    {
+        // if your built-in model implements behaviors they are dispatched via this method.
+        // Built-in behaviors are called via IBuiltinModel::Dispatch.
+        return false;
+    }
+
+    // Application getter/setter...
+    efd::UInt32 GetProp2() const
+    {
+        EE_LOG(kMyLogModule, kLVL3, ("Getting prop2_Accessor value %d from entity %s",
+            m_prop2_Accessor, m_pOwningEntity-&gt;GetEntityID().ToString().c_str());
+        return m_prop2_Accessor;
+    }
+
+    void SetProp2(const efd::UInt32&amp; newValue)
+    {
+        EE_ASSERT(newValue &gt;= 0 &amp;&amp; newValue &lt;= 1000000);
+        m_prop2_Accessor = newValue;
+        // When setting a Property via Entity::SetPropertyValue, the dirty bit is automatically set.
+        // If the application calls SetProp2 to modify the member directly, it may want to 
+        // call Dirty itself.
+    }
+    
+    efd::UInt32 m_prop1_DirectBindInt;
+    efd::UInt32 m_prop2_Accessor;
+    efd::map&lt;efd::utf8string, efd::Float32&gt; m_array;
+}
+</pre>
+
+        <table class="NDLNoteContainer" width="100%">
+            <tr align="left">
+                <td class="NDLNoteContainerTD">
+                    <p class="NDLHeadingNoteContainer">Note</p>
+
+                    <div class="NDLNote">
+                        There are also macros for defining read-only properties
+                        and associative array properties using accessors that
+                        are not represented in this example. Use the read-only
+                        versions of these macros for properties you don't want
+                        changed from outside your built-in model. Implementing
+                        an associative array using accessors allows you to hid
+                        the implementation details of your associative array
+                        while maintaining a consistent interface.<br>
+                        <br>
+                        See egf/BuiltinModelHelper.h for details on these
+                        macros.
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </li>
+
+    <li>In your .cpp file add the EE_IMPLEMENT_BUILTINMODEL_PROPERTIES macro.
+    This initializes data required to implement your built-in.
+    
+        <pre>
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(MyBuiltinModel);
+
+EE_IMPLEMENT_BUILTINMODEL_PROPERTIES(MyBuiltinModel);
+</pre>
+
+    </li>
+
+    <li>Create a factory function that creates an instance of your built-in
+    model.
+        <pre>
+IBuiltinModel* MyBuiltinModelFactory()
+{
+    return EE_NEW MyBuiltinModel();
+}
+</pre>
+    </li>
+
+    <li>Register the built-in model factory with the FlatModelManager. You need to
+    register your built-in with the FlatModelID exported from Toolbench, not the 
+    ClassID you assigned to your C++ implementation. To find
+    the correct FlatModelID to use, open the MyBuiltinModel.flat file that was
+    exported by the Entity Modeling Tool and read the "id" attribute from the
+    "model" tag. Use this value in the call to register the built-in model
+    factory. The FlatModelID is derived from the Model name used in EMT, so it
+    will not change unless the Model name is edited. This is also true of
+    Property IDs and names.
+    
+        <pre>
+// NOTE: The FlatModelID must match the assigned value from the flat model data file.  The
+// assigned model ID is based on the model name and never changes once generated.
+const utf8string builtinModelName("MyBuiltinModel");
+const FlatModelID builtinModelID = 123456789ul;
+
+FlatModelManager* pfmm = m_pServiceManager-&gt;GetSystemServiceAs&lt;FlatModelManager&gt;();
+EE_ASSERT(pfmm);
+pfmm-&gt;RegisterBuiltinModelFactory(builtinModelName, builtinModelID, MyBuiltinModelFactory);
+</pre>
+
+    </li>
+
+    <li>Compile your application.</li>
+</ol>
+
+<p>Any entity that is based on a model that mixes-in your built-in model will
+now have an instance of your C++ class associated with it.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_model_modifying.htm">Modifying built-in
+    models</a></li>
+
+    <li><a href="builtin_model_deleting.htm">Deleting built-in models</a></li>
+
+    <li><a href="entity_models_best_practice.htm">Best practices for working
+    with models</a></li>
+
+    <li><a href="entity_models_creating.htm">Creating models</a></li>
+
+    <li><a href="entity_models_examples.htm">Model examples</a></li>
+
+    <li><a href="entity_models_intro.htm">Working with models</a></li>
+
+    <li><a href="entity_models_rapid_iteration.htm">Using models to rapidly
+    iterate</a></li>
+
+    <li><a href="../Builtins/builtin_custom_creating.htm">Creating custom
+    built-ins</a></li>
+
+    <li><a href="../Builtins/builtin_custom_deleting.htm">Deleting custom
+    built-ins</a></li>
+
+    <li><a href="../Builtins/builtin_custom_dynamic_load.htm">Dynamically
+    loading custom built-ins</a></li>
+
+    <li><a href="../Builtins/builtin_custom_static_load.htm">Statically loading
+    custom built-ins</a></li>
+
+    <li><a href="../Builtins/builtin_scripting.htm">Scripting
+    built-ins</a></li>
+
+    <li><a href="../Builtins/builtin_custom_adding.htm">Adding custom built-ins
+    to the scripting system</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html> 

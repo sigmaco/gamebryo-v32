@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>GlowEffect</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>GlowEffect</h1>
+
+<p>This is a complex effect that implements the flared light
+effect found in nVidia's current Cg Browser. It makes use of the
+same Cg vertex shader program code, but uses an NSF file to get
+the shaders into Gamebryo.</p>
+
+<p>This effect requires a number of different steps. First, the
+scene is rendered to a texture, with the alpha channel of the
+texture used to modulate the scene as a whole. Since the
+brightness of each element in the scene is stored in the
+texture's alpha channel, this gives a reasonable approximation of
+the light contributes in the scene. Next, a screen space polygon
+is drawn in a number of passes using the rendered texture and a
+set of vertex and pixel shaders that blur the texture both
+horizontally and vertically. The resulting blurred image is then
+drawn on a screen space polygon over the scene that has been
+rendered normally, and the result is an image whose glowing
+elements appear to be flaring out over adjacent parts of the
+scene.</p>
+
+<p>Because the same geometry must be rendered twice, once with
+shaders and once without, the demo uses an advanced
+culling/rendering technique. The same <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_View.htm">
+render view</a> object is used for two different <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render clicks</a>. The actual culling operation is only performed
+for the first render click, with a cached array of potentially
+visible geometry being used for the second click. An <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiMaterialSwapProcessor.htm">NiMaterialSwapProcessor</a></span>
+is used to assist in one of these renderings. It swaps out the
+material on each object rendered with the <span class=
+"NDLSystemFont">GlowElements</span> shader, renders the object,
+and then restores its original material. This is a very easy
+method of overriding all the materials in a list of visible
+geometry with a different shader.</p>
+
+<p>In order to render screen-space elements with shaders
+attached, the <span class="NDLSystemFont">GlowEffect</span> makes
+use of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span>
+objects. These objects contain a single, screen-filling quad to
+which shaders and other properties can be attached.</p>
+
+<p>The <span class="NDLSystemFont">Blur</span> shader uses a
+number of passes to perform its work, each pass requiring a
+different set of constants to do its work. Gamebryo does not
+easily support changing the values of constants between passes,
+so the NSF file makes clever use of the <span class=
+"NDLSystemFont">CM_OPERATOR</span> constant map entry to make
+this possible. The difficulty Gamebryo has is that the variable
+name in a shader must match the attribute name in the NSF file.
+The NSF format assumes that the data in the attributes will be
+constant across all passes, so it is not easy to change values
+between passes, but since the variable names in the shader
+program code doesn't change between passes, the same attributes
+must be used in all passes. In this case, there were eight such
+variables whose values changed between passes: <span class=
+"NDLSystemFont">T0_Offset</span>, <span class=
+"NDLSystemFont">T1_Offset</span>, <span class=
+"NDLSystemFont">T2_Offset</span>, <span class=
+"NDLSystemFont">T3_Offset</span>, <span class=
+"NDLSystemFont">Weight0</span>, <span class=
+"NDLSystemFont">Weight1</span>, <span class=
+"NDLSystemFont">Weight2</span>, and <span class=
+"NDLSystemFont">Weight3</span>. The trick is to first create an
+separate global attribute for each possible value. In this case,
+with seven passes, seven attributes were created for each
+variable, named [<span class=
+"NDLSystemFont">VarName</span>][<span class=
+"NDLSystemFont">N</span>], where <span class=
+"NDLSystemFont">VarName</span> is one of the eight variable
+names, and <span class="NDLSystemFont">N</span> is a digit from 0
+to 6. Each of these global attributes is loaded with the correct
+data for that variable and pass number. Then it is just a matter
+of using the data from the global attribute named [<span class=
+"NDLSystemFont">VarName</span>][<span class=
+"NDLSystemFont">N</span>] with the variable <span class=
+"NDLSystemFont">VarName</span> in pass <span class=
+"NDLSystemFont">N</span>. This was done by creating eight
+Operator attributes, each with the name of one of the variables.
+Each operator <span class="NDLSystemFont">VarName</span> would
+add [<span class="NDLSystemFont">VarName</span>][<span class=
+"NDLSystemFont">N</span>] to a global constant <span class=
+"NDLSystemFont">Zero</span> during pass <span class=
+"NDLSystemFont">N</span>, essentially copying the data for that
+pass straight into the correct variable.</p>
+
+<p>As with all other effects, this class relies on a static
+instance of a dummy helper class to create an instance of a
+<span class="NDLSystemFont">GlowEffect</span>. This allows the
+effect to handle its own creation and initialization without any
+need to change the code for the default application or any other
+effects.</p>
+
+<h2>Init</h2>
+
+<p>During initialization, the first thing to happen is the
+<span class="NDLSystemFont"><a href=
+"ShaderEffect.htm">ShaderEffect</a>::Init</span> function gets
+called, so the <span class=
+"NDLSystemFont">RegisterShaderLibrary</span> will get a chance to
+load the shader library. Then, the NIF containing the entire
+scene is loaded. Since the effect requires rendering the scene
+with shaders and without, no shaders have been attached to the
+scene in the art package.</p>
+
+<p>After the scene and the camera are updated, the two rendered
+textures that will be used in this effect are generated. Then,
+<span class="NDLSystemFont">CreateScreenFillingRenderViews</span>
+is called to create the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span>
+objects that will be used to perform the <span class=
+"NDLSystemFont">Blur</span> effect. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiMaterialSwapProcessor.htm">NiMaterialSwapProcessor</a></span>
+is created and initialized with the <span class=
+"NDLSystemFont">GlowElements</span> shader, and then <span class=
+"NDLSystemFont">CreateGaussianBlur</span> is called to calculate
+the constants that will be used to perform the blurring
+computations. Then the presence of the blur shader is tested to
+determine whether the shaders were loaded correctly.</p>
+
+<p>This function adds several <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render clicks</a> to the <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">
+render step</a> created by <span class=
+"NDLSystemFont">ShaderEffect::Init</span>. The first render click
+uses the main scene render view and the <span class=
+"NDLSystemFont">NiMaterialSwapProcessor</span> to render the main
+scene to a texture using the <span class=
+"NDLSystemFont">GlowElements</span> shader. The <span class=
+"NDLSystemFont">GlowElements</span> shader renders through the
+fixed-function pipeline but modulates the texture color by the
+texture alpha before writing the pixels. Since the alpha
+component of the texture indicates how brightly the texel is
+glowing, this gives a good first approximation of the light
+flare. The next two render clicks use that texture to apply
+Gaussian blur filters in the horizontal and vertical directions.
+These use the same <span class=
+"NDLSystemFont">NiScreenFillingRenderView</span> object, but
+callbacks are used to swap the texture on that screen quad
+between the render clicks. The main scene is then rendered to the
+backbuffer as normal. Finally, the glow overlay texture is
+rendered with additive alpha blending via another <span class=
+"NDLSystemFont">NiScreenFillingRenderView</span> to make it
+appear that the object is glowing. All of these render clicks are
+added in the order described to the render step to be
+automatically executed by the <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a> during rendering.</p>
+
+<h2>CreateScreenFillingRenderViews</h2>
+
+<p>This function creates the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span>
+objects that will be used to generate the blur effect and to
+apply it to the normally rendered scene. The render view objects
+are also set up with the rendering properties they will need.</p>
+
+<h2>CreateGaussianBlur</h2>
+
+<p>Calculates the texture offsets and weights that are used to
+implement the Gaussian blur.</p>
+
+<h2>Shutdown</h2>
+
+<p>The default shutdown function <span class=
+"NDLSystemFont">ShaderEffect::Shutdown</span> is called, and the
+effect clears out its remaining data.</p>
+
+<h2>Enable</h2>
+
+<p>Before calling the default enabling function <span class=
+"NDLSystemFont">ShaderEffect::Enable</span>, the effect updates
+the camera parameters to values appropriate for the scene.</p>
+
+<h2>SetBlurConstants</h2>
+
+<p>Sets the Gaussian blur texture offsets and weights in the
+global constants that are used in the <span class=
+"NDLSystemFont">Blur</span> shader. This function will set up the
+constants to perform either horizontal or vertical blurring.</p>
+
+<p>Refer to <a href=
+"ShaderSample_Platform_Considerations.htm">Platform
+Considerations</a> for details on platform-specific issues.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

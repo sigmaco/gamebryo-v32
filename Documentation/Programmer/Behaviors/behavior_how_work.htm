@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How behaviors work</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>How behaviors work</h1>
+
+<p>Behaviors can be thought of as events or Entity actions. An Event will kick off a series of
+    Behaviors, each calling another, possibly on other Entities, blocking and returning until the
+    original Event finishes. At that point, there is no more context for that Event and it can be
+    considered finished. For example, a mine Entity may trigger a countdown, detonate, cause nearby
+    Entities to take damage, then reset. Any asynchronous Events spawned in that computation are now
+    running in their own Event context that will eventually wind up and complete. For example, the
+    damage in the mine example may cause a sequence of knock-back, and get-up, or death. When all
+    Events for an Entity have completed, the Entity is idle. There may be delayed Events queued for it
+    that the system will eventually deliver, thus creating a new Event context at that time. We
+    recommend designing Entities to return to idle with no outstanding Behaviors as that is a much
+    more resource friendly approach than a "ticking" idle.</p>
+
+<p>Events can effectively spawn nested sub-Events by using a blocking SendEvent. Those sub-Events
+    become part of the computation needed to complete the top-most Event. However, from the
+    sub-Event's perspective, it seems like a top-most Event, and can also spawn its own sub-Events.
+    When all the blocking sub-events complete, the caller can continue to compute.</p>
+
+<p>The behavior system does not support an explicit "receive" call for messages or Events. Instead
+    the Entities go idle, and the system delivers new events and asynchronously pushes them onto the
+    Entity. This can be thought of as an event handler or callback.</p>
+
+<p>When an Event is ready to be run, the system will find an idle co-routine (micro-thread) on the
+    target Entity, and in that context begin to run the associated Behavior. Once that Behavior
+    completes, the co-routine becomes idle and is recycled, and the next available Event on the
+    Entity's queue can be executed. If there are more queued events than co-routine "slots"
+    (currently limited to four per Entity), Events will be artificially delayed.</p>
+
+<p>Entities do not have an infinite "main loop" to do their work. If an Entity needs to perform
+    actions an a regular basis, the OnTick behavior should be used to schedule the entity to run
+    periodically.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="behavior_overview.htm">Behaviors overview</a></li>
+
+    <li><a href="behavior_features.htm">Behavior features</a></li>
+
+    <li><a href="behavior_limitations.htm">Behavior limitations</a></li>
+    <!-- <li><a href="behavior_how_relates_efr.htm">How behaviors relate to the Emergent Game 
+    Framework</a></li> -->
+
+    <li><a href="behavior_reqs.htm">Requirements for working with behaviors</a></li>
+
+    <li><a href="behavior_best_practice.htm">Best practices for working with behaviors</a></li>
+
+    <li><a href="behavior_using.htm">Using behaviors</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

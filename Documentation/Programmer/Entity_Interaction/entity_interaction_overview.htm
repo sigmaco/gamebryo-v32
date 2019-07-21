@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Entity interaction overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Entity interaction overview</h1>
+
+<p>An entity can interact with another entity in three ways: by directly reading and writing
+    properties, by executing behavior events, or through pre-defined interactions provided
+    by services.</p>
+
+<p>Often, the logical or programming interaction between entities performing some kind of joint
+    action is done point-to-point. For example setting some initial conditions on a newly created
+    entity. Some game actions will be point-to-point as well, such as a directed attack. This
+    suggests that not all Behaviors are game "actions;" some are for utility purposes. A sender
+    uses the target's egf::EntityID to address either kind of point-to-point Behavior invocation
+    request.</p>
+
+<p>The system also supports point-to-multipoint interaction which can be used for area of effect
+    or environmental game actions. Using a predefined egf::Category (for example, a category that
+    corresponds to a given room), the sender can address a Behavior invocation to all Entities
+    that have subscribed to that category. An example of this would be detonate-grenade,
+    follow-me, or a heal-party spell.</p>
+
+<p>Public game actions that can be observed by more than one other Entity should use the
+    point-to-multipoint form of Behavior invocation. Even if the other entities are not directly
+    affected by the requested Behavior (for example, some entities in the blast area for a grenade
+    effect might not take damage) they may want to react to the fact that nearby entities are
+    taking damage. For example, a nearby entity may turn at the sound of the grenade, the shot, or
+    the death-scream. Another use of this facility would be for a client to receive notification
+    of actions between non-player entities in order to display their visual effects.</p>
+
+<p>There are multiple ways for an entity to request a behavior invocation. Behaviors are most
+    commonly triggered by sending an event message (egf::EventMessage) to an entity.  Events can be
+    sent to another entity or an entity can send an event to itself. An optional delay time
+    can be specified to perform the event in the future. Sending an event is an asynchronous request
+    so the caller will immediately continue execution. An event may optionally provide a callback
+    behavior which will be invoked on the sending entity when the target entity has finished
+    executing the event behaviors. Finally, the caller can choose to block until the target
+    completes the requested behavior. With these approaches, Entities can easily coordinate their
+    activities.  All of these types of event request can be invoked on an entity from a scripted
+    Behavior, from a built-in Behavior, or from a system service or other generic C++ code.</p>
+
+<p>All entities in one process will execute their behaviors serially (in other words, behaviors
+    effectively run single-threaded).  This allows a designer to very simply implement behaviors
+    without considering complex timing issues. You are guaranteed that no other behavior code will
+    run during a behavior unless it explicitly blocks using a &quot;wait-for&quot; type built-in.</p>
+
+<p>With asynchronous behavior invocation, you must be aware that there can be time delays (even
+    just a single tick), and property values on the involved entities may have changed in the
+    meantime. This is a good reason to include parameters in the behavior request.</p>
+    
+<p>Pre-defined interaction modes exist for cases in which the message passing delay is
+    unacceptable. For example, a weapon entity that is picked up and wielded
+    by a character must exactly track the motion of the character's hand, without lag in
+    position updating. See the
+    <a href="entity_interaction_examples.htm">Entity Interaction Examples</a> page for
+    an example of this.
+</p>
+
+<p>You should treat the Game Framework as an event-oriented system. Instead of having one entity
+    try to loop, block or wait until some specified action occurs, it is better to have the
+    other entity send a notification event that the action has completed. One exception to this is
+    using the blocking Behavior request, where it becomes easy to know when a target completes
+    the requested action.</p>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><a href="entity_interaction_how_work.htm">How entity interaction works</a></li>
+<li><a href="entity_interaction_best_practice.htm">Best practices for working with entity interaction</a></li>
+<li><a href="entity_interaction_examples.htm">Entity interaction examples</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

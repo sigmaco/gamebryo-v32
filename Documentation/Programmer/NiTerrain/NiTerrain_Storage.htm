@@ -1,0 +1,628 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Storage</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+  <h1>
+    NiTerrain Storage</h1>
+  <p>
+    The terrain engine manages a large amount of data, in order to do this efficiently,
+    the data must be stored on disk in an easily accessible manner. This section describes
+    the storage system for terrain data, how to configure it, and how to extend it.</p>
+  <h2>
+    Introduction
+  </h2>
+  <p>
+    The terrain engine stores all of its data within a 'terrain archive path'. This
+    archive path defines a single directory within the application's data directory,
+    under which all of a specific terrain asset's data is stored. Depending on the file
+    format that has been configured, different files within this directory will be used
+    to define each sector and one file to define the basic parameters of the terrain
+    asset across all sectors. Generally, only one terrain asset may be stored within
+    a specific directory.</p>
+  <p>
+    Within each file stored on disk, there are several fields of data that require storage.
+    Some of these fields are compulsory, whilst others are optional, these may be generated
+    on the fly when streaming the sector, or that will simply not be available when
+    rendering. The following table describes each data field that is stored and what
+    happens if it is not available.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Data field
+        </th>
+        <th>
+          Description
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #eeeeee">
+          Terrain wide data<br>
+          <i>(NiTerrainFile)</i><br>
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #eeeeee">
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Config<br>
+          <i>(Required)</i>
+        </td>
+        <td>
+          This data field stores the fundamental configuration settings for the terrain asset.
+          The data stored in this field includes:
+          <ul>
+            <li>Size of a sector in verts </li>
+            <li>Number of LOD </li>
+            <li>The size of each sector's blend mask </li>
+            <li>The size of each sector's low detail diffuse texture </li>
+            <li>The minimum elevation of the terrain </li>
+            <li>The maximum elevation of the terrain </li>
+            <li>The number of surfaces that the terrain references </li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Surface Index<br>
+          <i>(Required)</i>
+        </td>
+        <td>
+          This data field stores a list of references to surfaces. Each individual surface
+          is given a unique ID within the terrain, and the name of the surface and asset location
+          information for the package are stored so they may be resolved at runtime.
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #eeeeee">
+          Sector specific data<br>
+          <i>(NiTerrainSectorFile)</i>
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #eeeeee">
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Config<br>
+          <i>(Required)</i>
+        </td>
+        <td>
+          This data field stores some basic information about the data stored in the sector
+          file, such as the width of the sector in verts, and the number of LOD stored in
+          the file. This information may be used to make sure the sector is compatible with
+          the terrain that is attempting to load it.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Heightmap<br>
+          <i>(Required)</i>
+        </td>
+        <td>
+          This data field stores the heightmap of the sector. Every vertex in the sector has
+          one height value stored for it as a 16-bit value. The 16-bit value represents a
+          value between the minimum elevation and the maximum elevation specified in the terrain
+          configuration.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Normalmap<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores the normal map of the sector. Every vertex in the sector
+          has one normal stored for it in float2 format. Only the X, Y coordinates of the
+          normal are stored.<br>
+          If this data field does not exist within the file, then the data will be automatically
+          generated by the streaming system based on the heightmap when the sector is loaded.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Tangentmap<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores the normal map of the sector. Every vertex in the sector
+          has one normal stored for it in float2 format. Only the X, Z coordinates of the
+          normal are stored. The Y coordinate is guaranteed to be 0.<br>
+          If this data field does not exist within the file, then the data will be automatically
+          generated by the streaming system based on the heightmap when the sector is loaded.<br>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Blendmasks<br>
+          <i>(Semi-Optional)</i>
+        </td>
+        <td>
+          This data field stores information on how surfaces are blended together by the shader.
+          The data is stored in a pixel data object with four channels.<br>
+          Without this information, the shader will not display surfaces on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Low detail normal map<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores information on the normals of the terrain in the form of
+          a normal map to render cells in the distance. The data is stored in a pixel data
+          object with four channels.<br>
+          If this data field does not exist within the file, then the data will be automatically
+          generated by the streaming system based on the normal map when the sector is loaded.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Low detail diffuse map<br>
+          <i>(Semi-Optional)</i>
+        </td>
+        <td>
+          This data field stores information on the color of the surface of the terrain for
+          rendering cells in the distance. The data is stored in a pixel data object with
+          four channels.<br>
+        Without this information cells in the distance may not be rendered correctly. However,
+        this data may be generated if the terrain is loaded in toolmode and the low detail
+        texture is explicitly rendered. This is automatically done when loading a terrain
+        in toolbench, but it can be manually done by following the instructions in the class
+        reference and the painting section of this documentation.
+      </tr>
+      <tr>
+        <td>
+          Cell bounding data<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores information for each cell in the sector specifying a bounding
+          sphere and an axis aligned bounding box.<br>
+          If this data field does not exist within the file, then the data will be automatically
+          generated by the streaming system based on the heightmap when the sector is loaded.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Leaf surface indexes<br>
+          <i>(Semi-Optional)</i>
+        </td>
+        <td>
+          This data field stores information for each leaf in the sector specifying the index
+          of each surface that is rendered on this leaf. A maximum of 4 surfaces may be referenced
+          by each leaf.<br>
+          Without this information, the shader will not display surfaces on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          PhysX material data<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores the physical properties of each surface indexed by the sector
+          for PhysX simulation. See the PhysX integration documentation for more information.<br>
+          Without this information, the PhysX policy will generate the data upon loading.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          PhsyX data<br>
+          <i>(Optional)</i>
+        </td>
+        <td>
+          This data field stores the PhysX shape information for the sector for use in PhysX
+          simulation. See the PhysX integration documentation for more information<br>
+          Without this information, the PhysX policy will generate the data upon loading.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The above data is saved and loaded from disk through two interfaces, <span class="NDLSystemFont">
+      NiTerrainFile</span>, and <span class="NDLSystemFont">NiTerrainSectorFile</span>.
+    See <span class="NDLSystemFont"><a href="../../Reference/NiTerrain/NiTerrainFile.htm">
+      NiTerrainFile</a></span>, and <span class="NDLSystemFont"><a href="../../Reference/NiTerrain/NiTerrainSectorFile.htm">
+        NiTerrainSectorFile</a></span> for more detailed information on these interfaces
+    can be found in the class reference.</p>
+  <p>
+    One feature of the terrain eng 
+    class reference for more detailed information.</p>
+  <p>
+    One feature of the terrain engine is the ability to customize the on disk 
+    storage format of terrain data through the use of a 'storage policy'. If 
+    necessary, a developer may choose to implement their own 
+    <span class="NDLSystemFont">NiTerrainFile</span>/<span class="NDLSystemFont">NiTerrainSectorFile</span> classes, and configure the terrain to use them 
+    through an appropriate storage policy. This allows the developer to choose 
+    exactly which data is stored on disk, and which data is generated at runtime, 
+    potentially minimising disk access and utilizing unused processing power during 
+    loading, or even optimizing how that data is stored on disk.data policy allows a developer to
+    link their own data loading/unloading to the terrain's streaming system. This feature
+    is used to implement the PhysX integration into the terrain engine, allowing the
+    physX data to be loaded when individual sectors are loaded/unloaded. This might
+    be extended to load further data or integrate another physics system.</p>
+  <p>
+    Futher details on configuring these storage extensions are found in the following sections.</p>
+  <h2>
+    Configuring a Storage Policy
+  </h2>
+  <p>
+    In order to configure the terrain to use a different file format the developer may
+    specify a "storage policy" on the terrain object. A storage policy defines a set
+    of functions to use when opening terrain files and sector files for read and write.
+    The terrain object will then use these functions to create instances of the 
+    <span class="NDLSystemFont">NiTerrainFile</span>
+    and <span class="NDLSystemFont">NiTerrainSectorFile</span> classes through which it will stream its data to/from disk.
+    For information on the signatures of these functions, please consult the class reference.</p>
+  <p>
+    The following code shows how a user may configure a terrain storage policy and apply
+    it to a particular terrain object. Please note that this configuration of the terrain
+    object should happen before any loading occurs on the object and changes during
+    runtime may have undefined effects on the operation of the terrain engine.</p>
+    
+<pre>NiTerrain::StoragePolicy kTerrainStorage;
+kTerrainStorage.m_kOpenSectorRead = &amp;NiTerrainSectorFileRaw::Open;
+kTerrainStorage.m_kOpenSectorWrite = &amp;NiTerrainSectorFile::Open;
+
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;SetStoragePolicy(kTerrainStorage);</pre>
+  <p>
+    Please note that whilst the file format is customizable, some functions of the game
+    framework for terrain assume the use of the default storage format. Such as Rapid
+    Iteration, and many of the terrain tools within Toolbench. These assumptions however
+    only revolve around the naming conventions of the files themselves, so provided
+    custom formats comply to the same naming conventions as the defaults, there should
+    be no problems.</p>
+
+  <h2>
+    The Default Storage Format
+  </h2>
+  <p>
+    The default storage format for the terrain engine is implemented through the 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainFileVersion2.htm">NiTerrainFileVersion2</a></span> class and the 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainSectorFileVersion6.htm">NiTerrainSectorFileVersion6</a></span> class. Whilst providing support for 
+    the latest file format, these classes also provide backwards compatibility with previous 
+    versions of the terrain file formats to allow their data to be converted to the new format.
+    The default format is designed to store all the data from the table of data fields
+    to minimize the amount of processing of terrain data during the load process.</p>
+  <p>
+    The latest version of the terrain file format is drastically different to that of
+    previous versions. Some of the features of the current terrain file format are listed
+    here to provide an insight into how the data is stored on disk.</p>
+  <h3>
+    NiTerrainFileVersion3
+  </h3>
+  <ul>
+    <li>
+      A single XML file 'root.terrain' within the terrain archive for a single terrain.
+    </li>
+    <li>
+      Only one terrain may be stored within a particular archive path.
+    </li>
+    <li>
+      A list of surface references are kept as an index of surfaces for the entire terrain.
+    </li>
+    <li>
+      All the basic configuration of the terrain data is stored within this file.
+    </li>
+  </ul>
+  <h3>
+    NiTerrainSectorVersion6
+  </h3>
+  <ul>
+    <li>A single binary file 'sector_X_Y.dof' within the terrain archive for each sector.
+    </li>
+    <li>The format stores each data field in the file in a 'block' format. Each data field
+      is represented by a 'block' in the file. </li>
+    <li>2D arrays of data such as heightfields and maps are stored as 2D images of varying
+      formats and may support compression in the future or by extension. </li>
+    <li>Other data is stored as simple array fields of data. </li>
+    <li>Data is no longer stored in a quadtree style, geometry-centric format. </li>
+  </ul>
+  <p>
+    Note: Whilst the <span class="NDLSystemFont">NiTerrainSectorVersion6</span> file format does have points from which
+    compression may be implemented for the 2D image blocks, no compression has been
+    implemented for this version. If a developer determines that compression is necessary
+    for their application, they may extend the file format to support a compression
+    technique of their choosing. A lossless technique such as PNG style compression
+    may be a good choice. Please consult the documentation on <a href="#ImplementingCompression">
+  	implementing compression </a> for further information.</p>
+  <p>
+    A typical terrain with 4 sectors using this file format may have the following folder
+    heirachy:</p>
+  <ul>
+    <li>TerrainArchivePath\ </li>
+    <ul>
+      <li>root.terrain </li>
+      <li>sector_0_0.dof </li>
+      <li>sector_1_0.dof </li>
+      <li>sector_1_1.dof </li>
+      <li>sector_0_-1.dof </li>
+    </ul>
+  </ul>
+  <p>
+    When a terrain object is created, the storage policy is configured by default to
+    use this default file format. To explicly configure the terrain to use this format,
+    the following code may be used:</p>
+  <pre>NiTerrain::StoragePolicy kTerrainStorage;
+kTerrainStorage.m_kOpenSectorRead = &amp;NiTerrainSectorFile::Open;
+kTerrainStorage.m_kOpenSectorWrite = &amp;NiTerrainSectorFile::Open;
+kTerrainStorage.m_kOpenTerrainRead = &amp;NiTerrainFile::Open;
+kTerrainStorage.m_kOpenTerrainWrite = &amp;NiTerrainFile::Open;
+
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;SetStoragePolicy(kTerrainStorage);</pre>
+  <p>
+    Similarly, the following code may be used to reset the terrain to its default file
+    format:</p>
+  <pre>NiTerrain::StoragePolicy kTerrainStorage;
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;SetStoragePolicy(kTerrainStorage);</pre>
+  <h2>
+    The 'Developer' Storage Format
+  </h2>
+  <p>
+    A completely separate file format has been released with the engine to help in the
+    development and debugging process that may be useful for other developers when using
+    the terrain system. This format is intended to allow developers to view/edit the
+    data stored in the sectors of the terrain via external tools to aid in the debugging
+    or tools process. This format is not recommended for released applications or the
+    sole storage format of assets as it will not be supported through backwards compatibility
+    in future releases of the engine.</p>
+  <p>
+    This format customization is only applicable to sector files, and as such, the storage
+    of basic terrain data is simply dealt with via the default file format. The following
+    dotpoints describe the features of this file format:</p>
+  <ul>
+    <li>A multi-file format. Several files are stored, one for each data field. </li>
+    <li>All non-PhysX data fields are supported. </li>
+    <li>All files are stored in a directory below the terrain archive path to allow the
+      files to be easily purged from release data sets. </li>
+    <li>The following files are stored: </li>
+    <ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.Heights.uint16.raw</span> </li>
+      <ul>
+        <li>A raw file containing 16-bit unsigned integers representing the heightfield of
+          the sector. </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.Normals.float2.raw</span> </li>
+      <ul>
+        <li>A raw file containing 2 channels of 32-bit floats representing the X and Y components
+          of the sector's normals. </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.Tangents.float2.raw</span> </li>
+      <ul>
+        <li>A raw file containing 2 channels of 32-bit floats representing the X and Z components
+          of the sector's tangents. </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.LD_NormalMap.rgb24.tga</span> </li>
+      <ul>
+        <li>A tga file containing 3 channels of bytes representing the low detail normal map
+          used for the sector. </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.LD_DiffuseMap.rgba32.tga</span> </li>
+      <ul>
+        <li>A tga file containing 4 channels of bytes representing the low detail diffuse
+          map used for the sector. </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.Config.xml</span> </li>
+      <ul>
+        <li>An XML file describing the basic configuration of the data stored in the sector.
+        </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.Bounds.xml</span> </li>
+      <ul>
+        <li>An XML file describing the bounding information for each cell within the sector.
+        </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.SurfaceIndex.xml</span> </li>
+      <ul>
+        <li>An XML file describing the what surfaces are used on each leaf of the sector.
+        </li>
+      </ul>
+      <li><span class="NDLSystemFont">ToolData\Sector_X_Y.BlendMasks.rgba32.tga</span> </li>
+      <ul>
+        <li>A tga file containing 4 channels of bytes representing the blend masks for each
+          surface on each cell. Note: this image contains all the blend masks for the sector
+          stitched together with pixel duplication on the borders of each cell. </li>
+      </ul>
+    </ul>
+  </ul>
+  <p>
+    This format (or similar formats) may also prove useful for providing meaninful differentials
+    between different versions of art assets. It is not recommended as the main storage
+    format though, as mergers between different versions of each sector's files could
+    lead to undefined results and data loss.</p>
+  <p>
+    A typical terrain with 2 sectors using this file format may have the following folder
+    heirachy:</p>
+  <ul>
+    <li><span class="NDLSystemFont">TerrainArchivePath\ </span> </li>
+    <ul class="NDLSystemFont">
+      <li>ToolData\ </li>
+      <ul class="NDLSystemFont">
+        <li>Sector_0_0.Heights.uint16.raw </li>
+        <li>Sector_0_0.Normals.float2.raw </li>
+        <li>Sector_0_0.Tangents.float2.raw </li>
+        <li>Sector_0_0.LD_NormalMap.rgb24.tga </li>
+        <li>Sector_0_0.LD_DiffuseMap.rgba32.tga </li>
+        <li>Sector_0_0.Config.xml </li>
+        <li>Sector_0_0.Bounds.xml </li>
+        <li>Sector_0_0.SurfaceIndex.xml </li>
+        <li>Sector_0_0.BlendMasks.rgba32.tga </li>
+        <li>Sector_0_1.Heights.uint16.raw </li>
+        <li>Sector_0_1.Normals.float2.raw </li>
+        <li>Sector_0_1.Tangents.float2.raw </li>
+        <li>Sector_0_1.LD_NormalMap.rgb24.tga </li>
+        <li>Sector_0_1.LD_DiffuseMap.rgba32.tga </li>
+        <li>Sector_0_1.Config.xml </li>
+        <li>Sector_0_1.Bounds.xml </li>
+        <li>Sector_0_1.SurfaceIndex.xml </li>
+        <li>Sector_0_1.BlendMasks.rgba32.tga </li>
+      </ul>
+    </ul>
+  </ul>
+  <p>
+    To explicly configure the terrain to use this format, the following code may be
+    used:</p>
+  <pre>NiTerrain::StoragePolicy kTerrainStorage;
+kTerrainStorage.m_kOpenSectorRead = &amp;NiTerrainSectorFileDeveloper::Open;
+kTerrainStorage.m_kOpenSectorWrite = &amp;NiTerrainSectorFileDeveloper::Open;
+kTerrainStorage.m_kOpenTerrainRead = &amp;NiTerrainFile::Open;
+kTerrainStorage.m_kOpenTerrainWrite = &amp;NiTerrainFile::Open;
+
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;SetStoragePolicy(kTerrainStorage);</pre>
+  <h2>
+    Setting Up a Custom File Format
+  </h2>
+  <p>
+    A developer may implement their own terrain file format by implementing the 
+    <span class="NDLSystemFont">NiTerrainFile</span>
+    and <span class="NDLSystemFont">NiTerrainSectorFile</span> interfaces in their own classes. An appropriate static 'open'
+    method should then be defined to allow the terrain engine to instantiate these objects
+    on demand.</p>
+  <p>
+    When developing your own format, please consult the table of data fields in the
+    introduction to understand what fields are required and which are optional, and
+    consult the class reference for the interfaces for detailed information on each
+    function being implemented. In particular, the 'precache' function on the NiTerrainSectorFile
+    class is used to both determine what data is available in the file, and to preload
+    the requested data from the disk. By loading the data from disk in this function,
+    the developer can be assured that only one sector's data is being loaded from disk
+    at a time, minimising disk access contention.</p>
+  <p>
+    A user's custom data format may then be assigned to a terrain object using the instructions
+    demonstrated in the other sections of this documentation.</p>
+  <h2>
+    <a name="ImplementingCompression"></a>Implementing Compression
+  </h2>
+  <p>
+    Whilst compression is not implemented in the current version of the terrain's sector
+    file format, it can be added with minimal changes to the existing format, though
+    it would require a source license to the engine. The following steps would need
+    to be taken:</p>
+  <ol>
+    <li>Extend the implementations of the following functions within the 
+      <span class="NDLSystemFont">NiTerrainSectorFileVersion6::ImageDataBlock</span>
+      class to implement the compression algorithms of your choice: </li>
+    <ul>
+      <li>
+        <pre>virtual bool NiTerrainSectorFileVersion6::ImageDataBlock::CompressFromStream(
+                         ImageCompressionMode::VALUE eCompressionMode,
+                         efd::UInt8* pBuffer, efd::UInt32 uiBufferLength,
+                         efd::UInt32 uiWidth, efd::UInt32 uiHeight, efd::UInt16 uiNumChannels,
+                         efd::UInt16 uiBytesPerChannel);</pre>
+      </li>
+      <li>
+        <pre>virtual bool NiTerrainSectorFileVersion6::ImageDataBlock::CompressFromImageData(
+                        ImageCompressionMode::VALUE eCompressionMode,
+                        NiPixelData* pkSource);</pre>
+      </li>
+      <li>
+        <pre>virtual bool NiTerrainSectorFileVersion6::ImageDataBlock::DecompressToImageData(
+                        NiPixelData*&amp; pkSource);</pre>
+      </li>
+      <li>
+        <pre>virtual bool NiTerrainSectorFileVersion6::ImageDataBlock::DecompressToStream(
+                        efd::UInt8* pBuffer, efd::UInt32 uiBufferLength);</pre>
+      </li>
+    </ul>
+    <li>Override the implementations of the 'write' functions of the data fields you wish
+      to compress, specifying the compression mode you wish to use for that datafield
+      as an argument to the ImageDataBlock.<br>
+    </li>
+  </ol>
+  <p>
+    A potential candidate for the compression algorithm may be the PNG compression algorithm,
+    as it is both lossless, and provides a good level of compression. Please be careful
+    when using 'lossy' compression techniques to compress the height, lighting and blending
+    data, as this may cause inconsistencies and seams to appear between cells and sectors
+    of the terrain.</p>
+  <h2>
+    Converting Between File Formats
+  </h2>
+  <p>
+    Although no specific tool is provided to allow a developer to convert between different
+    file formats, one technique to convert between formats is to set the 'read' functor
+    of the storage policy to the open function of one format, and point the 'write'
+    function of the storage policy to the open function of another format. The developer
+    may then force the terrain to load data and save it out again, causing it to write
+    out the loaded data in a new file format.</p>
+  <p>
+    Another variation of this technique may to write a file format that is two formats
+    in one. This could be done by writing a version of <span class="NDLSystemFont">NiTerrainSectorFile</span> that uses
+    two further <span class="NDLSystemFont">NiTerrainSectorFile</span> objects that are generated when the open function
+    is called. This would allow the terrain engine to write out two separate versions
+    of the file format at once, whilst reading from only one format.</p>
+  <h2>
+    Configuring a Custom Data Policy
+  </h2>
+  <p>
+    Custom data policies are intended for use as a hook into the terrain's streaming
+    system that will allow a developer to know when they can load data related to a
+    specific sector of the terrain. One such use for this system is the implementation
+    of a PhysX integration to the terrain (Note: this integration is included). Developers
+    may find this extension point useful to further extend the physics of the terrain,
+    or implement their own terrain-aware algorithms within their applications.</p>
+  <p>
+    When developing a custom data policy, there are a number of things to be aware of:</p>
+  <ul>
+    <li>Only one custom data policy may be applied to the terrain at once. Though this
+      does not mean a developer can't define a 'multi-policy policy' that simply references
+      a list of custom data policies to use on the terrain. </li>
+    <li>Configuration of the custom data policy should happen before any terrain loading
+      occurs </li>
+    <li>The custom data policy must be derived from <span class="NDLSystemFont">NiTerrain::CustomDataPolicy</span>. </li>
+    <li>The custom data policy object may be accessed by multiple threads simultaneously,
+      as it is heavily bound to the terrain streaming system. Be sure to use appropriate
+      locks and syncronization mechanisms to avoid difficult and intermittant problems.<br>
+    </li>
+    <li>The functions prefixed with 'begin' and 'end' are only called by the 'update'
+      thread (the renderer thread). This allows certain renderer functions to be called,
+      and assumptions about the current state of objects to be assumed whilst these functions
+      are called (note, that whilst the update thread is executing a begin function, other
+      threads may still be executing other functions on the object).&nbsp; </li>
+  </ul>
+  <p>
+    Once the custom data policy has been defined and implemented. It may then be assigned
+    to the terrain object when it is created using code similar to the following.</p>
+    
+<pre>NiTerrain* pkTerrain = GetTerrain();
+TerrainDataPolicy* pkTerrainData = EE_NEW TerrainDataPolicy();
+pkTerrain-&gt;SetCustomDataPolicy(pkTerrainData);</pre>
+
+</body>
+</html>

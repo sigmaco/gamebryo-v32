@@ -1,0 +1,392 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiFragmentMaterial</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiFragmentMaterial</h1>
+
+<p>This class is designed to be the base class for an additive
+shader fragment system. The general idea behind an additive
+shader system is that a programmer will write several HLSL or Cg
+functions whose inputs and outputs can be connected together to
+define a complete shader program. The connected graph that is
+formed from the links between program fragments is called a
+<a href=
+"http://portal.acm.org/citation.cfm?id=808602&amp;dl=GUIDE&amp;coll=GUIDE"
+target="_blank">shade tree</a>.</p>
+
+<p><span class="NDLSystemFont">NiFragmentMaterial</span>
+encapsulates Gamebryo's implementation of a shade-tree framework.
+The pipeline for generating a compiled shader is as follows:</p>
+
+<ol>
+    <li>Generate the descriptor for the geometry object. This
+    will produce an <span class=
+    "NDLSystemFont">NiMaterialDescriptor</span> object, which is
+    a 128-bit bitfield that encodes all relevant information
+    about the state of the object as it pertains to generating
+    its shade-tree. This process is encapsulated in the
+    <span class="NDLSystemFont">GenerateDescriptor</span> method.
+    A common checklist of items that can be examined would be:
+
+        <ul>
+            <li>Is the object skinned?</li>
+
+            <li>What per-vertex data exists on the object?</li>
+
+            <li>Is the object lit? How many lights are affecting
+            it? What types of lights are affecting it?</li>
+
+            <li>What textures are applied to the object? What UV
+            sets do they use?</li>
+
+            <li>Are there tangent-space bases per-vertex?</li>
+
+            <li>Is the object affected by specularity?</li>
+        </ul>
+    </li>
+
+    <li>Search through the <span class=
+    "NDLSystemFont">NiShader</span> cache to determine if this
+    material configuration has been encountered before. This is
+    usually one of the first things done in the <span class=
+    "NDLSystemFont">GenerateShader</span> method. If this
+    material configuration has been encountered before, simply
+    re-use the previously generated shader.</li>
+
+    <li>Search through the list of failed shaders to see if this
+    material configuration is even possible for the current
+    hardware. If the shader failed previously, return NULL and
+    the renderer will use its internal error shader.</li>
+
+    <li>Break the material descriptor into one or more sets of
+    <span class="NDLSystemFont">NiGPUProgramDescriptors</span>.
+    These classes are 128-bit bitfields that encapsulate all that
+    needs to be done to generate the correct <span class=
+    "NDLSystemFont">NiGPUProgram</span> for a given pass in this
+    material configuration. The decomposition of material
+    descriptor to program descriptors is performed in the
+    <span class="NDLSystemFont">GenerateShaderDescArray</span>
+    method.</li>
+
+    <li>Create the appropriate <span class=
+    "NDLSystemFont">NiShader</span> derived class for the current
+    renderer.</li>
+
+    <li>Determine the packing requirements for that shader.</li>
+
+    <li>For each set of <span class=
+    "NDLSystemFont">NiGPUProgramDescriptors</span> in this
+    material instance, generate a rendering pass object.
+
+        <ol>
+            <li>Determine how this pass will blend with the
+            previous pass (<span class=
+            "NDLSystemFont">SetAlphaOverride</span> method)</li>
+
+            <li>Generate the GPU programs for the pass
+            (<span class=
+            "NDLSystemFont">GenerateShaderPrograms</span>
+            method). See <a href=
+            "NiFragmentMaterial.htm#Creating_the_Shade_Tree">Creating
+            the Shade Tree</a> for more information.
+
+                <ol>
+                    <li>Generate the vertex program (<span class=
+                    "NDLSystemFont">GenerateVertexShaderProgram</span>
+                    method)</li>
+
+                    <li>Generate the pixel program (<span class=
+                    "NDLSystemFont">GeneratePixelShaderProgram</span>
+                    method)</li>
+
+                    <li>For each program generated, create an
+                    <span class=
+                    "NDLSystemFont">NiShaderConstantMap</span>
+                    and add all uniform variables to it
+                    (<span class=
+                    "NDLSystemFont">AddResourceToShaderConstantMap</span>
+                    method).</li>
+
+                    <li>If an error occurred, return the
+                    appropriate error code.</li>
+                </ol>
+            </li>
+        </ol>
+    </li>
+
+    <li>If successful in the previous steps, initialize the new
+    shader and return. Otherwise, call an appropriate fallback
+    handler and retry.</li>
+</ol>
+
+<a name="Creating_the_Shade_Tree" id="Creating_the_Shade_Tree"></a><h2>Creating the Shade Tree</h2>
+
+<h4>The Pipeline</h4>
+
+<p>In the above pipeline, a shade tree is generated and compiled
+for each <span class="NDLSystemFont">NiGPUProgram</span>. In
+Gamebryo, a shade tree is encapsulated in an <span class=
+"NDLSystemFont">NiMaterialConfigurator</span> object. A derived
+class will look at the bits set in the <span class=
+"NDLSystemFont">NiGPUProgramDescriptor</span> and determine which
+uniform constants need to be wired to which nodes in the tree.
+Uniform constants are encapsulated in the class <span class=
+"NDLSystemFont">NiMaterialResource</span>. Nodes in the tree are
+encapsulated in the class <span class=
+"NDLSystemFont">NiMaterialNode</span>. Connections between the
+input and output resources of a given node and other nodes or
+uniform constants are encapsulated in the <span class=
+"NDLSystemFont">NiMaterialResourceBinding</span> class. Once all
+of the connections (aka bindings) are established between all of
+the nodes added to the tree, the <span class=
+"NDLSystemFont">Evaluate</span> method of <span class=
+"NDLSystemFont">NiMaterialConfigurator</span> is called to
+generate the <span class="NDLSystemFont">NiGPUProgram</span> and
+a set of the uniform input resources required to feed the program
+appropriately.</p>
+
+<h4>NiMaterialFragmentNodes</h4>
+
+<p>When constructing a shade tree, it is necessary to create
+nodes that have code snippets associated with them. These types
+of nodes are called <span class=
+"NDLSystemFont">NiMaterialFragmentNode</span>s. A given node will
+have a set of code snippets that correspond to different program
+languages or hardware models for programs. This allows a shader
+code writer a fair amount of flexibility with respect to
+determining how their nodes will behave on different platforms
+and hardware models. For instance, on a card with lesser shader
+model support, the lighting algorithm may be significantly less
+accurate but much faster. Higher model cards may be able to take
+advantage of newer instructions or more complicated algorithms.
+Each implementation of the fragment node must obey the set of
+inputs and outputs for the overall fragment node. A shade tree is
+not complete until all the inputs for all the nodes used are
+satisfied. In many cases, a fragment node will define default
+values for its input resources, allowing the shade tree to avoid
+setting those resources if they are not different than the
+defaults.</p>
+
+<h4>NiMaterialNodeLibraries</h4>
+
+<p><span class="NDLSystemFont">NiMaterialNodes</span> can be
+added to an application through <span class=
+"NDLSystemFont">NiMaterialNodeLibrary</span> objects. These
+objects contain a set of material nodes that can be instantiated
+into a shade tree. This allows the shade tree nodes to be
+completely data-driven. There are currently two ways of
+generating libraries, parsing an external XML file or converting
+that XML file into a C++ class and linking it with your
+application. The latter option is used by the <span class=
+"NDLSystemFont">NiStandardMaterial</span> (a derived class of
+<span class="NDLSystemFont">NiFragmentMaterial</span>
+implementing the default rendering pipeline in Gamebryo). An XML
+file in NiMain\StandardMaterialNodeLibrary contains all of the
+fragments used in the material. Whenever a fragment is changed,
+added, or removed, a batch file is used to call the <a href=
+"../../Tools/NiMaterialNodeXMLLibraryParser/NiMaterialNodeXMLLibraryParser_Intro.htm">
+DeveloperTools/NiMaterialNodeXMLLibraryParser</a> executable,
+which will create a C++ class representing that library.
+Alternatively, an application can parse the XML library itself
+using the <a href=
+"../../Reference/NiMaterialNodeXMLLibraryReader/Introduction_to_NiMaterialNodeXMLLibraryReader.htm">
+NiMaterialNodeXMLLibraryReader</a> class library.</p>
+
+<h4>NiMaterialResources</h4>
+
+<p><span class="NDLSystemFont">NiMaterialResources</span> can be
+one of a multitude of data types, including boolean values,
+unsigned integers, floats, point2s, point3s, point4s, matrix3s,
+matrix4s, colors, and textures and can be added to a shade tree
+for many reasons. As stated previously, each node adds its own
+set of input and output resources. Other resources can come from
+one or more of the following locations:</p>
+
+<ul>
+    <li>Constant . this type of entry is a constant entry in
+    which the data does not change over time.</li>
+
+    <li>Predefined . this type of entry is one of a pre-defined
+    type that Gamebryo provides. This type of mapping includes
+    values for common transformations, material colors, etc. See
+    <span class="NDLSystemFont">NiShaderConstantMap</span> for
+    these values.</li>
+
+    <li>Attribute . this type of entry is a value that is
+    attached to the geometry being rendered. This type of mapping
+    allows for per-object settings of constant values. An example
+    would be a team color that is used in a shader. These values
+    can be exposed to the artist in the tool-chain allowing for
+    tweaking of values relevant to the 'look' of your rendered
+    objects. The important thing to note is that these values
+    will be PER-OBJECT.</li>
+
+    <li>Global . this type of entry is similar to the Attribute
+    method, but it is a global, application-registered data
+    value. This mapping is useful for registering things such as
+    light-related values, time of day, and other "global"
+    variables.</li>
+
+    <li>Object . this type of entry represents an object in the
+    scene, such as a light or a projected texture effect.
+    Different parameters, like light position or a texture, can
+    be obtained from these entries. See <span class=
+    "NDLSystemFont">NiShaderConstantMap</span> for these
+    values.</li>
+</ul>
+
+<a name="Fallbacks" id="Fallbacks"></a><h2>Fallbacks</h2>
+
+<p>Occasionally, an <span class=
+"NDLSystemFont">NiFragmentMaterial</span> will fail to correctly
+generate a working shader. This will often be because it
+generated a GPU program that failed to compile. In such
+circumstances, the material may want to try to recreate the
+<span class="NDLSystemFont">NiGPUProgramDescriptors</span> in
+step 4 of the process described above, simplifying them in the
+process, and attempt to create the shader again. The material may
+try to simplify the descriptors by breaking the effect up into
+multiple passes, or by eliminating certain lights or
+textures.</p>
+
+<p>Materials can provide callback functions to act as fallbacks.
+These callback functions will have this signature:</p>
+<pre>
+typedef bool (*SHADERFALLBACKFUNC)(
+    NiMaterialDescriptor* pkMaterialDescriptor, ReturnCode eFailedRC,
+    unsigned int uiFailedPass, RenderPassDescriptor* pkRenderPasses,
+    unsigned int uiMaxCount, unsigned int&amp; uiCount,
+    unsigned int&amp; uiFunctionData);
+</pre>
+
+<p>When the fallback function is called, it will get passed in
+the full <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiMaterialDescriptor.htm">NiMaterialDescriptor</a></span>,
+which describes the total effect. It also gets a <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFragmentMaterial.htm#ReturnCode">ReturnCode</a></span>
+that reports why the previous compilation attempt failed, the
+identity of the pass that failed, and the array of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFragmentMaterial.htm#RenderPassDescriptor">
+RenderPassDescriptor</a></span> objects that contain descriptions
+of all the passes. With this information, the fallback can try to
+identify where the problem is, and what steps to take to rectify
+it.</p>
+
+<p>The fallback function needs to first determine whether or not
+it can address the problem. If it can't, then it should return
+false. Otherwise, the function should make its changes by
+modifying the array of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFragmentMaterial.htm#RenderPassDescriptor">
+RenderPassDescriptor</a></span> objects. It can make a change to
+every render pass in the array, or it can change only the pass
+that failed, or it can add new passes or remove passes. It is
+important, though, that when the function returns, the array of
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFragmentMaterial.htm#RenderPassDescriptor">
+RenderPassDescriptor</a></span> objects contains valid
+descriptions of every pass - even the ones that may not have
+failed. This is because for each fallback attempt, the material
+will completely recreate the shader, in case the fallback
+function made changes to those passes that had previously passed.
+When fallback function returns successfully, it can put the new
+pass count in the <span class="NDLSystemFont">uiCount</span>
+parameter. Then, the material will attempt to continue creating
+the shader from step 5.</p>
+
+<p>Many fallback techniques operate best iteratively. For
+example, consider a fallback technique that takes a failed pass
+and moves half its lights to a new pass. If a pass with 8 lights
+fails to compile, that pass can be broken up into two passes with
+4 lights. If 4 lights is still too many, though, the fallback
+function could get called again on the first pass (splitting that
+pass into two passes with two lights) and then on the second pass
+(splitting that pass similarly). Finally, the shader may get
+created successfully.</p>
+
+<p>This process can be achieved by the <span class=
+"NDLSystemFont">NiFragmentMaterial</span> by the way it handles
+the Boolean value returned from the fallback function. If the
+function returns <span class="NDLSystemFont">false</span>, then
+the material will consider that fallback function to have failed,
+and will either move on to a new fallback function or return no
+shader. But if the fallback function returns <span class=
+"NDLSystemFont">true</span>, then the material will attempt to
+create the shader from the modified render pass description
+array, and if that attempt fails again, the material will call
+the same fallback function again. In fact, the material will
+continue to call the same callback function until the shader
+creation succeeds, or the fallback function returns <span class=
+"NDLSystemFont">false</span>.</p>
+
+<p>The fallback function can even communicate with itself across
+various attempts: the <span class=
+"NDLSystemFont">uiFunctionData</span> parameter is initialized to
+0 the first time a fallback function is called, and the value is
+passed in to each subsequent call to that fallback function. This
+way, a fallback function can leave feedback to future iterations
+of itself.</p>
+
+<p>The <span class="NDLSystemFont">NiFragmentMaterial</span>
+keeps a linear array of fallback functions that have been
+registered with it, and will iterate through that list in order.
+Refer to the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFragmentMaterial.htm">NiFragmentMaterial</a></span>
+class reference for the functions that can be used to add a new
+fallback function to this list or manipulate it.</p>
+
+<p>When the <span class="NDLSystemFont">NiFragmentMaterial</span>
+is attempting a fallback function for the first time, it will
+first call <span class=
+"NDLSystemFont">GenerateShaderDescArray</span> to regenerate the
+array of render pass descriptors. This may seem counterintuitive,
+since the reason the fallback function is getting called is
+because that array is known to fail, but it is done this way so
+that each fallback function has the same starting point, and so
+they won't interfere with each other's operations. This also
+means that if an application wants one fallback function to
+operate on the results of another fallback function, then the
+first fallback function will need to call the second callback
+function itself first. This can be a viable strategy, and is a
+good use of the <span class="NDLSystemFont">uiFunctionData</span>
+parameter to pass data from one iteration of a function to
+another. For example, fallback function 2 can simply return the
+results of fallback function 1 until fallback returns false. At
+that point, fallback 2 can set a flag in <span class=
+"NDLSystemFont">uiFunctionData</span>, and from that point on,
+fallback 2 can do its own work.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Morphing Faces on Skinned Characters</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Morphing Faces on Skinned Characters</h1>
+
+<p>Use the standard morpher modifier in Max and set up
+your morph targets through that interface. A maxscript could be
+generated to make custom sliders for this. Gamebryo fully
+supports morphing but has no special interfaces; it goes through
+the standard pipeline just like skinning.</p>
+
+<h2>Warning on Performance</h2>
+
+<p>Having a morpher modifier on top of a skin or physique modifier is <em>very</em>
+slow. This is because all of the vertices must get passed through
+the pipeline twice&mdash;once for the skin updates and again for
+the morph updates.</p>
+
+<h2>Correct Method of Using Morph and Skin Together</h2>
+
+<p>It is recommended that you split the "face area" of the head
+into a separate mesh. The head mesh can remain skinned, with the
+vertices bordering the face mesh all set to 100% weights to the
+head bone (so they move absolutely with the head bone). The face
+mesh should be linked directly to the head bone with no skinning,
+so that it also moves 100% with the head bone and the seams of
+the non-skinned face and skinned head match up. The morpher modifier is only applied to
+the face mesh and not the head mesh. This way each mesh is only
+passed down the pipeline once.</p>
+
+<h2>Smoothing any Seams Between the Head and Face</h2>
+
+<p>When you have two meshes that line up vertex for vertex, you
+will still get a seam because the normals at the edge of each
+mesh differ. Gamebryo has a special export plug-in that smoothes
+these normals and makes the seams disappear. When you export, go
+to the Process Script edit dialog and add the "Unify Normals
+Plug-in v1.0" to the process list. Both the head and face mesh
+need to be tagged with "NiUnifyNormals" in the User-defined
+properties so the plug-in will recognize they need to be
+smoothed.</p>
+
+<h2>Updating Normals</h2>
+
+<p>When an object with a Morph modifier is exported from max, by
+default, its surface normals do not update each frame in
+Gamebryo. In most cases this works well because there is almost
+no visual difference from updating the normals, and recalculating
+the normals per-vertex can be very expensive. In some cases,
+however, the artist will want Gamebryo to recalculate the surface
+normals each frame. This is the case when the surface deforms
+significantly. If this is needed, surface normals will be updated
+when the string 'NiMorphUpdateNormals' is added to the
+user-defined properties of the object.</p>
+
+<p>This method will give you fast and accurate results.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

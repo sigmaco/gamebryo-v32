@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Extension Use Cases</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Extension Use Cases</h1>
+
+<p>The primary design consideration for the Gamebryo material system was
+extensibility. This document is meant to provide developers with several use
+cases for extending the material system so that they will have a good idea of
+where to begin with their own extensions.</p><a name="UsingStandardShaders" id=
+"UsingStandardShaders"></a>
+
+<h2>Use Case: Using Standard Shaders</h2>
+
+<p>In many cases, a developer may want to simply choose the correct shader from
+a predefined palette of FX, NSF, or other type of <span class=
+"NDLSystemFont">NiShaders</span>. In this case, the custom material should be
+derived from the <span class="NDLSystemFont">NiMaterial</span> class. An
+example of this case is the <a href=
+"../../Art/Other/NiFlatWireframeMaterial.htm"><span class=
+"NDLSystemFont">NiFlatWireframeMaterial</span></a> in the <a href=
+"../../Reference/NiCommonMaterialLibrary/Introduction_to_NiCommonMaterialLib.htm">
+<span class="NDLSystemFont">NiCommonMaterialLib</span></a>. This material was
+designed for the tools to provide a fast wireframe rendering mode that does not
+perform any lighting. This class overrides the <span class=
+"NDLSystemFont">IsShaderCurrent()</span>, <span class=
+"NDLSystemFont">GetCurrentShader()</span>, and <span class=
+"NDLSystemFont">UnloadShaders()</span> methods from <span class=
+"NDLSystemFont">NiMaterial</span>. The material uses two <span class=
+"NDLSystemFont">NSF</span> shaders: <span class=
+"NDLSystemFont">FlatWireframe.NSF</span> and <span class=
+"NDLSystemFont">FlatWireframeSkinned.NSF</span>, depending on whether the
+renderable object is skinned or unskinned. As such, the <span class=
+"NDLSystemFont">IsShaderCurrent()</span> method simply makes sure that the
+supplied <span class="NDLSystemFont">NiShader</span> is one of the two
+supported shaders. The <span class="NDLSystemFont">GetCurrentShader()</span>
+method checks for the existence of an <span class=
+"NDLSystemFont">NiSkinningMeshModifier</span> on the geometry. If the modifier
+exists, <span class="NDLSystemFont">FlatWireframeSkinned</span> is used.
+Otherwise, <span class="NDLSystemFont">FlatWireframe</span> is used. The
+<span class="NDLSystemFont">UnloadShaders()</span> method simply frees the
+cached copies of the two NSF shaders as needed.</p>
+
+<p>As the permutations of shaders gets larger for a material, it may be
+necessary to use a bitfield to provide a key for lookup. In this case, a
+developer may wish to use a subset of the <span class=
+"NDLSystemFont">NiStandardMaterialDescriptor</span> or create their
+own.</p><a name="ExtendingtheStandardMaterial" id=
+"ExtendingtheStandardMaterial"></a>
+
+<h2>Use Case: Extending the Standard Material</h2>
+
+<p>Developers may wish to tweak the behavior of the standard material either by
+overriding existing behavior or adding new behavior. Overriding existing
+behavior usually only requires overriding the appropriate methods in
+<span class="NDLSystemFont">NiStandardMaterial</span>. An example of adding new
+behavior can be found in the <a href=
+"../../Art/Other/TextureBlendMaterial.htm"><span class=
+"NDLSystemFont">TextureBlendMaterial</span></a> in the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCommonMaterialLibrary/Introduction_to_NiCommonMaterialLib.htm">
+NiCommonMaterialLib</a></span>. This material blends four textures together
+using a fifth texture as a control map. The blended color is then multiplied by
+the diffuse color. Since it is derived from the standard material, all of the
+existing maps and texture transforms are supported. This material overrides one
+method from <span class="NDLSystemFont">NiStandardMaterial</span>, namely
+<span class="NDLSystemFont">HandleCustomMaps()</span>. The standard material
+supports five additional texture maps in its default descriptor, so the
+bitfields are correctly set in the parent <span class=
+"NDLSystemFont">GenerateDescriptor()</span> and <span class=
+"NDLSystemFont">GenerateShaderDescArray()</span> methods. The <span class=
+"NDLSystemFont">HandleCustomMaps()</span> implementation simply checks the
+bitfield for the correct textures and wires the appropriate shader constants
+and material nodes together. Most modifications can be done in this manner.
+Advanced modifications may need to override the bitfield itself, which should
+be done in the <span class="NDLSystemFont">GenerateDescriptor()</span> method.
+Additionally, it may be necessary to produce different pixel and vertex program
+descriptors, which should be done in the <span class=
+"NDLSystemFont">GenerateShaderDescArray()</span> method. Please see the
+<a href="NiFragmentMaterial.htm"><span class=
+"NDLSystemFont">NiFragmentMaterial</span></a> for a description of the general
+fragment material assembly pipeline.</p>
+
+<p>An example that tweaks the behavior of the standard material by overriding
+existing behavior can be found in the <a href=
+"../../Art/Other/AdditiveLightMapsMaterial.htm"><span class=
+"NDLSystemFont">AdditiveLightMapsMaterial</span></a> in the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCommonMaterialLibrary/Introduction_to_NiCommonMaterialLib.htm">
+NiCommonMaterialLib</a></span>. This material enables projected light maps (up
+to 3) to be added in after the base map has been applied, with the result that
+projected lights lighten instead of darken the base map. Since it is derived
+from the standard material, all of the existing maps and texture transforms are
+supported. This material overrides one method from <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStandardMaterial.htm">NiStandardMaterial</a></span>,
+namely <span class="NDLSystemFont">HandlePreLightTextureApplication()</span>,
+so that it alters the behavior by resequencing when projected lights are added
+in, with the result that projected lights lighten instead of darken. The
+<span class="NDLSystemFont">BadSushi</span> demo serves as an example of the
+use of this material in an application.</p><a name=
+"CreatingaSubtractiveMaterialSystem" id=
+"CreatingaSubtractiveMaterialSystem"></a>
+
+<h2>Use Case: Creating a Subtractive Material System</h2>
+
+<p>Developers may not want to use an additive shader method, and may instead
+want to create a subtractive system. In many cases, classes and logic may be
+borrowed from the <span class="NDLSystemFont">NiFragmentMaterial</span> system.
+For instance, the <span class="NDLSystemFont"><a href=
+"NiGPUProgramCache_System.htm">NiGPUProgramCache</a></span> system could be
+used by concatenating the <span class="NDLSystemFont">#defines</span> and
+larger shader body together. The configurable shaders generated by the renderer
+can be re-used along with the material and program descriptors.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Run-Time Type Information</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Run-Time Type Information</h1>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The following applies only to the Core Runtime
+                subsystem. RTTI is also implemented in the
+                Foundation subsystem. The Foundation RTTI
+                implementation is used by all Foundation and Game
+                Framework code, including the Core Runtime
+                Services that are implemented in the <span class=
+                "NDLSystemFont">ecr</span> namespace. The
+                Foundation RTTI system offers the following
+                features that are not supported in the Core
+                Runtime implementation:
+
+                <ul>
+                    <li>multiple inheritance</li>
+
+                    <li>use of integer IDs instead of
+                    strings</li>
+                </ul>For additional details, see <a href=
+                "../Foundation/foundation_rtti.htm">Foundation
+                RTTI</a>.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Gamebryo is designed as a class hierarchy, based on 
+ several low-level management bases.&nbsp; The figure below shows a small 
+ subset of the hierarchy of classes derived from <span class="NDLSystemFont">NiObject</span>. An arrow from 
+ class B to class A represents that class B is derived from class A. </p>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/image002.gif" width="301" height="337" />
+    <p class="NDLFigureCaption">Partial hierarchy of NiObject-derived classes</p>
+</div>
+
+<p>Gamebryo objects rooted at <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span> 
+ are written to use single inheritance.&nbsp; As a result, the subclasses 
+ of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a> 
+ </span>form a tree of types (note that this is a tree of object <em>type</em> 
+ relationships, not object instance relationships).&nbsp; The run-time 
+ type information (<span class="NDLSystemFont">RTTI</span>) 
+ system allows applications to quickly determine the direct or ancestral 
+ type of any instance of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a> 
+ </span>or subclass.</p>
+
+<p>There are three basic operations supported by <span 
+ class="NDLSystemFont">RTTI</span>:</p>
+
+<ol style="list-style: decimal;"
+	type=1>
+	
+	<li>Testing if an object's 
+ class is exactly a specified class</li>
+	
+	<li>Testing if an object's 
+ class is derived from a specified class</li>
+	
+	<li>Dynamic typecasting 
+ whereby a pointer to the object is typecast to a pointer of a derived 
+ class. </li>
+</ol>
+
+<p>The semantics of each operation are as follows:</p>
+
+<p>Testing for exact membership in a class is accomplished 
+ by a macro called <span class="NDLSystemFont">NiIsExactKindOf</span> by 
+ comparing the <span class="NDLSystemFont">RTTI</span> of the object's class 
+ with the <span class="NDLSystemFont">RTTI</span> of the specified class.</p>
+
+<p>Testing for derivation from a specified class is accomplished 
+ by a macro called <span class="NDLSystemFont">NiIsKindOf</span> 
+ by searching the path connecting the class of the object to the <span 
+ class="NDLSystemFont">NiObject</span> root and comparing the <span class="NDLSystemFont">RTTI</span> 
+ values along the way.</p>
+
+<p><span class="NDLSystemFont">NiDynamicCast</span> uses 
+ the <span class="NDLSystemFont">NiIsKindOf</span> test. If the <span class="NDLSystemFont">NiIsKindOf</span> 
+ test indicates that the type cast is not safe, <span class="NDLSystemFont">0</span> 
+ is returned. If <span class="NDLSystemFont">NiIsKindOf</span> indicates 
+ the cast is safe, the pointer is statically cast to the appropriate type. 
+ </p>
+
+<p>The following code shows how to use these macros:</p>
+
+<pre>
+NiNode* pkNode = NiNew NiNode;
+bool bResult;
+bResult = NiIsExactKindOf(NiNode, pkNode);     // bResult is true
+bResult = NiIsExactKindOf(NiAVObject, pkNode); // bResult is false
+bResult = NiIsKindOf(NiAVObject, pkNode);      // bResult is true
+bResult = NiIsKindOf(NiSwitchNode, pkNode);    // bResult is false
+ 
+NiObject* pkObject = pkNode;
+NiAVObject* pkDynAVObj =
+    NiDynamicCast(NiAVObject, pkObject);   // pkDynAVObj == pkNode
+NiNode* pkDynNode =
+    NiDynamicCast(NiNode, pkObject);       // pkDynNode == pkNode
+NiSwitchNode* pkDynSw =
+    NiDynamicCast(NiSwitchNode, pkObject); // pkDynSw == 0
+</pre>
+
+<p>The first two dynamic casts are successful because <span 
+ class="NDLSystemFont">pkObject</span> 
+ really is an <span class="NDLSystemFont">NiNode</span> 
+ and an <span class="NDLSystemFont">NiAVObject</span>. 
+ The last dynamic cast fails because <span class="NDLSystemFont">pkObject</span> 
+ is an <span class="NDLSystemFont">NiNode</span>, 
+ but not an <span class="NDLSystemFont">NiSwitchNode</span>. 
+ </p>
+
+<p>Code like the following should be avoided:</p>
+
+<pre>
+void Function(NiAVObject* pkObject)
+{
+    if (NiIsKindOf(NiNode, pkObject))
+    {
+        NiNode* pkNode = NiDynamicCast(NiNode, pkObject);
+ 
+        // do something with pkNode
+    }
+}
+</pre>
+
+<p>The problem with this code is that it does more work 
+ than is necessary. The <span class="NDLSystemFont">NiDynamicCast</span> 
+ essentially repeats the work done by <span class="NDLSystemFont">NiIsKindOf</span> 
+ to determine if the cast is safe. After <span class="NDLSystemFont">NiIsKindOf</span> has been 
+ used to determine that an object is of a certain type, it is safe to statically 
+ cast the object to that type. A better way to write the above function 
+ is:</p>
+ 
+<pre>
+void Function(NiAVObject* pkObject)
+{
+    if (NiIsKindOf(NiNode, pkObject))
+    {
+        NiNode* pkNode = (NiNode*) pkObject;
+ 
+        // do something with pkNode
+    }
+}
+</pre>
+
+
+<p>Further, <span class="NDLSystemFont">NiVerifyStaticCast</span> 
+ provides a static cast from one object type to another. In debug builds, 
+ the RTTI system is used to verify that the static cast is valid. If used 
+ with an invalid, <span class="NDLSystemFont">NiVerifyStaticCast</span> will 
+ assert with <span class="NDLSystemFont">NIASSERT.</span> </p>
+
+<p>Also note, that the three RTTI operations are macros.&nbsp; 
+ As such, be very wary of using function calls in these macros.&nbsp; When 
+ the macro is expanded, functions could be called more than once based 
+ on the way that the macro expands.&nbsp; This can lead to unforeseen object 
+ and memory leaks that are difficult to debug.</p>
+
+<h2>RTTI Implementation</h2>
+
+<p>The <span class="NDLSystemFont">RTTI</span> 
+ information for each class is stored as a static instance of an <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiRTTI.htm">NiRTTI</a></span> 
+ object. The address of the static data serves as a unique identifier for 
+ the class, and allows for fast comparisons. The <span class="NDLSystemFont">RTTI</span> 
+ data includes a pointer to the <span class="NDLSystemFont">RTTI</span> 
+ data for the class's immediate base class (to check the derivation hierarchy) 
+ and a string (the name of the class) for human readability and for supporting 
+ the streaming system.&nbsp; The implementation of the types as a tree 
+ with parent class pointers means that <span class="NDLSystemFont">NiIsExactKindOf</span> 
+ is a fast, single comparison, while <span class="NDLSystemFont">NiIsKindOf</span> 
+ can require numerous comparisons up the derivation tree.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

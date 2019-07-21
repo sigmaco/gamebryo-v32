@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Particles Demo Functional Overview</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>PhysX Particles Demo Functional Overview</h1>
+
+<p>The scene graph for this demo was created in a modeling package and exported using three
+different process scripts, resulting in three scene files. The application loads these three NIFs
+and wraps each one with a class to control its updating and appearance. At runtime, only one of
+these wrappers is being updated and drawn. The interesting aspects of this demo relate to how PhysX
+is updated in conjunction with the scene-graph particle system, and how PhysX content is accessed
+and modified at runtime.</p>
+
+<h2>Detecting PhysX Hardware</h2>
+
+<p>The <span class="NDLSystemFont">getHWVersion()</span> in the PhysX SDK object returns 0 if there
+is no hardware present. This is the simplest way to check for PhysX hardware. You can also try
+creating a <span class="NDLSystemFont">NxScene</span> object with hardware simulation parameters
+and test if it fails.</p>
+
+<h2>Changing PhysX Parameters At Runtime</h2>
+
+<p>Due to the limited feature set of the PhysX authoring tools and the limits of Gamebryo's PhysX
+support, it is frequently necessary to access or modify PhysX data after loading it from a file or
+after a simulation is created. There are various was to do this, depending on what information you
+are looking for and when you need it. This application uses two mechanisms: direct access to the
+PhysX scene object, and access via the Gamebryo descriptor for a PhysX object.</p>
+
+<p>When working with PhysX hardware, concave collision meshes must be explicitly paged by the
+application. The PhysX Particles application includes code to page in all the meshes in a scene,
+and it does so by accessing the PhysX <span class="NDLSystemFont">NxScene</span> object and working
+directly with PhysX API calls. In general, Gamebryo-PhysX integration provides full access to the
+PhysX API.</p>
+
+<p>PhysX-based particles require a prototypical PhysX actor to represent the particle. The
+information to create this actor is stored in a <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXActorDesc.htm">NiPhysXActorDesc</a></span> object associated with
+the <span class="NDLSystemFont">NiPhysXPSParticleSystem</span> or <span class=
+"NDLSystemFont">NiPhysXPSMeshParticleSystem</span> object. A <span class=
+"NDLSystemFont">NiPhysXActorDesc</span> object is a wrapper for a <span class=
+"NDLSystemFont">NxActorDesc</span> object and also contains information relating the PhysX actor to
+Gamebryo objects. In this application, the <span class="NDLSystemFont">NiPhysXActorDesc</span>
+object is accessed to disable PhysX gravity for the particles. In general, if you wish to modify
+the properties of a PhysX object before creating it, then you should work through the Gamebryo
+descriptors. We disable gravity because we want the particles to rise while the rigid shapes fall.
+So we use PhysX gravity for the rigid shapes and a particle system gravity modifier for the
+particles.</p>
+
+<p>At runtime, this application also enables and disables PhysX debug visualization. When modifying
+PhysX parameters at runtime, it is essential that all changes be made outside of the <span class=
+"NDLSystemFont">Simulate/FetchResults</span> block. PhysX Particles shows one way to ensure that
+this is always the case.</p>
+
+<h2>Resetting a PhysX Particle Simulation</h2>
+
+<p>This application allows for simulation reset. If you wish to support this functionality, do not
+delete the snapshot in a prop loaded from a NIF file, or create a snapshot using the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysXTools/NiPhysXSnapshotExtractor.htm">NiPhysXSnapshotExtractor</a></span>
+class if you are creating the PhysX content in code. It is then a simple matter to restore the
+state of the scene from the snapshot. Note that not everything is captured by a snapshot and
+restored. See <a href="../../Programmer/NiPhysX/Snapshots_and_State_Restoration.htm">Snapshots and
+State Restoration</a> for details.</p>
+
+<h2>Updating PhysX Particles</h2>
+
+<p>In addition to standard Gamebryo scene graph updating, an application with PhysX content must
+also explicitly update the simulation. The process is not automated because there are many possible
+variants on how this is done, each with different implications for performance and appearance. See
+<a href="../../Programmer/NiPhysX/Basic_PhysX_Updating_Tasks.htm">Updating Gamebryo-PhysX</a> for
+more details. A PhysX-based particle system includes destinations of PhysX content, so <span class=
+"NDLSystemFont">UpdateDestinations</span> must be called on the <span class=
+"NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> object,
+in addition to <span class="NDLSystemFont">Simulate</span> and <span class=
+"NDLSystemFont">FetchResults</span>.</p>
+
+<p>Physical simulation can be done synchronously or asynchronously with respect to rendering. If
+synchronous, the application sets up the physics computation and then waits for it to finish before
+moving on. On the other hand, asynchronous simulation sets up the physics and then does other
+computation while waiting for the answer. This application can take either approach, with a
+noticeable performance difference (asynchronous makes more effective use of computational
+resources).</p>
+
+<h2>PhysX Debug Visualization</h2>
+
+<p>The PhysX API supports the production of debugging geometry, useful for visualizing the system
+state as the physics engine sees it. Gamebryo can process and render this geometry for you simply
+by setting the appropriate flag on the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> object. Note that this can have
+a major negative impact on performance, as this demo shows.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,875 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Hello World: Adding More Game Framework Services</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Hello World: Adding More Game Framework Services</h1>
+
+<p>After you loaded your world and started the application, you probably noticed very quickly that
+you could not move Jack around the world. You'll need to add additional services to your
+application to be able to move Jack around.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="hello_world_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="hello_world_tutorial_new_emt_project.htm">Creating a New Toolbench Game
+    Solution</a></li>
+
+    <li><a href="hello_world_tutorial_models.htm">Creating New Models</a></li>
+
+    <li><a href="hello_world_tutorial_world.htm">Populating Your World</a></li>
+
+    <li><a href="hello_world_tutorial_project.htm">Setting Up Your C++ Project</a></li>
+
+    <li><a href="hello_world_tutorial_services.htm">Creating main.cpp and Adding Services</a></li>
+
+    <li><a href="hello_world_tutorial_loading.htm">Loading Your World and Starting the
+    Application</a></li>
+
+    <li><b>Adding More Game Framework Services&nbsp;&nbsp;&lt;-- You are here</b></li>
+</ol>
+
+<h2>Adding the AIJack and Avatar Models</h2>
+
+<p>The <span class="NDLSystemFont">Jack</span> model represents the base Model for all jack
+entities. We'll now create two child models from Jack:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">AIJack</span>&mdash;used for computer-controlled Jack
+    entities</li>
+
+    <li><span class="NDLSystemFont">Avatar</span>&mdash;represents the user in the application</li>
+</ul>
+
+<p>Create the <span class="NDLSystemFont">AIJack</span> and <span class=
+"NDLSystemFont">Avatar</span> models now in Toolbench. Mix-in the <span class=
+"NDLSystemFont">Jack</span> model to both by dragging <span class="NDLSystemFont">Jack</span> above
+your new models. Once this is done, your EMT diagram will look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/hello_world_tutorial_jack_aijack_avatar.png" width="712" height="484" alt=
+    "Mixing in the Jack model (49K)">
+
+    <p class="FigureCaption">Mixing in the Jack model</p>
+</div>
+
+<p>We'll mix-in the <span class="NDLSystemFont">StandardModelLibrary.InputHandler</span> model to <span class=
+"NDLSystemFont">Avatar</span> so that we can make it respond to user input. Your EMT diagram will
+look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/hello_world_tutorial_avatar_inputhandler.png" width="712" height="484" alt=
+    "Mixing in the InputHandler model (48K)">
+
+    <p class="FigureCaption">Mixing in the InputHandler model</p>
+</div>
+
+<h2>Customize Models</h2>
+
+<p>After you set up your game solution in Toolbench and create models in the Entity Modeling Tool
+(EMT), you can further customize the models by adding or overriding properties and behaviors. To
+customize an entity model, you double-click it under <span class=
+"NDLGUILabel">HelloWorld.emtproj</span> within the Game Solution browser. Then, you edit the model
+in the Entity Modeling Tool. In this step of the tutorial, we are simply adding all of the
+properties and behaviors that the Hello World application requires.</p>
+
+<h4>Jack Model</h4>
+
+<p><span class="NDLSystemFont">Jack</span> is our base model for both the player-controlled
+<span class="NDLSystemFont">Avatar</span> and the computer-controlled <span class=
+"NDLSystemFont">AIJack</span> characters in this sample. By adding functionality to the base model,
+it will be available in all of the models that mix-in <span class="NDLSystemFont">Jack</span>. Add
+the following properties to <span class="NDLSystemFont">Jack</span>:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+
+            <th>Type</th>
+
+            <th>Default Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>IsPlaced</td>
+
+            <td>Boolean</td>
+
+            <td>False</td>
+        </tr>
+
+        <tr>
+            <td>LastGroundedPos</td>
+
+            <td>Point2</td>
+
+            <td>0, 0</td>
+        </tr>
+
+        <tr>
+            <td>Speed</td>
+
+            <td>Float32</td>
+
+            <td>25</td>
+        </tr>
+
+        <tr>
+            <td>InventoryModel</td>
+
+            <td>String</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>IdleNormal</td>
+
+            <td>String</td>
+
+            <td>Idle</td>
+        </tr>
+
+        <tr>
+            <td>DesiredSequence</td>
+
+            <td>String</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>WalkForward</td>
+
+            <td>String</td>
+
+            <td>Run</td>
+        </tr>
+
+        <tr>
+            <td>MoveSequence</td>
+
+            <td>String</td>
+
+            <td>WalkForward</td>
+        </tr>
+
+        <tr>
+            <td>RotationSpeed</td>
+
+            <td>Float32</td>
+
+            <td>90</td>
+        </tr>
+
+        <tr>
+            <td>TurnLeftInPlace</td>
+
+            <td>String</td>
+
+            <td>inplace_right_to_left</td>
+        </tr>
+
+        <tr>
+            <td>TurnRightInPlace</td>
+
+            <td>String</td>
+
+            <td>inplace_left_to_right</td>
+        </tr>
+
+        <tr>
+            <td>Goal</td>
+
+            <td>Point3</td>
+
+            <td>0, 0, 0</td>
+        </tr>
+
+        <tr>
+            <td>UpdateTime</td>
+
+            <td>Float64</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>CurSpeed</td>
+
+            <td>Float32</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>IdleSequence</td>
+
+            <td>String</td>
+
+            <td>IdleNormal</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>Avatar Model</h4>
+
+<p><span class="NDLSystemFont">Avatar</span> is the character that will be controlled by the user.
+Override the following properties within the <span class="NDLGUILabel">Mixin Properties</span>
+section:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Speed</td>
+
+            <td>200</td>
+        </tr>
+
+        <tr>
+            <td>RotationSpeed</td>
+
+            <td>200</td>
+        </tr>
+
+        <tr>
+            <td>InitialSequence</td>
+
+            <td>Idle</td>
+        </tr>
+
+        <tr>
+            <td>NormalEventMap</td>
+
+            <td>MOVE_FORWARD, OnKeyUp<br>
+            <br>
+            MOVE_TURNLEFT, OnKeyLeft<br>
+            <br>
+            MOVE_TURNRIGHT, OnKeyRight<br>
+            <br>
+            MOVE_STICK, OnStick</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Add the following properties:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+
+            <th>Type</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>IsMoving</td>
+
+            <td>Boolean</td>
+
+            <td>False</td>
+        </tr>
+
+        <tr>
+            <td>IsTurningRight</td>
+
+            <td>Boolean</td>
+
+            <td>False</td>
+        </tr>
+
+        <tr>
+            <td>IsTurningLeft</td>
+
+            <td>Boolean</td>
+
+            <td>False</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Override the following behavior:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Target</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnCreate</td>
+
+            <td>Lua</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Add the following behaviors:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Target</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnTick</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyUp</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyLeft</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyRight</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnStick</td>
+
+            <td>Lua</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>AIJack Model</h4>
+
+<p><span class="NDLSystemFont">AIJack</span> is the CPU player that runs around the world trying to
+find his goal.</p>
+
+<p>Override the following properties from the <span class="NDLGUILabel">Mix-in Properties</span>
+section:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Speed</td>
+
+            <td>50</td>
+        </tr>
+
+        <tr>
+            <td>Scale</td>
+
+            <td>0.5</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Add the following behaviors:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Target</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnTick</td>
+
+            <td>Lua</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Override the following behavior:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Target</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnCreate</td>
+
+            <td>Lua</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>After you update your models, you should have a diagram like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/hello_world_tutorial_all_model_overrides.png" width="562" height="695" alt=
+    "Diagram showing updated models (41K)">
+
+    <p class="FigureCaption">Diagram showing updated models</p>
+</div>
+
+<h2>Character Changes and Additions</h2>
+
+<ul>
+    <li>Replace Jack in the world with Avatar&mdash;to move around the world, remove the
+    non-movable Jack entity from the world and replace it with an Avatar entity.</li>
+
+    <li>Add an AIJack to your world&mdash;Place an AIJack Entity anywhere in your world. The AIJack
+    is driven by a Lua script to seek out a particular position in the world and then stop. The
+    position AIJack is trying to reach is controlled by the <em>Goal</em> property, which is set 0,
+    0, 0 by default.</li>
+</ul>
+
+<h2>Adding Code to Enable Movement Around Your World</h2>
+
+<p>Below, we will cover some important code snippets used to enable movement via input and lua 
+script. Since this section only discusses highlights rather than all of the code needed, it is 
+recommended that you use the completed code as a starting point which can be found here: <a href=
+"hello_world_tutorial_code_samples.htm#ALL">Hello World Code Samples, complete</a>. Note that you
+skip this section, you still need to perform the <a href="#Adding">Adding the Action Map file</a> 
+step below.</p>
+
+<p>At this point, you have a runnable application that can load your world. Your application can
+display entities placed in the world using World Builder. You cannot, however, move the Jack avatar
+around the floor. Let's review the additional code necessary to enable movement.</p>
+
+<h3>The ecrInput Service</h3>
+
+<p>The ecrInput Service is used to take input from the user and send events to the application when
+input is detected. We'll add support for ecrInput Service events in our HelloWorldService.</p>
+
+<p>First, we need to add the header to the <span class="NDLSystemFont">HelloWorld.cpp</span>
+file.</p>
+<pre>
+#include &lt;ecrInput/InputService.h&gt;
+</pre>
+
+<p>Next, we add the InputService and register it with the Service Manager in 
+<span class="NDLSystemFont">HelloWorld::SetupServices</span>.</p>
+<pre>
+// The InputService service manages input from keyboard and joystick devices.  It uses an
+// actionmap to convert device input into events.  Further you can register for either
+// message based or behavior based callbacks when an input event occurs.
+ecrInput::InputServicePtr spInputService = EE_NEW ecrInput::InputService(false, false);
+m_spServiceManager-&gt;RegisterSystemService(spInputService);
+</pre><a name="Adding" id="Adding"></a>
+
+<h3>Adding the Action Map file</h3>
+
+<p>We create an actionmap file to map user input to events as follows:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Keyboard</th>
+
+            <th>Game Pad</th>
+
+            <th>Event Name</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>UP_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_FORWARD</td>
+        </tr>
+
+        <tr>
+            <td>LEFT_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_TURNLEFT</td>
+        </tr>
+
+        <tr>
+            <td>RIGHT_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_TURNRIGHT</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>Left Analog</td>
+
+            <td>MOVE_STICK</td>
+        </tr>
+
+        <tr>
+            <td>ESC</td>
+
+            <td>Start &amp; Select/Back buttons</td>
+
+            <td>GAME_QUIT</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Create the file with the following content and name it <span class=
+"NDLSystemFont">HelloWorldActionMap.actionmap</span> in the Media directory. In this example, it
+should be placed in the following location:</p>
+
+<p><span class=
+"NDLSystemFont">C:\Emergent\HelloWorldTutorial\Media\HelloWorldActionMap.actionmap</span></p>
+<pre>
+&lt;?xml version="1.0" ?&gt;
+&lt;InputServiceBindings&gt;
+    &lt;!--Input service bindings: action maps, events and actions--&gt;
+    &lt;ActionMapsList&gt;
+        &lt;ActionMap ActionMapName="GAMEPLAY_ACTION_MAP"&gt;
+            &lt;EventsList&gt;
+                &lt;Event EventName="MOVE_FORWARD" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_UP" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_TURNLEFT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_LEFT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_TURNRIGHT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_RIGHT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_STICK" EventFlags="RETURN_COORD"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="" ActionClsID="STICK" StickType="GP_STICK_LEFT" XAxisSemantic="0" YAxisSemantic="0" ZAxisSemantic="0" XMinRange="-1.000000" XMaxRange="1.000000" YMinRange="-1.000000" YMaxRange="1.000000" ZMinRange="-1.000000" ZMaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+            &lt;/EventsList&gt;
+        &lt;/ActionMap&gt;
+    &lt;/ActionMapsList&gt;
+    &lt;GlobalActionMap ActionMapName="Global"&gt;
+        &lt;EventsList&gt;
+            &lt;Event EventName="GAME_QUIT" EventFlags="ACTION_AND"&gt;
+                &lt;ActionsList&gt;
+                    &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="GP_BUTTON_SELECT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="GP_BUTTON_START" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                &lt;/ActionsList&gt;
+            &lt;/Event&gt;            
+        &lt;/EventsList&gt;
+    &lt;/GlobalActionMap&gt;
+&lt;/InputServiceBindings&gt;
+</pre>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Tip</p>
+
+            <div class="NDLNote">
+                The ESC key is handled by the <span class=
+                "NDLSystemFont">Win32PlatformService</span> and you don't need to map it in the
+                action map file.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>We want to indicate that we are dependent on the <span class="NDLSystemFont">
+InputService</span> so that services are initialized in the correct order by
+registering a dependency within <span class="NDLSystemFont">HelloWorld::OnPreInit</span>.</p>
+
+<pre>
+// We also manually set our input actions so we need ecrInput::InputService to be available.
+pDependencyRegistrar-&gt;AddDependency&lt;ecrInput::InputService&gt;();
+</pre>
+
+<p>Then, we need to activate the actionmap in <span class=
+"NDLSystemFont">HelloWorld::OnInit</span>. To keep 
+<span class="NDLSystemFont">OnInit</span> from getting bloated, we will add
+the utility function <span class="NDLSystemFont">SetupInputActions</span>
+that is called from <span class="NDLSystemFont">OnInit</span>.</p>
+<pre>
+void HelloWorld::SetupInputActions()
+{
+    ecrInput::InputService* pInputService =
+        m_pServiceManager-&gt;GetSystemServiceAs&lt;ecrInput::InputService&gt;();
+    EE_ASSERT(pInputService);
+    MessageService* pMessageService = m_pServiceManager->
+        GetSystemServiceAs<MessageService>();
+    EE_ASSERT(pMessageService);
+
+    // activate our action map
+    pInputService-&gt;PushActionMap("GAMEPLAY_ACTION_MAP");
+</pre>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Tip</p>
+
+            <div class="NDLNote">
+                The action map file is automatically loaded by the <span class=
+                "NDLSystemFont">InputService</span> when you specify the file name as <span class=
+                "NDLSystemFont">InputService.ActionMapURN=urn:gamebryo-actionmap:HelloWorldActionMap</span>.
+                Once the user input is mapped to the events by the <span class=
+                "NDLSystemFont">InputService</span>, the <span class=
+                "NDLSystemFont">InputHandler</span> model then maps them into the behaviors
+                (<span class="NDLSystemFont">OnKeyUp</span>, <span class=
+                "NDLSystemFont">OnKeyLeft</span> and so on) that you configured for the
+                <span class="NDLSystemFont">Avatar</span> model.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>We will add code to handle the "GAME_QUIT" event in the Hello World service.</p>
+
+<p>First, declare the message handler in the <span class="NDLSystemFont">HelloWorld.cpp</span>
+file.</p>
+<pre>
+EE_HANDLER(HelloWorld, HandleActionMessage, ecrInput::InputActionMessage);
+</pre>
+
+<p>Then, we add the message handler implementation in the new <span class=
+"NDLSystemFont">HelloWorld::HandleActionMessage</span>.</p>
+<pre>
+void HelloWorld::HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+    efd::Category targetCategory)
+{
+    if (pMessage-&gt;GetEventName() == "GAME_QUIT")
+    {
+        m_pServiceManager-&gt;Shutdown();
+    }
+}
+</pre>
+
+<p>Finally, we generate a category on which the message will be sent and subscribe to it in
+<span class="NDLSystemFont">HelloWorld::SetupInputActions</span>.</p>
+<pre>
+m_catQuitGame = pMessageService-&gt;GetGloballyUniqueCategory();
+pInputService-&gt;ListenForInputActionEvent("GAME_QUIT", m_catQuitGame);
+pMessageService-&gt;Subscribe(this, m_catQuitGame);
+</pre>
+
+<h3>Enabling Lua Script Behaviors</h3>
+
+<p>The user input and entity movement are all handled by the Lua scripts that you copied from the
+Hello World demo assets.</p>
+
+<p>Since we will be using Lua, we will need to include the appropriate header:</p>
+
+<pre>
+#include &lt;egfLua/SchedulerLua.h&gt;
+</pre>
+
+<p>To enable Lua scripting for entity movement, we need to load the <span class=
+"NDLSystemFont">ecr</span> and <span class="NDLSystemFont">egmAnimation</span> built-ins. We
+declare these external and register them later.</p>
+<pre>
+extern "C" int luaopen_ecr(lua_State *L);
+extern "C" int luaopen_egmAnimation(lua_State *L);
+</pre>
+
+<p>We need to tell the Scheduler which scripting runtime to use. Hello World uses the Lua scripting
+runtime in <span class="NDLSystemFont">HelloWorld::SetupServices</span>.</p>
+<pre>
+// Since we want to be able to run Lua behaviors we must add the Lua scripting runtime to the
+// scheduler.
+Scheduler* pScheduler = m_spServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+pScheduler-&gt;RegisterScriptingRuntime("Lua", BehaviorType_Lua, EE_NEW SchedulerLua());
+</pre>
+
+<p>We need to tell the scripting runtime to load any built-ins that we need during runtime. We want
+to call <span class="NDLSystemFont">ecr</span> and <span class="NDLSystemFont">egmAnimation</span>
+methods from Lua, so we add the <span class="NDLSystemFont">init</span> functions to the Lua
+runtime in <span class="NDLSystemFont">HelloWorld::SetupServices</span>.</p>
+<pre>
+#if !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+// For Statically linked built-ins we need to add the static ecr module to the Lua
+// scheduler here before it starts ticking.  We do this by registering the SWIG-generated
+// init function with the scheduler as a static built-in function.  Static built-ins can be
+// used on any platform, but since DLLs are easy to use on Windows we are using DLLs on that
+// platform.  With DLLs we can specify what modules to load purely through config.ini settings
+// and we can also reload those DLLs on the fly which makes testing changes easier.
+EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_ecr));
+EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmAnimation));
+#endif // !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+</pre>
+
+<p>The Hello World demo includes the Lua scripts that you'll need so that you can move around in
+the world and enable the AIJack to move toward his goal. These scripts were copied to your Media
+directory in a previous step. In this example, they're in the following directory:</p>
+
+<p><span class=
+"NDLSystemFont">C:\Emergent\HelloWorldTutorial\Media\HelloWorldLibrary\Behaviors</span></p>
+
+<h2>Starting Your Application</h2>
+
+<p>When you start your application, you can move around the world using the UP, DOWN, LEFT, RIGHT
+arrow keys. You should see the AIJack entity move to its goal position and stop. You'll need to
+pass an additional argument on the command-line to specify the default action map. Your new
+command-line is:</p>
+
+<p><span class="NDLSystemFont">Game.InitialWorld=urn:emergent-world:HelloWorld
+AssetWeb.Path=../Media InputService.ActionMapURN=urn:gamebryo-actionmap:HelloWorldActionMap</span></p>
+
+<p>For DLL builds, use the following command-line:</p>
+
+<p><span class="NDLSystemFont">Game.InitialWorld=urn:emergent-world:HelloWorld
+AssetWeb.Path=../Media 
+ScriptEngine.Lua.LoadBuiltin#=ecrLua!luaopen_ecr
+ScriptEngine.Lua.LoadBuiltin#=egmAnimationLua!luaopen_egmAnimation
+InputService.ActionMapURN=urn:gamebryo-actionmap:HelloWorldActionMap</span></p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                In the DLL command-line example above, the entire command should be on one line.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>You should see an application that looks like this, and you should now be able to move your
+avatar around the floor with the arrow keys:</p>
+
+<div class="FigureContainer">
+    <img src="images/hello_world_tutorial_complete.png" width="515" height="400" alt=
+    "The final game (8K)">
+
+    <p class="FigureCaption">The final game</p>
+</div>
+
+<h2>Moving On...</h2>
+
+<p>This concludes the Hello World tutorial. You have learned how to create a new Toolbench game
+solution, add models, override properties, and populate your world with Entities based on these
+models. You've created an application that is capable of loading this world, and you've added code
+to let you move a character around in the world. The full source for the complete <span class=
+"NDLSystemFont">HelloWorldService.h</span>, <span class=
+"NDLSystemFont">HelloWorldService.cpp</span>, and <span class="NDLSystemFont">main.cpp</span> files
+is available in <a href="hello_world_tutorial_code_samples.htm#ALL">Hello World Code
+Samples</a>.</p>
+
+<p>The full <a href="hello_world_demo.htm">Hello World demo</a> contains all of the functionality
+that you explored in this tutorial, plus a lot more. It expands the world by creating additional
+models in EMT and adding these to the world in World Builder. The demo also includes the
+VisualTrackerService that lets you view statistics like number of objects per-frame, frame rate,
+and memory utilization. It also shows how to add commands to let your avatar pick up and drop
+objects in the world.</p>
+
+<p>To build upon what you've done in this tutorial, we recommend that you move on to the <a href=
+"../Rapid_Iteration/rapid_intro.htm">Rapid Iteration tutorial</a>, which covers rapid iteration set
+up and walks you through rapid iteration scenarios on target platforms. In the <a href=
+"../Base_Game/base_game_intro.htm">Base Game</a> tutorial, we also walk you
+through the steps that are required to transform Hello World into an application with working PhysX
+triggers and collision.</p>
+
+<p>Further still, you can check out Kickstart, a project from Emergent Labs. Kickstart extends Gamebryo
+LightSpeed by providing libraries, tools, and game samples that are designed to support your rapid
+prototyping needs and reduce the time that it takes you to create a first playable. Kickstart
+demonstrates Gamebryo LightSpeed best practices, provides samples that are easy to follow and
+update, and includes useful library code in both C++ and scripting languages.</p>
+
+<p>Visit the Kickstart Project at the following location:</p>
+
+<p><a href="https://pulse.emergent.net/wiki/index.php/Kickstart" target=
+"_blank">https://pulse.emergent.net/wiki/index.php/Kickstart</a></p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="hello_world_demo.htm">The Hello World Demo</a></li>
+
+    <li><a href="../../GetStart/PC/Building_Gamebryo_for_Win32__source_licensees_only_.htm">Build
+    Guidelines for Win32</a></li>
+
+    <li><a href="../../GetStart/Architecture/architecture_framework_overview.htm">Game Framework
+    overview</a></li>
+
+    <li><a href="../../Reference/Introduction_to_the_Reference_Section.htm">Programmer's
+    Reference</a></li>
+
+    <li><a href="../../Programmer/Scripting/scripting_intro.htm">Introduction to scripting</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_intro.htm">System Service Quick
+    Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

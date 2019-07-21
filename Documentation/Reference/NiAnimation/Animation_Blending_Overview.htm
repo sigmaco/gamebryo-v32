@@ -1,0 +1,319 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Animation Blending Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Animation Blending Overview</h1>
+
+<a name=AnimationBlendingOverview></a><h2>Overview</h2>
+
+<p>For a good overview of animation blending and basic 
+ concepts used in Gamebryo, see <a HREF="../../Tools/Animation_Tool/Animation_Blending_Overview.htm">Animation Blending Overview</a> in the Gamebryo Animation Tool documentation. Then, return here for more information about how animation blending is achieved in 
+ the engine.</p>
+
+<p>The following sections discuss the classes involved 
+ in blending animation data from the bottom up. The first sections deal 
+ with blending data from non-sequence based interpolators. The latter sections 
+ describe how the animation system blends data from multiple animation 
+ sequences.</p>
+
+<h2>NiInterpolator Objects</h2>
+
+<p>The base unit of animation interpolation in Gamebryo 
+ is the <span class="NDLSystemFont"><a HREF="NiInterpolator.htm">NiInterpolator</a></span> 
+ class. This class is responsible for converting the current time into 
+ an animated value. The supported animation data formats are bool, float, 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiQuaternion.htm">NiQuaternion</a></span>, 
+ <a href="../../Reference/NiMain/NiPoint3.htm"><span class="NDLSystemFont">NiPoint3</span></a>, 
+ <a href="../../Reference/NiMain/NiColorA.htm"><span class="NDLSystemFont">NiColorA</span></a>, 
+ and <span class="NDLSystemFont"><a href="NiQuatTransform.htm">NiQuatTransform</a></span>. 
+ Each of these values is then used by an <a HREF="NiInterpController.htm"><span 
+ class="NDLSystemFont">NiInterpController</span></a> to manipulate some aspect 
+ of an <a HREF="../../Reference/NiMain/NiObjectGroup.htm"><span 
+ class="NDLSystemFont">NiObjectNET</span></a>. For instance, <span class="NDLSystemFont"><a 
+ HREF="NiAlphaController.htm">NiAlphaController</a></span> 
+ (a subclass of <!--kadov_tag{{<spaces>}}-->&nbsp;<span class="NDLSystemFont"><!--kadov_tag{{</spaces>}}-->NiInterpController)</span> 
+ uses an <span 
+ class="NDLSystemFont"><a HREF="NiFloatInterpolator.htm">NiFloatInterpolator</a></span>(a subclass of<span 
+ class="NDLSystemFont"> NiInterpolator)</span> to set the alpha value of 
+ an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMaterialProperty.htm">NiMaterialProperty</a></span> (a subclass of <span class="NDLSystemFont">NiObjectNET)</span>. <span class="NDLSystemFont">NiInterpolator</span>-derived classes are not required to use animation keys to generate their output values. For instance, <span class="NDLSystemFont"><a HREF="NiLookAtInterpolator.htm">NiLookAtInterpolator</a></span> generates an <span class="NDLSystemFont">NiQuatTransform</span> that forces the target object to &quot;look at&quot; another object.</p>
+
+<h4>General Interpolator Notes</h4>
+
+<p>The following is a list of properties for interpolators:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">NiInterpolator</span> 
+ has several virtual <span class="NDLSystemFont">Update</span> functions 
+ which derived classes implement to compute values corresponding to the 
+ time passed into the function and store those values in class member variables. 
+ </li>
+	
+	<li>For debugging purposes, 
+ there is a virtual <span class="NDLSystemFont">Is*ValueSupported</span> 
+ function (e.g., <span class="NDLSystemFont">IsFloatValueSupported</span>) 
+ for each value type. These functions are only called in debug builds of 
+ Gamebryo. Each function returns a boolean value indicating whether or 
+ not the interpolator supports that value type. The default implementations 
+ of these functions in the base <span class="NDLSystemFont">NiInterpolator</span> 
+ class will return false. These functions are called in debug builds when 
+ an interpolator is attached to an <span class="NDLSystemFont">NiInterpController</span> 
+ to allow the controller to verify that it supports the interpolator being 
+ attached.</li>
+	
+	<li><span class="NDLSystemFont">NiInterpolator</span> 
+ simply computes and stores values. Classes derived from it, such as <span 
+ class="NDLSystemFont">NiFloatInterpolator</span>, hold class member variables 
+ for animation key arrays that are interpolated to obtain the values. Not 
+ all interpolators need to use animation keys. How these values are computed 
+ is irrelevant to the controller that is using the interpolator.</li>
+	
+	<li>Key-based interpolators 
+ store data objects that hold the animation keys. Optionally, multiple 
+ interpolators could reference the same animation data object, allowing 
+ for memory savings.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedInterpolator.htm">NiKeyBasedInterpolator</a></span> 
+ objects do not parameterize time for their keys. They rely on the <span 
+ class="NDLSystemFont">NiInterpController</span> or <span class="NDLSystemFont">NiControllerSequence</span> 
+ holding them to guarantee that time has been mapped into the range of 
+ their keys. When creating <span class="NDLSystemFont">NiInterpController</span> 
+ or <span class="NDLSystemFont">NiInterpolator</span> objects in code, be 
+ sure to call <span class="NDLSystemFont">ResetTimeExtrema</span> to guarantee 
+ that the time range is valid for the interpolators.</li>
+</ul>
+
+<h2>NiBlendInterpolator Objects</h2>
+
+<p><span class="NDLSystemFont"><a href="NiBlendInterpolator.htm">NiBlendInterpolator</a></span>, 
+ a subclass of <span class="NDLSystemFont"><a href="NiInterpolator.htm">NiInterpolator</a></span>, 
+ has the ability to blend data from multiple interpolators. This class 
+ stores an array of interpolators and a weight value for each. Its <span 
+ class="NDLSystemFont">Update</span> function updates all its interpolators 
+ and blends the computed values together by computing a weighted sum of 
+ the values using the array of weights. It then returns the final, blended 
+ value to the <a href="NiInterpController.htm"><span 
+ class="NDLSystemFont">NiInterpController</span></a> to which it is attached. 
+ Since this class is derived from <span class="NDLSystemFont">NiInterpolator</span>, 
+ the owning controller does not know that the value it is getting from 
+ the interpolator is being blended. It is important to note that the various 
+ weight values for the interpolators are normalized (so they add up to 
+ one) before they are used to compute the weighted sum.</p>
+
+<p><span class="NDLSystemFont">NiBlendInterpolator</span> 
+ objects also support an additional priority parameter for each sub-interpolator. 
+ Priority is a way of specifying categories of interpolators in the blend 
+ operation. Only interpolators of the highest priority are considered in 
+ the blend computation. This allows a particular animation to gradually 
+ achieve total dominance over the other interpolators in that <span class="NDLSystemFont">NiBlendInterpolator</span>. 
+ Take an example of a character walking. We want to trigger a shooting 
+ animation on the upper half of the character's body and then blend smoothly 
+ back to the full body walking animation. The walk cycle specifies arm 
+ swing animations. If we were to strictly blend the walk and the shoot 
+ animations, we would get a mix of the two that wouldn't necessarily look 
+ correct. The shot would be unnecessarily wobbly as the walk cycle arm 
+ swing animation essentially spoils the aiming of the gun. In order to 
+ circumvent this artifact, the shoot animation can be blended with a higher 
+ priority. As the blend progresses, the shoot animation would gradually 
+ completely control the upper body while the lower body is completely controlled 
+ by the walk animation. As the blend ends, the shoot animation will gradually 
+ transition back into the arm swing of the walk cycle.</p>
+
+<a name=Overview_of_Sequence_Blending></a><h2>Overview of Sequence Binding</h2>
+
+<p>As described in the <a HREF="Animation_Sequences.htm">Animation 
+ Sequences</a> section on Animation Basics, <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ objects represent different motions for a character, such as walking, 
+ jumping, shooting, pointing, punching, tackling, falling, and idling. 
+ When these are played on a character an <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ is temporarily created to represent the active animation. Each <span class="NDLSystemFont">NiControllerSequence</span> 
+ owns an <span class="NDLSystemFont"><a HREF="NiPoseBuffer.htm">NiPoseBuffer</a></span> 
+ to which the active sequence writes its animated data for a given instant 
+ of time. Effectively, this pose buffer contains a time-based snapshot 
+ of the animated sequence. </p>
+
+<p>For example, a typical walk cycle animates all the joint 
+ angles in a character's body. When the walk cycle is played on a character 
+ the active sequence computes new joint angles at each update time. These 
+ sampled values are written to a pose buffer to create a &quot;full body&quot; 
+ snapshot of the character at that instant of time within the walk cycle. 
+ If no other sequences are active on the character, this rotation data 
+ is propagated to the scene graph nodes representing the character's joints.</p>
+
+<p>If another sequence is actively playing on the character, 
+ the snapshots from both sequences must be blended before the final result 
+ is distributed to the scene graph. For instance, this second sequence 
+ might be a &quot;partial body&quot; waving animation defined exclusively 
+ on the character's right arm. As illustrated below, this sequence could 
+ be activated if the character decided to wave at a neighbor while walking 
+ down the street.</p>
+
+
+<div class="NDLFigureContainer">
+		<img src="images/SequenceBlendTimeline.jpg" width="650" height="119" alt="SequenceBlendTimeline (27K)" />
+			<p class="NDLFigureCaption">Sequence blend timeline</p>
+</div>
+
+<p>The <span class="NDLSystemFont"><a HREF="NiPoseBlender.htm">NiPoseBlender</a></span> 
+ class uses the <a HREF="NiControllerManager.htm#Priorities">priority</a> 
+ and <a HREF="NiControllerManager.htm#Weights">weight</a> 
+ of each active sequence to control the blending process. Priority is a 
+ way of specifying categories of sequences for the blend operation. In 
+ general, higher priority sequences suppress (or hide) lower priority sequences. 
+ Weight values come into play when two or more active sequences have identical 
+ priorities whereby a larger weight increases the influence of that sequence 
+ on the final result.</p>
+
+<p>In the above example the wave animation should be given 
+ a higher priority than the walk cycle so it hides the walking motion on 
+ the right arm. These blending calculations occur on a channel by channel 
+ basis based on the priority and weight of the contributing sequences. 
+ Pose buffers with invalid data on a given channel are ignored. Thus, the 
+ walk cycle contributes data to the final pose buffer for all channels 
+ that are not specified in the partial body wave sequence. As illustrated 
+ below, the higher priority wave sequence only contributes to the motion 
+ on the character's right arm.</p>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/SequenceBlendPoseBuffers.jpg" width="660" height="472" alt="Pose buffer blending of walk and wave sequences" />
+    <p class="NDLFigureCaption">Pose buffer blending of walk and wave sequences</p>
+</div>
+
+<p>To smoothly transition to and from the wave animation 
+ the animation system makes use of internal spinner functions which modulate 
+ the contributing weight of the highest priority sequences. During these 
+ transitions the final value is a blended result of both the walk and wave 
+ data. The initial transition increases the effective weight of the wave 
+ sequence from 0% to 100% (i.e. from completely hidden to completely visible). 
+ Simultaneously, the effective weight of the walk cycle is decreased from 
+ 100% to 0%. This technique allows the character to smoothly <a HREF="NiControllerManager.htm#Easing_In_and_Out">ease 
+ into</a> the wave animation without an abrupt discontinuity in motion 
+ on the right arm. These spinner functions are reversed during the final 
+ transition to <a HREF="NiControllerManager.htm#Easing_In_and_Out">ease 
+ out</a> of the wave sequence and return to the full body walk cycle.</p>
+
+<h2>Sequence Blending Algorithm</h2>
+
+<p>The following pseudo code describes how priority, weight, 
+ and transition spinner values influence the final outcome when blending 
+ multiple active sequences on a character.</p>
+ 
+<pre>
+// Process each bone (or animated attribute) separately.
+for each kBone in the character
+{
+   // Compute the total effective weight for each priority level.
+   Initialize fTotalEffectiveWeight[] and iSequenceCount[] to 0
+   for each kSequence affecting kBone
+   {
+      kSequence.fEffectiveWeight = kSequence.fWeight * kSequence.fSpinnerValue
+      fTotalEffectiveWeight[kSequence.iPriority] += kSequence.fEffectiveWeight
+      iSequenceCount[kSequence.iPriority] += 1
+   }
+   // Compute the normalized weight of each sequence within its priority level.
+   for each kSequence affecting kBone
+   {
+      if fTotalEffectiveWeight[kSequence.iPriority] == 0 then
+         kSequence.fNormalizedWeight = 1.0 / iSequenceCount[kSequence.iPriority]
+      else
+         kSequence.fNormalizedWeight = kSequence.fEffectiveWeight / fTotalEffectiveWeight[kSequence.iPriority]
+   }
+   // Compute the final contribution of each sequence.
+   iMaxPriority = maximum priority of any kSequence affecting kBone
+   iSecondPriority = second highest priority of any kSequence affecting kBone
+   fMaxSpinnerValue = maximum spinner value of any kSequence at iMaxPriority affecting kBone
+   for each kSequence affecting kBone
+   {
+      if kSequence.iPriority == iMaxPriority then
+         kSequence.fFinalizedWeight = fMaxSpinnerValue * kSequence.fNormalizedWeight
+      else if kSequence.iPriority == iSecondPriority then
+         kSequence.fFinalizedWeight = (1.0 - fMaxSpinnerValue) * kSequence.fNormalizedWeight
+      else
+         kSequence.fFinalizedWeight = 0
+   }
+}
+</pre> 
+ 
+<h2>Using Sequence Blending in Your Application</h2>
+
+<p>Although the <span class="NDLSystemFont"><a href="NiControllerManager.htm">NiControllerManager</a></span> 
+ is capable of controlling multiple simultaneous animations and blending 
+ them together, it doesn't really know anything about the animation sequences 
+ themselves. Animation blending still requires a bit of an artist's touch 
+ to achieve pleasing results. To this end, Gamebryo adds another object 
+ that has awareness of how an artist would prefer this blending to occur, 
+ the <span class="NDLSystemFont"><a href="NiActorManager.htm">NiActorManager</a></span>. 
+ This class is the highest level interface in the Gamebryo animation system. 
+ Under the hood, it interacts with its own <span class="NDLSystemFont">NiControllerManager</span> 
+ using information about the sequences stored in the <a href="NiKFMTool.htm"><span 
+ class="NDLSystemFont">NiKFMTool</span></a> database. The database is optionally 
+ created during the extraction process from the source art package or as 
+ a result of editing within the <a href="../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Animation 
+ Tool</a>. The file format for this database is the KFM file. The database 
+ specifies all of the information necessary to transition from one animation 
+ to another and how to mix multiple animations together in a blend. In 
+ addition to running this state machine for the actor, <span class="NDLSystemFont">NiActorManager</span> 
+ allows an application to register callbacks for animation events, such 
+ as when an animation ends or when a particular frame in an animation occurs. 
+ From a programmer's standpoint, <span class="NDLSystemFont">NiActorManager</span> 
+ is the simplest way to control in-game actors while achieving the desired 
+ aesthetic result. For more information about <span class="NDLSystemFont">NiActorManager</span>, 
+ please see its <a href="NiActorManager.htm">class 
+ reference</a> as well as the <a href="NiActorManager_An_Easier_Way_to_Control_Animations.htm">NiActorManager&mdash;An Easier Way to Control Animations</a> section of the Animation Systems 
+ documentation. For a high level description of <span class="NDLSystemFont">NiControllerManager</span>, 
+ refer to the section entitled <a HREF="NiControllerManager.htm">Overview 
+ of NiControllerManager</a>.</p>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction 
+ to Animation</a> to read about other animation concepts.</p>
+
+<a name="AdditiveBlending"></a><h2>Additive Blending</h2>
+
+<p>Additive blending is a type of blending where an animation sequence can be &quot;added&quot; on top of the results of other animations.  It is similar to layered animations, but rather than entirely replacing the results of existing animation, its animated values are applied after the existing animation and added on top.  Additive blending differs from normal blending in that the weights from additive sequences are not normalized with other sequences.</p>
+
+<p>During each frame of animation, for each animated value, an additively blending sequence adds an animation delta on top of the results of other animations.  The amount that is added is a relative quantity.  To arrive at this value, the additive sequence takes its current animation value and subtracts from it the reference frame (sometimes called the zero frame).  This resulting animation delta is what gets applied on top of the original sequence.</p>
+
+<p>For example, consider an animation sequence that is one second in duration.  It moves a node's position from x=2 to x=5 over the course of the animation.  If this animation sequence is applied additively and frame 0 is used as a reference frame, then the additive sequence will move that node an additional +0 units at the beginning of the sequence and an additional +3 units at the end of the sequence.  The initial position x=2 from the reference frame is used as a base value that all other animation frames are compared to.  It's only the difference between an animated value and its reference value that gets applied.</p>
+
+<p>Because of this, an animation sequence where the character is entirely constant will not do anything when additively blended.  The reference frame is identical to every frame of the animation, so the animation delta will always be zero.</p>
+
+<p>Additive blending is turned on by activating a sequence (via <span class="NDLSystemFont">NiActorManager::ActivateSequence</span> or <span class="NDLSystemFont">NiControllerManager::Activate</span>) and passing the additive blend flag.  The reference frame to use may also be specified.  In AnimationTool, this can be turned on through the sequence group editor to preview what an additive blend looks like.  The reference frame in AnimationTool is currently always the first frame of the sequence.</p>
+
+<p>Priorities are used to control the order that additive sequences are applied.  This is only an issue for rotations, because applying rotations additively is not a commutative operation.  Applying rotations in different orders may result in different final rotations.  Higher priority additive sequences are applied first.</p>
+
+<p>One other consideration is in order for an additive sequence to animate a particular attribute, that attribute must already be animated.  For example, if an additive sequence animates the rotation of a bone, then some other non-additive sequence must be active that also animates the rotation of that bone, even if that non-additive sequence just has a constant animation.  Without a non-additive animated value, the additive sequence has nothing to add to and so cannot animate.</p>
+
+<p>For an example, see the <a href="../../Tools/Animation_Tool/Animation_Tool_Samples.htm#Jack">Jack</a> example in the AnimationTool samples.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

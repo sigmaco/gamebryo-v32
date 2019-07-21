@@ -1,0 +1,982 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Stage Sections</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Stage Sections</h1>
+
+<p>Stage sections are used only to configure the fixed-function pixel pipeline. If pixel shaders
+are present, <a href="Sampler_Sections.htm">Sampler</a> and <a href=
+"Texture_Sections.htm">Texture</a> sections should be used instead.</p>
+
+<p>Within the scope of a pass, texture stages that are required to realize the desired pass results
+must be declared. A pass can have up to <span class=
+"NDLSystemFont">NiD3DPass::ms_uiMaxTextureBlendStages</span> stages, but only <span class=
+"NDLSystemFont">NiD3DPass::ms_uiMaxSimultaneousTextures</span> stages that utilize a texture.
+Stages should be placed in the implementation in the order in which they are implemented to make
+the NSF file more readable.</p>
+
+<p>Each stage may be assigned a name in the NSF file. That name is used for internal documentation
+and debugging purposes only. It will not have any impact on how the stage itself is used.</p>
+
+<p>There may be multiple stages within a single implementation, but each specific stage must be
+declared only once. Stages have the following layout within a pass section (shown for stage 'N' in
+the pass):</p>
+<pre>
+// Stage N
+Stage N OPTIONAL_StageN
+{
+    [Stage entry]
+    ...
+}
+</pre>
+
+<p>Stages are a zero-based indexed array&mdash;N shaders cover indices [0..N-1]. Each pass should
+set all of the stages that it needs, with no gaps.</p>
+
+<p>Entries that are allowed within the scope of the stage definition include the following:</p>
+
+<h2>Texture Entry</h2>
+
+<p>The texture entry defines the texture that will be used for the stage. Note that the texture
+entry can also be set in the Sampler section if desired. If there is no texture declared, then no
+texture will be set. Otherwise, any of the following texture options are available:</p>
+
+<h3>NDL Texture Map</h3>
+
+<p>This option allows for using one of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty_Map.htm">NiTexturingProperty::Map</a></span> instances
+attached to the object being rendered as the texture for the stage. This entry type takes the
+following format:</p>
+
+<p><span class="NDLSystemFont">TSS_Texture = NDL_MAPPING_ID</span></p>
+
+<p>The <span class="NDLSystemFont">NDL_MAPPING_ID</span> may be one of the following strings shown
+in the table below on the left, with the map it utilizes listed on the right:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Mapping String</th>
+
+            <th>NiTexturingProperty::Map Utilized / NiD3DTextureStage::Flag</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Base</span></td>
+
+            <td>Base map / <span class="NDLSystemFont">TSTF_NDL_BASE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Dark</span></td>
+
+            <td>Dark map / <span class="NDLSystemFont">TSTF_NDL_DARK</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Detail</span></td>
+
+            <td>Detail map / <span class="NDLSystemFont">TSTF_NDL_DETAIL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Gloss</span></td>
+
+            <td>Gloss map / <span class="NDLSystemFont">TSTF_NDL_GLOSS</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Glow</span></td>
+
+            <td>Glow map / <span class="NDLSystemFont">TSTF_NDL_GLOW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Bump</span></td>
+
+            <td>Bump map / <span class="NDLSystemFont">TSTF_NDL_BUMP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Normal</span></td>
+
+            <td>Normal map / <span class="NDLSystemFont">TSTF_NDL_NORMAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">NTM_Parallax</span></td>
+
+            <td>Parallax map / <span class="NDLSystemFont">TSTF_NDL_PARALLAX</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>NDL Decal Map</h3>
+
+<p>This option allows for using one of the decal maps from the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> attached to the
+object being rendered as the texture for the stage. This entry type takes the following format:</p>
+
+<p><span class="NDLSystemFont">TSS_Texture = NTM_Decal DecalMapIndex</span></p>
+
+<p>The <span class="NDLSystemFont">DecalMapIndex</span> is an unsigned integer that gives exactly
+that, the index of the decal map you wish to use as the texture for the stage.</p>
+
+<h3>Attribute Map</h3>
+
+<p>This option allows for using one of the maps declared as in the attribute table as the texture
+for the stage. This entry type takes the following format:</p>
+
+<p><span class="NDLSystemFont">TSS_Texture = &lt;attribute_name&gt;</span></p>
+
+<p>The <span class="NDLSystemFont">attribute_name</span> is a name of an attribute from the
+per-object attribute table for the shader. This string MUST be surrounded by '&lt;' and '&gt;'.</p>
+
+<p>Reviewing the <a href="Attribute_Sections.htm">Attribute Section</a>, this step provides the
+index of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty_ShaderMap.htm">NiTexturingProperty::ShaderMap</a></span>
+you wish to use as the texture for the stage.</p>
+
+<h3>Object Map</h3>
+
+<p>Similar to the attribute map, this option allows for using the texture from an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+referenced in the <span class="NDLSystemFont"><a href=
+"Objects_Section_in_NSF_Files.htm">Objects</a></span> section of the NSF file. This entry type
+takes the following format:</p>
+
+<p><span class="NDLSystemFont">TSS_Texture = &lt;NameOfObject&gt;</span></p>
+
+<p><span class="NDLSystemFont">NameOfObject</span> is the <span class=
+"NDLSystemFont">LocalName</span> of an object defined in the <span class="NDLSystemFont"><a href=
+"Objects_Section_in_NSF_Files.htm">Objects</a></span> section of the NSF file. The angled brackets
+around the object name are required. The syntax is exactly the same as indicating a texture from a
+named attribute. The NSF parser will first attempt to find an attribute with the specified name and
+then will look for an object with that name. If the object referenced here is of a type that does
+not have a texture, a parsing error will occur.</p>
+
+<p>If <span class="NDLSystemFont">UseMapIndex</span> is specified for <span class=
+"NDLSystemFont">TSS_TexCoordIndex</span> in the same stage section and the object specified is an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>, the proper texture
+coordinate generation mode will be used for that type of texture effect.</p>
+
+<h2>Stage State Entry</h2>
+
+<p>The stage state entry allows the shader author to set specific texture stage states to the
+values they desire for the current stage. This entry type will take the following GENERAL
+format:</p>
+
+<p><span class="NDLSystemFont">stage_state = stage_state_value<br>
+stage_state = stage_state_value Save</span></p>
+
+<p>The Save version functions the same as a render state setting that is saved; in other words,
+when that pass is completed, that stage state is 'popped' back to what is was prior to the
+pass.</p>
+
+<p>The <span class="NDLSystemFont">stage_state</span> can be any of the following strings shown
+below with their corresponding <span class="NDLSystemFont">D3DTEXTURESTAGESTATETYPE</span>
+mappings.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The <span class="NDLSystemFont">NSBStageAndSamplerStates</span> are actually
+                written to file and provide platform-independent mappings for common D3D-Texture
+                Stage and Sampler related values. Upon loading of the generated NSB file, the
+                values would be mapped to the given <span class=
+                "NDLSystemFont">D3DTEXTURESTAGESTATETYPE</span>).
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>stage_state String</th>
+
+            <th>D3DTEXTURESTAGESTATETYPE</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TSS_ColorOp</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_COLOROP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_ColorArg0</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_COLORARG0</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_ColorArg1</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_COLORARG1</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_ColorArg2</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_COLORARG2</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_AlphaOp</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_ALPHAOP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_AlphaArg0</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_ALPHAARG0</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_AlphaArg1</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_ALPHAARG1</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_AlphaArg2</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_ALPHAARG2</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_ResultArg</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_RESULTARG</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_Constant</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_CONSTANT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvMat00</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVMAT00</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvMat01</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVMAT01</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvMat10</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVMAT10</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvMat11</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVMAT11</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvLScale</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVLSCALE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_BumpEnvLOffset</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_BUMPENVLOFFSET</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_TexCoordIndex</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TEXCOORDINDEX</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_TextureTransformFlags</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TEXTRANSFORMFLAGS</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TSS_TextureTransformMatrix</span></td>
+
+            <td>None (See below)</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Note that for backwards compatibility with earlier versions of Gamebryo, the value <span class=
+"NDLSystemFont">TSS_TexTransFlags</span> is equivalent to <span class=
+"NDLSystemFont">TSS_TextureTransformFlags</span>, and <span class=
+"NDLSystemFont">TSS_TexTransMatrix</span> is equivalent to <span class=
+"NDLSystemFont">TSS_TextureTransformMatrix</span>.</p>
+
+<h3>TSS_ColorOp and TSS_AlphaOp states</h3>
+
+<p>The following string values are acceptable for the <span class=
+"NDLSystemFont">stage_state_value</span> side of the entry when the <span class=
+"NDLSystemFont">stage_state</span> is <span class="NDLSystemFont">TSS_ColorOp</span> or
+<span class="NDLSystemFont">TSS_AlphaOp.</span> The right side of the table shows the <span class=
+"NDLSystemFont">D3DTEXTUREOP</span> that they value corresponds to:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>stage_state_value String</th>
+
+            <th>D3DTEXTURESTAGESTATETYPE</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Disable</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_DISABLE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_SelectArg1</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_SELECTARG1</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_SelectArg2</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_SELECTARG2</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Modulate</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Modulate2x</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATE2X</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Modulate4x</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATE4X</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Add</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_ADD</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_AddSigned</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_ADDSIGNED</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_AddSigned2x</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_ADDSIGNED2X</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Subtract</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_SUBTRACT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_AddSmooth</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_ADDSMOOTH</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_BlendDiffuseAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_BLENDDIFFUSEALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_BlendTextureAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_BLENDTEXTUREALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_BlendFactoralAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_BLENDFACTORALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_BlendTextureAlphaPM</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_BLENDTEXTUREALPHAPM</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_BlendCurrentAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_BLENDCURRENTALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Premodulate</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_PREMODULATE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_ModulateAlpha_AddColor</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATEALPHA_ADDCOLOR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_ModulateColor_AddAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATECOLOR_ADDALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_ModulateInvAlpha_AddColor</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATEINVALPHA_ADDCOLOR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_ModulateInvColor_AddAlpha</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MODULATEINVCOLOR_ADDALPHA</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_DotProduct3</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_DOTPRODUCT3</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_MultiplyAdd</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_MULTIPLYADD</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TOP_Lerp</span></td>
+
+            <td><span class="NDLSystemFont">D3DTOP_LERP</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Note that for backwards compatibility with earlier versions of Gamebryo, the misspelled value
+<span class="NDLSystemFont">TOP_BlendFactoraApha</span> is equivalent to <span class=
+"NDLSystemFont">TOP_BlendFactoralAlpha</span>.</p>
+
+<h3>TSS_ColorArg# and TSS_AlphaArg# states</h3>
+
+<p>The following string values are acceptable for the <span class=
+"NDLSystemFont">stage_state_value</span> side of the entry when the <span class=
+"NDLSystemFont">stage_state</span> is <span class="NDLSystemFont">TSS_ColorArg[0..2]</span> or
+<span class="NDLSystemFont">TSS_AlphaArg[0..2].</span> The right side of the table shows the
+<span class="NDLSystemFont">D3DTA*</span> value that they value corresponds to:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>stage_state_value String</th>
+
+            <th>D3DTA*</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TA_Current</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_CURRENT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_Diffuse</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_DIFFUSE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_SelectMask</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_SELECTMASK</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_Specular</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_SPECULAR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_Temp</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_TEMP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_Texture</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_TEXTURE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_TFactor</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_TFACTOR</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>There are also two modifiers allowed. This capability is achieved by tagging</p>
+
+<p>"<span class="NDLSystemFont">| modifier_string</span>"</p>
+
+<p>onto the <span class="NDLSystemFont">stage_state_value</span> string from the above table. The
+modifiers supported are shown in the table below, with the corresponding <span class=
+"NDLSystemFont">D3DTA*</span> value they correspond to on the right side:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>modifier_string</th>
+
+            <th>D3DTA*</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TA_AlphaReplicate</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_ALPHAREPLICATE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TA_Complement</span></td>
+
+            <td><span class="NDLSystemFont">D3DTA_COMPLEMENT</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>TSS_ResultArg state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_ResultArg</span>, the right side is allowed to be either <span class=
+"NDLSystemFont">TA_Current</span> or <span class="NDLSystemFont">D3DTA_Temp</span> from the tables
+above.</p>
+
+<h4>TSS_Constant state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_Constant</span>, the right side should be a <span class=
+"NDLSystemFont">D3DCOLOR</span> value, presented as a hex value--<span class=
+"NDLSystemFont">0x########.</span> This state is not currently supported&hellip;</p>
+
+<h4>TSS_BumpEnvMat* state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_BumpEnvMat00</span>, <span class="NDLSystemFont">TSS_BumpEnvMat01</span>,
+<span class="NDLSystemFont">TSS_BumpEnvMat10</span>, or <span class=
+"NDLSystemFont">TSS_BumpEnvMat11</span>, the right side should be a float representing the desired
+value.</p>
+
+<h4>TSS_BumpEnvLScale state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_BumpEnvLScale</span>, the right side should be a float representing the desired
+value.</p>
+
+<h4>TSS_BumpEnvLOffset state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_BumpEnvLOffset</span>, the right side should be a float representing the
+desired value.</p>
+
+<h4>TSS_TexCoordIndex state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_TexCoordIndex</span>, the right side should be one of the two following
+formats:</p>
+
+<p><span class="NDLSystemFont">texcoordindex_flag index</span></p>
+
+<p>The index supplies the actual texture coordinate index, while the texcoordindex_flag should be
+one of the values in the table below, or nothing (empty). The <span class=
+"NDLSystemFont">D3DTSS_TCI_*</span> value that the string maps to is on the right side of the
+table.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>texcoordindex_flag</th>
+
+            <th>D3DTSS_TCI_*</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TCI_PassThru</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TCI_PASSTHRU</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TCI_CameraSpaceNormal</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TCI_CAMERASPACENORMAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TCI_CameraSpacePosition</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TCI_CAMERASPACEPOSITION</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TCI_CameraSpaceReflectionVector</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TCI_SphereMap</span></td>
+
+            <td><span class="NDLSystemFont">D3DTSS_TCI_SPHEREMAP</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Note that for backwards compatibility with earlier versions of Gamebryo, the value <span class=
+"NDLSystemFont">TCI_CameraSpaceReflect</span> is equivalent to <span class=
+"NDLSystemFont">TCI_CameraSpaceReflectionVector</span>.</p>
+
+<p>The second valid format for this state is:</p>
+
+<p><span class="NDLSystemFont">texcoordindex_flag UseMapIndex</span></p>
+
+<p>The <span class="NDLSystemFont">texcoordindex_flag</span> should be from the table above. The
+<span class="NDLSystemFont">UseMapIndex</span> indicates that the texture coordinate index should
+be taken from the <span class="NDLSystemFont">NiTexturingProperty::Map</span> used for the
+texture.</p>
+
+<h4>TSS_TextureTransformFlags state</h4>
+
+<p>When the <span class="NDLSystemFont">stage_state</span> is <span class=
+"NDLSystemFont">TSS_TextureTransformFlags</span>, the right side should be from the table below.
+The D3D value the string maps to is on the right side of the table:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>stage_state_value String</th>
+
+            <th>D3D Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Projected</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_PROJECTED</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Count1</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_COUNT1</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Count2</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_COUNT2</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Count3</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_COUNT3</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Count4</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_COUNT4</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TTFF_Disable</span></td>
+
+            <td><span class="NDLSystemFont">D3DTTFF_DISABLE</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>TSS_TexTransMatrix Entry</h3>
+
+<p><span class="NDLSystemFont">TSS_TexTransMatrix</span> is not a texture stage state, but is
+included in this grouping as it is the texture transformation calculation method the shader author
+wishes to be utilized for the stage.</p>
+
+<p>There are two types of texture transformation methods you may select from. The first is of the
+following format:</p>
+
+<p><span class="NDLSystemFont">TSS_TexTransMatrix = TTSrc_Global OPTIONAL_TTMMethod
+GlobalAttributeName</span></p>
+
+<p>This method maps the texture transformation matrix to an attribute from the global attribute
+table of the shader. (NOTE: This attribute must exist in the table, and be of type <span class=
+"NDLSystemFont">Matrix4</span>.)</p>
+
+<p>The second has the following format:</p>
+
+<p><span class="NDLSystemFont">TSS_TexTransMatrix = TTSrc_Constant OPTIONAL_TTMMethod
+16_float_values</span></p>
+
+<p>This method maps the texture transformation matrix to the given float values. It can be
+considered constant from the perspective of the stage itself<span class="NDLSystemFont">.
+16_float_values</span> is actually 16 comma-separated floating point values.</p>
+
+<p>In both formats, the <span class="NDLSystemFont">OPTIONAL_TTMMethod</span> can be used to apply
+additional processing of the matrix prior to setting it on the device. The following table shows
+the allowable operations, and what they mean:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>OPTIONAL_TTMMethod String</th>
+
+            <th>Additional Processing</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>None--ie, no string</td>
+
+            <td>No additional processing performed.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_WorldParallel</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">WorldParallel</span> transformation using
+            the given matrix as the world transform of the effect. <span class=
+            "NDLSystemFont">TSS_TexCoordIndex</span>should be <span class=
+            "NDLSystemFont">TCI_CAMERASPACEPOSITION</span>, and <span class=
+            "NDLSystemFont">TSS_TextureTransformFlags</span> should be <span class=
+            "NDLSystemFont">2</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_WorldPerspective</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">WorldPerspective</span> transformation
+            using the given matrix as the world transform of the effect. <span class=
+            "NDLSystemFont">TSS_TexCoordIndex</span> should be <span class=
+            "NDLSystemFont">TCI_CAMERASPACEPOSITION</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_WorldSphereMap</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">WorldSphereMap</span> transformation using
+            the given matrix as the world transform of the effect. <span class=
+            "NDLSystemFont">TSS_TexCoordIndex</span> should be <span class=
+            "NDLSystemFont">TCI_CAMERASPACEREFLECTIONVECTOR</span> and <span class=
+            "NDLSystemFont">TSS_TextureTransformFlags</span> should be <span class=
+            "NDLSystemFont">2</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_CameraSphereMap</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">CameraSphereMap</span> transformation--does
+            not use the given matrix. <span class="NDLSystemFont">TSS_TexCoordIndex</span> should
+            be <span class="NDLSystemFont">TCI_CAMERASPACEREFLECTIONVECTOR</span> and <span class=
+            "NDLSystemFont">TSS_TextureTransformFlags</span> should be <span class=
+            "NDLSystemFont">2</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_SpecularCubeMap</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">SpecularCubeMap</span> transformation using
+            the given matrix as the world transform of the effect. <span class=
+            "NDLSystemFont">TSS_TexCoordIndex</span> should be <span class=
+            "NDLSystemFont">TCI_CAMERASPACEREFLECTIONVECTOR</span> and <span class=
+            "NDLSystemFont">TSS_TextureTransformFlags</span> should be <span class=
+            "NDLSystemFont">3</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TT_DiffuseCubeMap</span></td>
+
+            <td>Compute the <span class="NDLSystemFont">DiffuseCubeMap</span> transformation using
+            the given matrix as the world transform of the effect. <span class=
+            "NDLSystemFont">TSS_TexCoordIndex</span> should be <span class=
+            "NDLSystemFont">TCI_CAMERASPACENORMAL</span> and <span class=
+            "NDLSystemFont">TSS_TextureTransformFlags</span> should be <span class=
+            "NDLSystemFont">3</span>.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Stage Example</h2>
+
+<p>An example of the first stage definition within a pass:</p>
+
+<pre>
+// We will not name our stage, as it is optional
+Stage 0
+{
+    TSS_TexCoordIndex = TCI_PassThru  0
+    TSS_ColorOp       = TOP_Modulate
+    TSS_ColorArg1     = TA_Texture
+    TSS_ColorArg2     = TA_Diffuse
+    TSS_AlphaOp       = TOP_SelectArg1
+    TSS_AlphaArg1     = TA_Texture
+    TSS_Texture       = &lt;TestMap&gt;
+}
+</pre>
+
+<p>This example sets up texture stage 0 (the first texture stage) to pass through texture
+coordinate set 0 from the geometry, modulate the texture color with the diffuse lighting result,
+and pass the alpha of the texture directly through. The texture that should be used is the
+<span class="NDLSystemFont">Global_Attribute</span> entry <span class=
+"NDLSystemFont">TestMap</span>.</p>
+
+<p>A second example, setting up the second stage for a pass:</p>
+
+<pre>
+// We will not name our stage, as it is optional
+Stage 1
+{
+    TSS_Texture       = NTM_Base
+    TSS_TexCoordIndex = UseMapIndex
+    TSS_ColorOp       = TOP_Modulate
+    TSS_ColorArg1     = TA_Texture
+    TSS_ColorArg2     = TA_Diffuse
+    TSS_AlphaOp       = TOP_Disable
+}
+</pre>
+
+<p>This example sets up texture stage 1 (the second texture stage) to use the <span class=
+"NDLSystemFont">BaseMap</span> from the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> attached to the
+geometry being rendered. It should pass thru the texture coordinate from that same map, modulate
+the texture color with the diffuse lighting result, and disable alpha operations.</p>
+
+<h2>Shader Program Considerations</h2>
+
+<p>There are certain considerations that must be made when setting the Stage entries for a shader
+that will be used with pixel and/or vertex shader programs.</p>
+
+<ul>
+    <li>If a vertex shader program is present, then the <span class=
+    "NDLSystemFont">TexCoordIndex</span> state will be ignored. This means that no texture
+    coordinate generation will take place, and the <span class="NDLSystemFont">UseMapIndex</span>
+    flag will not be honored. This is due to the method DX uses to pass texture coordinates from a
+    vertex shader to the pixel-processing section of the pipeline. Texture coordinates can be
+    generated or remapped to specific samplers in the vertex shader itself.</li>
+
+    <li>If a vertex shader program is present, then texture transforms will not take place
+    automatically. This means that the <span class="NDLSystemFont">TextureTransformFlags</span> and
+    <span class="NDLSystemFont">TextureTransformMatrix</span> states will also be ignored. The only
+    exception to this is setting the <span class="NDLSystemFont">TextureTransformFlags</span> state
+    to <span class="NDLSystemFont">Projected</span> when the pixel pipeline is using a pixel shader
+    program of versions 1.1 - 1.3 or the fixed-function pixel pipeline. Texture transform matrices
+    can still be passed in as vertex shader constants, so a vertex shader program can perform the
+    necessary operations.</li>
+
+    <li>If a pixel shader program is present, many of the Stage entries will be ignored. It is
+    still necessary to provide a texture for each texture sample operation that the pixel shader
+    program will perform, but those textures can be specified using the <span class=
+    "NDLSystemFont">TSS_TEXTURE</span> entry in either the Stage section or the Sampler section. If
+    the pixel shader is performing bump mapping operations (using the <span class=
+    "NDLSystemFont">bem</span>, <span class="NDLSystemFont">texbem</span>, or <span class=
+    "NDLSystemFont">texbeml</span> assembly instructions) then the <span class=
+    "NDLSystemFont">BumpEnvMat00</span>, <span class="NDLSystemFont">BumpEnvMat01</span>,
+    <span class="NDLSystemFont">BumpEnvMat10</span>, <span class=
+    "NDLSystemFont">BumpEnvMat11</span>, <span class="NDLSystemFont">BumpEnvLScale</span>, and
+    <span class="NDLSystemFont">BumpEnvLOffset</span>, entries will still be honored. If no vertex
+    shader program is present, then the <span class="NDLSystemFont">TexCoordIndex</span>,
+    <span class="NDLSystemFont">TextureTransformFlags</span>, and <span class=
+    "NDLSystemFont">TextureTransformFlags</span> entries will be used. All other Stage entries will
+    be ignored.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

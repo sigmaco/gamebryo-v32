@@ -1,0 +1,541 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Toolbench High-Level Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Toolbench High-Level Overview</h1>
+
+<h2>Overview</h2>
+
+<p>Toolbench has a delay-loaded plug-in based architecture, very
+similar to the design strategy of Eclipse
+(http://www.eclipse.org). So where possible we do not load
+assemblies and plug-ins until it becomes absolutely necessary.
+Toolbench is also very Service Architecture oriented and several
+plug-ins take advantage of this to expose their functionality
+through services other plug-ins can consume.</p>
+
+<h2>Boot Loaders</h2>
+
+<p>There are two boot loaders that come with Toolbench; one for
+launching Toolbench in Windowed mode and another for Console
+mode. These boot loaders exist so that the core of Toolbench can
+be separated from the way Toolbench will be used.</p>
+
+<h2>Core Plug-ins</h2>
+
+<p>The core of Toolbench is Platform and if a plug-in developer
+needs to interact with anything in the core of Toolbench they
+will go through Platform almost exclusively. The Platform can be
+thought of as the Toolbench kernel. Some notable things the
+Platform exposes for plug-in writers are a registry of all
+plug-ins; a method of accessing resources contained in plug-in
+satellite assemblies without loading the main plug-in; plug-in
+activation; service management; and notifications.</p>
+
+<p>When a boot loader is started it initializes the Platform
+which then proceeds to load plug-in manifests, start essential
+services and launch the user&rsquo;s runnable plug-in. Note, boot
+loaders are "runnable" plug-ins.</p>
+
+<h2>Plug-in Composition</h2>
+
+<p>A plug-in is composed of generally two parts; the "plugin.xml"
+manifest file and the .Net Assembly containing the compiled code
+and resources for the plug-in. However, the only truly required
+thing a plug-in must have is the manifest file. This primarily
+has been done because so much of Toolbench is driven by just data
+that sometimes no code is ever required to enhance a part of
+Toolbench.</p>
+
+<a name="PluginManifest" id=
+"PluginManifest"></a><h2>Plug-in Registry</h2>
+
+<p>On startup Toolbench will scan its plug-in directory for any
+manifest files it can find. The PluginRegistry is responsible for
+this scanning process and maintains a PluginDescriptor for any
+plug-in it finds during this process. The PluginDescriptor stores
+all the information about a plug-in that was contained in the
+plug-in manifest.</p>
+
+<p>The scanning and loading process happens in several steps.
+First all the manifest files are loaded into XML DOM objects and
+validated against a schema to ensure the document is formatted
+correctly. Then for each manifest we parse the plug-in's
+definition, dependencies, assembly file name, localization
+information and finally the extension points which will be
+explained later.</p>
+
+<p>This information is stored in the plug-in's PluginDescriptor
+which is then stored in the PluginRegistry. Now that the
+PluginRegistry has a valid definition for every known plug-in as
+well as every extension point, it proceeds to parse plug-in
+extensions in each manifest. Each extension is validated against
+a separate schema specified by the corresponding extension point
+and if the extension is valid it is stored. If the validation
+fails there is a detailed error message that is logged containing
+the XML of the extension that failed parsing and a message
+why.</p>
+
+<p>Finally several debug only validation steps occur, these are
+compiled out of the application in release mode.</p>
+
+<p>The first validation step checks to make sure that plug-ins do
+not contain local copies of other plug-in's assemblies in their
+plug-in directory. This is to prevent loading multiple
+assemblies of the same plug-in as well as prevent build issues
+that can crop up from one plug-in copying resources to another
+plug-in's directory, possibly stomping data.</p>
+
+<p>The second validation step exists to make certain that each
+plug-in lists every other plug-in it depends on in the dependency
+section of its plug-in manifest. Note: This is a recursive
+process, so if every plug-in you depend on is depended on by
+another plug-in your plug-in depends on, your plug-in can depend
+on just that one plug-in. That way the assemblies a plug-in
+depends on in code are always loaded into the application domain
+before your plug-in.</p>
+
+<p>For this to occur, every plug-in assembly is loaded in a
+reflection-only context; a light-weight, but not ideal option for
+standard operation. Each reflection loaded assembly is then
+scanned for any assembly it depends on. This list is then matched
+against all known assemblies registered with other plug-ins to
+see if there are any assemblies a plug-in depends on that have a
+corresponding plug-in that is not recursively traceable in the
+plug-in&rsquo;s dependencies.</p>
+
+<p>This is all to make sure that Toolbench could never get into a
+state where under certain conditions startup order of plug-ins
+could potentially crash Toolbench.</p>
+
+<h2>Extensions and Extension Points</h2>
+
+<p>To facilitate extending Toolbench we have integrated the
+concept of Extensions and Extension Points into Toolbench.
+Plug-ins use these to extend other plug-ins as well as offer ways
+for other plug-in writers to extend their plug-in. Extensions and
+Extension Points define a contract of sorts between one plug-in
+and another plug-in. This contract is completely unique to a
+given plug-in in that there are no strict interfaces that all
+plug-ins must adhere to.</p>
+
+<p>Extension Points are added by plug-in writers to their
+manifests to inform other authors that by extending this
+extension point they can add some new functionality to their
+plug-in. When specifying your extension point authors can
+optionally provide an XML schema to validate the extension that
+implements the extension point so that they don't have
+write a lot of error checking code. Any extension failing the
+schema of an extension point will not show up as parsed data for
+a plug-in to read.</p>
+
+<p>Extensions are the implementation of Extension Points and
+plug-in writers will add them to their manifests when they need
+to add some new functionality.</p>
+
+<p>When placing your extension points in your plug-in it is a
+recommended pattern that you define an internal class that acts
+as a container for all your extension point identifiers.</p>
+
+<pre>
+internal class ExtensionPoints
+{
+    public const String MyExtPoint = "Company.Toolbench.Sample.MyExtPoint";
+}
+</pre>
+
+<p>If possible, you will want to make sure that your extension
+points allow users to include multiple extensions inside the
+extension definition. This is to minimize the amount of XML
+plug-in writers will need to write and ensures related items in a
+plug-in manifest stick together.</p>
+
+<pre>
+&lt;extension point="Company.Toolbench.Sample.MyExtPoint"&gt;
+    &lt;myext id="MyExt.Sample.1" name-key="Extension1"/&gt;
+    &lt;myext id="MyExt.Sample.2" name-key="Extension2"/&gt;
+&lt;/extension&gt;
+</pre>
+
+<p>Usually extension points are consumed by services; generally
+these services are started in your Plug-in Entry Point. Then when
+the service is initialized you will want to scan the extension
+points you care about, loading any extensions that exist for it.
+Here is some sample code for reading the sample extension
+provided above, with and without LINQ.</p>
+
+<p>With LINQ:</p>
+
+<pre>
+var myExts =
+    // All the extensions using this extension point
+    from extension in Platform.GetExtensions(ExtensionPoints.MyExtPoint)
+    // The node representing the root of the extension
+    from myExtData in extension.ConfigurationData
+    // Create an object representing the extension
+    select new MyExt(myExtData);
+
+// Create a dictionary of the extensions based on their Id
+m_myExts = myExts.ToDictionary(myExt =&gt; myExt.Id);   
+</pre>
+
+<p>Without LINQ:</p>
+
+<pre>
+foreach(IExtension extension in Platform.GetExtensions(ExtensionPoints.MyExtPoint))
+{
+    foreach(IElementData myExtData in extension.ConfigurationData)
+    {
+        MyExt myExt = new MyExt(myExtData);
+        m_myExts.Add(myExt.Id, myExt);
+    }
+}
+</pre>
+
+<p>Services are certainly not the only method by which extension
+implementations can be consumed. For example, consider a
+PaintBrush style application. The core plug-ins for such an
+application may define an extension point for brushes and an
+extension point for effect generators. Out of the box, our
+PaintBrush application has a plug-in containing extensions for
+the brushes and effects it stores by default. However, due to the
+nature of extension points, it is trivial for additional plug-in
+authors to add their own custom brushes.</p>
+
+<p>When designing extension points there are a few common
+practices that plug-in authors should keep in mind. Some of these
+are mentioned previously:</p>
+
+<ul>
+    <li>File paths for things like icons should always be
+    relative to the plug-in directory of the plug-in that is
+    defining the extension. To get the directory for a plug-in,
+    on any IElementData you can call
+    myElementData.PluginDescriptor.InstallPath to get the plug-in
+    directory where this IElementData was found.</li>
+
+    <li>Where possible always accept multiple extensions to be
+    defined in the same extension definition, like in the above
+    example.</li>
+
+    <li>Use the XML schemas.  They will save you a lot of hassle
+    dealing with improperly defined extensions and, for the
+    fragments of XML your extension is concerned with, the
+    schemas are usually very small.</li>
+
+    <li>Allow extensions to be aggregated together. For example,
+    assume one plug-in defines a toolbar with toolbar items in it
+    and gives the toolbar a unique identifier. If another plug-in
+    defines a new toolbar with the same unique identifier,
+    combine the toolbar items defined in that toolbar item with
+    the items defined in the first plug-in. Sometimes it doesn't
+    make sense and in those cases log warnings or errors, but
+    where possible permit this kind of aggregation.</li>
+</ul>
+
+<h2>Extension Registry</h2>
+
+<p>Platform provides some convenience methods for accessing
+extensions as you saw in the last example. However, if you want
+more information about the existing extensions and extension
+points you will want to check out the ExtensionRegistry. It holds
+all the data relating to extensions and their points that were
+located in the plug-in manifests. To access the ExtensionRegistry
+just use the static property: <span class=
+"NDLSystemFont">Platform.ExtensionRegistry</span></p>
+
+<h2>Plug-in Activator<br></h2>
+
+<p>The PluginActivator's primary responsibilities are
+loading plug-ins and creating objects through reflection. The
+activator initializes plug-ins and watches the .Net Application
+Domain for assembly loads so that it can maintain a mapping of
+namespaces to assemblies. It does this to ensure it can quickly
+locate the correct Type object matching a full class name that a
+plug-in might need to create an instance based on data contained
+in an extension.</p>
+
+<h2>Services<br></h2>
+
+<p>Many Toolbench plug-ins register services with the system to
+expose shared functionality to other plug-in writers. There are
+convenience methods on Platform for getting or adding
+services.<br></p>
+
+<p>To create a service your class will need to implement the
+IService interface. To add the service to Toolbench you will want
+to call:<br></p>
+
+<pre>
+Platform.AddService(new MyService(), typeof(IMyService));
+</pre>
+
+<p>It is highly recommended that your service class is marked as
+internal and that you provide an interface specifically for your
+service that a user of the service will use when calling:</p>
+
+<pre>
+IMyService myService = Platform.GetService&lt;IMyService&gt;();
+</pre>
+
+<h2>Logging</h2>
+
+<p>The logging system in Toolbench works through the Extension
+Point system. The Logger scans plug-ins for the extension point
+"Emergent.Toolbench.LogTarget". This extension point allows the
+logger to send any log message to an external log target. Log
+targets could be files, a UI, or even a network stream. When a
+message is sent to the logger, it is forwarded to all known log
+targets.</p>
+
+<p>Some logging examples in Toolbench:</p>
+
+<pre>
+Logger.Error("My Error Message");
+</pre>
+
+<h2>Notifications</h2>
+
+<p>We encourage plug-in authors to provide events in their
+classes for other plug-ins to attach to, but this isn't an option
+for a plug-in that hasn't loaded yet.  So Toolbench offers a
+basic notification system for very high-level simple events. To
+handle this scenario the NotificationRegistry tracks extensions
+to the "Emergent.Toolbench.NotificationHandler" extension
+point.</p>
+
+<p>The NotificationHandler extension point allows your plug-in to
+setup a handler to a particular notification, with the option to
+load the plug-in or not when the notification occurs. All
+notification handler classes must implement the
+INotificationHandler interface.  To facilitate a basic level of
+filtering, notification handlers can have a param attribute
+specified in their extension. This attribute will prevent the
+handler from being called if the param string does not match one
+provided by the caller of Platform.Notify.  If a notification
+handler does not specify a param attribute, or leaves the
+attribute empty, the notification will be considered callable
+whenever the notification occurs, provided the plug-in is loaded
+or will be if it specifies that it should be.</p>
+
+<ul>
+    <li>Toolbench.PluginLoading (param="plug-in id")
+
+        <ul>
+            <li>This notification occurs whenever a plug-in
+            begins loading, and will pass the plug-in id of the
+            plug-in loading.</li>
+        </ul>
+    </li>
+
+    <li>Toolbench.PluginLoaded (param="plug-in id")
+
+        <ul>
+            <li>This notification occurs once a plug-in is
+            successfully loaded, and will pass the plug-in id of
+            the plug-in that loaded.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>To define a notification handler:</p>
+
+<pre>
+&lt;extension point="Emergent.Toolbench.NotificationHandler"&gt;
+    &lt;handler id="Toolbench.PluginLoading"
+             class="Emergent.Toolbench.MyPlugin.NotificationAlert"
+             param="Emergent.Toolbench.OtherPlugin"
+             load-plugin="true" /&gt;
+
+&lt;/extension&gt;
+</pre>
+
+<p>Example notification handler:</p>
+
+<pre>
+public class NotificationAlert : INotificationHandler
+{
+    #region INotificationHandler Members
+
+    public class NotificationAlert : INotificationHandler
+    {
+        MessageBox.Show("Loading: " + e.Parameter);
+    }
+
+    #endregion
+}
+</pre>
+
+<p>To perform a notification:</p>
+
+<pre>
+Platform.Notify("Unique.Notification.Id");
+</pre>
+
+<h2>Resources</h2>
+
+<p>Because .Net already offers such a good localization system
+through their satellite assembly approach we chose to design
+resource gathering in Toolbench around this method. By adding
+some extra metadata to the plug-in manifest, a plug-in writer can
+tell Toolbench how to access their satellite assemblies. With
+this information other plug-in writers can design their extension
+points around the idea that the data for the extension may
+actually be located in one of that plug-in's satellite
+assemblies.</p>
+
+<p>Note that this release of Toolbench has not been fully
+internationalized. This section serves the purpose of
+demonstrating how Toolbench is expected to be internationalized
+and to allow plug-in authors to prepare by placing things like
+literal strings into resource pages.</p>
+
+<p>For a plug-in to be recognized as having satellite assemblies
+the plug-in will need to have the following element in its
+plug-in manifest.</p>
+
+<pre>
+&lt;localization fallback-culture="en-US" resource-base="Emergent.I18nSample.Properties.Resources"/&gt;
+</pre>
+
+<p>So in addition to a "name" attribute on an extension point
+there might be a "name-key" attribute which the extension point
+consumer could use to load a localized name for the extension
+point based on the data in a satellite assembly and the currently
+active culture.</p>
+
+<p>To access the resources of a plug-in, developers will access
+Platform.Resources; it handles resource caching and resource
+fallback. So in case the current culture has no equivalent
+satellite assembly or resource it will fallback to the parent
+culture's resources until there are no more parent cultures. When
+this occurs it will use the ultimate fallback culture specified
+in that bit of metadata provided in the plug-in manifest.</p>
+
+<p>For future internationalization purposes, it is a recommended
+pattern that as a plug-in author one always provides a "Name" and
+"Name-Key" pair in extension points in case the consumer of the
+extension point does not want to create satellite assemblies for
+their resources and instead just wants to inline the data into
+their plug-in manifest because they may not have a need to
+localize any of their data.</p>
+
+<p>The following is a sample of how resources can be accessed in
+another plug-in:</p>
+
+<pre>
+foreach(IExtension extension in Platform.GetExtensions(ExtensionPoints.MyExtPoint))
+{
+    foreach(IElementData myExtData in extension.ConfigurationData)
+    {
+        String extName = Platform.Resources.GetString(
+            myExtData.PluginDescriptor, myExtData.GetAttribute("name-key"));
+    }
+}
+</pre>
+
+<h2>Startup Process</h2>
+
+<ul>
+    <li>A boot loader is started which starts the Platform
+    running.</li>
+
+    <li>Platform initializes members and creates any directories
+    for things like settings. It also registers some extension
+    points through code (ex. LogTarget) because Toolbench core
+    does not have a corresponding manifest.</li>
+
+    <li>The plug-in registry is then built. While building the
+    plug-in registry, the extension registry is also built with
+    any extensions or extension points that were found.</li>
+
+    <li>Based on a local settings file in the execution directory
+    or by command line arguments a runnable extension is chosen
+    to be started.</li>
+
+    <li>The runnable extension's corresponding class that
+    implements the IRunnable interface is instantiated and is
+    run.</li>
+
+    <li>From here a plug-in like Workbench would start the
+    Application loop and return when the main window was
+    closed.</li>
+</ul>
+
+<h2>Plug-in Entry Point</h2><a name="PluginEntryPoint" id=
+"PluginEntryPoint"></a>
+
+<p>When writing a plug-in the author can <b>optionally</b>
+specify a class at the top of their plug-in manifest. This class
+must be derived from the PluginBase class. This class will be
+instantiated when the plug-in is loaded and is effectively the
+plug-in's entry point. There are overridable methods for
+starting and stopping the plug-in that allow you to do things
+like start and stop services or perform any other similar actions
+that should be performed on startup of your plug-in.</p>
+
+<p>Our recommended pattern for plug-in entry points is:</p>
+
+<pre>
+    
+    public class Plugin : PluginBase
+    {
+        private static IPluginResources m_resources;
+        private static IPluginDescriptor m_descriptor;
+
+        public override void Start()
+        {
+            m_descriptor = Descriptor;
+            m_resources = Resources;
+        }
+
+        public static IPluginDescriptor StaticDescriptor
+        {
+            get { return m_descriptor; }
+        }
+
+        public static IPluginResources StaticResources
+        {
+            get { return m_resources; }
+        }
+    }    
+</pre>
+
+<p>By following this pattern, you provide yourself with
+convenience accessors for both your plug-in's descriptor as
+well as any available resources in a satellite assembly that you
+may want to bind to in the UI.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

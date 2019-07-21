@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Mesh Modifiers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>PhysX Mesh Modifiers</h1>
+
+<p>Gamebryo uses the <a href="../NiMesh/Introduction_to_Mesh_Modifiers.htm">Mesh 
+ Modifier System</a> to push certain PhysX state into the scene graph:</p>
+
+<ul>
+	
+	<li>The <a href="../../Reference/NiPhysX/NiPhysXClothModifier.htm"><span 
+ class="NDLSystemFont">NiPhysXClothModifier</span></a> class transforms the 
+ vertices from a PhysX cloth object into the Gamebryo mesh that the cloth 
+ is driving, and also handles tearing and other aspects of update.</li>
+	
+	<li>The <a href="../../Reference/NiPhysXParticle/NiPhysXPSSimulator.htm"><span 
+ class="NDLSystemFont">NiPhysXPSSimulator</span></a> class works indirectly 
+ with modifiers to update the particle systems used in the <a href="../../Reference/NiPhysXParticle/Introduction_to_NiPhysXParticle_Class_Reference.htm">NiPhysXParticle</a> 
+ and <a href="../../Reference/NiPhysXFluid/Introduction_to_NiPhysXFluid_Class_Reference.htm">NiPhysXFluid</a> 
+ libraries.</li>
+</ul>
+
+<p>The <a href="../../Reference/NiPhysX/NiPhysXMeshModifier.htm"><span 
+ class="NDLSystemFont">NiPhysXMeshModifier</span></a> class is the base class 
+ for PhysX-based modifiers. It adds functions for notifying the modifier 
+ of changes to the PhysX scene to the functionality found in a standard 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span> 
+ object. In all other respects the behavior of mesh modifiers in Gamebryo-PhysX 
+ follows the same patterns as the mesh modifiers found in other parts of 
+ Gamebryo. In addition, the modifier must use synchronization points that 
+ prevent it from accessing the PhysX SDK at the incorrect time. To help 
+ with this, two synchronization points for PhysX are defined in the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span> 
+ class:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">NiSyncArgs::SYNC_PHYSICS_SIMULATE</span> 
+ is a sync point that occurs when a simulation step begins. The <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ class calls submit and complete on all the modifiers it knows about each 
+ time the application begins a simulation step, and this sync point is 
+ specified in the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXSyncArgs.htm">NiPhysXSyncArgs</a></span> 
+ object that is passed to <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#class_ni_mesh_12ba9d587eeef037f9fbcebbb20166068">NiMesh::SubmitModifiers</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#class_ni_mesh_170c2f38c346feca509e91aeb5a6cd6d4">NiMesh::CompleteModifiers</a></span>.</li>
+	
+	<li><span class="NDLSystemFont">NiSyncArgs::SYNC_PHYSICS_COMPLETED</span> 
+ &nbsp;is a sync 
+ point that occurs when a simulation step completes. The <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ class calls submit and complete on all the modifiers it knows about each 
+ time the application calls <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c730f723f9649aa93578bd40058cc289">NiPhysXScene::FetchResults</a></span> 
+ successfully, and this sync point is specified in the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXSyncArgs.htm">NiPhysXSyncArgs</a></span> 
+ object that is passed to <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#class_ni_mesh_12ba9d587eeef037f9fbcebbb20166068">NiMesh::SubmitModifiers</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#class_ni_mesh_170c2f38c346feca509e91aeb5a6cd6d4">NiMesh::CompleteModifiers</a></span>.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object must be notified of any mesh modifiers that must be submitted or 
+ completed when simulation starts or ends (any modifier with the above 
+ sync points). Typically the modifier will be stored in the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ object containing the relevant PhysX information, and automatically added 
+ to the scene when the prop is added to the scene. See the relevant classes 
+ for more information.</p>
+
+<p>When writing mesh modifier kernels for use with <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a>,
+ particularly on the PS3, is it important 
+ to remember that the data found in <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPStream.htm">NiSPStream</a></span> 
+ objects must be lockable at any point while the modifier is in flight, 
+ and that the data may even be copied to local storage without access to 
+ main memory. Take care to ensure that the data in such streams does not 
+ refer to PhysX objects directly and that simulation is not active while 
+ the modifier is in flight. The sync points above can be used to meet such 
+ conditions.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

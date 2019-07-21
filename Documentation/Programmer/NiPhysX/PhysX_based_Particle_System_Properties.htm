@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX-based Particle System Properties</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>PhysX-based Particle System Properties </h1>
+
+<p>This section looks in detail at the things to consider 
+ when creating a PhysX particle system for Gamebryo. </p>
+
+<h2>Particle Actors </h2>
+
+<p>The data from which particle actors are created is stored 
+ in a set of <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXActorDesc.htm">NiPhysXActorDesc</a></span> 
+ objects associated with the <span class="NDLSystemFont"><a href="../../Reference/NiPhysXParticle/NiPhysXPSParticleSystem.htm">NiPhysXPSParticleSystem</a> 
+ or <a href="../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystem.htm">NiPhysXPSMeshParticleSystem</a></span> 
+ object for the particle system. One actor prototype is required for each 
+ generation of particles. The particle system object also keeps pools of 
+ created actors to avoid the overhead of creating and deleting actors. 
+ This is true even if the particle system is using sprites for rendering, 
+ because PhysX must have a collision shape to operate on. If the pools 
+ are to be created on load, it is important to specify an <span class="NDLSystemFont">Actor 
+ Pool Region</span> which bounds a region of space in which the dormant 
+ actors will be placed. This avoids a major performance hit from the broad-phase 
+ collision detection in PhysX. </p>
+
+<p>The actors used as particles have a large influence 
+ on how the system behaves. Standard Gamebryo particle system modifiers 
+ should be viewed as force fields and appearance controlling tools for 
+ particles. PhysX then provides whatever collision handling mechanism you 
+ desire. Particles could collide with each other, or be set not to. The 
+ actors could be small sphere shapes to get smooth collision response, 
+ or boxes to get particles that bounce erratically. You can disable gravity. 
+ The possibilities are enormous. </p>
+
+<p>There is only one restriction on the type of actors 
+ used as particles: they must not have the <span class="NDLSystemFont">NX_AF_DISABLE_COLLISION</span> 
+ flag set. This flag is used by the PhysX particle system to disable actors 
+ when they are not in use. Use collision groups or collision filtering 
+ to disable collisions between particles and their environment. Of course, 
+ any PhysX restrictions on actors must still be respected. </p>
+
+
+
+<h2>Coordinate Systems </h2>
+
+<p>The update of particle positions is significantly more 
+ efficient if the particle system and the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ are in the same coordinate system. A flag can be set on the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysXParticle/NiPhysXPSParticleSystem.htm">NiPhysXPSParticleSystem</a></span> 
+ or <a href="../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystem.htm"><span 
+ class="NDLSystemFont">NiPhysXPSMeshParticleSystem</span></a> object to inform 
+ Gamebryo of this situation.</p>
+
+
+
+<h2>Particle Rotation </h2>
+
+<p>Particle rotation can be controlled by the particle 
+ system controllers or can be extracted from PhysX. If controlled by Gamebryo, 
+ the rotations are NOT updated to PhysX, so the actors and the rendered 
+ meshes may have different orientations. </p>
+
+
+
+<h2>Smart Pointer Considerations </h2>
+
+<p>The PhysX-based particle systems store smart pointers 
+ to the PhysX scene to which they are attached. Hence, the PhysX scene 
+ will not be destroyed until after the scene graph containing the particle 
+ system has been deleted. Deletion of the PhysX particle system requires 
+ an active PhysX SDK, so it is important that
+  <span class="NDLSystemFont"><a href="../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">
+ efdPhysX::PhysXSDKManager::Shutdown</a></span>
+ be called <span class="NDLEmphasis">after</span> the scene graph has been deleted. </p>
+
+
+
+<h2>Mixing PhysX and Gamebryo Particles </h2>
+
+<p>PhysX and Gamebryo particles should not be mixed in 
+ the same system. However, the spawning capabilities of <a href="../../Reference/NiParticle/NiPSParticleSystem.htm"><span 
+ class="NDLSystemFont">NiPSParticleSystem</span></a> be used to spawn particles 
+ in a different system. To achieve this effect, set the particle death 
+ spawner (of type <a href="../../Reference/NiParticle/NiPSSpawner.htm"><span 
+ class="NDLSystemFont">NiSPSpawner</span></a>) on the PhysX-based particle 
+ system and add the spawner to the destination system. The spawned particles 
+ are hence created in the Gamebryo system upon death in the PhysX system. 
+ The reverse arrangement is also possible. </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

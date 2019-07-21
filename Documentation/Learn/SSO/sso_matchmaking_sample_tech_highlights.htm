@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Matchmaking Sample Functional Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Matchmaking Sample Functional Overview</h1>
+
+<p>Matchmaking functionality is controlled via platform-specific
+libraries that setup matchmaking and gameplay. A number of
+parameters control game configuration such as map
+dimensions.</p>
+
+<h2>Matchmaking</h2>
+
+<p>The details of matchmaking are platform-specific and are
+implemented using platform-specific libraries.</p>
+
+<ul>
+    <li>PS3&mdash;<span class=
+    "NDLSystemFont">efdNetLibPS3UDPP2P</span> is a PS3-specific
+    networking library that makes use of Sony's NP Matching 2 and
+    Signaling utilities. For more information, see <a href=
+    "../../ee_goto.htm#Learn/SSO/sso_ps3_np_match_intro_ps3.htm">PS3
+    NP Matching/Signaling</a>.</li>
+
+    <li>Xbox 360&mdash;efdNetLibXbox360XRNM is an Xbox
+    360-specific networking library sample that makes use of
+    Microsoft Xbox 360 XRNM API. For more information, see
+    <a href=
+    "../../ee_goto.htm#Learn/SSO/sso_xbox_xrnm_reliable_udp_intro_xbox360.htm">
+    Xbox 360 XRNM reliable UDP</a>.</li>
+</ul>
+
+<p>The Matchmaking sample uses these libraries to setup the game.
+One game instance acts as the host and creates the game. The
+other game instances act as peers and join that game. The game
+starts when the required number of players join the game.</p>
+
+<h2>Game Play</h2>
+
+<p>The game is a simple simulation of teamed warships that fire on
+each other until all of a teams' ships are eliminated. There are
+two teams of warships. One is owned by the single simulated host
+player. The other team is jointly-owned by all connected simulated peer
+players. Each connected peer player has one ship. The host player
+starts with a number of ships equal to the number of peer ships.
+That is, there is one host ship for each connected peer.</p>
+
+<p>Game play is implemented using messaging. The host is the
+trusted game play arbitrator and the sole evaluator of team shot
+results. Host player shots are evaluated immediately and the
+results are sent to all peers via network messages. Peer player
+shots are sent to the host via network messages. Those shots are then
+evaluated and the results are sent to all of the peers.</p>
+
+<p>The game is played on two equally sized rectangular game maps,
+one for each team. The host maintains a map of the peer team's
+game space as well as the host team's game space. This is
+required for initial ship placement and shot evaluation. The host
+updates its maps according to evaluated shot results. Peer
+players maintain only a single map of the discovered host
+player's game space (an instance for each peer). They use this to
+ensure that they do not fire on the same host team's square twice.
+Peers' maps are updated by the host via ShotResult messages
+whenever there is a new shot result in the host player's game
+space.</p>
+
+<p>After waiting a random amount of "think" time, the host player fires all of his ships' guns at the same time. Each peer player fires
+his ship's guns after waiting a random amount of "think" time as well. The peer player "think" time starts after he receives the result for his previous shot. The think time is calculated using a uniform distribution between a
+minimum value and a maximum value. This scheme allows for a large
+degree of randomness in message exchange without being completely
+asynchronous.</p>
+
+<p>Game play continues until all of the ships on one team are
+eliminated. When that happens, the host sends the EndGame message
+to all remaining peers and begins shutting down.</p>
+
+<h2>Game Configuration</h2>
+
+<p>There are several parameters within <span class="NDLSystemFont">ConfigCommon.ini</span> that can be used to modify game
+play.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+
+            <th>Description</th>
+
+            <th>Default</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">Game.MapColumns</span></td>
+
+            <td>Number of columns in the rectangular game map.</td>
+
+            <td>10</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Game.MapRows</span></td>
+
+            <td>Number of rows in the rectangular game map.</td>
+
+            <td>10</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Game.ThinkTimeMin</span></td>
+
+            <td>Minimum think time in "time units" which is
+            defined by Game.ThinkTimeMultiple.</td>
+
+            <td>1.0</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Game.ThinkTimeMax</span></td>
+
+            <td>Maximum think time in "time units" which is
+            defined by Game.ThinkTimeMultiple.</td>
+
+            <td>2.0</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Game.ThinkTimeMultiple</span></td>
+
+            <td>Number of seconds in one "time unit".</td>
+
+            <td>1.0</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_matchmaking_sample_overview.htm">Matchmaking
+    Sample Overview</a></li>
+
+    <li><a href=
+    "sso_matchmaking_sample_code_overview.htm">Matchmaking Sample
+    Code Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

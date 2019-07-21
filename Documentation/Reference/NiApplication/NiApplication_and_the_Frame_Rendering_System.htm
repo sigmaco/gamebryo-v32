@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiApplication and the Frame Rendering System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiApplication and the Frame Rendering System</h1>
+
+<p>Classes derived from<span class="NDLSystemFont"> <a HREF="NiApplication.htm">NiApplication</a></span> 
+ can optionally make use of the Gamebryo <a HREF="../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">frame 
+ rendering system</a>. This feature can be turned on or off only in the 
+ <span class="NDLSystemFont">NiApplication</span> constructor via the <span 
+ class="NDLSystemFont">bUseFrameSystem</span> parameter. This parameter is 
+ stored internally as a const Boolean member and is used to switch between 
+ different modes of operation in different functions. Note that Gamebryo's 
+ automatic shadowing system is only enabled in <span class="NDLSystemFont">NiApplication</span> 
+ if the <span class="NDLSystemFont">bUseFrameSystem</span> variable is true.</p>
+
+<p>With this parameter set as false, which is the default 
+ value, the frame rendering system is disabled. In this situation, the 
+ application will need to use the m_spCamera, m_spScene, and m_spRenderer 
+ variables directly in order to render a frame. Any <a HREF="../../Reference/NiMesh/NiMeshScreenElements.htm"><span 
+ class="NDLSystemFont">NiMeshScreenElements</span></a> objects or <span class="NDLSystemFont"><a 
+ HREF="../../Reference/NiVisualTracker/NiVisualTracker_Overview.htm">NiVisualTracker</a></span> 
+ objects that the application is using can be obtained through the <span 
+ class="NDLSystemFont">GetScreenElements </span>and <span class="NDLSystemFont">GetVisualTrackers</span> 
+ protected functions.</p>
+
+<p>If the <span class="NDLSystemFont">bUseFrameSystem</span> 
+ parameter is set to true, applications will need to perform the following 
+ steps to use the frame rendering system to perform rendering:</p>
+
+<ul>
+	
+	<li>The <span class="NDLSystemFont">CreateFrame</span> 
+ function is called from <span class="NDLSystemFont">Initialize</span>. This 
+ function creates the <span class="NDLSystemFont">m_spFrame</span> <span 
+ class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span> 
+ member variable and sets up render clicks and a <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">render 
+ step</a> that will render the scene. It is described in the <a HREF="Basic_Object_Creation.htm">Basic 
+ Object Creation</a> section.</li>
+	
+	<li>The <span class="NDLSystemFont">NiApplication::BeginFrame</span> 
+ function does not do anything. The <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::BeginFrame</span> 
+ function will instead be called from within the <span class="NDLSystemFont">NiRenderFrame</span> 
+ object.</li>
+	
+	<li>The <span class="NDLSystemFont">RenderFrame</span> 
+ function does not call <span class="NDLSystemFont">CullFrame</span> to perform 
+ culling. Culling is performed by the various render clicks in the frame 
+ rendering system.</li>
+	
+	<li>The <span class="NDLSystemFont">RenderFrame</span> 
+ function does not call <span class="NDLSystemFont">RenderScreenItems</span> 
+ or <span class="NDLSystemFont">RenderVisualTrackers</span>, as render clicks 
+ are used to render these items in the frame rendering system.</li>
+	
+	<li>The <span class="NDLSystemFont">NiApplication::EndFrame</span> 
+ function does not do anything. The <span class="NDLSystemFont">NiRenderer::EndFrame</span> 
+ function will instead be called from within the <span class="NDLSystemFont">NiRenderFrame</span> 
+ object.</li>
+	
+	<li>The <span class="NDLSystemFont">NiApplication::DisplayFrame</span> 
+ function calls <span class="NDLSystemFont">Display</span> on <span class="NDLSystemFont">m_spFrame</span> 
+ rather than calling <span class="NDLSystemFont">NiRenderer::DisplayFrame</span>.</li>
+</ul>
+
+<p>It is also worthwhile to note that <span class="NDLSystemFont">NiApplication</span> 
+ will perform some convenience functions automatically when using the frame 
+ rendering system. These include:</p>
+
+<ul>
+	
+	<li>The <span class="NDLSystemFont">RenderFrame</span> 
+ function will call <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::GetSorter</span> 
+ and assign that <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiAccumulator.htm">NiAccumulator</a></span> 
+ to the <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiAccumulatorProcessor.htm">NiAccumulatorProcessor</a></span> 
+ member variable, <span class="NDLSystemFont">m_spAccumulatorProcessor</span>. 
+ This allows applications that used to simply set the sorter on the renderer 
+ to continue to do so and have that <span class="NDLSystemFont">NiAccumulator</span> 
+ get automatically used by the frame rendering system.</li>
+	
+	<li>The <span class="NDLSystemFont">RenderFrame</span> 
+ function will set the current camera for the shadowing system and for 
+ the main render click to m_spCamera each frame. This allows applications 
+ to continue to simply set the <span class="NDLSystemFont">m_spCamera</span> 
+ member variable to change the active rendering camera.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

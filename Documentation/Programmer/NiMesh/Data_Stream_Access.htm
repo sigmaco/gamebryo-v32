@@ -1,0 +1,253 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Data Stream Access</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Data Stream Access</h1>
+
+<p>Because of thread safety and GPU synchronization concerns, 
+ all access to the data within an <span class="NDLSystemFont">NiDataStream</span> 
+ is protected by a <span class="NDLSystemFont">Lock/Unlock</span> API.</p>
+
+<a name=AccessFlags></a><h2>NiDataStream Access Flags</h2>
+
+<p>The contents of an <span class="NDLSystemFont">NiDataStream</span> 
+ are guaranteed to be accessed in a thread-safe manner. This means that 
+ when one thread is accessing the vertex data for read, it cannot be simultaneously 
+ written to in another thread. In general, it is safe for two threads to 
+ read the same data simultaneously as long as no writers are present. However, 
+ since efficiency is of the utmost importance, it is necessary for a user 
+ to declare how the data stream will be accessed when it is created. These 
+ flags are defined in the <span class="NDLSystemFont">NiDataStream::Access</span> 
+ enumeration. Since the renderers know how the data is going to be potentially 
+ accessed at creation time, it can choose the best implementation of the 
+ <span class="NDLSystemFont">NiDataStream</span> interface, in some cases 
+ eliminating expensive thread safety primitives entirely.</p>
+
+<h4>CPU-readable NiDataStream details</h4>
+
+<p>In order to declare that the application wishes to access 
+ the data, it is necessary to declare <span class="NDLSystemFont">CPU_READ</span> 
+ access on an <span class="NDLSystemFont">NiDataStream</span>. Note that 
+ this flag is incompatible with <span class="NDLSystemFont">CPU_WRITE_VOLATILE.</span></p>
+
+<h4>CPU-writable NiDataStream details</h4>
+
+<p>CPU-writable data streams are created with one of three 
+ possible <span class="NDLSystemFont">CPU_WRITE</span> access flags: <span 
+ class="NDLSystemFont">CPU_WRITE_STATIC</span>, <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span>, 
+ and <span class="NDLSystemFont">CPU_WRITE_MUTABLE</span>. The meaning of 
+ these flags is discussed below.</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">CPU_WRITE_STATIC</span> 
+  The stream may be locked for CPU write only once. Any subsequent write 
+ locks will fail. Reading from the data stream is thus inherently thread 
+ safe because the contents will not change after the initial write.</li>
+	
+	<li><span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> 
+  The stream may be locked for CPU write multiple times. Data is not preserved 
+ from lock to lock. The entire contents must written upon locking and must 
+ be written every frame. This access mode is incompatible with CPU read 
+ access.
+	
+	<ul>
+		
+		<li>There is no requirement 
+ that locking a data stream enforce dependencies within a single frame 
+ between NiMesh objects that share that volatile data stream.</li>
+		
+		<li>Volatile data streams 
+ should generally not be shared. If shared, a lock and render, lock and 
+ render paradigm should be used. If such ordering is not used, the volatile 
+ data written to a buffer during the first lock may be overwritten by subsequent 
+ operations resulting in incorrect rendering behavior.</li>
+	</ul>
+	</li>
+	
+	<li><span class="NDLSystemFont">CPU_WRITE_MUTABLE</span> 
+  The stream may be locked for CPU write multiple times. Contents are 
+ preserved from lock to lock. Contents may be written sparsely or incompletely. 
+ This lock type will generally be the slowest as it has the most stringent 
+ runtime requirements. If using this type, make sure that it is not being 
+ changed every frame, as this can have severe performance impact.</li>
+</ul>
+
+<h4>GPU-readable NiDataStream details</h4>
+
+<p>In order to declare that a data stream's contents should 
+ be available to the GPU for reading, it is necessary to declare <span 
+ class="NDLSystemFont">GPU_READ</span> access on an <span class="NDLSystemFont">NiDataStream</span>. 
+ Each renderer can implement CPU/GPU synchronization as appropriate to 
+ their respective API's.</p>
+
+<h4>GPU-writable NiDataStream details</h4>
+
+<p>While it is possible to specify this flag, GPU_WRITE 
+ access is currently unsupported on all platforms.</p>
+
+
+<h4>Thread Safety and NiDataStream Access Flags</h4>
+
+<p>Depending on the access flags specified at construction, 
+ the required thread-safety enforcement mechanism varies. The following 
+ table illustrates this for valid combinations of <span class="NDLSystemFont">NiDataStream</span> 
+ access flags, with discussion below.</p>
+ 
+<table>
+	<thead>
+		<tr>
+			<th colspan="4" style="text-align: center;">Write Flags</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td bgcolor="#CDDFEB"><b>Read Flags</b></td>
+       	<td style="background-color: #F5F5F5">CPU_WRITE_STATIC</td>
+       	<td style="background-color: #F5F5F5">CPU_WRITE_VOLATILE</td>
+       	<td style="background-color: #F5F5F5">CPU_WRITE_MUTABLE</td>
+		</tr>
+		<tr>
+       	<td style="background-color: #F5F5F5">CPU_READ</td>
+       	<td>No lock needed</td>
+       	<td>Invalid</td>
+			<td>See #2</td>
+		</tr>
+		<tr>
+       	<td style="background-color: #F5F5F5">GPU_READ</td>
+       	<td>No lock needed</td>
+       	<td>See #1</td>
+			<td>See #1</td>
+		</tr>
+		<tr>
+       	<td style="background-color: #F5F5F5">CPU_READ | GPU_READ</td>
+       	<td>No lock needed</td>
+       	<td>Invalid</td>
+			<td>See #3</td>
+		</tr>
+	</tbody>	
+</table>
+
+<p>1) Since the CPU never reads this data, no CPU synchronization 
+ is required. However, since the GPU may be reading the data when the data 
+ is copied from CPU addressable memory to GPU addressable memory, platform 
+ specific synchronization is required.</p>
+
+<p>2) Note that this combination is never accessed by the 
+ GPU. In this case, synchronization is required between multiple threads 
+ on the CPU. All current implementations block if the data is being accessed 
+ from a separate thread.</p>
+
+<p>3) This scenario requires both CPU access and GPU access. 
+ Synchronization is required between multiple CPU threads accessing the 
+ data. When the data needs to be copied from CPU addressable memory to 
+ GPU addressable memory, platform specific synchronization is required.</p>
+
+<a name=LockFlags></a><h2>NiDataStream Lock Flags</h2>
+
+<p>Once an <span class="NDLSystemFont">NiDataStream</span> 
+ has been created, it will need to have its data populated. If this is 
+ done on the CPU, it will be necessary to call Lock on the <span class="NDLSystemFont">NiDataStream</span>. 
+ This call takes an arbitrary configuration of <span class="NDLSystemFont">NiDataStream::LockType</span> 
+ values to describe how the application intends to use the contents of 
+ the data buffer. If the data stream was not created to support those flags, 
+ it will fail to lock the stream and return NULL. The following list outlines 
+ the possible lock type flags:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">LOCK_CPU_READ</span>&mdash;The CPU is requesting to read the memory. <span class="NDLSystemFont">ACCESS_CPU_READ</span> 
+ must have been specified on creation for this to return a non-NULL value.</li>
+	
+	<li><span class="NDLSystemFont">LOCK_CPU_WRITE</span>&mdash;The CPU is requesting to write the memory. <span class="NDLSystemFont">ACCESS_CPU_WRITE</span> 
+ must have been specified on creation for this to return a non-NULL value.</li>
+	
+	<li><span class="NDLSystemFont">LOCK_TOOL_READ</span>&mdash;If the data stream is an <span class="NDLSystemFont">NiToolDataStream</span> 
+ object, then the memory should be returned. If the data stream is not 
+ an <span class="NDLSystemFont">NiToolDataStream</span>, the return is NULL.</li>
+	
+	<li><span class="NDLSystemFont">LOCK_TOOL_WRITE</span>&mdash;If the data stream is an <span class="NDLSystemFont">NiToolDataStream</span> 
+ object, then the memory should be returned. If the data stream is not 
+ an <span class="NDLSystemFont">NiToolDataStream</span>, the return is NULL.</li>
+</ul>
+
+<p>Note that two flags, <span class="NDLSystemFont">LOCK_TOOL_READ</span> 
+ and <span class="NDLSystemFont">LOCK_TOOL_WRITE</span>, are added to maintain 
+ consistent behavior across all types of <span class="NDLSystemFont">NiDataStream</span> 
+ objects of locking with a particular <span class="NDLSystemFont">LockType</span>. 
+ <span class="NDLSystemFont">LOCK_TOOL_READ</span> and <span class="NDLSystemFont">LOCK_TOOL_WRITE</span> 
+ allow <span class="NDLSystemFont">NiToolDataStream</span> objects to be 
+ locked for read or write even if the corresponding <span class="NDLSystemFont">CPU_READ</span> 
+ or <span class="NDLSystemFont">CPU_WRITE</span> access flag was not specified. 
+ </p>
+
+<h4>Lock Mixing</h4>
+
+<p><span class="NDLSystemFont">NiDataStream</span> clients 
+ may not know ahead of time if data stream elements being accessed reside 
+ in a single data stream or across multiple data streams. For example, 
+ client code may want to read "positions" and write "normals". &nbsp;If 
+ "positions" and "normals" are in the same data stream, the data stream 
+ must be locked for read and write. To &nbsp;facilitate 
+ this, the Lock mechanism must support intermixed read and write locks. 
+ The details: </p>
+
+<ul>
+	
+	<li>A data stream locked 
+ for <span class="NDLSystemFont">LOCK_WRITE</span> may be later locked for 
+ <span class="NDLSystemFont">LOCK_READ</span> from the same thread, but not 
+ vice versa. 
+ </li>
+	
+	<li>Intermixed locks are 
+ supported for <span class="NDLSystemFont">CPU_WRITE_MUTABLE</span> data 
+ streams only since <span class="NDLSystemFont">CPU_WRITE_STATIC</span> implies 
+ no writing and <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> implies 
+ no reading.</li>
+	
+	<li>In order to properly 
+ track outstanding locks by type, a lock mask argument is passed into the 
+ unlock method.</li>
+</ul>
+
+<h4>Lock failure handling</h4>
+
+<p>A method, <span class="NDLSystemFont">NiDataStream::IsRequestValid</span>, 
+ is provided to test whether or not the parameters specified represent 
+ a valid Lock request. <span class="NDLSystemFont">IsRequestValid</span> 
+ is called internally by <span class="NDLSystemFont">NiDataStream</span> 
+ whenever Lock is called, and Lock will return NULL if validation fails.</p>
+
+<p>For example, calling Lock for <span class="NDLSystemFont">LOCK_CPU_WRITE</span> 
+ on a read-only buffer will return NULL.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

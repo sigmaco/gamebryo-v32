@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiDrawSceneUtility</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiDrawSceneUtility</p>
+
+<p class="NDLRefHeaderFile">&lt;NiDrawSceneUtility.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This header includes several functions that encapsulate
+geometry culling, sorting and rendering. The functions cover
+several levels of complexity, from completely encapsulated sorted
+scene rendering to lower-level functions that sort and render
+previously culled geometry. For the vast majority of simple
+applications, these functions can partially or completely replace
+any need for application-level manual rendering code.</p>
+
+<p class="NDLRefHead1">Functions</p>
+
+<p class="NDLRefMemberFunction">unsigned int NiDrawScene(<a href=
+"NiCamera.htm">NiCamera</a>* pkCamera, <a href=
+"NiAVObject.htm">NiAVObject</a>* pkScene, <a href=
+"NiCullingProcess.htm">NiCullingProcess</a>&amp; kCuller,
+<a href="NiVisibleArray.htm">NiVisibleArray</a>* pkVisibleSet =
+NULL)</p>
+
+<p class="NDLRefMemberDescription">This is the most complete
+culling and rendering function of this set. It assumes that the
+scene is open for rendering and a render target group is open for
+rendering. </p>
+
+<p class="NDLRefMemberDescription">To prepare for rendering, the
+function sets the given camera's view data to the renderer
+and clears the given visible set of all previously-culled
+objects. Then, it uses the given <a href=
+"NiCullingProcess.htm"><span class=
+"NDLSystemFont">NiCullingProcess</span></a> object to cull the
+given scene graph into the passed-in <a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>. It then calls
+<span class="NDLSystemFont">NiDrawVisibleArray</span> (described
+below) to render the resulting visible array to the active render
+target group. <span class="NDLSystemFont">NiDrawScene</span>
+returns the number of elements in the visible array. </p>
+
+<p class="NDLRefMemberDescription">For many applications, this is
+all that is needed to render their scene. Note at the end of the
+function the visible array will still contain the culled scene
+geometry objects, which can then be used for other application
+purposes, such as additional rendering. The functionality is
+roughly analogous to the (now removed) Gamebryo 1 <span class=
+"NDLSystemFont"><a href="NiCamera.htm">NiCamera::Click</a></span>
+function.</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+NiDrawVisibleArray(<a href="NiCamera.htm">NiCamera</a>* pkCamera,
+<a href="NiVisibleArray.htm">NiVisibleArray</a>&amp;
+kVisibleSet)</p>
+
+<p class="NDLRefMemberDescription">Designed for situations
+where the desired geometry has already been culled into an
+<a href="NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>, this function assumes
+that the scene is open for rendering, a render target group is
+open for rendering, the camera data has been set to the
+renderer. </p>
+
+<p class="NDLRefMemberDescription">If there is an accumulator
+attached to the renderer, the function does several things with
+the accumulator: calls <span class=
+"NDLSystemFont">StartAccumulating</span> on it, registers
+the given visible array with it, and then calls <span class=
+"NDLSystemFont">FinishAccumulating</span> on it. If no
+accumulator is attached to the renderer, the function simply
+renders all of the geometry objects in the given visible array by
+calling <span class="NDLSystemFont">RenderImmediate</span> upon
+each of them.  In either case, at the conclusion of this function
+the visible array will have been drawn to the device, modified by
+the accumulator (if active). <span class=
+"NDLSystemFont">NiDrawVisibleArray</span> returns the number of
+elements in the visible array.</p>
+
+<p class="NDLRefMemberDescription">Note that multiple calls in
+sequence to this function will be sorted independent of one
+another - all of the items from the first call will be sorted and
+rendered, and then all of the items from the second call will be
+sorted and rendered. If an application needs to sort several
+visible arrays together before rendering, they should use
+<span class="NDLSystemFont">NiDrawVisibleArrayAppend</span>
+(below).</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+NiDrawVisibleArrayAppend(<a href=
+"NiVisibleArray.htm">NiVisibleArray</a>&amp; kVisibleSet)</p>
+
+<p class="NDLRefMemberDescription">The lowest-level of these
+functions, <span class=
+"NDLSystemFont">NiDrawVisibleArrayAppend</span> assumes that the
+scene is open for rendering, a render target group is open for
+rendering, the camera data has been set to the renderer, and the
+<a href="NiAccumulator.htm"><span class=
+"NDLSystemFont">NiAccumulator</span></a> attached to the <a href=
+"NiRenderer.htm"><span class=
+"NDLSystemFont">NiRenderer</span></a> (if any) has already been
+opened with <span class=
+"NDLSystemFont">StartAccumulating</span>. </p>
+
+<p class="NDLRefMemberDescription">This function simply renders
+or registers the geometry with the accumulator. If there is no
+accumulator attached to the renderer, then the function loops
+over all geometry in the given <a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>, calling <span class=
+"NDLSystemFont">RenderImmediate</span> upon each object. If
+there is an accumulator attached to the renderer, then the
+visible array is registered with it via <span class=
+"NDLSystemFont">NiAccumulator::RegisterObjectArray</span>.
+<span class="NDLSystemFont">NiDrawVisibleArrayAppend</span>
+returns the number of elements in the visible array.</p>
+
+<p class="NDLRefMemberDescription">Note that since the function
+does not call <span class=
+"NDLSystemFont">NiAccumulator::FinishAccumulating</span>, it is
+possible that not all geometry passed into this function will
+have been rendered at the close of this function. The remaining
+geometry will be rendered by the accumulator when <span class=
+"NDLSystemFont">FinishAccumulating</span> is called later in the
+frame. This is actually the desired behavior. For example,
+imagine we had an <a href="NiAlphaAccumulator.htm"><span class=
+"NDLSystemFont">NiAlphaAccumulator</span></a> attached to the
+renderer. If we were to call this function three times with
+different geometry, we would want all of the blended objects in
+the three visible arrays to be registered with the accumulator
+before the alpha sorting was done, to make sure that the blended
+objects from the different visible arrays could be sorted with
+respect to one another. This function is useful in cases where
+multiple visible array objects are to be drawn into the same
+rendering target using the same accumulator.</p>
+
+<p class="NDLRefMemberFunction">unsigned int NiCullScene(<a href=
+"NiCamera.htm">NiCamera</a>* pkCamera, <a href=
+"NiAVObject.htm">NiAVObject</a>* pkScene, <a href=
+"NiCullingProcess.htm">NiCullingProcess</a>&amp; kCuller,
+<a href="NiVisibleArray.htm">NiVisibleArray</a>&amp;
+pkVisibleSet, bool bResetArray = true)</p>
+
+<p class="NDLRefMemberDescription">This function is used to cull
+items in a scene graph into an array of visible objects. No
+rendering will occur in this function. Instead, call one of the
+<span class="NDLSystemFont">NiDrawVisibleArray</span> functions
+listed above. <span class="NDLSystemFont">NiCullScene</span>
+returns the number of visible objects identified in the scene and
+added to the visible array.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Render Step</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Render Step</h1>
+
+<p>A <em>render step</em> 
+ represents a discrete rendering operation. Any number of render steps 
+ can be combined together to create a <a href="Frame_Rendering_System_Render_Frame.htm">render 
+ frame</a>. A render step can be either a single operation or a set of 
+ smaller <a href="Frame_Rendering_System_Render_Click.htm">render clicks</a>. 
+ Render steps can be queried for whether or not they are active to avoid 
+ executing them at runtime.</p>
+
+<h2>NiRenderStep</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderStep.htm">NiRenderStep</a></span> 
+ class is an abstract class that serves as a base class for all render 
+ steps. It contains a <span class="NDLSystemFont">Render</span> function 
+ that is called by the render frame in its <span class="NDLSystemFont">Draw</span> 
+ function. This <span class="NDLSystemFont">Render</span> function invokes 
+ pre- and post-processing functions and calls a pure virtual <span class="NDLSystemFont">PerformRendering</span> 
+ function, which derived classes must override to actually perform rendering 
+ operations. Inactive render steps do not have <span class="NDLSystemFont">Render</span> 
+ called on them by the render frame.</p>
+
+<p>The <span class="NDLSystemFont">NiRenderStep</span> class 
+ also provides an interface for specifying its output render target group. 
+ This is the render target group that the render step will use to render 
+ its final image. Not all render steps need to support setting the output 
+ render target group, though, especially if the render step is simply rendering 
+ to internal textures or if there are multiple render target groups involved.</p>
+
+<p>Custom rendering can be performed during a render step 
+ by directly deriving a custom class from <span class="NDLSystemFont">NiRenderStep</span> 
+ and overriding the virtual <span class="NDLSystemFont">PerformRendering</span> 
+ function. The frame rendering system provides an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiClickRenderStep.htm">NiClickRenderStep</a></span> 
+ class that makes use of render clicks to render the scene. In most cases, 
+ <span class="NDLSystemFont">NiClickRenderStep</span> should be used instead 
+ of <span class="NDLSystemFont">NiRenderStep</span>, unless an application 
+ does not want to use render clicks.</p>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span> 
+ class holds a list of <span class="NDLSystemFont">NiRenderStep</span> objects. 
+ This list can be manipulated using the appropriate <span class="NDLSystemFont">NiRenderFrame</span> 
+ member functions. Typically, an application will create render steps for 
+ its effects during initialization and add them to the render frame in 
+ the proper order. The render frame then takes care of calling Render on 
+ each render step in the appropriate order.</p>
+
+<h2>NiClickRenderStep</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiClickRenderStep.htm">NiClickRenderStep</a></span> 
+ class is derived from the <span class="NDLSystemFont">NiRenderStep</span> 
+ class and overrides the PerformRendering function to support iterating 
+ through a list of <a href="Frame_Rendering_System_Render_Click.htm">render 
+ clicks</a>, rendering each one in order. It has a pure virtual <span class="NDLSystemFont">GetRenderClicks</span> 
+ function that returns the list of render clicks, allowing derived classes 
+ to implement the list in any way they see fit. A standard derived class 
+ that simply implements a list of render clicks is provided in the frame 
+ rendering system with the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultClickRenderStep.htm">NiDefaultClickRenderStep</a></span> 
+ class. <span class="NDLSystemFont">NiClickRenderStep</span> implements accessing 
+ its output render target group by accessing the render target group on 
+ the last render click in its internal list. </p>
+
+<p><span class="NDLSystemFont">NiClickRenderStep</span> uses 
+ its <span class="NDLSystemFont">PerformRendering</span> function to obtain 
+ a list of render clicks with the <span class="NDLSystemFont">GetRenderClicks</span> 
+ function. It then iterates through the list of render clicks, calling 
+ <span class="NDLSystemFont">Render</span> on each one whose <span class="NDLSystemFont">ShouldPerformRendering</span> 
+ function returns true.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

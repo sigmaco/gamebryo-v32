@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Simulation Debugger Extension Sample</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Simulation Debugger Extension Sample</h1>
+
+<p>
+The Simulation Debugger is a powerful tool for inspecting game state and identifying bugs. But it
+can be even more useful when extended to record and visualize game-specific events. To help get
+started with such extensions, Gamebryo Lightspeed includes a sample Toolbench plug-in that adds
+support for recording and visualizing ranged, line-of-sight weapons fire.
+</p>
+
+<p>
+Of course this is intended as a "game-specific" extension so the Game Framework samples don't
+have weapons fire. The feature can be quickly faked by adding the following code wherever an entity
+(pEntity) should perform the firing event:
+</p>
+
+<pre>
+efd::Point3 position;
+pEntity-&gt;GetPropertyValue&lt;efd::Point3&gt;(&quot;Position&quot;, position);
+efd::Point3 rotation;
+pEntity-&gt;GetPropertyValue&lt;efd::Point3&gt;(&quot;Rotation&quot;, rotation);
+
+// Send notification to Toolbench
+efd::utf8string payloads;
+efd::Float32 sin, cos;
+efd::SinCos(rotation.z * efd::EE_DEGREES_TO_RADIANS, sin, cos);
+payloads.sprintf(&quot;%f|%f|%f|%f|%f|%f&quot;, position.x, position.y, position.z, cos, sin, 0.0f);
+SimDebugger::Instance()-&gt;SendEvent(
+    &quot;Emergent.Toolbench.SimDebugger.Extensions.WeaponFiredSimEvent&quot;,
+    payloads, pEntity-&gt;GetEntityID());
+</pre>
+
+<p>
+The game simply forwards the event to Toolbench via one of the SimDebugger singleton's SendEvent
+methods. A single string with delimiters is used to hold all the event parameters so no custom
+message type is necessary.
+</p>
+
+<p>
+To handle the event in Toolbench, the sample extension plug-in must be prepared.
+</p>
+<ul>
+<li>Build the solution Build\Samples\Win32\VC90\ToolbenchSimDebuggerExtensions.sln.</li>
+<li>Copy the output in
+Samples\GameFrameworkTechDemos\Emergent.Toolbench.SimDebugger.Extensions\bin\[Config] to
+SDK\Win32\Bin\VC90\[Config]\Plugins.</li>
+</ul> 
+
+<p>
+When Toolbench runs, the Plug-in Browser should list the Sim Debugger Extensions plug-in. When a
+.simdebug session is started, there will be an extra filter button added to the toolbar for toggling
+the display of shots in the World View.
+</p>
+
+<center>
+<img alt="Events View" src="images/tb_simdebugger_events.png"/>
+</center>
+
+<p>
+Sending the weapons fire events in the connected game will create WeaponFiredSimEvents in Toolbench.
+These can be seen in the Events View when the associated entity is selected. As these events are
+processed, SimShots are added to the ShotDatabase. The ShotsVisual then renders all recent SimShots
+to the World View as red lines. SimShots are removed from the database after aging 5 seconds.
+</p>
+
+<center>
+<img alt="World View" src="images/tb_simdebugger_world.png"/>
+</center>
+
+<p>
+For a combat-oriented game, this sort of visualization can add important context to the Simulation
+Debugger and allows additional gameplay systems to be debugged.
+</p>
+
+<h2>Inside the Plug-in</h2>
+
+<p>
+These are the steps that were taken to setup the Emergent.Toolbench.SimDebugger.Extensions
+plug-in.
+</p>
+
+<ul>
+<li>Create the Visual Studio solution and C# class library project.</li>
+<li>Add a Shipping build configuration based on the Release build.</li>
+<li>Set the Output path for each build config to bin\[Config]\[Project]\.</li>
+<li>Optionally, enable XML doc generation to bin\[Config]\[Project].xml.</li>
+<li>Update the generated fields in AssemblyInfo.cs.</li>
+<li>Specify a pre-build event to copy expected assemblies.</li>
+<li>Build once to copy the assemblies.</li>
+<li>Add References via Browse to the References folder, setting <b>Copy Local</b> to false.</li>
+<li>Add additional .NET references for rendering.</li>
+</ul>
+
+<p>
+These files were then created in the plug-in project to implement the extensions:
+</p>
+
+<ul>
+<li>plugin.xml, to register all extensions with Toolbench.</li>
+<li>WeaponFiredSimEvent.cs, implementing the <a href="efr_extpoint_simdebugger_simevent.htm">
+SimEvent extension point</a>.</li>
+<li>ShotDatabase.cs, implementing the <a href="efr_extpoint_simdebugger_simworlddatabase.htm">
+SimWorldDatabase extension point</a>.</li>
+<li>ShotsVisual.cs, implementing the <a href="efr_extpoint_simdebugger_simvisual.htm">SimVisual
+extension point</a>.</li>
+<li>SimShot.cs and SimShotEventArgs.cs, where SimShots are added to the ShotDatabase by
+WeaponFiredSimEvents and are rendered by the ShotsVisual.</li>
+<li>Icon files for the new ShotsVisual toolbar button.</li>
+</ul>
+
+<p>
+For plugin.xml and the icon files, the <b>Build Action</b> is set to "None" and <b>Copy to Output
+Directory</b> is set to "Copy if newer".
+</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

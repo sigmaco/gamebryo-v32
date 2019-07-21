@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Particle System Colliders</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Particle System Colliders</h1>
+
+<p>The Gamebryo particle system allows for collider objects 
+ to be specified that can deflect particles and cause them to die and/or 
+ spawn new particles on collision. The simulation of these colliders is 
+ implemented by the <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSimulatorCollidersStep.htm">NiPSSimulatorCollidersStep</a></span> 
+ simulator step. This step holds a set of <span class="NDLSystemFont"><a 
+ href="../../Reference/NiParticle/NiPSCollider.htm">NiPSCollider</a></span> 
+ objects, each of which represents a single collider object. Colliders 
+ are applied in the order in which they appear in this set.</p>
+
+<p>A particle collider modifies the velocity and position 
+ of particles that it detects to have collided with it. The <span class="NDLSystemFont">NiPSCollider</span> 
+ object holds data members that define the collider object and provide 
+ some behavior options, such as how much bounce should be applied upon 
+ collision or whether or not the particle should die or spawn more particles 
+ when it collides. It also provides a block of data to the simulator step 
+ that holds all the information necessary to detect and handle collisions 
+ with the collider. The data blocks from all the colliders are combined 
+ into a large buffer by the step and are sent to its <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ kernel.</p>
+
+<p>Upon execution, the kernel creates a list of data blocks 
+ for the potential colliders. It iterates through the list, passing each 
+ data block to a helper function defined in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiParticle/NiPSColliderHelpers.htm">NiPSColliderHelpers</a></span> 
+ that detects a collision between each particle and the collider. The collider 
+ that reports the closest collision for each particle will have its handler 
+ function in <span class="NDLSystemFont">NiPSColliderHelpers</span> called 
+ to actually update the position and velocity of that particle, and then 
+ be removed from the list of collider. The process is then repeated with 
+ the remaining colliders, until there are no more colliders or no collision 
+ is found. The result is that each particle has one opportunity to collide 
+ with each collider on each frame, which correctly handles particles bouncing 
+ into corners.</p>
+
+<p>The code relating to a particular particle collider 
+ resides in several locations. First, a structure containing the necessary 
+ data for the collider is defined in the <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSColliderDefinitions.htm">NiPSColliderDefinitions</a></span> 
+ class. This is defined separately from the <span class="NDLSystemFont">NiPSCollider</span> 
+ class because it must be included and used by the Floodgate kernel, which 
+ may have different compiler requirements depending on the platform. An 
+ enumerated type is also defined in <span class="NDLSystemFont">NiPSColliderDefinitions</span> 
+ corresponding to the collider. The <span class="NDLSystemFont">NiPSCollider</span> 
+ object holds an instance of its data structure as a member variable and 
+ provides accessors for changing the collider parameters. The <span class="NDLSystemFont"><a 
+ href="../../Reference/NiParticle/NiPSSimulatorCollidersKernel.htm">NiPSSimulatorCollidersKernel</a></span> 
+ Floodgate kernel must know about the collider in order to properly parse 
+ its data block from the larger buffer, and corresponding functions must 
+ exist in <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSColliderHelpers.htm">NiPSColliderHelpers</a></span> 
+ to actually detect and handle the collision. Adding a new type of collider 
+ to the system requires making changes in all of these locations if that 
+ collider is to be executed as part of the <span class="NDLSystemFont">NiPSSimulatorCollidersStep</span> 
+ simulator step. Alternatively, a new simulator step could be created that 
+ implements the new collider separately.</p>
+
+<p>A <a href="Particle_System_Emitters_and_Spawners.htm#Particle_Spawners">particle 
+ spawner</a> can be associated with each particle collider, if desired, 
+ to support spawning new particles when a particle collides with that collider. 
+ This spawner does not have to belong to the same particle system that 
+ the collider is a part of. This allows particles with vastly different 
+ characteristics to be spawned from any collider.</p>
+
+<p>The colliders included with Gamebryo are listed here, 
+ along with a brief description:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Collider
+            </th>
+            <th>
+                Description
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSPlanarCollider.htm">NiPSPlanarCollider</a></span></td>
+<td>
+A flat plane of finite dimensions.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSphericalCollider.htm">NiPSSphericalCollider</a></span></td>
+<td>
+A sphere with a specified radius.</td></tr>
+
+    </tbody>
+</table>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

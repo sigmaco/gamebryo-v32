@@ -1,0 +1,379 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiLogger</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiLogger</p>
+
+<p class="NDLRefHeaderFile">&lt;NiLog.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>The Gamebryo configurable logging system is built on top of the <span class=
+"NDLSystemFont">NiLogger</span> class. Users of the class can associate
+different message IDs with different kinds of messages. For each message ID,
+the user can control the behavior of the output: output to debug window, output
+to log file, and/or prepend timestamp. There are 7 pre-defined message types,
+and an application can add its own message types as well.</p>
+
+<p>NiLog is now implemented as a call into the new <a href=
+"../../Programmer/Logging/logging_intro.htm">logging system</a>. The new system
+is built around a configurable <a href="../efd/efd__ILogger.htm">Logger
+interface</a> and a new set of <a href="../Macros/efd_macros_logging.htm">logging macros</a>. As a result,
+the behavior of NILOG has changed. Specifically, it no longer writes to the
+debug output window by default.</p>
+
+<p>To reenable this behavior you must <a href=
+"../../Programmer/Logging/logging_initialization.htm">configure the new logging
+system</a>. The simplest way to do so is with a configuration file. Add/edit a
+file in the working directory of your application named "config.ini". In the
+configuration file add the following lines:</p>
+<pre>
+[Log.Destinations.Debug]
+Type = DebugOut
+ 
+[Log.Filters.Debug]
+ALL = 0
+GamebryoGeneral0 = LVL0
+GamebryoGeneral1 = LVL0
+GamebryoGeneral2 = LVL0
+GamebryoMemory0 = LVL0
+GamebryoMemory1 = LVL0
+GamebryoMemory2 = LVL0
+GamebryoMemoryTimeStamp = LVL0
+GamebryoReserved = LVL0
+</pre>
+
+<p>For the module names to work as in the example above you must be using a
+properly configured <a href="../efd/efd__EnumManager.htm">EnumManager</a>. See
+<a href="../../Programmer/Logging/logging_initialization.htm">Logging
+Initialization</a> for details on creating an EnumManager.</p>
+
+<p class="NDLRefHead1">Interface</p>
+
+<p class="NDLRefMemberFunction">NILOG(int iMessageType, const char* pcFormat,
+...)</p>
+
+<p class="NDLRefMemberDescription">Sends a formatted (<span class=
+"NDLSystemFont">printf</span>-style) string of type <span class=
+"NDLSystemFont">iMessageType</span> to the Gamebryo log system. <span class=
+"NDLSystemFont">iMessageType</span> may be one of the pre-defined message types
+described in the Notes section below, or it may be an application-specified
+message type.</p>
+
+<p class="NDLRefMemberFunction">NILOGDIRECT(int iLogID, const char* pcFormat,
+...)</p>
+
+<p class="NDLRefMemberDescription">Writes a formatted (<span class=
+"NDLSystemFont">printf</span>-style) string directly to a log file.
+<span class="NDLSystemFont">iLogID</span> is an identifier returned by
+<span class="NDLSystemFont">OpenLog</span>.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static void _SDMInit()</p>
+
+<p class="NDLRefMemberDescription">This function should not be called directly,
+since it is called by <span class="NDLSystemFont">NiInit</span>. It initializes
+the log system behavior according to the <span class=
+"NDLSystemFont">NiLogBehavior</span> singleton object.</p>
+
+<p class="NDLRefMemberFunction">static void _SDMShutdown()</p>
+
+<p class="NDLRefMemberDescription">This function should not be called directly,
+since it is called by <span class="NDLSystemFont">NiShutdown</span>. This
+closes all log files.</p>
+
+<p class="NDLRefMemberFunction">static int OpenLog(const char* pcFilename,
+<a href="#OpenMode">OpenMode</a> eOpenMode = OPEN_OVERWRITE, bool bFlushOnWrite
+= false, bool bCommitToDisk = false)</p>
+
+<p class="NDLRefMemberDescription">Use this function to open a log file. The
+return value is an ID that you can pass into <span class=
+"NDLSystemFont">SetOutputToLogFile</span> or <span class=
+"NDLSystemFont">NILOGDIRECT</span>. Returns <span class=
+"NDLSystemFont">1</span> if it fails. Valid values for <span class=
+"NDLSystemFont">eOpenMode</span> are described <a href="#OpenMode">below</a>.
+The optional <span class="NDLSystemFont">bFlushOnWrite</span> and <span class=
+"NDLSystemFont">bCommitToDisk</span> flags may be useful for tracking down
+crash bugs, since they guarantee that log messages will be written to disk,
+however, they make writing to the log file much slower.</p>
+
+<p class="NDLRefMemberFunction">static void CloseLog(int iLogID)</p>
+
+<p class="NDLRefMemberDescription">Close a particular log file.</p>
+
+<p class="NDLRefMemberFunction">static void CloseAllLogs()</p>
+
+<p class="NDLRefMemberDescription">Close all currently open log files.</p>
+
+<p class="NDLRefMemberFunction">static void FlushAllLogs()</p>
+
+<p class="NDLRefMemberDescription">Forces all currently open log files to flush
+their entries to disk.</p>
+
+<p class="NDLRefMemberFunction">static void SetOutputToDebugWindow(int
+iMessageType, bool bOutput)</p>
+
+<p class="NDLRefMemberFunction">static bool GetOutputToDebugWindow(int
+iMessageType)</p>
+
+<p class="NDLRefMemberDescription">Set or query whether messages of a
+particular type are output to the debug window.</p>
+
+<p class="NDLRefMemberFunction">static void SetPrependTimestamp(int
+iMessageType, bool bTimestamp)</p>
+
+<p class="NDLRefMemberFunction">static bool GetPrependTimestamp(int
+iMessageType)</p>
+
+<p class="NDLRefMemberDescription">Set or query whether messages of a
+particular type are prepended with the current time.</p>
+
+<p class="NDLRefMemberFunction">static void SetOutputToLogFile(int
+iMessageType, int iLogID)</p>
+
+<p class="NDLRefMemberFunction">static int GetOutputToLogFile(int
+iMessageType)</p>
+
+<p class="NDLRefMemberDescription">Set or query the associated log ID for
+messages of a particular type. A log ID of <span class="NDLSystemFont">1</span>
+represents "no log file".</p>
+
+<p class="NDLRefHead1">Notes</p><a name="OpenMode" id="OpenMode"></a>
+
+<p class="NDLRefHead2">OpenMode Enumeration</p>
+
+<p>The OpenMode enumeration determines what happens when the log file is
+opened.</p><!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Behavior</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">OPEN_APPEND</span></td>
+
+            <td>If an log already exists with this name, append additional log
+            entries to the existing log.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">OPEN_OVERWRITE</span></td>
+
+            <td>If an log already exists with this name, erase the existing log
+            and replace it with the new one.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">OPEN_UNIQUENAME</span></td>
+
+            <td>Not supported.</td>
+        </tr>
+    </tbody>
+</table><a name="Predefined_Message_Types" id="Predefined_Message_Types"></a>
+
+<p class="NDLRefHead2">Predefined Message Types</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+
+            <th>Name</th>
+
+            <th>Default Behavior and other Notes</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>0</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_GENERAL_0</span></td>
+
+            <td>Output to debug window in Debug builds.</td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_GENERAL_1</span></td>
+
+            <td>Ignored.</td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_GENERAL_2</span></td>
+
+            <td>Ignored.</td>
+        </tr>
+
+        <tr>
+            <td>3</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_MEMORY_0</span></td>
+
+            <td>Output to file in memory tracker builds (<span class=
+            "NDLSystemFont">EE_USE_MEMORY_MANAGEMENT</span> is defined).</td>
+        </tr>
+
+        <tr>
+            <td>4</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_MEMORY_1</span></td>
+
+            <td>Output to file in memory tracker builds (<span class=
+            "NDLSystemFont">EE_USE_MEMORY_MANAGEMENT</span> is defined).</td>
+        </tr>
+
+        <tr>
+            <td>5</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_MEMORY_2</span></td>
+
+            <td>Output to file in memory tracker builds (<span class=
+            "NDLSystemFont">EE_USE_MEMORY_MANAGEMENT</span> is defined).</td>
+        </tr>
+
+        <tr>
+            <td>6</td>
+
+            <td><span class=
+            "NDLSystemFont">NIMESSAGE_MEMORY_TIMESTAMP</span></td>
+
+            <td>Output to file, with timestamp, in memory tracker builds
+            (<span class="NDLSystemFont">EE_USE_MEMORY_MANAGEMENT</span> is
+            defined).</td>
+        </tr>
+
+        <tr>
+            <td>7</td>
+
+            <td><span class=
+            "NDLSystemFont">NIMESSAGE_RESERVED_FOR_LOGDIRECT</span></td>
+
+            <td>This message type is used by <span class=
+            "NDLSystemFont">NILOGDIRECT</span>.</td>
+        </tr>
+
+        <tr>
+            <td>7*</td>
+
+            <td><span class=
+            "NDLSystemFont">NIMESSAGE_MAX_INTERNAL_INDEX</span></td>
+
+            <td>Applications defining their own message types should define
+            them relative to this type. For example, <span class=
+            "NDLSystemFont">#define MYMESSAGE
+            NIMESSAGE_MAX_INTERNAL_INDEX+1</span>. This will allow user-defined
+            types to work in future releases even if Emergent adds more
+            internal types.</td>
+        </tr>
+
+        <tr>
+            <td>...</td>
+
+            <td></td>
+
+            <td>For use by user applications.</td>
+        </tr>
+
+        <tr>
+            <td>32</td>
+
+            <td><span class="NDLSystemFont">NIMESSAGE_MAX_TYPES</span></td>
+
+            <td>User defined types should be less than this number</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">Using NILOG or NILOGDIRECT in a case: label</p>
+
+<p>If an application uses an <span class="NDLSystemFont">NILOG</span> or
+<span class="NDLSystemFont">NILOGDIRECT</span> statement in a case label, it
+must put the case statement in its own scope. This is because the <span class=
+"NDLSystemFont">NILOG</span> or <span class="NDLSystemFont">NILOGDIRECT</span>
+macros define new objects. Placing a set of braces around the body of the case
+or default statement is sufficient. Failure to do this may cause either of the
+following two errors:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">error C2360: initialization of 'xx_Log_##'
+    is skipped by 'case' label</span></li>
+
+    <li><span class="NDLSystemFont">error C2361: initialization of 'xx_Log_##'
+    is skipped by 'default' label</span></li>
+</ul>
+
+<p>where ## is the line number of the <span class="NDLSystemFont">NILOG</span>
+or <span class="NDLSystemFont">NILOGDIRECT</span> call.</p><a name=
+"NiOutputDebugString" id="NiOutputDebugString"></a>
+
+<p class="NDLRefHead2">NiOutputDebugString</p>
+
+<p><span class="NDLSystemFont">NiOutputDebugString</span> uses the Gamebryo
+logging system via message type <span class=
+"NDLSystemFont">NIMESSAGE_GENERAL_0</span>. In other words, <span class=
+"NDLSystemFont">NiOutputDebugString(x)</span> statements are expanded to
+<span class="NDLSystemFont">NILOG(NIMESSAGE_GENERAL_0, x)</span>.</p><a name=
+"Logging_in_Release_Builds" id="Logging_in_Release_Builds"></a>
+
+<p class="NDLRefHead2">Logging in Release Builds</p>
+
+<p>Logging is enabled in all configurations except shipping non-dll builds.
+Shipping dll builds have logging enabled because they are used for Gamebryo
+tools. Logging in tools is very important and should be turned on. If this is
+not desired please see the next section on disabling logging.</p><a name=
+"Disabling_NiLogger" id="Disabling_NiLogger"></a>
+
+<p class="NDLRefHead2">Disabling NiLogger</p>
+
+<p>Build Gamebryo and your application with <span class=
+"NDLSystemFont">NI_LOGGER_DISABLE</span> defined to completely remove
+<span class="NDLSystemFont">NiLogger</span> from the application. Any
+references to <span class="NDLSystemFont">NiLogger</span> will be undefined.
+This is useful for final builds of an application.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

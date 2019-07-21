@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NSF Shaders with HLSL Shader Programs</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NSF Shaders with HLSL Shader Programs</h1>
+
+<p>Many of the sample NSF shaders that ship with Gamebryo 
+ make use of assembly shader programs. It is perfectly valid to use HLSL 
+ shader programs with NSF shaders, though, and often makes shader development 
+ easier. There are some things you want to keep in mind when creating NSF 
+ shaders that use HLSL shader programs.</p>
+
+<h2>Effects Framework Elements Ignored</h2>
+
+<p>Many files that contain HLSL code started their lives 
+ as FX files, meant to be used with Microsoft's D3DX Effect framework. 
+ Gamebryo does support that framework through the <span class="NDLSystemFont">NiD3DXEffectShader</span> 
+ library, which is described <a href="Introduction_!FX_Shaders.htm">here</a>. 
+ But NSF shader files don't use that framework, so much of that extra framework 
+ is ignored. This includes:</p>
+
+<ul>
+	
+	<li>Annotations</li>
+	
+	<li>Semantics not directly 
+ used by the shader programs (except for samplers; see below)</li>
+	
+	<li>Techniques</li>
+	
+	<li>Texture declarations</li>
+	
+	<li>Sampler state blocks</li>
+</ul>
+
+<p>The elements that are used include just the basics necessary 
+ to compile HLSL code:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">#include</span> 
+ directives</li>
+	
+	<li>Functions</li>
+	
+	<li>Structure declarations</li>
+	
+	<li>Variable declarations</li>
+</ul>
+
+<h2>NSF File Dominant</h2>
+
+<p>The NSF file is what drives the shader operation, not 
+ the HLSL file. Although sampler states can be described in an HLSL file 
+ using the <span class="NDLSystemFont">sampler_state</span> block, they will 
+ be ignored in favor of the sampler states declared in the NSF file. In 
+ fact, <span class="NDLSystemFont">texture</span> objects don't even need 
+ to be declared in HLSL files; only the <span class="NDLSystemFont">sampler</span> 
+ objects will get used. Variables declared in HLSL files will not be set 
+ at runtime unless they have associated attributes declared in the NSF 
+ file, and functions in the HLSL files will not be compiled unless they 
+ are used as shader programs by the NSF file (or called by other functions 
+ that are).</p>
+
+<h2>Specifying the Shader Program</h2>
+
+<p>In NSF shaders that use assembly shader programs, it 
+ is usually only necessary to specify the name of the file that contains 
+ the shader program. NSF shaders that use HLSL shader programs need to 
+ include more information.</p>
+
+<p>There are two ways to declare pixel and vertex shader 
+ programs in NSF files: the simple declaration, and the complete declaration. 
+ Both are described in <a HREF="Shader_Programs.htm">this</a> 
+ section. Remember that if the entry point is not explicitly named, it 
+ is assumed to be &quot;main&quot;, and if the shader target is not specified, 
+ the highest one available for the current hardware will be used.</p>
+
+<h2>Associating NSF Samplers and HLSL Samplers</h2>
+
+<p>One step that's not completely clear is how to match 
+ up the samplers that are declared in NSF files with the samplers declared 
+ in the HLSL code. After all, NSF samplers are referred to by number, while 
+ HLSL samplers are variables identified only by name. The solution is to 
+ explicitly link every sampler declared in an HLSL file with a numbered 
+ sampler register using the <span class="NDLSystemFont">register</span> semantic. 
+ </p>
+
+<p>HLSL file:</p>
+
+<pre>
+sampler BaseSampler : register(s0);
+sampler NormalSampler : register(s1);
+</pre>
+
+<p>NSF file:</p>
+
+<pre>
+Sampler 0 BaseSampler
+{
+    TSS_Texture     = NTM_Base
+    TSAMP_AddressU  = TADDR_WRAP
+    TSAMP_AddressV  = TADDR_WRAP
+    TSAMP_MagFilter = TEXF_Linear
+    TSAMP_MinFilter = TEXF_Linear
+    TSAMP_MipFilter = TEXF_Linear
+}
+ 
+Sampler 1 NormalSampler
+{
+    TSS_Texture     = &lt;NormalMap&gt;
+    TSAMP_AddressU  = TADDR_WRAP
+    TSAMP_AddressV  = TADDR_WRAP
+    TSAMP_MagFilter = TEXF_Linear
+    TSAMP_MinFilter = TEXF_Linear
+    TSAMP_MipFilter = TEXF_Linear
+}
+</pre>
+
+<p>Remember that the name of the sampler declared in the 
+ NSF file will not help you; the only way to link the HLSL sampler with 
+ the NSF sampler is by using the <span class="NDLSystemFont">register</span> 
+ semantic in the HLSL file. If this is not done, there is no way to ensure 
+ that the texture and sampler settings that are set by the NSF shader will 
+ be associated with the correct sampler in the HLSL file. </p>
+
+<h2>Associating NSF Constant Map Entries with HLSL Variables</h2>
+
+<p>Values from Object, Attribute, Defined, Global, and 
+ Operator constant map entries can be declared in NSF files as described 
+ <a href="Shader_Constant_Maps.htm">here</a>. 
+ The corresponding HLSL variables will be updated with the values of all 
+ such constant map entries during runtime. </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Fluids Demo Functional Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Fluids Demo Functional Overview</h1>
+
+<p>This novel parts of this demo are entirely concerned with
+loading and creating a PhysX fluid simulation rendered in
+Gamebryo. See the PhysX documentation for an overview of PhysX
+fluid capabilities. From a Gamebryo perspective, the most
+important thing is that the fluid simulation uses a <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysXFluid/NiPhysXPSMeshFluidSystem.htm">NiPhysXPSMeshFluidSystem</a></span>
+object for rendering with Gamebryo's particle system library.</p>
+
+<h2>Detecting PhysX Hardware</h2>
+
+<p>The <span class="NDLSystemFont">getHWVersion()</span> in the
+PhysX SDK object returns 0 if there is no hardware present. This
+is the simplest way to check for PhysX hardware. You can also try
+creating a <span class="NDLSystemFont">NxScene</span> object with
+hardware simulation parameters and test if it fails.</p>
+
+<h2>Creating a Fluid Simulation</h2>
+
+<p>The PhysX SDK documentation contains the full details of
+creating and managing fluid simulations. In this case we use a
+fluid simulation created in Gamebryo's art tools and exported in
+a NIF file. We modify the descriptors slightly after loading to
+improve the fluid behavior in this scene, but the bulk of the
+work, particularly setting up emitters, is done in the art export
+process.</p>
+
+<h2>Updating Gamebryo Fluids</h2>
+
+<p>In addition to standard Gamebryo scene graph updating, an
+application with PhysX content must also explicitly update the
+simulation. The process is not automated because there are many
+possible variants on how this is done, each with different
+implications for performance and appearance. See <a href=
+"../../Programmer/NiPhysX/Basic_PhysX_Updating_Tasks.htm">Updating
+Gamebryo-PhysX</a> for more details. A fluid system includes
+destinations of PhysX content, so <span class=
+"NDLSystemFont">UpdateDestinations</span> must be called on the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object, in addition to <span class=
+"NDLSystemFont">Simulate</span> and <span class=
+"NDLSystemFont">FetchResults</span>. If there are kinematic
+actors in the fluid scene, then <span class=
+"NDLSystemFont">UpdateSources</span> must also be called.</p>
+
+<p>This application updates the physics asynchronously to
+maximize parallelism. User input must be buffered in this
+situation because the Gamebryo sample user interface produces
+callbacks after the <span class=
+"NDLSystemFont">UpdateFrame</span> function is called, when PhysX
+is inside its <span class=
+"NDLSystemFont">simulate/fetchResults</span> block. Each user
+interface callback buffers a message and these are processed when
+PhysX is not simulating.</p>
+
+<h2>PhysX Debug Visualization</h2>
+
+<p>The PhysX API supports the production of debugging geometry,
+useful for visualizing the system state as the physics engine
+sees it. Gamebryo can process and render this geometry for you
+simply by setting the appropriate flag on the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object. Not all debug information is available from hardware
+simulation, but there is sufficient output to show the
+approximate locations of particles if you are having problems
+rendering them.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

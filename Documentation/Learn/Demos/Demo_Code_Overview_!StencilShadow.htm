@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>StencilShadow Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>StencilShadow Demo Code Overview</h1>
+
+<p>The following sections detail the low-level code that creates the effect
+described above. Each important member function is described:</p>
+
+<h2>StencilShadow Constructor</h2>
+
+<p>The constructor is similar to most other <span class=
+"NDLSystemFont">NiSample</span>-based demos, with the addition of a call to
+request the creation of a stencil buffer in the renderer (<span class=
+"NDLSystemFont">SetStencil(true)</span>).</p>
+
+<h2>Terminate</h2>
+
+<p><span class="NDLSystemFont">Terminate</span> releases the three smart
+pointers it has (the current interaction object, the shadow sub-tree and the
+shadow shaft material) and then calls the base class <span class=
+"NDLSystemFont">Terminate</span> function.</p>
+
+<h2>CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> creates the scene graph as
+follows:</p>
+
+<ol style="list-style: decimal; list-style-type: decimal;" type="1">
+    <li>Creates the scene graph root and attaches properties to enable
+    lighting.</li>
+
+    <li>Calls <span class="NDLSystemFont">CreateRoom</span> to create the room
+    objects and attaches them to the scene.</li>
+
+    <li>Loads the helicopter from a NIF file.</li>
+
+    <li>Scales the model and translates it into position.</li>
+
+    <li>Calls <span class="NDLSystemFont">CreateShadowVolume</span> and
+    <span class="NDLSystemFont">CreateShadowOverlay</span> to add the shadow
+    elements.</li>
+</ol>
+
+<h2>CreateRoom</h2>
+
+<p><span class="NDLSystemFont">CreateRoom</span> creates a two-walled room with
+a floor, adding texture coordinates. These walls will later provide a good
+backdrop for receiving cast shadows. No extra work or properties are required
+for the walls and floor for the shadow system. The entire scene may be drawn
+normally, with NiApplication handling the rendering of the main scene graph and
+the shadow volume (both or which are children of the root scene node, added in
+order to ensure that the scene gets rendered prior to the shadow volume) and
+the screen-space overlaid "dark" polygon that actually renders the shadow
+effect.</p>
+
+<h2>CreateShadowVolume</h2>
+
+<p>This function creates the three elements of the shadow effect. Only one is
+actually needed for the shadow effect, but the others accentuate the effect.
+The necessary element is created first&mdash;a closed, double-sided object that
+represents the volume swept out by the shadow. The object is made double-sided
+by doubling the connectivity list and flipping the triangles in the second
+copy. The object has properties attached that cause it to be zbuffered and to
+increment the stencil buffer when it is visible. The object is alpha blended,
+and a class-member material property is added to allow the alpha value to be
+changed to make the shadow volume visible or not.</p>
+
+<p>Next, a visible caster polygon (the one that appears to cast the shadow) is
+created. It is made opaque and bluish-white. It has somewhat special stencil
+behavior&mdash;wherever it is drawn, it clears the stencil buffer. This ensures
+that the shadow caster is never drawn in shadow.</p>
+
+<p>Finally, a light is created and set to point down the perpendicular to the
+polygon, so that the walls and scene are lit from the same direction as the
+shadow is cast. All of the elements are attached to a common parent
+(<span class="NDLSystemFont">m_spShadow</span>), so that they may be moved as a
+unit.</p>
+
+<h2>CreateShadowOverlay</h2>
+
+<p>This function creates a screen-space rectangle (<span class=
+"NDLSystemFont">NiMeshScreenElements</span> ) that covers the entire screen. It
+is alpha blended using <span class="NDLSystemFont">(0, SRCCOLOR)</span> mode,
+which will cause the polygon to modulate the underlying scene. Properties are
+attached to make the polygon a flat, dark color. The stencil buffer is drawn
+only when the low-order bit of the stencil buffer is 1 (i.e. the stencil buffer
+is odd). The rectangle is attached to <span class=
+"NDLSystemFont">NiApplication</span>'s array of screen elements objects for
+automatic rendering after the main scene is drawn.</p>
+
+<p>It should be noted that a similar polygon could be used to make the effect
+create a volumetric light by using a gray screen-space rectangle and an alpha
+blending mode of (1, 1). This will cause objects in the "shadow" volume to
+appear "washed-out".</p>
+
+<h2>CreateUIElements</h2>
+
+<p>This <span class="NDLSystemFont">NiSample</span> inherited function is
+overridden so that a new UI element may be added.</p>
+
+<h2>CreateNavigationControllers</h2>
+
+<p>This <span class="NDLSystemFont">NiSample</span> inherited function is
+overridden so that a <span class="NDLSystemFont"><a href=
+"../../Reference/NiUserInterface/NiNavFlyController.htm">NiNavFlyController</a></span>
+may be added which will control the shadow caster's location and
+orientation.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

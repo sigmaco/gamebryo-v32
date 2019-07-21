@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Particle System Simulator</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Particle System Simulator</h1>
+
+<p>All simulation of particles in a particle system is 
+ performed by an <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span> 
+ object that is attached to the main <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span> 
+ object. Simulation of particles includes updating particle positions based 
+ on velocity, applying forces to particles, simulating collisions between 
+ particles and a collider object, and killing off particles whose ages 
+ have exceeded their life spans. An <span class="NDLSystemFont">NiPSSimulator</span> 
+ object is required by <span class="NDLSystemFont">NiPSParticleSystem</span>. 
+ The particle system will not function properly without a simulator attached.</p>
+
+<p><span class="NDLSystemFont">NiPSSimulator</span> is derived 
+ from <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span> 
+ and takes advantage of <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ to execute its simulation tasks. Rather than performing all of the simulation 
+ work itself, however, <span class="NDLSystemFont">NiPSSimulator</span> holds 
+ a set of <a href="Particle_System_Simulator_Steps.htm">simulator steps</a>, 
+ each of which performs some aspect of the simulation. Each step provides 
+ a Floodgate kernel and its required input and output streams. In its <span 
+ class="NDLSystemFont">Attach</span> function, <span class="NDLSystemFont">NiPSSimulator</span> 
+ queries each simulation step for its kernel and streams and performs a 
+ remapping operation to ensure that the steps are ordered appropriately 
+ by Floodgate during execution. Each input stream for a step is replaced 
+ by the output stream from a previous step, if that output stream refers 
+ to the same particle data as the input stream. This ensures that steps 
+ that occur earlier in the simulator's set of steps will have their output 
+ used as input to the next step. Floodgate uses this information to schedule 
+ the previous step in a prior stage from the subsequent step. If two steps 
+ do not modify and use the same data streams, they can be run concurrently. 
+ Because the simulator performs this remapping operation itself, each simulator 
+ step does not need to know about any other step.</p>
+
+<p>The final simulator step is treated slightly differently. 
+ The last step in the simulator's set of steps is always ensured to run 
+ in a later stage from all other steps. This is because work may need to 
+ get done in the final step that must be done last. This ordering is ensured 
+ by the use of a dummy Floodgate stream that is set as an output for all 
+ other steps and an input for the last step.</p>
+
+<p>The Floodgate task submitted by the <span class="NDLSystemFont">NiPSSimulator</span> 
+ object operates directly on the particle data contained in <span class="NDLSystemFont">NiPSParticleSystem</span>. 
+ As such, that data must not be accessed by any other code while the <span 
+ class="NDLSystemFont">NiPSSimulator</span> task is running. The <span class="NDLSystemFont">NiPSParticleSystem::ForceSimulationToComplete</span> 
+ function can be called to ensure that the simulator has completed and 
+ that it is safe to access the particle data.</p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

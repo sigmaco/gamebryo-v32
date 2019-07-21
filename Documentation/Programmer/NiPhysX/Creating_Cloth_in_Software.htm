@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating Cloth in Software</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating Cloth in Software</h1>
+
+<p>There are three basic steps to setting up cloth for 
+ Gamebryo: Creating the PhysX cloth mesh, creating the PhysX cloth object 
+ and attaching it to Gamebryo.</p>
+
+<h2>Cooking a PhysX Cloth Mesh for Gamebryo</h2>
+
+<p>Gamebryo geometry, or any geometry, can be used to specify 
+ the cloth mesh. It is important to remove duplicate vertices if your mesh 
+ has repeats due to per-vertex normals or texture seams. In this case, 
+ you must create a map, indexed by Gamebryo rendered vertex indexes, to 
+ tell Gamebryo which PhysX mesh vertex should be used to get the location 
+ of each rendered vertex. This information is required later. The map will 
+ be many-to-one, with multiple Gamebryo vertices referencing the same PhysX 
+ vertex.</p>
+
+<p>The PhysX cloth mesh cooking process supports the welding 
+ of vertices that are coincident. While you may use this to remove duplicate 
+ vertices, you must still provide the mapping of Gamebryo vertices to PhysX 
+ vertices. Otherwise, Gamebryo does not know which PhysX vertices to use 
+ for the rendered data.</p>
+
+<p>Once the mesh is cooked you need to create the <span 
+ class="NDLSystemFont">NxClothMesh</span> object using methods on the PhysX SDK object.</p>
+
+<h2>Creating the PhysX Cloth Object</h2>
+
+<p>Create the cloth object as you normally would, but do 
+ not specify the mesh data object that is used to read the cloth state. 
+ That will be created by Gamebryo in the next step.</p>
+
+<h2>Attaching Cloth to Gamebryo</h2>
+
+<p>The connection between the PhysX cloth and Gamebryo 
+ is managed by a <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXClothModifier.htm">NiPhysXClothModifier</a></span> 
+ object that you will need to create.</p>
+
+<ol style="list-style: decimal;"
+	type=1>
+	
+	<li>Create the <span class="NDLSystemFont">NiPhysXClothModifier</span> 
+ object.</li>
+	
+	<li>Call <span class="NDLSystemFont">NiPhysXClothModifier::SetCloth</span> 
+ to specify the PhysX cloth object.</li>
+	
+	<li>Set any other properties 
+ of the modifier object.</li>
+	
+	<li>Add the modifier to 
+ an <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ object using <span class="NDLSystemFont">NiMesh::AddModifier</span>. The 
+ modifier will be added but may fail to attach at this stage.</li>
+	
+	<li>Add the cloth modifier 
+ to a <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ object or <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object, using the <span class="NDLSystemFont">AddModifiedMesh</span> function 
+ in those classes. The scene or prop should be associated with the same 
+ PhysX <span class="NDLSystemFont">NxScene</span> object that the cloth was 
+ created in.</li>
+	
+	<li>If the modifier is 
+ not already attached, call <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#class_ni_mesh_1b4b9a50fa93e9a2007cb7b44f8e1f103">NiMesh::AttachModifier</a></span> 
+ to attach the modifier. Check the return value - if false there is a problem 
+ with the modifier.</li>
+</ol>
+
+<p>The <span class="NDLSystemFont">NiMesh</span> object to 
+ which the cloth modifier is attached must meet the requirements of the 
+ modifier, which includes the ability for the CPU to read and write the 
+ positions and normal streams, and all the other streams if the cloth is 
+ tearable. See the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXClothModifier.htm">NiPhysXClothModifier</a></span> 
+ documentation for details.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

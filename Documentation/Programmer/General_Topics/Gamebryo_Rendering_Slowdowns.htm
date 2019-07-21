@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Gamebryo Rendering Slowdowns</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Gamebryo Rendering Slowdowns</h1>
+
+<p>In our code sample in the <a href="Profiling_Consistent_Slowdown.htm">previous 
+ sections</a>, we rendered the scene by calling the <span class="NDLSystemFont">NiApplication::RenderFrame</span> 
+ function. Culling and rendering a scene involves recursing through a scene 
+ graph performing hierarchical frustum culling and calling <span class="NDLSystemFont">RenderImmediate</span> 
+ on geometry objects that are not culled. While your application may use 
+ a more complex method of rendering than just calling <span class="NDLSystemFont">RenderFrame</span>, 
+ it is quite possible that your performance bottlenecks are occurring during 
+ the rendering process. Speeding up the rendering process can be a difficult 
+ task, but there are a few techniques that can help. In general, the goal 
+ of these techniques is to reduce the number of renderable objects without 
+ reducing the visual complexity of the scene. On some platforms, particularly 
+ PC, the overhead of submitting an object for rendering can be quite significant. 
+ Reducing the number of renderable objects can vastly increase the performance 
+ of an application. </p>
+
+<h2>Merge Similar Objects</h2>
+
+<p>Merging objects in the scene graph that share the same 
+ properties and effects into a single geometry object can reduce the object 
+ overhead of a scene without reducing the amount of geometry seen by the 
+ user. The <a href="../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">optimization 
+ plugin</a> performs this operation out of the art packages, but you can 
+ help by grouping static objects with the same properties and effects under 
+ the same node. If the "Merge Sibling NiMesh objects" option 
+ is enabled, these objects can be merged into one. Applications can also 
+ stitch objects together in code. For assistance with this process, visit Emergent's <a href="https://pulse.emergent.net/support/" target="_blank">Online Support Portal</a>.</p>
+
+<h2>Reduce the Number of Bones on Characters</h2>
+
+<p>As stated before, characters with skeletal animation 
+ are often the most expensive objects in a game. Reducing the number of 
+ bones in art of by using Bone LOD has been discussed in "Gamebryo 
+ Update Slowdowns" <a href="Gamebryo_Update_Slowdowns.htm">section</a>. 
+ These optimizations also have impacts on rendering of characters as well. 
+ On platforms that use software skinning, reducing the number of bones 
+ will have some impact on the vertex deformation calculations due to increased 
+ cache coherency and fewer bone influences per vertex. On platforms that 
+ use hardware skinning, reducing the number of bones will allow Gamebryo 
+ to decrease the number of partitions that must be set for each skinned 
+ character. Since each partition is treated as a distinct renderable object, 
+ fewer partitions leads to fewer renderable objects which is one of the 
+ primary goals of optimizing our scenes.</p>
+
+<h2>Push Work to the GPU</h2>
+
+<p>In modern graphics systems with programmable shaders, 
+ work can often be moved onto the GPU to balance out the workload on the 
+ CPU. The most common method for this is to use a vertex shader that handles 
+ skinning with a larger palette of bones than traditional hardware skinning. 
+ This results in fewer partitions and hence fewer renderable objects.</p>
+
+
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

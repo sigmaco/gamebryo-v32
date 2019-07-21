@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 6: Time Controllers</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 6: Time Controllers</h1>
+
+<p>In this tutorial, we illustrate how to use Gamebryo's time controllers for updating objects in
+the scene graph.</p>
+
+<h2>The Demo</h2>
+
+<p>In <a href="Tutorial_5__Transforms.htm">Core Runtime Tutorial 5: Transforms</a>, we moved a
+helicopter around by directly manipulating our object in the <span class=
+"NDLSystemFont">UpdateFrame</span> function of our application. In this demo, we move the updating
+to a time controller that is attached to the helicopter. We also change the behavior somewhat in
+that the helicopter will now orbit our camera position. This means that unless the camera turns,
+the helicopter will go out of view. So, this tutorial also attaches a time controller to the camera
+so that it tracks the helicopter. When this demo is run, you should see the helicopter orbit around
+the camera's position, but the helicopter is the center of focus the entire time.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a helicopter moving to the left with the camera tracking it. The
+following screen capture was taken from the <span class="NDLSystemFont">Win32</span> platform.<br>
+<br></p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial6.jpg" width="515" height="400" alt="Time controllers (63K)"> /&gt;
+
+    <p class="NDLFigureCaption">Time controllers</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>Because we are going to use time controllers to control the motion of the helicopter as well as
+our camera, we have the opportunity of simplifying our <span class=
+"NDLSystemFont">UpdateFrame</span> function (from that which was seen in the last tutorial). In
+fact, all we need to do in addition to calling <span class=
+"NDLSystemFont">NiApplication::UpdateFrame</span> is to update our scene with the time that has
+passed. The <span class="NDLSystemFont">m_fAccumTime</span> member of <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> gets updated during the <span class=
+"NDLSystemFont">NiApplication::OnIdle</span> loop.</p>
+<pre>
+void TimeControllers::UpdateFrame()
+{
+    NiApplication::UpdateFrame();
+    m_spScene-&gt;Update(m_fAccumTime);
+}
+</pre>
+
+<p>For this application, we want the helicopter to move in some sort of simple pattern. For this
+purpose, we instantiate our new <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a>-</span>derived <span class=
+"NDLSystemFont">FlightController</span> class. This controller will cause our helicopter to orbit
+around the origin. In a subsequent tutorial, we will modify the <span class=
+"NDLSystemFont">FlightController</span> to accept and be responsive to user input. In <span class=
+"NDLSystemFont">CreateScene</span>, we allocate our new <span class=
+"NDLSystemFont">FlightController</span>. The <span class="NDLSystemFont">FlightController</span>
+class will be explained in more detail later in this tutorial. For now, it is sufficient to note
+that the float parameter that we pass in to the constructor is the velocity that we want the
+helicopter to move. After we have created our flight controller, we assign our controller's target
+using <span class="NDLSystemFont">SetTarget</span>. The <span class=
+"NDLSystemFont">SetTarget</span> method is found in the base <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> class. Aside from setting
+the target, <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> provides other base level
+functionality that may be useful when creating your own <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a>-</span>derived class. Please
+check out the documentation on <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> for more information. For
+the target of our <span class="NDLSystemFont">FlightController</span>, we assigned the node that we
+have attached the helicopter to (<span class="NDLSystemFont">pkAttachPt</span>).</p>
+<pre>
+   FlightController* pkFlightController = NiNew FlightController(35.0f);
+   pkFlightController-&gt;SetTarget(pkAttachPt);
+</pre>
+
+<p>After we have set up our helicopter to be able to move about the scene using our new
+<span class="NDLSystemFont">FlightController</span>, we now want the camera to be able to track the
+helicopter so that it never goes off screen. We need to write some code to make this happen. It
+turns out that this is easily done using another time controller. This time we can use one of
+Gamebryo's time controllers, the <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiTransformController.htm">NiTransformController</a></span>. The
+controller alone is not enough; we also need an interpolator that will tell the controller the
+values to set for the objects that it controls. <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiLookAtInterpolator.htm">NiLookAtInterpolator</a></span> will let us
+easily get the functionality we need. In its constructor, we pass the <span class=
+"NDLSystemFont">pkAttachPt</span> object as the point in the scene to look at as well as telling
+the interpolator to only rotate along the Z axis. The <span class=
+"NDLSystemFont">ResetTimeExtrema()</span> call tells the controller to reset its time range, which
+should be done whenever the interpolator is changed. All these steps can be seen below:</p>
+<pre>
+    NiNode* pkControlled = (NiNode*)m_spScene-&gt;GetObjectByName("Controlled");
+    NiLookAtInterpolator* pkLookAtInterpolator = NiNew NiLookAtInterpolator(
+        pkAttachPt, NiLookAtInterpolator::Z, false);
+    NiTransformController* pkTransformController = NiNew NiTransformController;
+    pkTransformController-&gt;SetInterpolator(pkLookAtInterpolator);
+    pkTransformController-&gt;SetTarget(pkControlled);
+    pkTransformController-&gt;ResetTimeExtrema();
+</pre>
+
+<p>That completes the code that is new to <span class="NDLSystemFont">CreateScene</span> in this
+tutorial. Let's now look at the <span class="NDLSystemFont">FlightController</span> class.</p>
+<pre>
+class FlightController : public NiTimeController
+{
+    NiDeclareRTTI;
+public:
+    FlightController(float fVelocity);
+    virtual void Update(float fTime);
+ 
+protected:
+    virtual bool TargetIsRequiredType () const;
+    void UpdatePositionAndOrientation(NiAVObject* pkObject,
+        NiMatrix3&amp; kRotation, NiPoint3&amp; kTrans, float fDeltaTime);
+    
+    float m_fVelocity;
+    float m_fLastUpdateTime;
+    float m_fRotationIncrement;
+    float m_fInnerBoundSqr;
+    float m_fOuterBoundSqr;
+};
+</pre>
+
+<p>The first thing we see in our <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> class is the <span class=
+"NDLSystemFont"><a href="../../Programmer/Object_Systems/RTTI_Details.htm">NiDeclareRTTI</a></span>
+macro. All <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived classes use the macro
+<span class="NDLSystemFont"><a href=
+"../../Programmer/Object_Systems/RTTI_Details.htm">NiDeclareRTTI</a></span> in their class
+definitions. <span class="NDLSystemFont"><a href=
+"../../Programmer/Object_Systems/RTTI_Details.htm">NiDeclareRTTI</a></span> declares a static RTTI
+data member and accessor for testing class type at run time. Since <span class=
+"NDLSystemFont"><a href="../../Programmer/Object_Systems/RTTI_Details.htm">NiDeclareRTTI</a></span>
+declares a static data member, we instantiate it in the .cpp file with the following line:</p>
+<pre>
+NiImplementRTTI(FlightController, NiTimeController);
+</pre>
+
+<p>The rest of the major components in the <span class="NDLSystemFont">FlightController</span>
+class that are relevant to this tutorial are the two virtual functions <span class=
+"NDLSystemFont">Update</span> and <span class="NDLSystemFont">TargetIsRequiredType</span>. These
+functions are declared as pure virtual in <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> and must be defined. The
+<span class="NDLSystemFont">UpdatePositionAndOrientation</span> function is simply the "AI" of our
+class. While it may be interesting to look at, it is only concerned with applying transforms to
+move and orient the helicopter. This information was covered in <a href=
+"Tutorial_5__Transforms.htm">Core Runtime Tutorial 5: Transforms</a> and hence will not be
+revisited in this tutorial.</p>
+
+<p>Now let's look at the <span class="NDLSystemFont">FlightController</span>'s Update function.</p>
+<pre>
+void FlightController::Update (float fTime)
+{
+    float fDeltaTime = NiAbs(fTime - m_fLastUpdateTime);
+    if ( m_pTarget )    // if there is an object, rotate it
+    {
+        NiAVObject *pkObject = (NiAVObject*)m_pTarget;
+        NIASSERT(NiIsKindOf(NiAVObject, pkObject));
+ 
+        NiPoint3 kTrans = pkObject-&gt;GetTranslate();
+        NiMatrix3 kRotation = pkObject-&gt;GetRotate();
+ 
+        UpdatePositionAndOrientation(pkObject, kRotation, kTrans,
+            fDeltaTime);
+    }
+    m_fLastUpdateTime = fTime;
+}
+</pre>
+
+<p>As can be seen above, our Update function is passed a time which is used to find a delta from
+the last recorded time. Afterwards, the only thing that happens is if there is a target, we grab
+some transform information and pass it as parameters to <span class=
+"NDLSystemFont">UpdatePositionAndOrientation</span>. Lastly, we record the time of this update as
+the last updated time.</p>
+
+<p>Finally, we look at the <span class="NDLSystemFont">TargetIsRequiredType</span>. This function
+ensures that we have the type of target object that we require for this controller. In the code
+below, we only require that the target is an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>.</p>
+<pre>
+bool FlightController::TargetIsRequiredType () const
+{
+    return NiIsKindOf(NiAVObject,m_pTarget);
+}
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>Okay, you've learned how to use time controllers for updating objects in the scene graph. Next,
+let's focus on adding keyboard and gamepad support. See <a href="Tutorial_7__User_Input.htm">Core
+Runtime Tutorial 7: User Input</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiAnimation/NiLookAtInterpolator.htm">NiLookAtInterpolator</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiNode.htm">NiNode</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiObject.htm">NiObject</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Programmer/Object_Systems/RTTI_Details.htm">NiDeclareRTTI</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTask</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiTask</p>
+
+<p class="NDLRefParentage">:public <a href=
+"NiObject.htm">NiObject</a></p>
+
+<p class="NDLRefParentage">&lt;NiTask.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiTask</span> works in conjunction
+with an <span class="NDLSystemFont"><a href=
+"NiTaskManager.htm">NiTaskManager</a></span> object to denote a
+unit of work that will be scheduled and executed at some time by
+the <span class="NDLSystemFont"><a href=
+"NiTaskManager.htm">NiTaskManager</a></span> object. <span class=
+"NDLSystemFont">NiTask</span> itself is an abstract base
+class.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberDescription">Because it is abstract,
+<span class="NDLSystemFont">NiTask</span> cannot be instantiated.
+The null constructor will set the Status to IDLE when called by
+derived classes.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">virtual void DoTask() = 0</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">DoTask</span> method executes the actions of the
+task. It must be defined by the subclass of <span class=
+"NDLSystemFont">NiTask</span> specific to the task.</p>
+
+<p class="NDLRefMemberFunction">virtual bool CanExecute()</p>
+
+<p class="NDLRefMemberDescription">Returns true if the task can
+execute. If the task must wait on some non-signaled resource,
+this method returns false. The base class implementation returns
+true, but subclasses may implement checks against different
+resources. <span class="NDLSystemFont">CanExecute</span> does not
+provide a guarantee that a task will run since an outside thread
+could acquire the resource immediately after the call, but it
+will prevent a task from immediately blocking on a non-signaled
+resource. Additionally, <span class=
+"NDLSystemFont">CanExecute</span> provides a mechanism for
+ordering execution by creating a non-signaled resource for
+another task and then having that task signal the resource as it
+finishes.</p>
+
+<p class="NDLRefMemberFunction">void SetStatus(TaskStatus
+eStatus)</p>
+
+<p class="NDLRefMemberFunction">TaskStatus GetStatus()</p>
+
+<p class="NDLRefMemberDescription">Get and set the status of the
+task. Applications should not call the set method except under
+certain circumstances outlined in the "Notes" section below. It
+is declared public only so that the <span class=
+"NDLSystemFont"><a href=
+"NiTaskManager.htm">NiTaskManager</a></span> holding the class
+will have access to the method.</p>
+
+<p class="NDLRefMemberFunction">virtual bool Clear()</p>
+
+<p class="NDLRefMemberDescription">This method clears a task that
+is in the COMPLETED or ABORTED state. The task releases any
+resources that may have been created during task execution if the
+task is in the COMPLETED state and sets the task's state to IDLE
+in either case. Applications should use this method to recycle
+tasks that they wish to use again. The method returns true if
+resources are freed and the state is set to IDLE. If the task is
+not in the COMPLETED or ABORTED state or if resources cannot be
+freed, the method returns false.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">NiTask::TaskStatus</p>
+
+<p><span class="NDLSystemFont">NiFile::Status</span> is an
+enumeration with the following values.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Open Mode</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTask::IDLE</span></td>
+
+            <td>The task has been created but not assigned to any
+            task manager.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTask::PENDING</span></td>
+
+            <td>The task has been assigned to a task manager
+            using the <span class="NDLSystemFont">AddTask</span>
+            function but has not begun execution.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTask::RUNNING</span></td>
+
+            <td>The task manager is executing the task.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTask::COMPLETED</span></td>
+
+            <td>The task manager has finished the task.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTask::ABORTED</span></td>
+
+            <td>The task was never run, and the manager aborted
+            the task due to manager shutdown. Applications may
+            clear the status to IDLE and reissue the task.</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="FigureContainer">
+    <img src="./images/TaskStatusFlow.gif" width="641" height=
+    "381">
+
+    <p class="FigureCaption"><span class=
+    "NDLSystemFont">NiTask</span> object status flow</p>
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

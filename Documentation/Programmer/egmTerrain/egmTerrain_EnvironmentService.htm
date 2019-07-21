@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>EnvironmentService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+
+  <h1>
+    EnvironmentService
+  </h1>
+  <p>
+    The <span class="NDLSystemFont">egmTerrain::EnvironmentService</span> interfaces 
+    the Game Framework to the Core Runtime Environment System. As such it creates 
+    all objects required to display a 
+    <span class="NDLSystemFont">NiEnvironment</span> when a Environement model is 
+    discovered. It will also create and handle a <span class="NDLSystemFont">
+    NiTimeOfDay</span> object if a TimeOfDay model is added to the scene. Finally, 
+    Entities that mixin the TimeOfDayEditable model will also be automatically 
+    handled by the <span class="NDLSystemFont">EnvironmentService</span> and their 
+    properties holding the TimeOfDayAnimatable trait will be registered with the
+    <span class="NDLSystemFont">NiTimeOfDay</span> object if it exists. The
+    <span class="NDLSystemFont">EnvironmentService</span> is an <span class="NDLSystemFont">
+    ecr::IRenderServiceDelegate</span>. This allows the service to create and add 
+    the required renderer views to the active display surfaces.
+  </p>
+  <h2>
+    Lifecycle of an Environment Model   </h2>
+  <p>
+    WWhen an Environment Entity is discovered, a <span class="NDLSystemFont">
+    NiEnvironment</span> is created using the values from the entity's properties. 
+    The associated <span class="NDLSystemFont">NiAtmosphere</span> object and a 
+    default <span class="NDLSystemFont">NiSkyDome</span> object are also set. 
+    Initially, a default directional light will be used unless the model's 
+    EnvironmentSunEntity property points to an already loaded directional light 
+    entity. Once initialized, the Environment model's property that hold the 
+    TimeOfDayAnimatable trait are registered with the <span class="NDLSystemFont">
+    NiTimeOfDay</span> object if it exists. Finally, as a
+    <span class="NDLSystemFont">ecr::IRenderServiceDelegate</span>, all existing 
+    surfaces are updated to handle the custom <span class="NDLSystemFont">
+    NiRenderClick</span> provided by the <span class="NDLSystemFont">
+    NiEnvironment::CreateSkyRenderClick</span> function.
+  </p>
+  <p>
+    The created render click is automatically added as the first click in a 
+    surface's render step. The following <span class="NDLSystemFont">NiRenderClick</span> 
+    is then modified to ensure the buffers are not cleared. This is done for all 
+    existing surfaces.
+  </p>
+  <p>
+    When an Environment Entity is removed, its properties are unregistered from the
+    <span class="NDLSystemFont">NiTimeOfDay</span> object if it exists and the 
+    custom <span class="NDLSystemFont">NiRenderClick</span> is removed from all 
+    existing render surfaces.
+  </p>
+  <p>
+    There are a few limitations related to the current implementation of the 
+    environment service:   </p>
+  <ul>
+    <li>TThe <span class="NDLSystemFont">NiSky</span> used by the
+      <span class="NDLSystemFont">NiEnvironment</span> object can only be a
+      <span class="NDLSystemFont">NiSkyDome</span>. </li>
+    <li>The <span class="NDLSystemFont">NiSkyDome</span> only has 1
+      <span class="NDLSystemFont">NiBlendStage</span> which is the
+      <span class="NDLSystemFont">NiSkyFogBlendStage</span>. </li>
+    <li>The created <span class="NDLSystemFont">NiFogProperty</span> is the default
+      <span class="NDLSystemFont">NiEnvironment</span> fog property and does not 
+      provide support to affect other objects. </li>
+  </ul>
+  <h2>
+    Lifecycle of a TimeOfDay Model   </h2>
+  <p>
+    WWhen a TimeOfDay entity is discovered by the EnvironmentService, a
+    <span class="NDLSystemFont">NiTimeOfDay</span> object is created following the 
+    entity's properties. If entities mixing in the TimeOfDayEditable model 
+    (including the Environment Model) were previously added, their relevant 
+    properties will all be registered with the new NiTimeOfDay object.
+  </p>
+  <p>
+    Every time the service is ticking, it will retrieve the game time and update the
+    <span class="NDLSystemFont">NiTimeOfDay</span> object so the animations can take 
+    place. If changes have occurred (the <span class="NDLSystemFont">NiTimeOfDay</span> object is active) the render 
+    context will be redrawn.
+  </p>
+  <p>
+    When a TimeOfDay entity is removed, all the Entities that have registered their 
+    property with the <span class="NDLSystemFont">NiTimeOfDay</span> object will 
+    unregister them.
+  </p>
+  <h2>
+    Lifecycle of TimeOfDayEditable Models   </h2>
+  <p>
+    Any entities that use the TimeOfDayEditable model as a mixin is tracked for 
+    discovery and removal. This provides the flexibility to animate any entities 
+    using the TimeOfDay functionalities. The TimeOfDayEditable model provides two 
+    properties:
+  </p>
+  <ul>
+    <li>A file path to save and load keyframes from, </li>
+    <li>A hidden property referencing all the property names that should be animated.
+    </li>
+  </ul>
+  <p>
+    UUsing the <span class="NDLSystemFont">egmTerrain::TimeOfDayEntityFunctor</span> 
+    class, each property name in the list are registered with the
+    <span class="NDLSystemFont">NiTimeOfDay</span> object if it exists.
+  </p>
+  <p>
+    Upon removal of the entity, the registered properties will be unregistered from 
+    the <span class="NDLSystemFont">NiTimeOfDay</span> object.
+  </p>
+  <h2>
+    Time Of Day Messages   </h2>
+  <p>
+    TTwo custom messages are used by the <span class="NDLSystemFont">
+    egmTerrain::EnvironmentService</span>. Those are required for rapid iteration 
+    handling and track when keyframes have been added to a TimeOfDay registered 
+    property as well as when the actual time of the day is changed. In effect, those 
+    are currently only triggered by Toolbench when modifications happen on the 
+    TimeOfDay Editor tool.
+  </p>
+  <h3>
+    The ToDKeyframesChangedMessage Class   </h3>
+  <p>
+    TThis class defines the message received by the <span class="NDLSystemFont">
+    egmTerrain::EnvironmentService</span> when keyframes for a specific property 
+    registered with the TimeOfDay object are changed. It contains:
+  </p>
+  <ul>
+    <li>the property's name /li>
+    <li>the number of keyframes for this property </li>
+    <li>the list of keyframes times </li>
+    <li>tthe list of keyframes values </li>
+  </ul>
+  <p>
+    As a result, the animation sequence for the given property will be updated with 
+    the given times and values. For more information, please consult the class 
+    reference page for <span class="NDLSystemFont">NiTimeOfDay</span>.
+  </p>
+  <h3>
+    The ToDTimeChangedMessage Class   </h3>
+  <p>
+    TThis class defines the message received by the <span class="NDLSystemFont">
+    egmTerrain::EnvironmentService</span> when the current time for the TimeOfDay 
+    object is changed. It only contains the new time value. This message is 
+    triggered by Toolbench when the TimeOfDay Editor's time slider is modified.
+  </p>
+  <p>
+    As a result, the TimeOfDay object's current time will be changed to the new 
+    value.   </p>
+  <div>
+    <h2>
+      Time Of Day File Format
+    </h2>
+    <p>
+      TThe animation file used by the <span class="NDLSystemFont">
+      egmTerrain::EnvironmentService</span> uses the extension
+      <span class="NDLSystemFont">.tod</span>. It is however written in Xml in a 
+      specific format:
+    </p>
+<pre>
+&lt;?xml version=&quot;1.0&quot; ?&gt; &lt;TimeOfDay Version=&quot;1&quot; EntityName=&quot;NameOfTheModel&quot;&gt; 
+    &lt;Property Name=&quot;NameOfTheModel.NameOfFloatProperty&quot; Type=&quot;float&quot; MinValue=&quot;0&quot; MaxValue=&quot;360&quot;&gt; 
+        &lt;Keyframe Time=&quot;0:0:0:0&quot; Value=&quot;85.090935&quot; /&gt; 
+        &lt;Keyframe Time=&quot;6:7:30:0&quot; Value=&quot;164.727219&quot; /&gt; 
+        &lt;Keyframe Time=&quot;19:57:30:0&quot; Value=&quot;360.000000&quot; /&gt; 
+        &lt;Keyframe Time=&quot;19:57:31:0&quot; Value=&quot;0.000000&quot; /&gt; 
+        &lt;Keyframe Time=&quot;24:0:0:0&quot; Value=&quot;85.090935&quot; /&gt; 
+    &lt;/Property&gt; 
+    &lt;Property Name=&quot;NameOfTheModel.NameOfColorProperty&quot; Type=&quot;Color&quot;&gt; 
+        &lt;Keyframe Time=&quot;0:0:0:0&quot; Value=&quot;[0.027451, 0.631373, 0.984314, 1.000000]&quot; /&gt; 
+        &lt;Keyframe Time=&quot;24:0:0:0&quot; Value=&quot;[0.027451, 0.631373, 0.984314, 1.000000]&quot; /&gt; 
+    &lt;/Property&gt; 
+&lt;/TimeOfDay&gt; 
+</pre>
+    <p>
+      In the current implementation, a different file must be provided for each 
+      TimeOfDayEditable models.
+    </p>
+    <p>
+      ThThe Type, MinValue and MaxValue attributes are optional. The MinValue and 
+      MaxValue attributes are not used in runtime however they allow toolbench's 
+      TimeOfDay Editor to constrain float values. This is mainly used by the graphical 
+      control to determine the range a property can vary from. Those are automatically 
+      set when adding a new TimeOfDayEditable model to the scene according to each 
+      property's range restriction or to the default 0 and 1 value if a restriction 
+      has not been set. The constraints can then be updated within the TimeOfDay 
+      editor and reloaded whenever the block is edited. For more information on how to 
+      edit constraints, consult the
+      <a href="../../Tools/EnvironmentToD/etod_intro_to_UI.htm">Toolbench - 
+      Environment plug-in</a> documentation.
+    </p>
+    <h2>
+      Time Of Day Entity Functor    </h2>
+    <p>
+      ThThe TimeOfDayEntityFunctor provides the necessary functionality to register any 
+      Entity's property of float or color type with the <span class="NDLSystemFont">
+      NiTimeOfDay</span> object. It follows the restriction defined in The
+      <a href="../NiEnvironment/TimeOfDay_Object.htm">Time Of Day Object</a> section 
+      of the <a href="../NiEnvironment/NiEnvironment_Introduction.htm">Environment - 
+      Core Runtime Documentation</a>.
+    </p>
+    <p>
+      It is a templated class that uses its member variables in its SetValue function 
+      to set an entity's property using <span class="NDLSystemFont">
+      egf::Entity::SetPropertyValue</span> function. This also means that using this 
+      functor for custom entities relies heavily on the Game Framework messaging 
+      system.
+    </p>
+    <p>
+      Custom models would gain from using a custom service that derives from
+      <span class="NDLSystemFont">egmTerrain::EnvironmentService</span> and overrides 
+      the RegisterEntity and UnregisterEntity functions in order to use better suited 
+      functors tailored for a specific entity.
+    </p>
+    <h2>
+      Using the egmTerrain::EnvironmentService    </h2>
+    <p>
+      In order to use the environment service, it must be registered to the service 
+      manager. This can be done with the following code:
+    </p>
+<pre>
+// Create and register EnvironmentService
+egmTerrain::EnvironmentServicePtr spEnvironmentService = EE_NEW egmTerrain::EnvironmentService();
+m_spServiceManager-&gt;RegisterSystemService(egmTerrain::EnvironmentService::CLASS_ID, 
+    spEnvironmentService);
+</pre>
+    <p>
+      This should be done during the initialization phase of the application.
+    </p>
+    
+    <span class="NDLHeadingRelatedTopic">Related Topics</span>
+    <ul>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiEnvironment/NiTimeOfDay.htm">NiTimeOfDay</a></span></li>
+      <li><span class="NDLSystemFont">
+        <a href="../../Reference/NiEnvironment/NiEnvironment.htm">NiEnvironment</a></span></li>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/egmTerrain/egmTerrain__EnvironmentService.htm">egmTerrain::EnvironmentService</a></span></li>
+      <li><a href="../../Tools/EnvironmentToD/etod_entity_models.htm">Toolbench Environment Models</a></li>
+    </ul>
+</body>
+</html>

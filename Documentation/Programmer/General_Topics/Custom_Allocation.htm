@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::MemManager and efd::MemTracker</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>efd::MemManager and efd::MemTracker</h1>
+
+<p>Gamebryo is designed to be a "black box" with respect to memory management.
+All allocations and deallocations must flow through a common chokepoint.
+<span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__MemManager.htm">efd::MemManager</a></span> is the
+class that contains this common chokepoint. This class along with all other
+memory management is provided in the Foundation subsystem. Throughout the Core
+Runtime subsystem 'Ni' prefixed memory management classes and macros exist for
+backward compatibility, but they are simply <a href=
+"../../Convert/Announce/Foundation_Bridge_Layer.htm">bridged</a> to their
+counterparts in the Foundation subsystem.</p>
+
+<p>The memory manager is composed of a single allocator object. This allocator
+object is responsible for all allocations within Gamebryo. In memory tracking
+builds, a custom allocator, <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__MemTracker.htm">efd::MemTracker</a></span> wraps
+access to a child allocator. It will then provide memory tracking and debugging
+functionality transparently to the end user.</p>
+
+<p>In all builds, all memory requests are forwarded by default to <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__StandardAllocator.htm">efd::StandardAllocator</a>.</span>
+StandardAllocator is actually typedefed to a templated class called
+<span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__SmallObjectAllocator.htm">efd::SmallObjectAllocator</a></span>
+which forwards requests to the standard aligned allocation routines for the
+platform. The small object allocator is based off of the design proposed by
+Andrei Alexandrescu in "Modern C++ Design" wherein memory allocations of the
+same size are drawn from a common "pool" of preallocated objects.</p>
+
+<p>The memory allocator used is determined by the return value of the function
+efd::CreateGlobalMemoryAllocator(). The macro EE_USE_DEFAULT_ALLOCATOR can be
+used to select the default allocator. The allocator must be capable of
+functioning pre-main. This guarantees that all allocations will occur using the
+same allocator throughout the lifetime of the Gamebryo system.</p>
+
+<p>All Gamebryo allocation requests come from one of two sources: Gamebryo
+implementations of common allocation routines <span class=
+"NDLSystemFont">(<a href=
+"../../Reference/Namespaces/efd.htm#build-dependent_memory_management_routines_from_memorydefines.h">
+efd::_Malloc</a>, <a href=
+"../../Reference/Namespaces/efd.htm#build-independent_memory_management_routines_from_memorydefines.h">
+efd::_Free</a>, <a href=
+"../../Reference/Namespaces/efd.htm#build-dependent_memory_management_routines_from_memorydefines.h">
+efd::_Realloc</a>, <a href=
+"../../Reference/Namespaces/efd.htm#build-dependent_memory_management_routines_from_memorydefines.h">
+efd::_AlignedMalloc</a>, <a href=
+"../../Reference/Namespaces/efd.htm#build-independent_memory_management_routines_from_memorydefines.h">
+efd::_AlignedFree</a>, <a href=
+"../../Reference/Namespaces/efd.htm#build-dependent_memory_management_routines_from_memorydefines.h">
+efd::_AlignedRealloc</a></span>) or from <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__MemObject.htm">efd::MemObject</a></span>-derived
+classes using the class overrides of new and delete. These two paths are
+discussed in detail below.</p>
+
+<h2>_Alloc, _Malloc, _Free, _Realloc, _AlignedMalloc...</h2>
+
+<p>Gamebryo direct allocation routines are used for intrinsic types (floats,
+ints, chars, etc) and types that do not need constructors or destructors. Much
+like malloc, free, and realloc, these routines simply allocate the memory that
+you requested. They perform no initialization of that memory. Calls to
+<span class="NDLSystemFont">_Malloc</span> and <span class=
+"NDLSystemFont">_Realloc</span> must be paired with calls to <span class=
+"NDLSystemFont">_Free</span> for deallocation to occur properly. Similarly,
+calls to <span class="NDLSystemFont">_AlignedMalloc</span> and <span class=
+"NDLSystemFont">_AlignedRealloc</span> must be paired with calls to
+<span class="NDLSystemFont">_AlignedFree</span> for deallocation to occur
+properly.</p>
+
+<p>If an application does not use these allocation routines, the memory will
+not be tracked or managed by Gamebryo. This can cause a mismatch if the memory
+was allocated externally and then freed by Gamebryo routines. Please see
+<a href="Memory_Management_Troubleshooting.htm">Memory Management
+Troubleshooting</a> for more details on common memory management issues.</p>
+
+<p>The macros <span class="NDLSystemFont">EE_ALLOC</span>, <span class=
+"NDLSystemFont">EE_MALLOC</span>, <span class="NDLSystemFont">EE_FREE</span>,
+call internal versions of these functions. The macros allow the engine to
+generate file, line, function information automatically in memory tracking
+builds.</p>
+
+<h2>efd::MemObject, EE_NEW, and EE_DELETE</h2>
+
+<p>Objects requiring constructors and destructors in Gamebryo are allocated
+using <span class="NDLSystemFont"><a href="../../Reference/Macros/efd_macros_ee_new_ee_delete.htm">EE_NEW</a></span>
+and <span class="NDLSystemFont"><a href="../../Reference/Macros/efd_macros_ee_new_ee_delete.htm">EE_DELETE</a></span>
+and must be derived from a common base class, <span class=
+"NDLSystemFont">efd::MemObject</span>. These macros, like <span class=
+"NDLSystemFont">EE_ALLOC</span>, <span class="NDLSystemFont">EE_FREE</span>,
+and others listed above encapsulate the need to store the file, line, and
+function information for memory tracking.</p>
+
+<p><span class="NDLSystemFont">MemObject</span> overrides the global
+<span class="NDLSystemFont">new</span> and <span class=
+"NDLSystemFont">delete</span> on a class level. All derived classes will
+inherit these allocation overrides. Note that inheriting from <span class=
+"NDLSystemFont">MemObject</span> requires no additional per-object memory
+overhead. Additionally, <span class="NDLSystemFont">MemObject</span> overrides
+<span class="NDLSystemFont">new[]</span> and <span class=
+"NDLSystemFont">delete[]</span> on a class level. The only overhead for array
+allocations is a few bytes that the compiler generates in order to call the
+destructor for each element in the array. Most objects will have this data
+generated automatically, so the overhead should not be a concern.</p>
+
+<a name="MemoryTrackingAndDebugging" id="MemoryTrackingAndDebugging"></a><h2>Memory Tracking and Debugging</h2>
+
+<p>Whether the constant <span class="NDLSystemFont"><a href=
+"../../Reference/NiSystem/NiMemoryDefines.htm#Preprocessor_Definitions">EE_USE_MEMORY_MANAGEMENT</a></span>
+is defined determines whether memory related metrics (for memory leaks and
+memory summary statistics) are tracked and whether Memory-Leaks.xml and
+Memory-Overview.xml reports are created. The Memory-Leaks.xml file contains
+records of all memory leaks, and the Memory-Overview.xml file contains summary
+information on allocated memory and, optionally, detailed per-allocation
+records of allocated memory during the lifetime of the application.</p>
+
+<p>These XML files reference custom XSL stylesheets that are created at
+application startup. This approach enables the user to simply double-click on
+the XML log and display an HTML report in their current web browser. Depending
+on the size of the resultant XML file, a user may wait a lengthy amount of time
+for the report to be fully generated. Internet Explorer progressively loads the
+XSL-generated report while Firefox and other Mozilla-based browsers only
+display the page when the full computation is done. Other tools, such as XMLSpy
+or Microsoft Developer Studio may be used to view the data.</p>
+
+<p>Note that memory tracking requires the use of the __FILE__, __LINE__, and
+__FUNCTION__ macros in code. Since use of these macros will bloat the
+application library in builds, these macros are only used when the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiSystem/NiMemoryDefines.htm#Preprocessor_Definitions">EE_USE_MEMORY_MANAGEMENT</a></span>
+constant is enabled.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                By default, <span class="NDLSystemFont"><a href=
+                "../../Reference/NiSystem/NiMemoryDefines.htm#Preprocessor_Definitions">
+                EE_USE_MEMORY_MANAGEMENT</a></span> is defined to enable memory
+                tracking only for <span class="NDLSystemFont">Debug</span> and
+                <span class="NDLSystemFont">Debug DLL</span> builds.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>In addition, per-allocation memory logging is disabled by default. As a
+result, sections other than "Summary" in Memory-Overview.xml are empty by
+default. Per-allocation memory logging may be re-enabled (which will fill in
+the empty sections in Memory-Overview.xml), but keep in mind that it has a
+significant performance impact, especially on consoles.</p>
+
+<p>To re-enable per-allocation memory logging, add the following code to your
+main(), before calling NiInit:</p>
+<pre>
+// Enable per-allocation memory logging to Memory-Overview.xml.
+if (efd::MemTracker::Get())
+    efd::MemTracker::Get()-&gt;SetWriteToLog(true);
+</pre>
+
+<p>The freed memory report is generated throughout the lifetime of the
+application. The logging steps will periodically append to the active XML file
+on disk, so applications may notice a "hiccup" in frame rate in the event of
+many allocations within a single render frame. The log is written out
+periodically to save the memory tracker from needing to store all allocations
+throughout the lifetime of the application. This approach significantly reduces
+the memory overhead of the memory tracker, but in applications with very tight
+memory budgets, a user may encounter situations where the application runs out
+of memory in memory tracked builds. An application may query the memory tracker
+for its current overhead in bytes if such a circumstance is a concern.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ShaderLibrary Code</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>ShaderLibrary Code</h1>
+
+<p>The <span class="NDLSystemFont">ShaderLibrary</span> library contains all of
+the derived <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DShader.htm">NiD3DShader</a></span> classes
+(and additionally on Win32, all the <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Shader.htm">NiD3D10Shader</a></span>
+classes) that are used in the <span class="NDLSystemFont"><a href=
+"LibraryEffect.htm">LibraryEffect</a></span> effect, and has all the code
+needed to be able to use the shader library from within the Gamebryo art tools.
+The code that provides the shader library functionality is described in this
+section. The associated project includes configurations for the <span class=
+"NDLSystemFont">ShaderLibrary</span> to be utilized as either a static library
+or as a DLL.</p>
+
+<p>There are a few files that are required when creating a shader library. Such
+files include:</p>
+
+<h2>ShaderLibraryLibType.h</h2>
+
+<p>This file simply defines the <span class=
+"NDLSystemFont">SHADERLIBRARYLIB_ENTRY</span> define which allows for proper
+linkage for all configurations. Note that the name is specific to this library
+- you will want to adjust the define accordingly when developing your own
+shader libraries.</p>
+
+<h2>ShaderLibraryLib</h2>
+
+<p>This file can be considered the public interface to the <span class=
+"NDLSystemFont">ShaderLibrary</span>.</p>
+
+<p>The implementation of <span class="NDLSystemFont">DLLMain</span> is included
+in this file. Nothing important is done in this function, it is just included
+to debug when the library gets attached and detached from a process.</p>
+
+<p>The interface that <span class=
+"NDLSystemFont">NiShaderFactory::LoadAndRegisterShaderLibrary</span> uses to
+load and register shader libraries in defined in this file as well. The
+function <span class="NDLSystemFont">LoadShaderLibrary</span> is quite simple.
+It simply creates an instance of the <span class=
+"NDLSystemFont">ShaderLibrary</span> class, sets its renderer pointer to the
+given one and returns the instance.</p>
+
+<h2>ShaderLibraryLibSDM</h2>
+
+<p>This file implements the static data management for the shader library. The
+header file uses the <span class="NDLSystemFont">NiDeclareSDM</span> macro to
+create the <span class="NDLSystemFont">ShaderLibraryLibSDM</span> class. The
+source file provides the <span class="NDLSystemFont">Init</span> and
+<span class="NDLSystemFont">Shutdown</span> functions. The <span class=
+"NDLSystemFont">Init</span> and <span class="NDLSystemFont">Shutdown</span>
+functions currently register and unregister the library creation callback for
+the ShaderLibrary.</p>
+
+<p>For more information on the static data management system, please refer to
+<a href="../../Reference/NiSystem/NiStaticDataManager.htm"><span class=
+"NDLSystemFont">NiStaticDataManager</span></a>.</p>
+
+<h2>ShaderLibrary</h2>
+
+<p>This class is the main component of the <span class=
+"NDLSystemFont">ShaderLibrary</span> shader library, besides the shader files.
+The <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DShaderLibrary.htm">NiD3DShaderLibrary</a></span>-derived
+<span class="NDLSystemFont">ShaderLibrary</span> class is defined here. The
+interface to the class is not complex.</p>
+
+<h3>Create</h3>
+
+<p>This function simply creates an instance of the class and returns the
+pointer to it. If a derived library required additional processing, this would
+be the place to perform it.</p>
+
+<h3>Shutdown</h3>
+
+<p>This function calls on the shaders to release their static <a href=
+"../../Reference/NiMain/NiShaderDesc.htm"><span class=
+"NDLSystemFont">NiShaderDesc</span></a> objects before the library shuts
+down.</p>
+
+<h3>GetLibrary</h3>
+
+<p>This function returns NULL, and should never be called.</p>
+
+<h3>GetShader</h3>
+
+<p>This function will create an instance of the requested shader and return it.
+It the name of the shader requested is not one of the shaders the library
+contains, it will return 0.</p>
+
+<h3>GetShaderLibraryDesc</h3>
+
+<p>This function will first check to see if the internal pointer to the
+description already exists. If it does not, then the description is created.
+The pointer to it is then returned. The description is used by the tool-chain
+to determine information about the shader library, including descriptions, a
+list of the shaders it supplies, and version information.</p>
+
+<h2>ShaderLibraryD3D10</h2>
+
+<p>This class is another main component of the <span class=
+"NDLSystemFont">ShaderLibrary</span> shader library on Win32 platforms where
+Direct3D 10 is used. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10ShaderLibrary.htm">NiD3D10ShaderLibrary</a></span>-derived
+<span class="NDLSystemFont">ShaderLibraryD3D10</span> class is defined here.
+The interface for the class is not complex and is equivalent to that of the
+<span class="NDLSystemFont">ShaderLibrary</span> class.</p>
+
+<h2>ShaderLibraryD3D11</h2>
+
+<p>This class is another main component of the <span class=
+"NDLSystemFont">ShaderLibrary</span> shader library on Win32 platforms where
+Direct3D 11 is used. The <span class="NDLSystemFont"><a href=
+"../../Reference/ecrD3D11Renderer/ecr__D3D11ShaderLibrary.htm">ecr::D3D11ShaderLibrary</a></span>-derived
+<span class="NDLSystemFont">ShaderLibraryD3D11</span> class is defined here.
+The interface for the class is not complex and is equivalent to that of the
+<span class="NDLSystemFont">ShaderLibrary</span> class.</p>
+
+<h2>HaloShader</h2>
+
+<p>This class is a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DShader.htm">NiD3DShader</a></span> and
+implements a programmatic halo and toon shader for D3D-based applications.</p>
+
+<h3>HaloShader (Constructor)</h3>
+
+<p>Initializes some member variables to a known state. An <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DRenderStateGroup.htm">NiD3DRenderStateGroup</a></span>
+instance is then grabbed from the pool of render state groups by calling
+<span class=
+"NDLSystemFont">NiD3DRenderStateGroup::GetFreeRenderStateGroup</span>. Depth
+buffering and writing is enabled and lighting is disabled by adding the
+appropriate render states and their values to this group instance.</p>
+
+<h3>Initialize</h3>
+
+<p>The function calls the base class version of the function, <span class=
+"NDLSystemFont">NiD3DShader::Initialize</span>. It then creates the vertex
+shader programs and textures used via calls to <span class=
+"NDLSystemFont">CreateShader</span> and <span class=
+"NDLSystemFont">CreateTextures</span>. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DPass.htm">NiD3DPass</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DTextureStage.htm">NiD3DTextureStage</a></span>
+instances used to achieve the effect are then created by calling <span class=
+"NDLSystemFont">CreateStagesAndPasses</span>.</p>
+
+<h3>SetupGeometry</h3>
+
+<p>If the vertex shader constant map for the shader has already been created,
+the function returns the base class function results by calling <span class=
+"NDLSystemFont">NiD3DShader::SetupGeometry</span> .</p>
+
+<p>If it has not been created, an instance is generated. To set the shader
+constant registers that the vertex shader program expects, the following
+mappings are added to it:</p>
+
+<ul>
+    <li>The pre-defined <span class=
+    "NDLSystemFont">WorldViewProjTranspose</span> is set for registers
+    <span class="NDLSystemFont">c0</span>-<span class=
+    "NDLSystemFont">c3.</span> This is used in the shader to transform the
+    position to screen space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">WorldTranspose</span> is
+    set for registers <span class="NDLSystemFont">c11</span>-<span class=
+    "NDLSystemFont">c14.</span> This is used to transform the position to world
+    space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">InvWorldView</span> is set
+    for registers <span class="NDLSystemFont">c5</span>-<span class=
+    "NDLSystemFont">c8.</span> This is used to transform the normals to perform
+    lighting.</li>
+
+    <li>A constant mapping representing the directional light direction is
+    added as "<span class="NDLSystemFont">Light Direction</span>", and set for
+    register <span class="NDLSystemFont">c4</span> .</li>
+
+    <li>A constant mapping of the value 0.0f, 2.0f, 1.0f, 30.0f is added as
+    "<span class="NDLSystemFont">Constants</span>", and set for register
+    <span class="NDLSystemFont">c9</span>.</li>
+
+    <li>A constant mapping representing the eye position is added as
+    "<span class="NDLSystemFont">Eye</span>", and set for register <span class=
+    "NDLSystemFont">c10</span> .</li>
+
+    <li>A constant mapping representing the color is added as "<span class=
+    "NDLSystemFont">Color</span>", and set for register <span class=
+    "NDLSystemFont">c16</span> .</li>
+
+    <li>A constant mapping representing the scaling factor is added as
+    "<span class="NDLSystemFont">Halo</span> <span class=
+    "NDLSystemFont">Scaling</span> ", and set for register <span class=
+    "NDLSystemFont">c15</span> .</li>
+</ul>
+
+<p>The function then returns the <span class=
+"NDLSystemFont">NiD3DShader::SetupGeometry</span> result.</p>
+
+<h3>UpdatePipeline</h3>
+
+<p>Ensures the correct values are set in the constant for the currently active
+method. For the Halo effect, it also passes a modified version of the current
+time into the shader as the constant "<span class=
+"NDLSystemFont">HaloScaling</span>". The pipeline configuration is changed
+between a toon halo and a basic halo, depending on the value of the per-object
+extra data item "<span class="NDLSystemFont">EnableToon</span>".</p>
+
+<h3>DestroyRendererData</h3>
+
+<p>Calls <span class="NDLSystemFont">DestroyRenderData</span> on the three
+vertex shader program instances held by the class. Then calls the base class
+function to complete the call.</p>
+
+<h3>RecreateRendererData</h3>
+
+<p>Calls <span class="NDLSystemFont">RecreateRenderData</span> on the three
+vertex shader program instances held by the class. Then calls the base class
+function to complete the call.</p>
+
+<h3>CreateStagesAndPasses</h3>
+
+<p>This function precreates the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DTextureStage.htm">NiD3DTextureStage</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DPass.htm">NiD3DPass</a></span> instances
+which are used to accomplish the rendering effect. There is an array of passes,
+one for each potential pass in the effect (base texture and the <span class=
+"NDLSystemFont">HALO</span> or <span class="NDLSystemFont">TOON</span> pass).
+The <span class="NDLSystemFont">PresetHaloStages</span> and <span class=
+"NDLSystemFont">PresetToonStages</span> calls compartmentalize this function to
+make it a bit more understandable when filling in the initial states of these
+stages and passes.</p>
+
+<h3>PresetHaloStages</h3>
+
+<p>This function sets up the texture stage for the base texture pass.</p>
+
+<h3>PresetToonStages</h3>
+
+<p>This function sets up the texture stages for the toon texture pass.</p>
+
+<h3>PresetNormStages</h3>
+
+<p>This function sets up the texture stages for the normal rendering pass used
+in halo rendering.</p>
+
+<h3>CreateShaders</h3>
+
+<p>This function, called from the constructor, loads the appropriate shader
+programs for the operating platform in by calling <span class=
+"NDLSystemFont">NiD3DShaderProgramFactory::CreateVertexShaderFromFile</span>
+with the shader program name for the <span class="NDLSystemFont">Halo</span>
+and <span class="NDLSystemFont">Toon</span> effects.</p>
+
+<h3>CreateTextures</h3>
+
+<p>This function loads the texture used to implement the <span class=
+"NDLSystemFont">HALO</span> (and <span class="NDLSystemFont">TOON</span> )
+effect. It uses the image file <span class="NDLSystemFont">64Shade.bmp</span>
+.</p>
+
+<h3>GetShaderDesc</h3>
+
+<p>Creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span> that is used
+to inform the art tools about the existence and capabilities of this
+shader.</p>
+
+<h3>DestroyShaderDesc</h3>
+
+<p>Destroys the shader's static <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span>.</p>
+
+<h2>AnisoShader</h2>
+
+<p>This class is a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DShader.htm">NiD3DShader</a></span> and
+implements a programmatic aniso shader for D3D-based applications.</p>
+
+<h3>AnisoShader (Constructor)</h3>
+
+<p>Initializes some member variables to a known state. An <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DRenderStateGroup.htm">NiD3DRenderStateGroup</a></span>
+instance is then grabbed from the pool of render state groups by calling
+<span class=
+"NDLSystemFont">NiD3DRenderStateGroup::GetFreeRenderStateGroup</span>. Depth
+buffering and writing is enabled, lighting and alpha blending are disabled by
+adding the appropriate render states and their values to this group
+instance.</p>
+
+<h3>Initialize</h3>
+
+<p>The function calls the base class version of the function, <span class=
+"NDLSystemFont">NiD3DShader::Initialize</span>. It then creates the vertex
+shader and textures used via calls to <span class=
+"NDLSystemFont">CreateShader</span> and <span class=
+"NDLSystemFont">CreateTextures</span>. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DPass.htm">NiD3DPass</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DTextureStage.htm">NiD3DTextureStage</a></span>
+instances used to achieve the effect are then created by calling <span class=
+"NDLSystemFont">CreateStagesAndPasses</span>.</p>
+
+<h3>SetupGeometry</h3>
+
+<p>If the vertex shader constant map for the shader has already been created,
+the function returns the base class function results by calling <span class=
+"NDLSystemFont">NiD3DShader::SetupGeometry</span> .</p>
+
+<p>If it has not been created, an instance is generated. To set the shader
+constant registers that the vertex shader program expects, the following
+mappings are added to it:</p>
+
+<ul>
+    <li>The pre-defined <span class=
+    "NDLSystemFont">WorldViewProjTranspose</span> is set for registers
+    <span class="NDLSystemFont">c0</span>-<span class=
+    "NDLSystemFont">c3.</span> This is used in the shader to transform the
+    position to screen space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">WorldTranspose</span> is
+    set for registers <span class="NDLSystemFont">c11</span>-<span class=
+    "NDLSystemFont">c14.</span> This is used to transform the position to world
+    space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">InvWorldView</span> is set
+    for registers <span class="NDLSystemFont">c5</span>-<span class=
+    "NDLSystemFont">c8.</span> This is used to transform the normals to perform
+    lighting.</li>
+
+    <li>A constant mapping representing the directional light direction is
+    added as "<span class="NDLSystemFont">LightDirection</span>", and set for
+    register <span class="NDLSystemFont">c4</span> .</li>
+
+    <li>A constant mapping of the value 0.0f, 0.5f, 1.0f, -1.0f is added as
+    "<span class="NDLSystemFont">Constants</span>", and set for register
+    <span class="NDLSystemFont">c9</span> .</li>
+
+    <li>A constant mapping representing the eye position is added as
+    "<span class="NDLSystemFont">Eye</span> ", and set for register
+    <span class="NDLSystemFont">c10</span> .</li>
+</ul>
+
+<p>The function then returns the <span class=
+"NDLSystemFont">NiD3DShader::SetupGeometry</span> result.</p>
+
+<h3>UpdatePipeline</h3>
+
+<p>Does nothing as the required pipeline configuration was completed during
+initialization. Since the pipeline is static, there is no need to perform any
+action in this function.</p>
+
+<h3>DestroyRendererData</h3>
+
+<p>Calls <span class="NDLSystemFont">DestroyRenderData</span> on the vertex
+shader program instance held by the class. Then call the base class function to
+complete the call.</p>
+
+<h3>RecreateRendererData</h3>
+
+<p>Calls <span class="NDLSystemFont">RecreateRenderData</span> on the vertex
+shader program instance held by the class. Then call the base class function to
+complete the call.</p>
+
+<h3>CreateStagesAndPasses</h3>
+
+<p>This function precreates the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DTextureStage.htm">NiD3DTextureStage</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiD3DPass.htm">NiD3DPass</a></span> instances
+which are used to accomplish the rendering effect. There is a single pass in
+this case with two texture stages, The <span class=
+"NDLSystemFont">PresetAnisoStages</span> is used compartmentalize this function
+to make it a bit more understandable when filling in the initial states of
+these stages and passes.</p>
+
+<h3>PresetAnisoStages</h3>
+
+<p>This function sets up the texture stages for the effect.</p>
+
+<h3>CreateShaders</h3>
+
+<p>This function, called from the constructor, loads the appropriate shader
+program for the operating platform in by calling <span class=
+"NDLSystemFont">NiD3DShaderProgramFactory::CreateVertexShaderFromFile</span>.</p>
+
+<h3>CreateTextures</h3>
+
+<p>This function loads the texture used to implement the <span class=
+"NDLSystemFont">ANISO</span> effect. It uses the image file <span class=
+"NDLSystemFont">Aniso2.tga</span>.</p>
+
+<h3>GetShaderDesc</h3>
+
+<p>Creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span> that is used
+to inform the art tools about the existence and capabilities of this
+shader.</p>
+
+<h3>DestroyShaderDesc</h3>
+
+<p>Destroys the shader's static <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span>.</p>
+
+<h2>HaloD3D10Shader</h2>
+
+<p>This class is a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Shader.htm">NiD3D10Shader</a></span>
+and implements a programmatic halo and toon shader for D3D10-based
+applications. It is comparable to the HaloShader class and has a comparable
+interface.</p>
+
+<h3>HaloD3D10Shader (Constructor)</h3>
+
+<p>Initializes some member variables to a known state. An <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10RenderStateGroup.htm">NiD3D10RenderStateGroup</a></span>
+instance is then allocated if one does not exist. Depth buffering and writing
+is enabled by adding the appropriate render states and their values to this
+group instance.</p>
+
+<h3>Initialize()</h3>
+
+<p>The function calls the base class version of the function, <span class=
+"NDLSystemFont">NiD3D10Shader::Initialize</span>. It then creates the vertex
+shader programs, pixel shader programs, and textures used via calls to
+<span class="NDLSystemFont">CreateShaders()</span> and <span class=
+"NDLSystemFont">CreateTextures()</span>. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Pass.htm">NiD3D10Pass</a></span>
+instances used to achieve the effect are then created by calling <span class=
+"NDLSystemFont">CreateStagesAndPasses()</span>.</p>
+
+<h3>SetupGeometry()</h3>
+
+<p>If the vertex shader constant map for the shader has already been created,
+the function returns the base class function results by calling <span class=
+"NDLSystemFont">NiD3D10Shader::SetupGeometry()</span> .</p>
+
+<p>If it has not been created, an instance is generated. To set the shader
+constant registers that the vertex shader program expects, the following
+mappings are added to it:</p>
+
+<ul>
+    <li>The pre-defined <span class="NDLSystemFont">WorldViewProj</span> matrix
+    is used in the shader to transform the position to screen space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">World</span> matrix is used
+    to transform the position to world space.</li>
+
+    <li>The pre-defined <span class=
+    "NDLSystemFont">InvWorldViewTranspose</span> matrix is used to transform
+    the normals to perform lighting.</li>
+
+    <li>A constant mapping representing the directional light direction is
+    added as "<span class="NDLSystemFont">LightDirection</span>".</li>
+
+    <li>A constant mapping representing the eye position is added as
+    "<span class="NDLSystemFont">Eye</span>".</li>
+
+    <li>A constant mapping representing the color is added as "<span class=
+    "NDLSystemFont">Color</span>".</li>
+
+    <li>A constant mapping representing the scaling factor is added as
+    "<span class="NDLSystemFont">HaloScaling</span>".</li>
+
+    <li>A constant mapping representing the time is added as "<span class=
+    "NDLSystemFont">time</span>".</li>
+</ul>
+
+<p>The function then returns the <span class=
+"NDLSystemFont">NiD3D10Shader::SetupGeometry()</span> result.</p>
+
+<h3>UpdatePipeline()</h3>
+
+<p>Ensures the correct values are set in the constant for the currently active
+method. For the Halo effect, it also passes a modified version of the current
+time into the shader as the constant "<span class=
+"NDLSystemFont">HaloScaling</span>". The pipeline configuration is changed
+between a "toon" halo and a basic halo, depending on the value of the
+per-object extra data item "<span class="NDLSystemFont">EnableToon</span>".</p>
+
+<h3>DestroyRendererData()</h3>
+
+<p>Calls <span class="NDLSystemFont">DestroyRenderData()</span> on the three
+vertex shader program instances held by the class. Then calls the base class
+function to complete the call.</p>
+
+<h3>RecreateRendererData()</h3>
+
+<p>Calls <span class="NDLSystemFont">RecreateRenderData()</span> on the three
+vertex shader program instances held by the class. Then calls the base class
+function to complete the call.</p>
+
+<h3>CreateStagesAndPasses()</h3>
+
+<p>This function precreates the <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Pass.htm">NiD3D10Pass</a></span>
+instances which are used to accomplish the rendering effect. There is an array
+of passes, one for each potential pass in the effect (base texture and the
+<span class="NDLSystemFont">HALO</span> or <span class=
+"NDLSystemFont">TOON</span> pass). The <span class=
+"NDLSystemFont">PresetHaloPass()</span>, <span class=
+"NDLSystemFont">PresetNormPass()</span>, and <span class=
+"NDLSystemFont">PresetToonPass()</span> calls compartmentalize this function to
+make it more understandable when filling in the initial states of these
+passes.</p>
+
+<h3>PresetHaloPass()</h3>
+
+<p>This function sets up the base texture pass.</p>
+
+<h3>PresetToonPass()</h3>
+
+<p>This function sets up the toon texture pass.</p>
+
+<h3>PresetNormPass()</h3>
+
+<p>This function sets up the normal rendering pass used in halo rendering.</p>
+
+<h3>CreateShaders()</h3>
+
+<p>This function, called from the constructor, loads the appropriate shader
+programs for the operating platform in by calling <span class=
+"NDLSystemFont">NiD3D10ShaderProgramFactory::CreateVertexShaderFromFile</span>
+with the shader program name for the <span class="NDLSystemFont">Halo</span>
+and <span class="NDLSystemFont">Toon</span> effects.</p>
+
+<h3>CreateTextures()</h3>
+
+<p>This function loads the texture used to implement the <span class=
+"NDLSystemFont">HALO</span> (and <span class="NDLSystemFont">TOON</span> )
+effect. It uses the image file <span class=
+"NDLSystemFont">64Shade.bmp</span>.</p>
+
+<h3>GetShaderDesc()</h3>
+
+<p>Creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span> that is used
+to inform the art tools about the existence and capabilities of this
+shader.</p>
+
+<h3>DestroyShaderDesc()</h3>
+
+<p>Destroys the shader's static <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span>.</p>
+
+<h2>AnisoD3D10Shader</h2>
+
+<p>This class is a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Shader.htm">NiD3D10Shader</a></span>
+and implements a programmatic aniso shader for D3D10-based applications. It is
+comparable to the <span class="NDLSystemFont">AnisoShader</span> class and has
+a comparable interface.</p>
+
+<h3>AnisoD3D10Shader (Constructor)</h3>
+
+<p>Initializes some member variables to a known state. An <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10RenderStateGroup.htm">NiD3D10RenderStateGroup</a></span>
+instance is then allocated if one does not exist. Depth buffering and writing
+is enabled by adding the appropriate render states and their values to this
+group instance.</p>
+
+<h3>Initialize()</h3>
+
+<p>The function calls the base class version of the function, <span class=
+"NDLSystemFont">NiD3D10Shader::Initialize()</span>. It then creates the shader
+used via calls to <span class="NDLSystemFont">CreateShaders()</span>. The
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Pass.htm">NiD3D10Pass</a></span>
+instance used to achieve the effect is then created by calling <span class=
+"NDLSystemFont">CreateStagesAndPasses()</span>.</p>
+
+<h3>SetupGeometry()</h3>
+
+<p>If the vertex shader constant map for the shader has already been created,
+the function returns the base class function results by calling <span class=
+"NDLSystemFont">NiD3D10Shader::SetupGeometry()</span> .</p>
+
+<p>If it has not been created, an instance is generated. To set the shader
+constant registers that the vertex shader program expects, the following
+mappings are added to it:</p>
+
+<ul>
+    <li>The pre-defined <span class="NDLSystemFont">WorldViewProj</span> matrix
+    is used in the shader to transform the position to screen space.</li>
+
+    <li>The pre-defined <span class="NDLSystemFont">World</span> matrix is used
+    to transform the position to world space.</li>
+
+    <li>The pre-defined <span class=
+    "NDLSystemFont">InvWorldViewTranspose</span> matrix is used to transform
+    the normals to perform lighting.</li>
+
+    <li>A constant mapping representing the directional light direction is
+    added as "<span class="NDLSystemFont">LightDirection</span>".</li>
+
+    <li>A constant mapping representing the eye position is added as
+    "<span class="NDLSystemFont">Eye</span>".</li>
+</ul>
+
+<p>The function then returns the <span class=
+"NDLSystemFont">NiD3D10Shader::SetupGeometry()</span> result.</p>
+
+<h3>UpdatePipeline()</h3>
+
+<p>Does nothing as the required pipeline configuration was completed during
+initialization. Since the pipeline is static, there is no need to perform any
+action in this function.</p>
+
+<h3>DestroyRendererData()</h3>
+
+<p>Calls <span class="NDLSystemFont">DestroyRenderData()</span> on the vertex
+shader program instance held by the class. Then call the base class function to
+complete the call.</p>
+
+<h3>RecreateRendererData()</h3>
+
+<p>Calls <span class="NDLSystemFont">RecreateRenderData()</span> on the vertex
+shader program instance held by the class. Then call the base class function to
+complete the call.</p>
+
+<h3>CreateStagesAndPasses()</h3>
+
+<p>This function precreates the <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10Renderer/NiD3D10Pass.htm">NiD3D10Pass</a></span>
+instance which is used to accomplish the rendering effect. There is a single
+pass in this case with two texture stages.</p>
+
+<h3>CreateShaders()</h3>
+
+<p>This function, called from the constructor, loads the appropriate shader
+program for the operating platform in by calling <span class=
+"NDLSystemFont">NiD3D10ShaderProgramFactory::CreateVertexShaderFromFile()</span>.</p>
+
+<h3>GetShaderDesc()</h3>
+
+<p>Creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span> that is used
+to inform the art tools about the existence and capabilities of this
+shader.</p>
+
+<h3>DestroyShaderDesc()</h3>
+
+<p>Destroys the shader's static <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span>.</p>
+
+<p>Refer to <a href="ShaderSample_Platform_Considerations.htm">Platform
+Considerations</a> for details on platform-specific issues.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

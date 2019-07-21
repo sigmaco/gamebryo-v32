@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTArray</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<p class="NDLRefHeadClassTitle">NiTArray</p>
+
+<p class="NDLRefParentage">: public <a href="../../Reference/NiSystem/NiMemObject.htm"><span>NiMemObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiTArray.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is an array class that is templated. The 
+ templated type <span class="NDLSystemFont">T</span> has the following restrictions:</p>
+
+<ul>
+	
+	<li>It must have a &quot;0&quot; 
+ element (i.e. <span class="NDLSystemFont">T var; var = 0;</span> is supported).</li>
+	
+	<li>It must have a constructor, 
+ and that constructor must be able to create the &quot;0&quot; element 
+ (i.e. <span class="NDLSystemFont">T&nbsp;var(0);</span> must 
+ be a valid declaration).</li>
+	
+	<li>It must have a valid 
+ copy constructor.</li>
+	
+	<li>The destructor must 
+ be able to completely destroy the element without additional input.</li>
+	
+	<li>The <span class="NDLSystemFont">operator==</span>, 
+ <span class="NDLSystemFont">operator!=</span>, and assignment operators 
+ must work correctly.</li>
+</ul>
+
+<p>There is also an additional template argument, <span 
+ class="NDLSystemFont">TAlloc</span>. This type must declare static functions 
+ matching the following prototypes:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">static 
+ T* Allocate(unsigned int uiNumElements)</span></li>
+	
+	<li><span class="NDLSystemFont">static 
+ void Deallocate(T* pArray)</span></li>
+</ul>
+
+<p>Note that while the <span class="NDLSystemFont">NiTArray</span> 
+ interface uses <span class="NDLSystemFont">unsigned int</span>s, its internal 
+ data members are <span class="NDLSystemFont">unsigned short</span>s. This 
+ was so the frequently-used <span class="NDLSystemFont">NiTArray</span> class 
+ could be as small as practical. Should a user wish to have the data members 
+ be <span class="NDLSystemFont">unsigned int</span>s, so it can reference 
+ more than 65535 entries, <span class="NDLSystemFont"><a HREF="NiTLargeArray.htm">NiTLargeArray</a></span> 
+ should be used instead.</p>
+
+<p>End users should not use <span class="NDLSystemFont">NiTArray</span> 
+ instances directly. Instead <a HREF="NiTObjectArray.htm"><span class="NDLSystemFont">NiTObjectArray</span></a> 
+ or <a HREF="NiTPrimitiveArray.htm"><span class="NDLSystemFont">NiTPrimitiveArray</span></a> 
+ should be used.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiTArray(unsigned int uiMaxSize = 0, unsigned 
+ int uiGrowBy = 1)</p>
+
+<p class="NDLRefMemberDescription">This constructor is the default constructor. 
+ If specified, the <span class="NDLSystemFont">uiMaxSize</span> 
+ argument sets the initial size and allocated storage size of the array 
+ (in units of elements). If specified, the <span class="NDLSystemFont">uiGrowBy</span> 
+ argument specifies the number of new elements that should be allocated 
+ each time the array must grow.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSize() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the number of contiguous 
+ elements over which an application must iterate in order to encounter 
+ all non-zero elements. This number is greater than or equal to the number 
+ of non-zero elements, which is the effective size. See the &quot;Notes&quot; 
+ below for a discussion of the three types of array &quot;size&quot;.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetEffectiveSize() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the number of non-zero 
+ elements in the array. Note: since non-zero elements are not necessarily 
+ contiguous, applications must not use this number as a maximum iteration 
+ index or risk missing non-zero elements. See the &quot;Notes&quot; below 
+ for a discussion of the three types of array &quot;size&quot;.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetAllocatedSize() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the allocated size 
+ of the array. This size is the maximum number of elements the array can 
+ hold without being resized. See the &quot;Notes&quot; below for a discussion 
+ of the three types of array &quot;size&quot;.</p>
+
+<p class="NDLRefMemberFunction">void SetSize(unsigned int uiSize)</p>
+
+<p class="NDLRefMemberDescription">Resizes the array's allocated storage 
+ size to the given size. If the new size is smaller than the old size, 
+ then each of the array elements in the index range (size <span class="NDLSystemFont">&gt; index </span><span class="NDLSystemFont">&ge; </span><span class="NDLSystemFont">uiSize</span>) will be set 
+ to zero (to ensure that smart pointer arrays do not leak references). 
+ Also, the effective size will be reduced to reflect any loss of nonzero 
+ elements. </p>
+
+<p class="NDLRefMemberFunction">unsigned int GetGrowBy() const</p>
+
+<p class="NDLRefMemberFunction">void SetGrowBy(unsigned int uiGrowBy) </p>
+
+<p class="NDLRefMemberDescription">Returns and sets the number of elements 
+ added to the array when it becomes full.</p>
+
+<p class="NDLRefMemberFunction">unsigned int Add(const T&amp; element)</p>
+
+<p class="NDLRefMemberDescription">Adds the new element to the end of the 
+ array (index of <span class="NDLSystemFont">Size-1</span>), 
+ incrementing the size of the array by one element. The effective size 
+ is also increased if <span class="NDLSystemFont">element</span> 
+ is nonzero. Returns the index where the entry was added.</p>
+
+<p class="NDLRefMemberFunction">unsigned int AddFirstEmpty(const T&amp; element)</p>
+
+<p class="NDLRefMemberDescription">Adds the new element to the array by setting 
+ it as the value of the lowest-indexed zero-valued element. Essentially, 
+ it adds the item in the first &quot;empty&quot; slot in the array. If 
+ no empty slots are found in the array, the call is equivalent to <span 
+ class="NDLSystemFont">Add</span>. The effective size 
+ is increased if <span class="NDLSystemFont">element</span> 
+ is nonzero. Returns the index where the entry was added.</p>
+
+<p class="NDLRefMemberFunction">T RemoveAt(unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberDescription">Sets the indexed element to zero, decrementing 
+ the effective size if the element at the given index was nonzero. Returns 
+ the previous value of the array element.</p>
+
+<p class="NDLRefMemberFunction">T RemoveAtAndFill(unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberDescription">This convenience function removes the 
+ element at the specified index, replacing it with the element at the end 
+ of the array and adjusting the array's size. If used consistently (as 
+ is done by <span class="NDLSystemFont">NiCollisionGroup</span>), 
+ this function enables the application to assume that the array is packed, 
+ eliminating the need to test <span class="NDLSystemFont">GetAt</span> 
+ return values for validity and increasing performance.</p>
+
+<p class="NDLRefMemberFunction">T RemoveEnd()</p>
+
+<p class="NDLRefMemberDescription">Sets the element at index (<span class="NDLSystemFont">Size-1</span>) to zero, decrementing 
+ the size of the array (i.e. repeated calls to this function will remove 
+ all elements in reverse indexed order. Effective size is also decremented 
+ if the element at the given index was nonzero. Returns the previous value 
+ of the array element.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAll()</p>
+
+<p class="NDLRefMemberDescription">Quickly removes all elements. Does not 
+ call the destructor for each element but does set each element to zero, 
+ so this function is safe to call if the array includes nonzero smart pointers.</p>
+
+<p class="NDLRefMemberFunction">unsigned int Remove(const T&amp; element)</p>
+
+<p class="NDLRefMemberDescription">Remove the first found occurrence of the 
+ specified element. If the element is not <span class="NDLSystemFont">T(0)</span> 
+ and is in the array, the array slot is set to <span class="NDLSystemFont">T(0)</span> 
+ and its index is returned. If the element is <span class="NDLSystemFont">T(0)</span> 
+ or not in the array, the maximum unsigned int is returned <span class="NDLSystemFont">((unsigned 
+ int)~0)</span>. NOTE: If the element occurs multiple times in the array, 
+ only the first occurrence is removed. </p>
+
+<p class="NDLRefMemberFunction">T* GetBase()</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the entire array. 
+ Note that if the array is resized after this call is made, the pointer 
+ will no longer point to the base of the array.</p>
+
+<p class="NDLRefMemberFunction">const T&amp; GetAt(unsigned int uiIndex) 
+ const</p>
+
+<p class="NDLRefMemberDescription">Returns a reference to the object at the 
+ given index.&nbsp;<em>The index is assumed to be in range for efficiency</em>.</p>
+
+<p class="NDLRefMemberFunction">void SetAt(unsigned int uiIndex, const T&amp; 
+ element)</p>
+
+<p class="NDLRefMemberDescription">Sets the value of the element at the given 
+ index to the given element. <em>The index is assumed to be in range for 
+ efficiency</em>.</p>
+
+<p class="NDLRefMemberFunction">unsigned int SetAtGrow(unsigned int uiIndex, 
+ const T&amp; element)</p>
+
+<p class="NDLRefMemberDescription">Sets the value of the element at the given 
+ index to the given <span class="NDLSystemFont">element</span>, 
+ causing the array to be resized if the index is out of range. Returns 
+ uiIndex.</p>
+
+<p class="NDLRefMemberFunction">void Compact()</p>
+
+<p class="NDLRefMemberDescription">Removes all zero-valued elements, compressing 
+ the non-zero elements so that size equals effective size. It then resizes 
+ the array storage to downsize the amount of memory to perfectly fit the 
+ new array. </p>
+
+<p class="NDLRefMemberFunction">void UpdateSize()</p>
+
+<p class="NDLRefMemberDescription">Scans from index <span class="NDLSystemFont">Size-1</span> down until the 
+ first nonzero element is reached, decrementing the size value as it goes. 
+ Basically reclaims any block of zeroed elements at the end of the array. 
+ Does not resize the actual storage in the array.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Size, Effective Size and Storage Size</p>
+
+<p>Arrays have three notions of size. Effective size is 
+ the number of nonzero elements currently contained in the array. Size 
+ is the range of indices that are assumed to be active in the array. Any 
+ iteration over the entire array should iterate from index <span class="NDLSystemFont">0</span> 
+ to index <span class="NDLSystemFont">Size-1. </span>Finally, 
+ the third notion of size is the length of the allocated array storage 
+ in memory. This quantity is the maximum number of elements the array can 
+ hold without being resized.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

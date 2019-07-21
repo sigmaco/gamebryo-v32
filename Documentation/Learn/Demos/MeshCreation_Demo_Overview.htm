@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MeshCreation Demo Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Mesh Creation Demo Overview</h1>
+
+<p>This application main object is <span class=
+"NDLSystemFont">MeshCreation</span>. This object inherits from
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span>.
+This object creates all data for the demo. It stores an array of
+<span class="NDLSystemFont">WaterInstance</span> objects. A
+<span class="NDLSystemFont">WaterInstance</span> is a mesh plane
+of a given size determined by a compile time constant. This
+objects adds all the generated meshes to the scene.</p>
+
+<h2>MeshCreation::CreateScene()</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> is a virtual
+function declared in <span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/NiSample.htm">NiSample</a></span>.
+<span class="NDLSystemFont">MeshCreation</span> overrides this
+function to perform its data creation. This function calls all the
+internal functions to generate each of the demo's components. The
+<span class="NDLSystemFont">HeightField</span> is the first
+component to be generated. Most of the other components depend on
+this component. All the materials used in the demo are extracted
+from the "MeshCreation.nif" file.</p>
+
+<h2>MeshCreation::CreateUIElements()</h2>
+
+<p>This is a virtual function declared in the base class
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/NiSample.htm">NiSample</a></span>.
+<span class="NDLSystemFont">MeshCreation</span> creates a number
+of custom UI elements for controlling the properties of the
+water.</p>
+
+<h2>MeshCreation::CreateTerrainMesh()</h2>
+
+<p>This function generates the terrain mesh. This assumes the
+<span class="NDLSystemFont">HeightField</span> object has been
+initialized. The mesh is generated as a single mesh. The
+parameters for how the mesh is generated is given by static
+constants. These static constants control the scale, position,
+height and tessellation of the terrain. The mesh is generated
+with positions, normals, two texture coordinate sets, binormals
+and tangents. The material that is used is extracted from the
+parent scene file under the node named "Initial Terrain
+Material".</p>
+
+<h2>MeshCreation::CreateWaterInstances()</h2>
+
+<p>A <span class="NDLSystemFont">WaterInstance</span> consists of
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> object for
+the renderable mesh data and the <span class=
+"NDLSystemFont">NiWaterModifier</span> object for the modifier
+used for the water simulation. The <span class=
+"NDLSystemFont">WaterInstance</span> is initialized with the
+minimum and maximum positions in the 'X' and 'Y' dimensions. The
+dimensions of the <span class=
+"NDLSystemFont">WaterInstance</span> are created from static
+constant values dictating the size of the each instance. The mesh
+is tessellated using a static constant for the maximum triangle
+size. After the mesh is generated the <span class=
+"NDLSystemFont">NiWaterModifier</span> is attached.</p>
+
+<p>A <span class="NDLSystemFont">NiWaterModifier</span> contains
+a <span class="NDLSystemFont">NiWaterKernel</span> that does all
+the water simulation using <span class="NDLSystemFont"><a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a></span>,
+so it takes advantage of the multiprocessor support. This
+modifier takes in positions and depth streams. It does some
+processing and fills in data to the output color channel and the
+output position channel. The alpha component for the color
+channel corresponds to the depth. The closer the water depth is
+to zero the lower the alpha value. Also the depth controls the
+amount of green that is used. The more shallow the water the more
+green it becomes. The last thing the depth contributes is the
+amount in which the wave influences the water. The more shallow
+the water the less the wave alters the height of the vertex. The
+mesh modifier also outputs a stream for the water particle's
+spawn positions. It places the depth value into the 'Z' channel
+for the position. The <span class=
+"NDLSystemFont">WaterParticleEmitter</span> reads the values in
+the data stream and uses a random number to pick a position. It
+uses the stored depth to calculate the radius of the particle. If
+the radius is smaller then the constant minimum size the particle
+will not be emitted. If the particle meets this requirement it
+will then be offset by the same value for the radius plus the
+water level. This makes sure the particle does not penetrate the
+water surface.</p>
+
+<h2>MeshCreation::CreateWaterParticleSystem()</h2>
+
+<p>This function creates a particle system and a <span class=
+"NDLSystemFont">WaterParticleEmitter</span> object. The
+<span class="NDLSystemFont">WaterParticleEmitter</span> is
+similar to a <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSMeshEmitter.htm">NiPSMeshEmitter</a></span>,
+in that it spawns a particle from a random point on the target
+mesh. The <span class="NDLSystemFont">WaterParticleEmitter</span>
+spawns a particle from a random point supplied by the data stream
+named "ParticlePosition". The <span class=
+"NDLSystemFont">NiWaterKernel</span> fills in the position where
+to spawn the particles.</p>
+
+<h2>MeshCreation::CreateSkyMesh()</h2>
+
+<p>This function generates the sky mesh. It begins with a pyramid
+and subdivides as it unitizes the positions to force it into a
+hemisphere. The material is extracted from the "Initial Sky
+Material" mesh that is in the parent scene.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

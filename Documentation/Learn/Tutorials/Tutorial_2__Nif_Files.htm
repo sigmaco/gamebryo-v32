@@ -1,0 +1,313 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 2: Nif Files</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 2: Nif Files</h1>
+
+<p>In this tutorial, we cover loading a Nif file from disk using Gamebryo's <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> class. During our
+coverage of this topic, the virtues of having platform specific Nif files and assets separated into
+platform-specific folders is pointed out. Simple scene graph traversal is also touched on, as well
+as an introduction to various Gamebryo classes whenever they arise in the code.</p>
+
+<h2>The Demo</h2>
+
+<p>In this demo, our scene is loaded from the file "WORLD.NIF". After the scene is loaded into
+memory, the application traverses the scene graph in order to find an in-scene camera. Once the
+application finds the in-scene camera, it replaces the default <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span> camera
+with the one it found. Afterwards, the application relies entirely on <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span>'s
+default <span class="NDLSystemFont">OnIdle</span> call for handling rendering and such. When the
+application runs, a village with a remote control in the lower-center portion of the screen will be
+seen.</p>
+
+<p>Note that this sample switched from derivation from <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span> to
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span>. <span class=
+"NDLSystemFont"><a href="../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span>
+is an <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span>-derived
+class that adds a standardized user-interface, navigation, and simplified shader system setup.</p>
+
+<p>This particular tutorial does not take advantage of the shader system setup routines, and
+therefore the ground will appear incorrect. Depending on your platform, this may produce debug
+warnings. We'll solve this problem in the next tutorial, <a href="Tutorial_3__Shaders.htm">Core
+Runtime Tutorial 3: Shaders</a>, which will introduce how to bring shaders into Gamebryo.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display the following rendering. The following screen capture was taken
+from the <span class="NDLSystemFont">Win32</span> platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial2.jpg" width="515" height="400" alt=
+    "Loading and rendering a NIF file (57K)">
+
+    <p class="NDLFigureCaption">Loading and rendering a NIF file</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>In <a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>-based apps, we use <span class=
+"NDLSystemFont">SetMediaPath</span> to specify the data folder that contains all of the relevant
+media files.</p>
+<pre>
+NIF_Files::NIF_Files() : NiSample("Tutorial: Loading And Rendering a NIF File",
+    DEFAULT_WIDTH, DEFAULT_HEIGHT, true)
+{
+#if defined(_XENON)
+    SetMediaPath("D:/DATA/");
+#elif defined (WIN32)
+    SetMediaPath("../../../DATA/");   
+#elif defined (_PS3)
+    SetMediaPath("../../../../Data/");   
+#endif
+    m_bUseNavSystem = false;
+}
+</pre>
+
+<p>Now that we have set our media path, we can create the scene and load our assets in a platform
+independent manner. In this tutorial, we override the <span class=
+"NDLSystemFont">NiApplication::CreateScene</span> method. Let's now take a look at the code for the
+<span class="NDLSystemFont">CreateScene</span> function.</p>
+<pre>
+bool NIF_Files::CreateScene()
+{
+</pre>
+
+<p>It is often a good idea to add an alpha accumulator to your renderer. This way, if your scene
+happens to have alpha textured objects, they will get drawn correctly. Adding an alpha accumulator
+to a renderer is easy and can be done with the following two lines.</p>
+<pre>
+NiAlphaAccumulator* pkAccum = NiNew NiAlphaAccumulator;
+m_spRenderer-&gt;SetSorter(pkAccum); 
+</pre>
+
+<p>The <a href="../../Reference/NiMain/NiStream.htm"><span class=
+"NDLSystemFont">NiStream</span></a> class will become a familiar class when you find that you need
+to load scene graphs that have been exported by one of Gamebryo's exporter plug-ins or as you want
+to load scene graphs that have been previously saved out (using <a href=
+"../../Reference/NiMain/NiStream.htm"><span class="NDLSystemFont">NiStream</span></a>) by your own
+applications. In the lines below, we declare an <a href=
+"../../Reference/NiMain/NiStream.htm"><span class="NDLSystemFont">NiStream</span></a> variable, and
+call its <span class="NDLSystemFont">Load</span> function to load our desired Nif file. We use
+<span class="NDLSystemFont">NiApplication::ConvertMediaFilename</span>, which uses the path
+specified in <span class="NDLSystemFont">SetMediaPath</span> to generate the complete path to the
+specified asset.</p>
+<pre>
+NiStream kStream;
+bool bSuccess = kStream.Load(
+     NiApplication::ConvertMediaFilename("WORLD.NIF"));
+</pre>
+
+<p>As you see above, <span class="NDLSystemFont">kStream::Load</span> returns a boolean to indicate
+success or failure of loading the file. Error checking is always a good idea. In the following
+code, if an error is detected, we use Gamebryo's <a href=
+"../../Reference/NiSystem/Information_Log_and_System_Output_Routines.htm"><span class=
+"NDLSystemFont">NiMessageBox</span></a> to give feedback that an error occurred before failing out
+of <span class="NDLSystemFont">CreateScene</span>.</p>
+<pre>
+if (!bSuccess)
+{
+    NiMessageBox("WORLD.NIF file could not be loaded!", "NIF Error");
+    return false;
+}
+</pre>
+
+<p>Once the file has been loaded into the stream, the stream will contain one or more "top-level"
+objects. These objects could be <a href="../../Reference/NiMain/NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a> objects, <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexture.htm">NiTexture</a></span> objects, or any of many other Gamebryo
+objects. Both the Max and Maya exporters always place the root node of the scene graph as the first
+element in the Nif file. We can exploit this fact by assigning the first object in the stream to
+<span class="NDLSystemFont">m_spScene</span>. Because we overrode the <span class=
+"NDLSystemFont">CreateScene</span> function, <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>'s member <span class="NDLSystemFont">m_spScene</span> will
+not have previously been assigned. However, it should be noted that had it been previously
+assigned, say to a newly allocated <a href="../../Reference/NiMain/NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a>, the following assignment would not orphan the allocated node.
+The reason is that <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>'s <span class="NDLSystemFont">m_spScene</span> is a
+reference counting <span class="NDLSystemFont"><a href=
+"../../Programmer/Object_Systems/Reference_Counting_and_Smart_Pointers.htm">NiSmartPointer</a></span>
+(hence the "<span class="NDLSystemFont">sp</span>" <span class="NDLSystemFont"><a href=
+"../../Programmer/General_Topics/Naming_Conventions.htm">notation</a></span> in <span class=
+"NDLSystemFont">m_spScene</span>). After the assignment, we assert that our assumption (that the
+first object was the root node of the scene) was valid. We use <span class=
+"NDLSystemFont">NiIsKindOf</span> (See the docs on <a href=
+"../../Programmer/Object_Systems/Run_Time_Type_Information.htm">Run-Time Type Information</a> for
+more info on this macro) to determine if <span class="NDLSystemFont">m_spScene</span> is really a
+type of <a href="../../Reference/NiMain/NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a>.</p>
+<pre>
+m_spScene = (NiNode*) kStream.GetObjectAt(0);
+NIASSERT(NiIsKindOf(NiNode, m_spScene));
+</pre>
+
+<p>Because we have exported the scene and we know what types of objects are in our scene, we can
+write code to look for those specific objects. In the next few lines of code, we call a function to
+find a camera in the scene graph. Once found, the function also assigns the camera to our
+application's camera smart pointer. This is useful because now we can use a camera that an artist
+has set up and do not have to figure out the parameters for setting one up programmatically.</p>
+<pre>
+if (!FindSceneCamera())
+{
+    NiMessageBox("The NIF file has no camera!", "Camera Error");
+    return false;
+}
+</pre>
+
+<p>That is it for <span class="NDLSystemFont">CreateScene</span>. If we have reached this far, we
+can simply return success!</p>
+<pre>
+    return bSuccess;
+}
+</pre>
+
+<p>Now let's take a look at our <span class="NDLSystemFont">FindSceneCamera</span>. As can be seen
+in the code below, <span class="NDLSystemFont">FindSceneCamera</span> simply assigns the <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a>'s <span class="NDLSystemFont">m_spCamera</span> to the
+result of our recursive function <span class="NDLSystemFont">FindCamera</span> (described
+later).</p>
+<pre>
+bool NIF_Files::FindSceneCamera()
+{
+    if (m_spScene)
+    {
+        m_spCamera = FindCamera(m_spScene);
+    }
+    return (m_spCamera != NULL);
+}
+</pre>
+
+<p>Now let's turn our attention to the recursive function <span class=
+"NDLSystemFont">FindCamera</span> which is listed after this section. The <span class=
+"NDLSystemFont">FindCamera</span> function takes an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> as its sole parameter. As we saw in
+the <span class="NDLSystemFont">FindSceneCamera</span> code, <span class=
+"NDLSystemFont">m_spScene</span> is initially sent as the parameter to <span class=
+"NDLSystemFont">FindCamera</span>. It can do this because <span class=
+"NDLSystemFont">m_spScene</span> is an <a href="../../Reference/NiMain/NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a> which means that it is also an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>. The first
+thing that <span class="NDLSystemFont">FindCamera</span> does is to check whether or not the object
+passed in is an <a href="../../Reference/NiMain/NiCamera.htm"><span class=
+"NDLSystemFont">NiCamera</span></a> or not. If it is, we have found our camera and are finished. We
+simply return the camera. If the object, however, is not an <a href=
+"../../Reference/NiMain/NiCamera.htm"><span class="NDLSystemFont">NiCamera</span></a>, the code
+then checks to see if the object is an <a href="../../Reference/NiMain/NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a>. If it is an <a href=
+"../../Reference/NiMain/NiNode.htm"><span class="NDLSystemFont">NiNode</span></a>, then it is
+possible that there are child objects. The code recursively passes any children to <span class=
+"NDLSystemFont">FindCamera</span> and if any camera is found, it returns it. Finally, if the object
+passed into <span class="NDLSystemFont">FindCamera</span> was neither an <a href=
+"../../Reference/NiMain/NiCamera.htm"><span class="NDLSystemFont">NiCamera</span></a> or <a href=
+"../../Reference/NiMain/NiNode.htm"><span class="NDLSystemFont">NiNode</span></a>, the code simply
+returns <span class="NDLSystemFont">NULL</span> indicating that no camera was found.</p>
+
+<p>This sort of scene traversal code is fairly common. When the recursion is simple, the traversal
+logic in <a href="../../Reference/NiMain/NiTNodeTraversal.htm"><span class=
+"NDLSystemFont">NiTNodeTraversal</span></a> can be used. This tutorial uses <span class=
+"NDLSystemFont">FindCamera</span> as an easy example of sceen traversals, the complete listing is
+below. Most samples, however, use a convenience function <a href=
+"../../Reference/NiApplication/NiApplication.htm">NiApplication</a>::FindFirstCamera()</p>
+<pre>
+NiCamera* NIF_Files::FindCamera(NiAVObject* pkObject)
+{
+    if (NiIsKindOf(NiCamera, pkObject))
+    {
+        return (NiCamera*) pkObject;
+    }
+    else if (NiIsKindOf(NiNode, pkObject))
+    {
+        NiNode* pkNode = (NiNode*) pkObject;
+        for (unsigned int ui = 0; ui &lt; pkNode-&gt;GetArrayCount(); ui++)
+        {
+            NiCamera* pkFoundCamera = FindCamera(pkNode-&gt;GetAt(ui));
+            if (pkFoundCamera)
+                return pkFoundCamera;
+        }
+    }
+    return NULL;
+}
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>We've covered loading a Nif file from disk, and we've also touched on the benefits that derive
+from having platform-specific assets. Next, we'll cover shaders. See <a href=
+"Tutorial_3__Shaders.htm">Core Runtime Tutorial 3: Shaders</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/General_Topics/Naming_Conventions.htm">Naming
+    Conventions</a></li>
+
+    <li><a href="../../Reference/NiMain/NiAlphaAccumulator.htm"><span class=
+    "NDLSystemFont">NiAlphaAccumulator</span></a></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span></li>
+
+    <li><a href="../../Reference/NiMain/NiCamera.htm"><span class=
+    "NDLSystemFont">NiCamera</span></a></li>
+
+    <li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm"><span class=
+    "NDLSystemFont">N</span>iStream</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiSystem/Information_Log_and_System_Output_Routines.htm"><span class=
+    "NDLSystemFont">N</span>iMessageBox</a></span></li>
+
+    <li><a href="../../Reference/NiMain/NiNode.htm"><span class=
+    "NDLSystemFont">NiNode</span></a></li>
+
+    <li><a href="../../Programmer/Object_Systems/Run_Time_Type_Information.htm">Run-Time Type
+    Information</a></li>
+
+    <li><a href="../../Programmer/Object_Systems/Reference_Counting_and_Smart_Pointers.htm">Smart
+    Pointers</a></li>
+
+    <li><a href="../../Programmer/Object_Systems/Streaming.htm">Streaming</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

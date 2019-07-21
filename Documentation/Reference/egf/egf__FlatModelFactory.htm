@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>egf::FlatModelFactory</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">egf::FlatModelFactory</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../efd/efd__BaseAssetFactory.htm">efd::BaseAssetFactory</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;FlatModelFactory.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classegf_1_1_flat_model_factory.gif" alt="Inheritance graph for egf::FlatModelFactory"/>
+  <p class="FigureCaption">Inheritance graph for egf::FlatModelFactory</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">An IAssetFactory that takes a <span class="NDLSystemFont"><a href="egf__FlatModelFactoryRequest.htm">FlatModelFactoryRequest</a></span> and attempts to load the flat model from disk and create a <span class="NDLSystemFont"><a href="egf__FlatModel.htm">FlatModel</a></span> instance. </p>
+<p class="NDLNormal">The result of this request is returned using an <span class="NDLSystemFont"><a href="egf__FlatModelFactoryResponse.htm">FlatModelFactoryResponse</a></span>. All mix in models and behavior scripts are also added to the response.</p>
+<p class="NDLNormal">Callers to <span class="NDLSystemFont"><a href="egf__FlatModelFactory.htm#classegf_1_1_flat_model_factory_1ae8aee45d7238f944758b0bd48569f2f4">FlatModelFactory::LoadAsset</a></span> are responsible for looking up and setting the asset path to the underlying flat model file in the <span class="NDLSystemFont"><a href="egf__FlatModelFactoryRequest.htm">FlatModelFactoryRequest</a></span>.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">FlatModelFactory</span> is not typically called directly. Instead, it responds to a request from the AssetFactoryManager to load a particular asset. The AssetFactoryManager is responsible for locating the fully qualified path using the provided URN and setting this value in the <span class="NDLSystemFont"><a href="egf__FlatModelFactoryRequest.htm">FlatModelFactoryRequest</a></span> object.</p>
+<p class="NDLNormal">For mix in models and behavior scripts, the <span class="NDLSystemFont">FlatModelFactory</span> uses the AssetFactoryManager to locate the underlying assets.</p>
+<p class="NDLNormal">The caller is responsible for allocating and deallocating the <span class="NDLSystemFont"><a href="egf__FlatModelFactoryRequest.htm">FlatModelFactoryRequest</a></span>.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">FlatModelFactory</span> allocates the response, it is the callers responsibility to deallocate it.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">FlatModelFactory</span> does not add the resulting flat model(s) to the <span class="NDLSystemFont"><a href="egf__FlatModelManager.htm">FlatModelManager</a></span> or Lua scripts to <span class="NDLSystemFont"><a href="../egfLua/egf__SchedulerLua.htm">SchedulerLua</a></span>. The caller is responsible for doing so if required.</p>
+<p class="NDLNormal">A <span class="NDLSystemFont"><a href="egf__FlatModel.htm">FlatModel</a></span> load goes through several stages: </p>
+<ol>
+<li>Load and parse the flat model file. </li>
+<li>Locate mix in flat models needed by the requested model. </li>
+<li>Identify and locate any Lua behavior scripts needed by the model or its mix in models. </li>
+<li>Request loads for all dependent flat models. </li>
+<li>Request loads for any required Lua behavior scripts. </li>
+<li>Wait for flat model loads to complete. </li>
+<li>Wait for all Lua script loads to complete. </li>
+<li>Load completed and response is ready. </li></ol>
+<p class="NDLNormal">If any mix in model fails to load, the request fails and an AssetLoadResult::ALR_ParseError is returned in the response message. Failure to load a Lua behavior script will not result in failure.</p>
+<p class="NDLNormal">
+<p class="NDLNormal">The <span class="NDLSystemFont">FlatModelFactory</span> is available in the background thread only. </p></p>
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classegf_1_1_flat_model_factory_1ae8aee45d7238f944758b0bd48569f2f4"></a>
+<p class="NDLRefMemberFunction">IAssetFactory::LoadStatus  LoadAsset(<br/><span class="NDLSystemFont"><a href="../efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span>* pFactoryManager, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetLoadRequest.htm">efd::AssetLoadRequest</a></span>* pRequest, <br/><span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">efd::AssetLoadResponsePtr</a></span>& ppResponse)</p>
+<p class="NDLRefMemberDescription">Attempt to load a flat model file. </p>
+<p class="NDLRefMemberDetailedDescription">If the factory is processing a URN and a new request arrives for that same URN, the factory will not attempt to load them simultaneously. Instead, LoadAsset returns IAssetFactory::LOAD_BLOCKED to indicate the request was blocked. The caller can make the same request again later.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription"><span class="NDLSystemFont"><a href="../efd/efd__IAssetFactory.htm#classefd_1_1_i_asset_factory_1a0724c480863f94648ecba9d81c98b262">efd::IAssetFactory::LoadStatus</a></span> for further details.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pFactoryManager</span></td>
+    <td>The AssetFactoryManager instance invoking this function. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pRequest</span></td>
+    <td><span class="NDLSystemFont"><a href="egf__FlatModelFactoryRequest.htm">FlatModelFactoryRequest</a></span></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ppResponse</span></td>
+    <td><span class="NDLSystemFont"><a href="egf__FlatModelFactoryResponse.htm">FlatModelFactoryResponse</a></span> message allocated by this factory. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>IAssetFactory::LoadStatus status of this load request. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegf_1_1_flat_model_factory_1aaad7fb2b0d7d772d2c718e4e0e20387c"></a>
+<p class="NDLRefMemberFunction">virtual IAssetFactory::ThreadSafetyDescription  GetThreadSafety() const</p>
+<p class="NDLRefMemberDescription">Thread status description. </p>
+<p class="NDLRefMemberDetailedDescription">This loader is thread safe for foreground or background use. </p>
+
+<a name="classegf_1_1_flat_model_factory_1abe05a13214ad8c23c984d17a9a78a0e3"></a>
+<p class="NDLRefMemberFunction">virtual void  Shutdown()</p>
+<p class="NDLRefMemberDescription">Shutdown function cleans up message subscriptions and smart pointers. </p>
+<a name="constructors_and_destructors"></a>
+<p class="NDLRefHead1">Constructors and Destructors</p>
+
+
+<a name="classegf_1_1_flat_model_factory_1a0ca44dce5777f7085b525a67d9a8fe5d"></a>
+<p class="NDLRefMemberFunction">FlatModelFactory(<br/><span class="NDLSystemFont"><a href="../efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span>* pFactoryManager, <br/><span class="NDLSystemFont"><a href="egf__FlatModelManager.htm">egf::FlatModelManager</a></span>* pFmm, <br/><span class="NDLSystemFont"><a href="egf__IScriptFactory.htm">egf::IScriptFactory</a></span>* scriptFactory = 0)</p>
+<p class="NDLRefMemberDescription">Construct a new <span class="NDLSystemFont">FlatModelFactory</span>. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">FlatModelFactory</span> needs access to the <span class="NDLSystemFont"><a href="egf__FlatModelManager.htm">FlatModelManager</a></span> to factory properties and lookup mix in models. The AssetFactoryManager is used to lookup any mix in flat models. The loader will load these mix in models and add them to the response.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pFactoryManager</span></td>
+    <td>The <span class="NDLSystemFont"><a href="../efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span> responsible for this factory. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pFmm</span></td>
+    <td>An <span class="NDLSystemFont"><a href="egf__FlatModelManager.htm">egf::FlatModelManager</a></span> reference using during <span class="NDLSystemFont"><a href="egf__FlatModel.htm">FlatModel</a></span> instantiation. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">scriptFactory</span></td>
+    <td>Optional factory for loading dependent scripts. If present, the <span class="NDLSystemFont">FlatModelFactory</span> will attempt to load any related scripts using this factory. The resulting data is added to the <span class="NDLSystemFont"><a href="egf__FlatModelFactoryResponse.htm">FlatModelFactoryResponse</a></span> message. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegf_1_1_flat_model_factory_1af603453ae9e1424701afdd228cb19307"></a>
+<p class="NDLRefMemberFunction">~FlatModelFactory()</p>
+<p class="NDLRefMemberDescription">Cleanup any open resources. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

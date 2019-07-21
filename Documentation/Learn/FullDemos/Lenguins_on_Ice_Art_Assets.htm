@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Lenguins on Ice Art Assets</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Lenguins on Ice Art Assets</h1>
+
+<p>3ds Max source files for all the assets used in the Lenguins
+on Ice sample can be found in the Gamebryo install directory
+under <span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\Samples\GameDemos\LenguinsOnIce\Art
+Files</span>.</p>
+
+<h2>Goals</h2>
+
+<p>The Lenguins on Ice sample was designed to show the following
+elements:</p>
+
+<ul>
+    <li>PhysX integration</li>
+
+    <li>Advanced rendering effects
+
+        <ul>
+            <li>Fully skinned and animated shells and fins fur
+            rendering.</li>
+
+            <li>Reflect and refract shader simulating ray
+            tracing.</li>
+
+            <li>Heat shimmer effect used to for 'Cold
+            Distortion'</li>
+
+            <li>Terrain with sparkling snow</li>
+        </ul>
+    </li>
+</ul>
+
+<h2>Advanced Rendering</h2>
+
+<p>The fur applied to the lenguins uses the standard shells and
+fins rendering technique. To generate the required shell
+geometry, a specialized export process plug-in for 3ds max was
+created: the <a href=
+"../../Reference/Tool_Plug_ins/Fur_Generator.htm">Fur Generator
+plug-in</a>. For each Lenguin, there are nine shells, each with
+its own parameters for distance-based rendering, as a customized
+LOD-like approach. During the export process, a texture atlas is
+generated that is used to represent the fur for the shells. Each
+cell in the atlas is referenced by one shell level in the shell
+geometry. In this way, all the shells may be rendered with the
+same texture in one draw call. The fin geometry is also generated
+in the export plug-in, although it has only one detail level, and
+the texture used for the fins is supplied externally.</p>
+
+<p>All whole ice blocks in the scene are rendered using a
+customized shader. The shader takes in a base map, normal map,
+alpha map, environment map, and texture containing the current
+contents of the frame buffer. The normal map in this shader has
+three separate purposes. First, it is used to compute the
+reflection vector that is used to sample the environment map to
+get the reflected color. Next, it is used to compute the fresnel
+factor, which is used to determine ratio between reflection and
+refraction. Lastly, it used as an offset when looking up the
+color to refract from the frame buffer.</p>
+
+<p>The cold distortion effect that is applied above each geyser
+uses a heat shimmer effect. A texture containing the current
+contents of the frame buffer, along with an offset map, are
+passed into the shader. The offset map is used to distort or
+offset the texel that is looked up from the frame buffer texture.
+This simple approach of altering the locations from which the
+frame buffer texture is sampled generates the heat shimmer
+effect.</p>
+
+<p>The shader used on the terrain in this sample uses the alpha
+channel of the provided vertex color to blend between normal
+mapped snow and normal mapped rock. A noise texture is sampled to
+determine the amount of specular highlight to apply to the snow.
+This noise texture is purposely not mip-mapped, so that when it
+is sampled, the input will appear speckled. Having a speckled
+input for the specular highlight coefficient results in the snow
+appearing to sparkle as the camera is moved around.</p>
+
+<h2>Hierarchy</h2>
+
+<p>The file "level.max" contains the demo's "dataset". The
+hierarchy in 3ds Max consists of four sibling branches containing
+objects, which exports to a Gamebryo scene graph with nine main
+nodes. Each of these nodes contains additional structures
+beneath them, as follows:</p>
+
+<ul>
+    <li>"animation": This node contains all the geometry in the
+    level that needs to be animated, excluding the camera. This
+    includes the light for the scene, the snow falling from the
+    sky, and the snow falling off the edge of the cliff. While
+    the geysers' heat shimmer effect is animated, they are
+    animated through a shader, so they do not need to be included
+    in this list. Having all the animated objects under one node
+    provides a simple way of updating all objects in the scene
+    that need to be animated without having to waste CPU time
+    updating objects that remain static through out the
+    demo.</li>
+
+    <li>"camera": This node contains the animated camera for the
+    demo. The camera's location and direction are updated every
+    frame at the start of the demo to provide an intro animation
+    before the game starts.</li>
+
+    <li>"level": This node contains all the static geometry that
+    makes up the level. Because we know this geometry is static,
+    we only have to perform one initial update on the node, and
+    then we never need to update it again. This node is also used
+    to help with the order in which objects are rendered.</li>
+
+    <li>"tree": This node contains a list of sub-nodes, each one
+    containing geometry information for a tree as well as PhysX
+    information. When the level is loaded, the PhysX data is
+    pulled out and used in the master PhysX scene so other
+    objects can interact with the trees.</li>
+</ul>
+
+<h2>Rendering Order</h2>
+
+<p>To ensure that the heat shimmer does not affect the lenguins,
+ice blocks, or trees, and to allow ice blocks to refract all
+objects, the nodes listed above are used to control the order in
+which objects are rendered. First, the sky dome (loaded
+separately), the "level" node, and the "animation" node are
+rendered. Afterwards, we render the heat shimmer effects, since
+all objects to which we wish to apply a heat shimmer have now
+been rendered. Finally, all the remaining objects (lenguins, ice
+blocks, and trees) are rendered using the EffectAccumulator. The
+EffectAccumulator will immediately render any object that does
+not have an alpha property or a specialized shader applied to it.
+Objects with these properties applied to them will be sorted in
+back to front order and then rendered. This approach enables the
+IceCube shader to refract all objects behind it.</p>
+
+<h2>Export</h2>
+
+<p>The default Gamebryo Process Script was modified slightly
+prior to exporting datasets for Lenguins on Ice. The <a href=
+"../../Reference/Tool_Plug_ins/Fur_Generator.htm">plug-in</a> for
+generating fur was added to the process script when exporting the
+lenguins. For all objects containing PhysX data, a PhysX export
+script was used, which includes a plug-in for exporting PhysX
+data.</p>
+
+<h2>Terrain Mesh Partitioning for Projected Shadows</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"Mesh_Dicer_Tool.htm">Mesh Dicer</a></span> is a spatial
+partitioning tool primarily used to optimize the efficiency of
+host-based operations, such as picking or projected shadows, on
+relatively simple terrain meshes. This tool is used in Lenguins
+on Ice to optimize the simplified terrain model (Arena-Diced.Nif)
+used for projected shadow generation in Lenguins on Ice.</p>
+
+<p>Prior to running the Mesh Dicer tool, Arena-Diced.nif is
+exported using mesh profile LenguinsOnIce_MeshProfile.xml,
+without GPU_READ being set, for optimal run-time performance for
+the sample. Thus, that asset will not be visible "as is" when
+loaded into AssetViewer.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

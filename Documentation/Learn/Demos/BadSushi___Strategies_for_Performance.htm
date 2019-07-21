@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>BadSushi Strategies for Performance</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>BadSushi Strategies for Performance</h1>
+
+<p>The <span class="NDLSystemFont">BadSushi</span> demo accomplishes 
+ a great deal of work that is scalable across multiple cores. In a working game, it may be important for each individual character to be capable of moving independently. With this requirement in mind, this demo does not utilize instancing. Each fish has its own node in the scene graph, its own morphing, and a separate draw call.</p>
+
+<p>The demo makes use of a number of strategies to enhance the application's performance.</p>
+
+<h2>Morphing Kernel&mdash;NiFloodgate Behind the Scenes</h2>
+
+<p><span class="NDLSystemFont"><a href="../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a></span> is an integral part of the Gamebryo engine. Its purpose is to help game developers get the most performance out of parallel systems. <span class="NDLSystemFont">NiFloodgate</span> manages processes that run on different cores and logical processors, keeping them thread-safe, and optimizing their memory usage. <span class="NDLSystemFont">NiFloodgate</span> scales from the six core PS3 through the Xbox 360 and PCs with any number of cores and logical processors.</p>
+
+<p>Operations that can be defined in terms of streams of data and operations to perform on those streams are candidates for <span class="NDLSystemFont">NiFloodgate</span>. Morphing, in particular, is a good candidate for such parallelism (as are skinning and particle simulation). Behind the scenes, Gamebryo uses <span class="NDLSystemFont">NiFloodgate</span> to divide up the work of the morphing kernel (which has been optimized for each platform) across threads to maximize performance.</p>
+
+<h2>Parallel Update&mdash;NiFloodgate Usage</h2>
+
+<p><span class="NDLSystemFont">BadSushi</span> includes application code for batched updates of the fish characters in multiple threads. In particular, the demo utilizes <span 
+ class="NDLSystemFont"><a href="../../Reference/NiSystem/NiLoopedThread.htm">NiLoopedThread</a></span> to update the scene in parallel with different threads. An <span class="NDLSystemFont">NiLoopedThread</span> is a thread that can be re-used each frame without being re-created (unlike 
+ <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span>). During an <span class="NDLSystemFont">Update()</span> call, the scene is partitioned equally among the desired number of threads, the threads are started, and then the function will block until all of the threads have completed their update. For more information about <span class="NDLSystemFont">NiLoopedThread</span> and parallelism, see <a href="../../Reference/NiSystem/Parallelism_With_NiLoopedThread.htm">Parallelism With NiLoopedThread</a>.</p>
+
+<h2>Start Morphing as Soon as Possible</h2>
+
+<p><span class="NDLSystemFont">BadSushi</span> calls <span 
+ class="NDLSystemFont">SetAlwaysUpdate()</span> and <span class="NDLSystemFont">ResetSyncPoints()</span> 
+ in the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMorphMeshModifier.htm">NiMorphMeshModifier</a></span> class. These calls cause asynchronous morphing to start as part of the Update pass instead of waiting until Culling. In this way, the morph mesh modifier is submitted to occur as soon as possible to provide maximum latency to finish that work. <span class="NDLSystemFont"><a href="../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a></span> manages this workload across threads.</p>
+
+<h2>Compressed Types to Decrease GPU Bandwidth</h2>
+
+<p>The <span class="NDLSystemFont">BadSushi</span> demo initially 
+ was too GPU bound, so it didn't matter how fast <span class="NDLSystemFont">NiFloodgate</span> was. To address this issue, <span class="NDLSystemFont">BadSushi</span> uses compressed data types for data streams to decrease bandwidth (especially important on PS3). The data streams that are most important to GPU bandwidth in terms of morphing are POSITIONS, NORMALS, and TEXCOORDS.</p>
+
+<p>The morphing fish characters are set up by applying the custom mesh profile "BadSushi_MeshProfile_Fish" using the following formats for each platform:</p>
+
+<table>
+	<thead>
+		<tr>
+			<th>Data Stream</th>
+			<th>PS3</th>
+			<th>Xbox 360</th>
+			<th>Win32 *</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td>POSITIONS</td>
+       	<td>FLOAT16_3</td>
+       	<td>FLOAT32_3</td>
+       	<td>FLOAT32_3</td>
+		</tr>
+		<tr>						
+       	<td>NORMALS</td>
+       	<td>NORMINT_11_11_10</td>
+       	<td>NORMINT_10_10_10_L1</td>
+       	<td>NORMINT16_4</td>
+		</tr>
+		<tr>						
+       	<td>TEXCOORDS</td>
+       	<td>NORMUINT8_2</td>
+       	<td>NORMUINT16_2</td>
+       	<td>NORMINT16_2</td>
+		</tr>
+	</tbody>	
+</table>
+
+<p>(* In the case of DX9 on Win32, CAPS are checked to see if the graphics card supports NORMINT16_4 and NORMINT16_2. Virtually all graphics cards supported by Gamebryo have these capabilities, however.)</p>
+
+<p>The data streams for MORPH_POSITION (there are 4) and MORPH_WEIGHTS simply use the default data types. This is true because those data streams are processed on the CPU, which has no native support for float16.</p>
+
+<p>The custom mesh profile "BadSushi_MeshProfile_Fish" may be applied during export from 3ds Max (or using <span class="NDLSystemFont">ToolPluginBatch</span>). In 3ds Max, it should be applied to the fish model (BadSushi_Fish.max), exporting once each for generic, Xbox 360, and Playstation 3. Because the rest of the scene is not a significant impact on performance, the default Gamebryo mesh profile is sufficient for the rest of the scene (FishTank.max).</p>
+
+<h2>UpdateDownwardPass Usage</h2>
+
+<p>A full <span class="NDLSystemFont">Update()</span> is needed in the first frame so that the parent of the fish characters has a reasonable <span class="NDLSystemFont">NiBound</span> (for example, for culling purposes). After the first frame, however, the demo can and does take a shortcut by calling <span class="NDLSystemFont">UpdateDownwardPass()</span> instead. This approach works only because the bound for the parent node of the fish won't change much over time. This is true because the fish in the demo are largely constrained to the same curve path.</p>
+
+<p>Note that calling <span class="NDLSystemFont">UpdateDownwardPass()</span> 
+ instead of <span class="NDLSystemFont">Update()</span> is not necessarily 
+ acceptable in a general application, but it may be viable in certain circumstances where a relatively unchanging <span class="NDLSystemFont">NiBound</span> is an acceptable approximation. </p>
+
+<h2>Update Floor Independently</h2>
+
+<p>The demo holds onto a pointer to the "Sea Floor" so that the caustics may be updated independently from the fish. The skydome needs no additional updates after the first frame.</p>
+
+<h2>Disable Environment Map (In This Case)</h2>
+
+<p>The demo makes a call to <span class="NDLSystemFont">DetachAllEffects()</span> to disable environment mapping on the fish. This results in a noticeable performance improvement. The environment map was added to make the rings on the fish appear shiny metallic, but its visual impact was not worth the performance impact in this case. (You may comment out the line "#define NO_ENV_MAP" in BadSushi.cpp to examine this trade-off, if you like.)</p>
+
+<h2>Profile, Profile, Profile</h2>
+
+<p>Other optimizations that have gone into the development of this demo focus on reducing work in functions that are called often, judicious use of inlining where appropriate, and other common considerations appropriate as a result of profiling the app.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><a href="BadSushi_Overview.htm">BadSushi Overview</a></li>
+<li><a href="BadSushi_Functional_Overview.htm">BadSushi Functional Overview</a></li>
+<li><a href="BadSushi_Code_Overview.htm">BadSushi Code Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

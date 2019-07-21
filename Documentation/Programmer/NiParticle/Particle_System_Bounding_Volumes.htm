@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Particle System Bounding Volumes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Particle System Bounding Volumes</h1>
+
+<p>The bounding volume for a particle system can be computed dynamically each
+frame or set statically and never changed. The bounding volume computation
+behavior can also be completely customized, if desired.</p>
+
+<h2>Static Bounding Volumes</h2>
+
+<p>A static bounding volume can be specified for a particle system in the
+digital content creation tools. When specified, the particle system is given a
+model-space bounding volume that should be set such that it represents the
+maximum size of the particle system. At run time, the world transforms of the
+particle system are applied to the bounding volume each frame to put it into
+world space, but the bounding volume itself is not computed.</p>
+
+<h2>Dynamic Bounding Volumes</h2>
+
+<p>In the particle system creation function, a dynamic bounding volume can be
+requested. The object responsible for computing the bounding volume for a
+particle system is <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>.
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+holds a pointer to an <span class="NDLSystemFont">NiPSBoundUpdater</span>
+object. If that pointer is null, the bounding volume is a static bounding
+volume and is not updated. Otherwise, the <span class=
+"NDLSystemFont">NiPSBoundUpdater::UpdateBound</span> function is called each
+frame after the particle simulation completes to compute a model-space bounding
+volume from the particle positions and sizes. This class contains an
+<span class="NDLSystemFont">UpdateSkip</span> value that can be used to reduce
+the amount of computation required each frame in order to update the bounding
+volume. See the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>
+documentation for more information about its use.</p>
+
+<h2>Custom Bounding Volume Computation</h2>
+
+<p>The method by which the particle system bounding volume is computed can be
+completely customized by subclassing <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>
+and overriding its virtual <span class="NDLSystemFont">UpdateBound</span>
+function. If you are programmatically creating a particle system that will use
+a custom bound updater, specify a value of false for the parameter indicating a
+dynamic bounding volume in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a>::Create</span>
+function. After the system has been created, register the custom bound updater
+with the particle system using the <span class=
+"NDLSystemFont">NiPSParticleSystem::SetBoundUpdater</span> function.</p>
+
+<h2>One Frame Delay</h2>
+
+<p>Due to the way in which particle systems simulate their particles each
+frame, it is not possible to compute a bounding volume for the particles
+emitted for a given frame until the beginning of the next frame. Thus, there is
+always a one frame delay between emitting a particle and having that particle
+reflected in the system's bounding volume. This one frame delay does not apply
+to rendering the newly emitted particle if the particle system is already
+visible (i.e., if the bounding volume computed the previous frame is inside the
+view frustum for the current frame, the newly emitted particle will be rendered
+on the current frame). This one frame delay is most noticeable on the first
+rendered frame. If the particle system does not contain any particles until
+after simulating the first frame, no particles will be drawn on the first frame
+because the bounding volume will not yet have been computed.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

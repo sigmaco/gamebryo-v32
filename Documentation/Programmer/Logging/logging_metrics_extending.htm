@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Adding Your Own Metrics Probes</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Adding Your Own Metrics Probes</h1>
+
+<p>The metrics probes that ship with Gamebryo LightSpeed are useful, but in all likelihood,
+addressing specific problems with your code will require adding custom probes of your own.
+Fortunately, adding new probes is fairly straightforward.</p>
+
+<p>To add a metrics probe, simply add a call to one of the macros located in <span class=
+"NDLSystemFont">efd/Metrics.h</span>. There are basically four different types of metrics probes,
+which by their macro names are:</p>
+
+<ul>
+    <li><b>EE_LOG_METRIC</b>&mdash;The default macro. It logs a probe name and a value, which can
+    be of type <span class="NDLSystemFont">efd::SInt32</span>, <span class=
+    "NDLSystemFont">efd::UInt32</span>, <span class="NDLSystemFont">efd::SInt64</span>,
+    <span class="NDLSystemFont">efd::UInt64</span>, or <span class=
+    "NDLSystemFont">efd::Float64</span>. All of the other macros build on this one.</li>
+
+    <li><b>EE_LOG_METRIC_COUNT</b>&mdash;A simple counter. Logs the probe name and a value of 1. (A
+    custom macro name is used here largely to make it easier to find references in source
+    code.)</li>
+
+    <li><b>EE_LOG_METRIC_INCREMENT</b>&mdash;Like EE_LOG_METRIC_COUNT, logs the probe name and a
+    value of 1. However, this probe is intended to be paired with a DECREMENT to maintain a running
+    total.</li>
+
+    <li><b>EE_LOG_METRIC_DECREMENT</b>&mdash;The reciprocal of EE_LOG_METRIC_INCREMENT. Logs a
+    value of -1.</li>
+</ul>
+
+<p>Each probe macro takes a module number (type <span class="NDLSystemFont">efd::UInt16</span>;
+these values are found in the efdLogIDs data-driven enum file and others). This identifies the
+domain of the probe. The second argument will be a name to uniquely identify the probe. We call
+this the <span class="NDLEmphasis">subdomain</span>. This will be one to three dot-separated words.
+By convention, metrics probe names are written in ALL CAPS.</p>
+
+<p>When using the EE_LOG_METRIC macro, the final argument will be the value to log. The other
+macros all have implied values, so this argument is omitted.</p>
+
+<p>In addition to these basic probe forms, there are four corresponding macros with a suffix of
+"_FMT". These work identically to the basic forms, but they allow you to extend the probe name at
+runtime using printf-style formatting. When you use this style of probe macro, enclose the
+subdomain argument in parentheses, along with a comma-delimited list of the variables to substitute
+for the printf format elements. This creates a new part of the probe name, called the <span class=
+"NDLEmphasis">tag</span>, the purpose of which is usually to uniquely identify the specific system
+object (for example, entity, behavior, connection, and so on) that generated the log entry. For
+example,</p>
+<pre>
+ENTITY.DESTROY.OWNED.HallInnerCorner
+SOCKET.SEND.BYTES.6.0x33A4110D7F000001
+</pre>
+
+<p>Probe names conform to a loose hierarchy that is intended for human readability and also to make
+easy to "roll up" multiple related probe entries into a single meaningful value. For example, all
+of the network messaging-related probes fall under the domain NETWORK (specified by passing the
+logging module <span class="NDLSystemFont">efd::kNetwork</span> as the first argument to the
+metrics probe macro) and the tag includes the Quality of Service of the netlib, and the Connection
+ID of the specific connection, that generated the probe.</p>
+
+<p>Error logging probes bear special mention. The usual way to identify an error probe is to take
+an existing probe and append ".ERROR" to the probe subdomain part (or, alternately, to replace the
+lower part of the subdomain). This will create a uniquely identifiable name for measuring error
+counts, but the error log entries will also roll up into the top part of the subdomain. It is
+therefore advisable for success and error probes to tick separately&mdash;in other words, don't
+inadvertently tick success (at the top of a function call, for example) and then tick an error
+(inside a conditional block in the same function), because this will cause error conditions to tick
+twice.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="logging_metrics_overview.htm">Metrics Logging Overview</a></li>
+
+    <li><a href="logging_metrics_using.htm">Using Metrics Logging</a></li>
+
+    <li><a href="logging_metrics_interpreting.htm">Interpreting Metrics Logs</a></li>
+
+    <li><a href="logging_metrics_probe_reference.htm">Metrics Probes Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

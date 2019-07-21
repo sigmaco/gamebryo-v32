@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Rooms</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Rooms</h1>
+
+<p>In the visibility graphs described above, rooms (<span 
+ class="NDLSystemFont"><a href="NiRoom.htm">NiRoom</a> 
+ </span>objects) form the &quot;nodes&quot; of the graph (the cells). A 
+ room represents a subset of the interior scene that is defined by a set 
+ of infinite planes (the <a HREF="NiRoom.htm#NiRoom__Wall">NiRoom::Wall</a> 
+ objects). As a result, a room represents a convex subset of 3-space.</p>
+
+<p>Rooms contain three components: Walls, fixtures, and 
+ portals. Walls are instances of the <span class="NDLSystemFont"><a href="NiRoom.htm#NiRoom__Wall">NiRoom::Wall</a></span> 
+ class and represent planes that bound the room. Fixtures represent any 
+ piece of rendered geometry for the room, including the geometry of the 
+ room's ceiling, floor, walls and furniture. Finally, portals represent 
+ ways of seeing out of a room into other rooms.</p>
+
+<p>The fact that <span class="NDLSystemFont"><a href="NiRoom.htm">NiRoom</a> </span>objects 
+ represent convex sets is helpful to the rendering algorithm. It means 
+ that it is very easy to determine which room contains the current camera, 
+ via simple plane tests involving the walls in the room.</p>
+
+<p>Furthermore, the fact that the <span class="NDLSystemFont"><a href="NiPortal.htm">NiPortal</a> </span>objects 
+ represent ways of seeing from a given room to any others that can be seen 
+ from the room is very important. This ensures that when processing the 
+ rooms that adjoin the one containing the viewer, the geometry can be culled 
+ to the boundary of the doorway, further ensuring a limited amount of pixel 
+ overwrite and&nbsp;processing of obscured geometry.</p>
+
+<p>As can be seen, convex rooms are the heart of the&nbsp;culling 
+ process for an interior scene. <span class="NDLSystemFont"><a href="NiRoom.htm">NiRoom</a> </span>objects 
+ implement the recursive traversal of the interior scene graph to&nbsp;process 
+ it (basically) back-to-front (although the actual culling of geometry 
+ to doorways is handled by <span class="NDLSystemFont"><a href="NiPortal.htm">NiPortal</a></span> objects). 
+ The basic algorithm for&nbsp;processing a convex room is as follows:</p>
+ 
+<pre>
+if the current room is being visited
+    then return to calling room
+else
+    mark the current room as being visited
+    for each portal in the room
+        test the portal against the current view rectangle
+        if the portal is visible
+            then clip the view rectangle to bound the portal
+                and recursively process the adjoining room
+    endfor
+    process the current room's fixtures
+    mark the current room as not being visited
+    return to calling room
+</pre> 
+
+<p>Next: <a HREF="Portals.htm">Portals</a></p>
+
+<p>Previous: <a HREF="Room_Groups.htm">Room Groups</a></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

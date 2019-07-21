@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiGPUProgramCache System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiGPUProgramCache</h1>
+
+<p>The <span class="NDLSystemFont">NiGPUProgramCache</span> is a system
+designed to contain <span class="NDLSystemFont">NiGPUPrograms</span> that have
+been compiled with an additive material system. In such a material system, it
+is possible to have <span class="NDLSystemFont">NiShaders</span> that re-use
+previously generated GPU programs. Since compilation of GPU programs is an
+expensive operation, the cache can store the results of previous compilations
+from previous application runs. Once a program is compiled, it is inserted into
+the cache, and can optionally be saved to disk.</p>
+
+<p>The primary interfaces to this class are the <span class=
+"NDLSystemFont">FindCachedProgram</span> and <span class=
+"NDLSystemFont">GenerateProgram</span> methods. <span class=
+"NDLSystemFont">FindCachedProgram</span> is used to search the cache for a
+program matching the existing name. The method returns two objects, the GPU
+program (if found) and a set of the uniform resources used by that program.
+<span class="NDLSystemFont">GenerateProgram</span> is used to actually compile
+a high-level shader language program.</p>
+
+<p>Each renderer implements its own derived program cache class. The DX9
+renderer and Xbox 360 renderers have the <span class=
+"NDLSystemFont">NiD3DGPUProgramCache</span>, which compiles HLSL programs. If
+an application does not wish to manually create program caches, the
+<span class="NDLSystemFont">NiRenderer::SetDefaultProgramCache</span> methods
+will instantiate the correct <span class=
+"NDLSystemFont">NiGPUProgramCache</span> for the renderer and set it on a given
+<span class="NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>. In general,
+applications use the simpler <span class=
+"NDLSystemFont">SetDefaultProgramCache</span> method, which in turn calls the
+more complex method with default arguments. These default arguments are:
+<span class=
+"NDLSystemFont">NiFragmentMaterial::GetDefaultAutoSaveProgramCache(), NiFragmentMaterial::GetDefaultWriteDebugProgramData(),
+NiFragmentMaterial::GetDefaultLoadProgramCacheOnCreation(),
+NiFragmentMaterial::GetDefaultLockProgramCache(),</span> and <span class=
+"NDLSystemFont">NiMaterial::GetDefaultWorkingDirectory()</span>.</p>
+
+<p>It is advisable for an application to have multiple caches. Common divisions
+could be setting up a cache per zone or level. Whenever a level is being
+loaded, the application can then set the appropriate new cache for the material
+system and clear out the old caches. This will help maintain a manageable usage
+of memory and GPU program resources.</p>
+
+<p>Since materials are complicated pieces of code, a versioning mechanism is
+built into the program caches. Each cache entry stores a version that indicates
+the version of the material node libraries that were used and the version of
+the <span class="NDLSystemFont">NiFragmentMaterial</span>-derived class that
+stitched together the fragments. This allows the cache to regenerate the new
+fragments as necessary. If any deprecated fragments are found, the cache file
+is rewritten to disk with only the valid programs. This is done to save time in
+future loads and to keep the cache file from becoming bloated. This behavior
+can be overridden by calling the method, <span class=
+"NDLSystemFont">SetOverwriteDeprecatedCacheFiles</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

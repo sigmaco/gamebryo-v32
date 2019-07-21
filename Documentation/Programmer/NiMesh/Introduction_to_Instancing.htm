@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Introduction to Instancing</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Introduction to Instancing</h1>
+
+<p>Hardware instancing is a feature that became available 
+ with the release of shader model 3.0 graphics processor units (GPU). In 
+ short, hardware instancing is a feature that allows large number of objects 
+ to be rendered in a single draw call. Ideally, all graphics applications 
+ should be GPU
+ bound, but many graphics applications can be CPU bound. This can come from the 
+ large amount of overhead involved in executing a single render call. Large 
+ numbers of objects on screen result in a large number of render calls, 
+ which can quickly destroy CPU performance. Hardware instancing helps fight 
+ this problem. Instead of requiring one hundred draw calls to render the 
+ same tree one hundred times, hardware instancing can be used and a single 
+ draw call can be used to render the same hundred trees.</p>
+
+<p>From a programmer's perspective, instancing allows the 
+ GPU to use 
+ different access patterns for different elements in streams of data. For 
+ example, a stream containing vertex and transformation information can 
+ be sampled at a per-vertex rate for vertices, with looping to handle overflow, 
+ while the transformation elements can be sampled at a per-mesh rate. If 
+ ten transforms are packed into a stream and the GPU
+ is told to process ten times the number of vertices then ten copies of 
+ an object can be rendered in a single draw call.</p>
+
+<h2>How does hardware instancing work?</h2>
+
+<p>As mentioned above, hardware instancing allows the GPU
+ to iterate over separate data streams of a single mesh with different 
+ access patterns. Lets consider the case where we have the following vertex 
+ definition:</p>
+
+<pre>
+float3 position
+float2 texCoord
+float3 worldPosition
+</pre> 
+
+<p>As in most vertex definitions there is a position and 
+ texture coordinate defined. The <span class="NDLSystemFont">position</span> 
+ member represents the &nbsp;vertex 
+ position in model space, the <span class="NDLSystemFont">texCoord</span> 
+ member represents the texture coordinate to use when sampling a texture, 
+ the <span class="NDLSystemFont">worldPosition</span> 
+ member is used to represent the world space position for the entire model. 
+ Normally without using hardware instancing having the world position in 
+ the vertex definition would not be needed. Instead, the world position 
+ would be made available to the vertex shader by a shader constant. </p>
+
+<p>In our case the first two components of the vertex definition, 
+ position and <span class="NDLSystemFont">texCoord</span>, 
+ will be stored in data stream <span class="NDLSystemFont">A</span>. The 
+ third component, <span class="NDLSystemFont">worldPosition</span>, 
+ is stored in a separate data stream, <span class="NDLSystemFont">B</span>. 
+ Let's imagine that we want to render a single triangle 10 times using 
+ hardware instancing. Data stream <span class="NDLSystemFont">A</span> would 
+ contain 3 entries, one for each point in the triangle. Data stream <span 
+ class="NDLSystemFont">B</span> would contain 10 entries, one position or 
+ transform for each instance. To render the ten triangles we issue a single 
+ draw call. For each entry we have in data stream <span class="NDLSystemFont">B</span> 
+ we will process all of the entries in data stream <span class="NDLSystemFont">A</span>. 
+ This consumes one unique transformation for each pass over all the entries 
+ in data stream <span class="NDLSystemFont">A</span>, so 10 triangles will 
+ be rendered each one with a different transformation.</p>
+
+<h2>Benefits of using hardware instancing</h2>
+
+<p>The majority of the CPU time spent rendering geometry 
+ comes from the overhead involved in each draw call. Normally only one 
+ object is rendered per draw call, so rendering a scene with hundred of 
+ objects will require hundreds of draw calls. This can quickly become the 
+ application bottleneck due to the large amount of overhead involved in 
+ each draw call. However, if many of the objects that are being drawn are 
+ copies of the same mesh, or instances, and the platform supports hardware 
+ instancing, then the entire scene can be rendered in only a few draw calls 
+ instead of hundreds. Fewer draw calls results in less rendering overhead 
+ on the CPU, freeing up the application to do other work. Hardware instancing 
+ is ideal for situations where there are an large number of objects that 
+ need to be rendered with only a few unique meshes. An asteroid field is 
+ a good example of a scene that is ideal for hardware instancing.</p>
+
+<h2>Pitfalls of using hardware instancing</h2>
+
+<p>As with all things, hardware instancing does not come 
+ for free. While using hardware instancing can greatly reduce the amount 
+ of CPU work required to render a scene, it increases the amount of GPU 
+ work that needs to be done. As described above, hardware instancing requires 
+ the world transforms to be packed into the vertex structure. This data 
+ takes up additional GPU bandwidth and on some platforms requires additional 
+ cycles just to access. Luckily, in most situations the benefits gained 
+ on the CPU side far out weigh the extra cost on the GPU.</p>
+
+<h2>More information</h2>
+
+<p>Hardware instancing is best for rendering large numbers 
+ of static objects. However, like everything else, this solution does not 
+ come for free and has some draw backs that users should know about before 
+ turning on hardware instancing. More information about hardware instancing 
+ can be found in the following pages:</p>
+
+<ul>
+	
+	<li><a href="Instancing_Basics.htm">Basics</a></li>
+	
+	<li><a href="Instancing_Common_Usage.htm">Common 
+ Usage</a></li>
+	
+	<li><a href="Instancing_Renderer_Support.htm">Renderer 
+ Support</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

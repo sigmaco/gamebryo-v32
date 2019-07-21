@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Collision Control Flags</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Collision Control Flags</h1>
+
+<p>The type of collision detection processing that occurs 
+ between two given objects depends largely on the collision control flags 
+ that are set on the collision data. Using the collision control flags, 
+ you may specify if <a href="Alternate_Bounding_Volumes.htm">ABV</a>s, 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a> 
+ </span>objects, <a href="Oriented_Bounding_Boxes.htm">OBB</a>s, or triangles 
+ are to be used for collision detection. The collision control flags are 
+ enumerated in the <span class="NDLSystemFont"><a href="NiCollisionData.htm">NiCollisionData</a></span> 
+ class of the <a href="../../Programmer/General_Topics/Collision_Detection_System.htm">collision 
+ detection system</a>. The function <span class="NDLSystemFont"><a href="NiCollisionData.htm">NiCollisionData</a></span><span 
+ class="NDLSystemFont">::SetCollisionMode()</span> is used to set these values. 
+ The single parameter that is accepted by the function is a <span class="NDLSystemFont"><a 
+ href="NiCollisionData.htm">NiCollisionData</a></span> 
+ scoped enumerated type, called <span class="NDLSystemFont">CollisionMode</span>.</p> 
+
+<p>The different values and their meanings for the <span class="NDLSystemFont">CollisionMode</span> 
+ flag are as follows:</p>
+
+<h3>NOTEST</h3>
+
+<p>This flag indicates that no testing should be done. 
+ It effectively turns off collision detection for the object.</p>
+
+<h3>USE_ABV</h3>
+
+<p>This flag indicates that alternate bounding volumes 
+ are to be used. This flag should only be used if an <a href="Alternate_Bounding_Volumes.htm">ABV</a> 
+ has actually been constructed for the collision data. When an object using 
+ this flag encounters another object using <a href="Alternate_Bounding_Volumes.htm">ABV</a>s, 
+ the most optimal 3D collision detection processing will occur.</p>
+
+<p>However, it should be noted that there are some inefficiencies 
+ when <a href="Alternate_Bounding_Volumes.htm">ABV</a>s encounter <a href="Oriented_Bounding_Boxes.htm">OBB</a>s. 
+ In that event, either the <a href="Alternate_Bounding_Volumes.htm">ABV</a> 
+ must be converted to an <a href="Oriented_Bounding_Boxes.htm">OBB</a> 
+ on the fly, or the <a href="Oriented_Bounding_Boxes.htm">OBB</a>'s underlying 
+ triangle geometry must be tested with the ABV, as there is no native code 
+ to handle an <a href="Alternate_Bounding_Volumes.htm">ABV</a> vs. <a href="Oriented_Bounding_Boxes.htm">OBB</a> 
+ collision. It is best not to mix <a href="Alternate_Bounding_Volumes.htm">ABV</a>s 
+ and <a href="Oriented_Bounding_Boxes.htm">OBB</a>s, when possible.</p>
+
+<h3>USE_NIBOUND</h3>
+
+<p>This flag indicates that the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ of the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>, 
+ to which the collision data is attached, should be used for collision 
+ detection. Since <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> objects are generated independently 
+ of collision detection, this mode is useful because it saves the artist 
+ or programmer from having to create an <a href="Alternate_Bounding_Volumes.htm">ABV</a> 
+ sphere explicitly. At the same time, since the size of the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> objects should be kept up-to-date for rendering purposes, collision detection can leverage that fact.</p>
+
+<h3>USE_OBB</h3>
+
+<p>This flag indicates that collision is to be done by 
+ creating an efficient oriented bounding box for the associated geometric 
+ data. If the <span class="NDLSystemFont"><a href="NiCollisionData.htm">NiCollisionData</a></span> 
+ is to use this flag, then it should be constructed with a pointer to valid 
+ geometry data. Typically, this flag will be used on an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ that has explicit triangle-based geometry.</p>
+
+<h3>USE_TRI</h3>
+
+<p>This flag indicates to the collision detection system 
+ that the object wishes to use its triangles for collision detection. This 
+ mode is the least efficient method of collision, especially for meshes 
+ with a high triangle count. As with the <span class="NDLSystemFont">USE_OBB</span> 
+ flag, this flag should be used in conjunction with a geometry based object; 
+ otherwise, no collisions will occur.</p>
+
+<p>When testing against other objects, there are a few 
+ things to note. If the other object is also set to use triangles, then 
+ triangle-to-triangle testing will occur.&nbsp; If the other object uses 
+ an alternate bounding volume, triangle-to-ABV testing will occur. However, 
+ in the case of testing between triangles and <a href="Oriented_Bounding_Boxes.htm">OBB</a>s, 
+ an <a href="Oriented_Bounding_Boxes.htm">OBB</a> will be created on the 
+ fly from the triangles so that <a href="Oriented_Bounding_Boxes.htm">OBB</a> 
+ vs. <a href="Oriented_Bounding_Boxes.htm">OBB</a> testing can be achieved.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiStaticDataManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiStaticDataManager</p>
+
+<p class="NDLRefHeaderFile">&lt;NiStaticDataManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiStaticDataManager</span> manages
+creation and cleanup of all dynamically allocated non-local
+static objects in Gamebryo. Gamebryo follows a convention such
+that no memory is allocated from the heap pre-main, and no heap
+memory is freed post-main. It also indirectly handles, through
+the <a href=
+"../../Programmer/Object_Systems/Static_Data_Management_Internals.htm">
+SDM functions</a> in each library, the registration of all
+streamable objects with <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a></span>.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static void Init(const <a href=
+"NiInitOptions.htm">NiInitOptions</a>* pkOptions = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function is called by
+<span class="NDLSystemFont">NiInit</span>. It explicitly calls
+<span class="NDLSystemFont">NiSystemSDM::Init</span> and then
+calls the <span class=
+"NDLSystemFont">ProcessAccumulatedLibraries</span> function. The
+<span class="NDLSystemFont">pkOptions</span> parameter is an
+optional set of initialization options. Registration is discussed
+in the description for <span class=
+"NDLSystemFont">AddLibrary</span> below.</p>
+
+<p class="NDLRefMemberFunction">static void Shutdown()</p>
+
+<p class="NDLRefMemberDescription">This function is called by
+<span class="NDLSystemFont">NiShutdown</span>. It calls the
+<span class="NDLSystemFont">Shutdown</span> function for all
+registered Gamebryo libraries, and then explicitly calls
+<span class="NDLSystemFont">NiSystemSDM::Shutdown</span>.</p>
+
+<p class="NDLRefMemberFunction">static void AddLibrary(const
+char* pcLibName, <a href=
+"#Function_Pointer_Types">InitFunction</a> pfnInit, <a href=
+"#Function_Pointer_Types">ShutdownFunction</a> pfnShutdown, const
+char* pcDependencies)</p>
+
+<p class="NDLRefMemberDescription">This function is called by
+each Gamebryo library's SDM constructor. It is used to register
+the given library name with the given the <span class=
+"NDLSystemFont">NiMainSDM::Init</span> and <span class=
+"NDLSystemFont">Shutdown</span> functions. The pcDependencies
+string should contain a space-separated list of library names
+with SDM functions that must be initialized before this library
+is initialized. The <span class="NDLSystemFont">NiSystem</span>
+library should not appear in this list. For example, the string
+for <span class="NDLSystemFont">NiMesh</span> is <span class=
+"NDLSystemFont">"NiFloodgate NiMain"</span>.</p>
+
+<p class="NDLRefMemberFunction">static void RemoveLibrary(const
+char* pcLibName)</p>
+
+<p class="NDLRefMemberDescription">This function exists to
+prevent libraries from being shut down after they are unloaded.
+With DLLs, this function is called by the <span class=
+"NDLSystemFont">DLL_PROCESS_DETACH</span> case of <span class=
+"NDLSystemFont">DllMain</span> for that library. It is not called
+by statically linked Gamebryo libraries, because there is no way
+to "unload" a statically linked library.</p>
+
+<p class="NDLRefMemberFunction">static const <a href=
+"NiInitOptions.htm">NiInitOptions</a>* GetInitOptions()</p>
+
+<p class="NDLRefMemberDescription">Returns the <span class=
+"NDLSystemFont"><a href=
+"NiInitOptions.htm">NiInitOptions</a></span> pointer passed into
+the initialization function.</p>
+
+<p class="NDLRefMemberFunction">static void
+ProcessAccumulatedLibraries()</p>
+
+<p class="NDLRefMemberDescription">This function is called by the
+<span class="NDLSystemFont">DLL_PROCESS_ATTACH</span> section of
+<span class="NDLSystemFont">DllMain</span> for each library, as
+well as by <span class=
+"NDLSystemFont">NiStaticDataManager::Init</span>. It causes the
+<span class="NDLSystemFont">NiStaticDataManager</span> to
+initialize all libraries, using each library's registered
+<span class="NDLSystemFont">Init</span> function, that have been
+added (via <span class="NDLSystemFont">AddLibrary</span>) but
+have not yet been initialized. The function is not called
+directly by statically linked Gamebryo libraries - it is called
+via <span class="NDLSystemFont">NiInit</span>.</p>
+
+<p class="NDLRefMemberDescription">This function does nothing if
+<span class="NDLSystemFont">Init</span> has not been called. The
+first time this function is called after <span class=
+"NDLSystemFont">Init</span> (typically from <span class=
+"NDLSystemFont">Init</span> itself), the libraries are dependency
+sorted before processing. Subsequence calls will check that all
+the dependencies of newly added libraries have already been
+initialized, but will not process dependencies for those new
+libraries.</p>
+
+<p class="NDLRefHead1">Related Macros</p>
+
+<p class="NDLRefMemberDescription">These macros are defined in
+NiSDMMacros.h.</p>
+
+<p class="NDLRefMemberFunction">NiDeclareSDM(libname,
+entrytag)</p>
+
+<p class="NDLRefMemberDescription">This macro declares
+<span class="NDLSystemFont">class entrytag libname##SDM</span>.
+It is usually found in the SDM header file for a given library,
+such as <span class="NDLSystemFont">NiMeshSDM.h</span>.</p>
+
+<p class="NDLRefMemberDescription">Example: <span class=
+"NDLSystemFont">NiDeclareSDM(NiMesh, NIMESH_ENTRY)</span>.</p>
+
+<p class="NDLRefMemberFunction">
+NiImplementSDMConstructor(libname, dependencies)</p>
+
+<p class="NDLRefMemberDescription">This macros defines the
+constructor for the <span class=
+"NDLSystemFont">libname##SDM</span> class and is usually found in
+the SDM source file for a given library, such as <span class=
+"NDLSystemFont">NiMeshSDM.cpp</span>.</p>
+
+<p class="NDLRefMemberDescription">Example: <span class=
+"NDLSystemFont">NiImplementSDMConstructor(NiMesh, "NiFloodgate
+NiMain")</span>.</p>
+
+<p class="NDLRefMemberFunction">NiImplementSDMInitCheck()</p>
+
+<p class="NDLRefMemberFunction">NiImplementSDMShutdownCheck()</p>
+
+<p class="NDLRefMemberDescription">These macros are called as the
+first thing in the SDM <span class="NDLSystemFont">Init</span>
+and <span class="NDLSystemFont">Shutdown</span> functions,
+respectively, for a given class.</p>
+
+<p class="NDLRefMemberFunction">NiImplementDllMain(libname)</p>
+
+<p class="NDLRefMemberDescription">This macro defines a DLL entry
+point for a library. It is used in DLL builds of the library
+only, and is typically found in the SDM source file for the
+library. For example:</p>
+
+<pre class="indent1">
+#ifdef NIMESH_EXPORT
+NiImplementDllMain(NiMesh);
+#endif
+</pre>
+
+<p class="NDLRefMemberDescription">Note that in this example,
+<span class="NDLSystemFont">NIMESH_EXPORT</span> will only be
+defined for DLL builds.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Function_Pointer_Types" id="Function_Pointer_Types"></a><p class="NDLRefHead2">Function Pointer Types</p>
+
+<p>Libraries that wish to have initialization and shutdown
+functions called on them must define functions that match the
+following typedefs:</p>
+
+<p class="NDLRefMemberFunction">typedef void
+(*InitFunction)(void)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">F</span>unction to be called to initialize the
+library's static data.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">typedef void (*ShutdownFunction)(void)</span></p>
+
+<p class="NDLRefMemberDescription">Function to be called to clean
+up the library's static data.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

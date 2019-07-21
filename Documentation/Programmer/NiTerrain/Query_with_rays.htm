@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Querying the Terrain Using Ray-Casting</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+  <h1>
+    Querying the Terrain Using Ray-Casting</h1>
+  <p>
+    The preferred method for querying information from a terrain is through the use
+    of rays. A ray is a vector extending towards infinity. In order to perform ray casting
+    against the terrain, an <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiRay.htm">NiRay</a></span> object is first created, and its direction, origin
+    and maximum length are defined.
+  </p>
+<pre>
+NiPoint3 kRayStart = NiPoint3(0, 0, FLT_MAX);
+NiPoint3 kRayDirection = NiPoint3(0.0f, 0.0f, -1.0f);
+float fMaxLength = FLT_MAX;
+NiRay kRay = NiRay(kRayStart, kRayDirection, fMaxLength);
+</pre>
+  <p>
+    The above code demonstrates the creation of a ray that will be used within the terrain
+    to project downward along the Z axis at (x, y) = (0, 0). There are several different
+    ways that a ray can be used with the terrain, each is detailed in the following
+    sections. In all cases, it is assumed that a pointer to the terrain object we wish
+    to test against has been obtained and a ray similar to the one created above is
+    being used.
+  </p>
+  <h2>
+    Testing for Collisions
+  </h2>
+  <p>
+    To find out if a given ray collides with the terrain at any point, but the actual
+    point of intersection is not required, use the "Test" function.
+  </p>
+<pre>
+bool bCollided = pkTerrain-&gt;Test(kRay);
+</pre>
+  <h2>
+    Finding Point of Intersection With Terrain
+  </h2>
+  <p>
+    An ideal use of a ray on the terrain is to find a point of intersection, for example
+    to discover where a projectile fired from a player will collide, the selected ray
+    should be passed as a parameter to the interactor's Collide function as shown below.
+    This method simply finds the closest point of intersection between the given ray
+    and the terrain, and returns both the point of collision, and the surface normal
+    at that point.</p>
+<pre>
+// Collide our ray with the terrain
+bool bCollided = pkTerrain-&gt;Collide(kRay);
+</pre>
+  <p>
+    This function returns true if there was a collision. In order to retrieve further
+    details on the intersection, use the "GetIntersection" method</p>
+<pre>
+// Get some details of the collision from the ray
+NiPoint3 kCollisionPoint;
+NiPoint3 kCollisionNormal;
+kRay.GetIntersection(kCollisionPoint, kCollisionNormal);
+</pre>
+  <p>
+    An example use case for the aforementioned form of ray collision would be forcing
+    an object to follow the surface of the terrain. Casting a vertical ray from the
+    current object's position downward will give the point of collision with the terrain,
+    which can then be assigned to the objects 'z' position. A demonstration of this
+    particular method can be found in Toolbench, when the "Snap Selection To Terrain"
+    menu item is selected.
+  </p>
+  <h2>
+    Terrain Material Queries
+  </h2>
+  <p>
+    Ray collision may also be used to discover the blend value of a given material at
+    a point on the terrain. For example, you could ask the terrain how visible the 'Grass'
+    material is at a given point. The blend value returned will be a number ranging
+    from 0 to 255, with 255 corresponding to 100% visibility.
+  </p>
+<pre>
+NiSurface* pkSurface = GetSurface("Grass");
+
+// Collide our ray with the terrain and find the opacity of pkSurface at that point
+NiUInt8 ucOpacity;
+bool bCollided = pkTerrain-&gt;GetSurfaceOpacity(kRay, pkSurface, ucOpacity);
+</pre>
+  <h2>
+    Meta Data Queries
+  </h2>
+  <p>
+    Surface meta data can also be queried using the ray casting system. More details
+    on this can be found in the documentation on 
+    <a href="Querying_Terrain_Metadata.htm">Querying Terrain Metadata</a>.<br>
+  </p>
+  <h2>
+    Usage Notes
+  </h2>
+  <p>
+    The terrain handles ray intersections differently depending on the direction of
+    the ray. If a ray direction is on the same axis as the terrain up vector (such as
+    in the code above), then the terrain is able to perform a direct lookup for intersection
+    which is reasonably efficient and fast.</p>
+  <p>
+    In other cases, the terrain must check actual triangles against the ray. While attempts
+    are made to optimize this (only checking relevant blocks, 'intelligent guessing'
+    which triangles to test), it should be regarded as an expensive routine. The worst
+    case is a ray that is parallel to the surface of the terrain, as this can end up
+    testing a very large number of triangles.</p>
+  <p>
+    For this reason, it is preferable to use rays whose direction is perpendicular to
+    the terrain where possible. For complex collisions and interactions with the terrain
+    it is suggested to use the 
+    <a href="../../Programmer/NiPhysX/Overview_of_Gamebryo-PhysX_Terrain.htm">
+    <span class="NDLSystemFont">NiTerrain</span> PhysX</a> 
+    functionality.
+  </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

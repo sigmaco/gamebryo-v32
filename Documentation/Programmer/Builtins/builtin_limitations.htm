@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Built-in API Limitations</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Built-in API Limitations</h1>
+
+<p>Gamebryo LightSpeed built-in APIs have some limitations. These limitations center on how Lua
+interprets overloaded C++ functions and on the mechanism for blocking from a built-in API method.</p>
+
+<h4>Overloaded built-in API functions</h4>
+
+<p>In C++ you can overload a function by providing another function with the same name but
+different arguments. It is possible to bind overloaded C++ methods for use as built-in API functions, but
+there are some significant limitations. Many unique C++ data types are bound into scripting
+languages as a single script type. As a result, when passing these values out of the script and
+back into C++, there is no way to tell which C++ override should be called. The details of which
+overrides can be supported depend on the scripting language in question. In general, overloading of
+vastly different types such as a string type and an integer type is safe. However, overloading
+similar types such as signed versus unsigned integers is unlikely to work correctly.</p>
+
+<p>Lua supports a relatively small set of unique data types. Some common examples of types that
+cannot be used for overloading because they look the same to Lua include:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>C++ Types</th>
+
+            <th>Reason</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>EntityID, Category, UInt64, SInt64, UInt32, SInt32, all enums and other POD
+            integers</td>
+
+            <td>Gamebryo LightSpeed uses large number support in Lua to maintain 64 bit integers,
+            but all integer types still look identical inside of Lua.</td>
+        </tr>
+
+        <tr>
+            <td>Float32, Float64</td>
+
+            <td>Normally, Lua treats all numbers, including integers, as 64 bit floating point
+            numbers. However, because LightSpeed uses large number support, only floating point
+            types are treated this way.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>For further discussion of how various C++ types are treated in Lua, see <a href=
+"builtin_passing_scripts_cpp.htm">Passing values between C++ built-in API functions and scripting
+languages</a>.</p>
+
+<p>For implementation details on how different C++ types are bound into Lua, see the
+specializations of bapiLua::LuaTraits in:</p>
+
+<p><span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\Source\GameFramework\egfLua\bapiLua.h</span></p>
+
+<h4>Blocking from built-in API functions</h4>
+
+<p>In this release of LightSpeed, there is no generic mechanism for blocking from a built-in API
+function. The existing blocking built-in API functions, such as BehaviorAPI.SendAndWaitForReply and
+BehaviorAPI.Sleep, are specially implemented for each supported scripting language. Only scripted
+behaviors are capable of blocking.</p>
+
+<h4>Custom data type parameters</h4>
+
+<p>All parameters used in built-in API functions require binding code to map them to and from C++ and
+the scripting language. If you want to use a custom data type in a built-in API then you will need to
+provide this mapping code. For details on how to do this, see <a href=
+"builtin_adding_datatypes.htm">Adding new data types</a>.</p>
+
+<h4>Variadic functions are not supported</h4>
+
+<p>Functions that support a variable number of parameters cannot be used as a built-in API function. Logs are
+therefore formatted in the scripting language before being passed thru a built-in to the C++
+code.</p>
+<pre>
+BehaviorAPI.LogMessage(2, string.format("BgAIJack::OnTick(%x) Initial Placement", entityID))
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_overview.htm">Built-in API overview</a></li>
+
+    <li><a href="builtin_features.htm">Built-in API features</a></li>
+
+    <li><a href="builtin_how_work.htm">How custom built-in API functions work</a></li>
+
+    <li><a href="builtin_reqs.htm">Requirements for working with built-in API functions</a></li>
+
+    <li><a href="builtin_adding_datatypes.htm">Adding new data types</a></li>
+
+    <li><a href="builtin_passing_scripts_cpp.htm">Passing values between C++ built-in API functions and
+    scripting languages</a></li>
+
+    <li><a href="builtin_best_practice.htm">Best practices for working with built-in API functions</a></li>
+
+    <li><a href="builtin_using.htm">Using built-in API functions</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

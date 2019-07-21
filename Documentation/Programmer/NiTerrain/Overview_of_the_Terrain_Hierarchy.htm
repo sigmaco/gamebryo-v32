@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Overview of the Terrain Hierarchy</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Overview of the Terrain Hierarchy</h1>
+  <p>The terrain is an extension to Gamebryo's <a href=../General_Topics/Scene_Graph_Basics.htm 
+  title="Scene Graph system">Scene Graph system</a>. Terrain is created and rendered by adding a 
+  <a href="../../Reference/NiTerrain/NiTerrain.htm" class="NDLSystemFont">NiTerrain</a> object to the scene graph of an 
+  application. The creation of an <a href="../../Reference/NiTerrain/NiTerrain.htm" 
+      class="NDLSystemFont">NiTerrain</a> 
+  object can be assisted using the Game Framework block document system by adding an entity with a 
+  Terrain model mix-in to the scene.</p>
+
+  <h2>Class hierarchy</h2>
+  
+  <p>The terrain library is split across several main classes; 
+  <a href="../../Reference/NiTerrain/NiTerrain.htm" class="NDLSystemFont">NiTerrain</a>, 
+  <a href="../../Reference/NiTerrain/NiTerrainSector.htm" class="NDLSystemFont">NiTerrainSector</a>, and 
+  <a href="../../Reference/NiTerrain/NiTerrainCell.htm" class="NDLSystemFont">NiTerrainCell</a>. Each class is used to 
+  manage a different level of the terrain details. 
+  <a href="../../Reference/NiTerrain/NiTerrain.htm" class="NDLSystemFont">NiTerrain</a> is the parent class to all other 
+  classes, and represents an entire terrain within a scene. 
+  <a href="../../Reference/NiTerrain/NiTerrainSector.htm" class="NDLSystemFont">NiTerrainSector</a> represents a square 
+  region of the terrain, each sector can be streamed in and out of memory from disk simultaneously 
+  allowing for paging of multi-sector terrains. The 
+  <a href="../../Reference/NiTerrain/NiTerrainCell.htm" class="NDLSystemFont">NiTerrainCell</a> class handles the geometry 
+  of small sections of terrain, its level of detail functionality, and the final appearance of the 
+  terrain through the renderer by managing 
+  <a href="../../Reference/NiTerrain/NiSurface.htm" class="NDLSystemFont">NiSurface</a> objects.</p>
+   
+  <p>The following diagram describes the relationship between these main classes:</p>
+
+<div class="FigureContainer">
+    <img alt="Class relationship diagram" src="images/NiTerrainChart.png">
+    <p class="FigureCaption">Diagram: <i>Class relationship diagram</i></p>
+</div>
+  
+  <p>As the terrain is an extension of the scene graph system, it is useful to identify the main 
+  components in the terrain's extension. The following diagram illustrates a basic inheritance 
+  hierarchy of the main classes involved in terrain.</p>
+  
+<div class="FigureContainer">
+    <img alt="Class inheritance hierarchy" src="images/NiTerrainInheirance.png">
+    <p class="FigureCaption">Diagram: <i>Class inheritance hierarchy</i></p>
+</div>
+
+  <p>The terrain data structure is organized into a list of sectors, where each sector contains a 
+  quadtree structure of <span class="NDLSystemFont">NiTerrainCells</span> to describe the terrain in that area. The quadtreestructure
+  allows for fast culling and intersection queries whilst managing the level of detail that is shown
+  in the distance. The following diagram illustrates an example of the state of a typical terrain 
+  data structure, and hence, the underlying scene graph structure.</p>
+  
+  <div class="FigureContainer">
+    <img alt="Internal terrain scene graph hierarchy" src="images/NiTerrainHierarchy.png">
+    <p class="FigureCaption">Diagram: <i>Internal terrain scene graph hierarchy</i></p>
+ </div>
+
+  <h3>NiTerrain</h3>
+  
+  <p>The <a href="../../Reference/NiTerrain/NiTerrain.htm" class="NDLSystemFont">NiTerrain</a> object is used to set up 
+  the general parameters for the terrain instance, including the number of LOD and the block size of 
+  each block. These parameters define the size of a single terrain sector. The 
+  <a href="../../Reference/NiTerrain/NiTerrain.htm" class="NDLSystemFont">NiTerrain</a> organizes the display of its 
+  contained sectors and manages 
+  the stitching of borders between sectors.</p>
+  
+  <h3>NiTerrainSector</h3>
+  
+  <p>The <a href="../../Reference/NiTerrain/NiTerrainSector.htm" 
+      class="NDLSystemFont">NiTerrainSector</a> object manages 
+  the geometry and material information of a section of terrain. It represents the head of the 
+  internal quadtree of geometry cells. It is responsible for loading data from disk, performing ray 
+  intersections, transforming the terrain geometry, and managing internal resources (such as shared 
+  vertex streams and shaders). The terrain sector is also responsible for performing level of detail 
+  calculation and selecting which cells to display each frame.</p>
+  
+  <h3>NiTerrainCell</h3>
+  
+  <p>As stated above, the terrain sector contains a quad-tree of cells. Each cell contains the 
+  actual geometry of the terrain. There are several levels in this balanced tree, each one becoming 
+  of progressively higher detail.</p>
+  
+  <p>The number of levels of subdivision is an option that can be configured in the parent terrain, 
+  as is the side length of each cell. The side length is the number of voxels (triangle pairs) along 
+  a given side for the cell. (16, 32, 64, etc.). The cell side length <b>must</b> be a power of 2.</p>
+  
+  <p>Levels of detail are numbered from the top down; the lowest level of detail (the top of the 
+  tree) is called level 0. The highest level of detail (the bottom of the tree) is called level N, 
+  where N is the total number of subdivisions of detail. When there are N lower levels of detail
+  specified in the terrain, there are actually N+1 total levels, since level 0 is always present.</p>
+  
+  <p>The top of the quad-tree (level 0) is represented by a single cell that covers the entire area 
+  of the sector. Since the number of vertices per cell is always the same, independent of the level 
+  of the cell, the spacing between each vertex will be very large. The next level from this (level 
+  1) will split the top cell into 4 more cells, which effectively doubles the number of vertices 
+  along each side of the sector. This subdivision occurs all the way down to level N, which is the 
+  level of maximum detail. The following diagram is an illustration of the subdivision of cells for
+  different levels of detail, each square represents one cell in the tree.</p>
+    
+  <div class="FigureContainer">
+    <img alt="Terrain quadtree architecture" src="images/NiTerrainQuadTree.png">
+    <p class="FigureCaption">Diagram: <i>Terrain quadtree architecture</i></p>
+  </div>
+
+  <p>There are two different types of cells. The 
+  <a href="../../Reference/NiTerrain/NiTerrainCellNode.htm" class="NDLSystemFont">NiTerrainCellNode</a> is a cell that has 
+  4 children (the cells on level 0 all the way to level N &#8211; 1). It contains geometry data as 
+  well as two low resolution textures to display the terrain&#8217;s diffuse color and normal map. 
+  The <a href="../../Reference/NiTerrain/NiTerrainCellLeaf.htm" 
+      class="NDLSystemFont">NiTerrainCellLeaf</a> can only be 
+  found on level N. They do not have any children. Those cells hold the blending information as well 
+  as the materials used on that specific leaf. A leaf can hold up to 4 different materials.</p>
+  
+  <h2>Material Layers</h2>
+  
+  <p>The appearance of the terrain is governed by surfaces. A specific material's configuration is 
+  managed by a <a href="../../Reference/NiTerrain/NiSurface.htm" 
+      class="NDLSystemFont">NiSurface</a> object. This class maintains information about the material's meta data and 
+  what textures should be used for the various maps a material can have. Further details on material 
+  configuration can be found in the documentation on 
+  <a href="NiTerrain_Materials_and_Masks.htm">Materials</a>.</p>
+  
+  <p>As mentioned above, each 
+    <a href="../../Reference/NiTerrain/NiTerrainCellLeaf.htm" class="NDLSystemFont">NiTerrainCellLeaf</a> supports a blend mask. The terrain however holds a 
+  list of all the surfaces that are used. This information is now stored in the root.terrain file 
+  and the sector mask data is stored in the sector .dof files. When rendering, all materials are 
+  blended together based on the weight found in the associated channel in the leaf's blend mask.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best practices for working with messages</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Best practices for working with messages</h1>
+
+<p>Emergent recommends the following best practices when you are working with messages:</p>
+
+<ul>
+    <li>Any class derived from <span class="NDLSystemFont">
+    <a href="../../Reference/efd/efd__IBase.htm">efd::IBase</a></span>
+    may subscribe to receive messages, and the
+    <a href="../../Reference/efd/efd__MessageService.htm">Message Service</a>
+    stores the subscribing objects as
+    <a href="../../Reference/efd/efd__SmartPointer.htm">smart pointers</a>. Hence, a
+    smart pointer to the subscribing object is released during an <span class="NDLSystemFont">
+    Unsubscribe</span> call, which will lead to destruction of the object unless another object
+    still holds a smart pointer. Similarly, the <span class="NDLSystemFont">OnShutdown</span>
+    method of the Message Service releases all the smart pointers to subscribing services. It is
+    easy to introduce shutdown crashes with this arrangement. Follow these rules when creating
+    objects that subscribe to messages:
+    <ul>
+        <li>A smart pointer to the subscribing object should always be held by some other object
+        that lives beyond the unsubscribe call. This prevents the premature deletion of the
+        subscribing object. Note that the Service Manager holds smart pointers to system service
+        objects, so this problem almost never arises with system services as subscribers.
+        </li>
+        <li>The subscribing object must never make use of the message service during destruction.
+        Doing so may cause the subscribing object to try to access the message service while the
+        latter is shutting down.
+        </li>
+    </ul>
+    </li>
+
+    <li>Use data-driven enums to create unique ClassID values. Every message class must have a
+    unique ClassID and must properly use Foundation RTTI.</li>
+
+    <li>Do not make assumptions about the order in which multiple handlers are invoked for a single
+    message. If there is an order dependency, consider having one object call a method on the other
+    object, or fire off another message that indicates that the first object has met the required
+    dependency.</li>
+
+    <li>Make use of <span class="NDLSystemFont">StreamMessage</span> and <span class=
+    "NDLSystemFont">MessageWrapper</span> when prototyping. This requires minimal boilerplate code
+    and makes it trivial to add or remove data members. If needed, messages can be optimized to use
+    a custom message class in the future, but be sure to update the message handler macros.</li>
+
+    <li>Write handler methods with a signature to expect the most derived message class possible.
+    This avoids having to do unnecessary dynamic casting. The internal MessageService data
+    structures are optimized to route messages of different types directly to a method with minimal
+    use of dynamic casts.</li>
+
+    <li>Avoid using switch statements in handlers to distinguish between message classes. Instead,
+    use a different handler method per message class. It is more efficient and requires less
+    explicit casting.</li>
+
+    <li>Do not send more than a few dozen messages per tick (frame). Local messages help with loose
+    coupling of large systems, but they are not intended to completely replace method calls and
+    virtual functions as the interface between components.</li>
+
+    <li>Consider carefully how to decompose message sets into categories. You can use categories
+    for more than object or entity destinations. You can use them for area of effect, subsystem
+    encapsulation, partitioning between multiple game instances or players in a single process, and
+    much more. The existing decomposition of bits used by LightSpeed systems is not the only way to
+    organize Category space.</li>
+
+    <li>Do not edit or reuse a delivered message. Other handlers may still want to process it.
+    Message parameters are declared const for this reason. If you need to do side-effect-free
+    modifications to a message (like iterating or uncompressing and so on), consider using the
+    mutable keyword on the members of the message affected.</li>
+
+    <li>Avoid rapid subscription changes. Most commonly, system service subscriptions will be set
+    up at initialization time and torn down at shutdown time. Subscriptions might also change in
+    response to uncommon events such as joining an online game or entering a new area of the
+    world.</li>
+
+    <li>Do not confuse a message with an event. Events are entity behavior invocations that are
+    scheduled in game time by <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_scheduler.htm">egf::Scheduler</a></span>.
+    Messages are a more general system utility; they operate using real-time delays and continue to
+    be delivered even if the Scheduler is paused or not fully running. Messages can be used for any
+    sort of notification.</li>
+
+    <li>Use nouns to name messages (for example, FooCommand, BarResponse, EnterStateBazRequest).
+    Use verbs to name handler methods (for example, DoFoo, ProcessBar, EnterStateBaz).</li>
+
+    <li>Recognize the difference between <span class="NDLSystemFont">Send</span> and <span class=
+    "NDLSystemFont">SendImmediate</span>. Send causes the message to be delivered on the next tick.
+    This can be invaluable to avoid deep recursion and re-entrancy problems. SendImmediate acts
+    like a loosely coupled function call or synchronous callback.</li>
+
+    <li>Avoid sending immediate messages from inside another message handler. When you are inside a
+    message handler, other handlers for the current message may or may not have been called yet. If
+    you send another immediate message during the previous handler, consumers who wanted to receive
+    both the current message and the message you are sending can get those messages in any order.
+    The resulting order could even change when the application is recompiled. This can lead to
+    timing problems that are difficult to debug and differences in behavior for different build
+    configurations.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="message_overview.htm">Messages overview</a></li>
+
+    <li><a href="message_features.htm">Message features</a></li>
+
+    <li><a href="message_how_work.htm">How messages work</a></li>
+
+    <li><a href="message_limitations.htm">Message limitations</a></li>
+
+    <li><a href="message_how_relates_efr.htm">How messages relate to the Emergent Game
+    Framework</a></li>
+
+    <li><a href="message_reqs.htm">Requirements for working with messages</a></li>
+
+    <li><a href="message_using.htm">Using messages</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

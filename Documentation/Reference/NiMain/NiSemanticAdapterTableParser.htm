@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiSemanticAdapterTableParser</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiSemanticAdapterTableParser</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiSystem/NiMemObject.htm">NiMemObject</a></p>
+
+<p class="NDLRefHeaderFile">
+&lt;NiSemanticAdapterTableParser.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>The <span class="NDLSystemFont">NiSemanticAdapterTableParser</span>
+class implements a parser for a domain-specific language designed
+to specify <a href="NiSemanticAdapterTable.htm">semantic adapter
+tables</a> in text form. This implementation is the mechanism
+used to parse semantic adapter tables that were specified in FX
+or FXL shaders.</p>
+
+<p class="NDLRefHead1">Supported Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static bool ParseString(const
+char* pcString, <a href=
+"NiSemanticAdapterTable.htm">NiSemanticAdapterTable</a>&amp;
+kTable)</p>
+
+<p class="NDLRefMemberDescription">This function parses the
+string passed in as <span class="NDLSystemFont">pcString</span>
+and adds valid entries to <span class=
+"NDLSystemFont">kTable</span>. A valid string to be parsed by
+NiSemanticAdapterTableParser::ParseString consists of zero or
+more entries as discussed in the syntax section below, and the
+return value will be <span class="NDLSystemFont">true</span> if
+all entries in the string are successfully parsed and
+validated.</p>
+
+<p class="NDLRefMemberDescription">The return value will be
+<span class="NDLSystemFont">false</span> if any entry in the
+string is invalid. Valid entries prior to an error will
+be added to the <span class="NDLSystemFont">kTable</span> object,
+but there will never be an incomplete entry added to the
+<span class="NDLSystemFont">kTable</span> object. Any
+parsing errors will be directed to the default <a href=
+"../../Reference/NiSystem/NiLogger.htm">NILOG</a> channel (i.e.,
+Errors will not be printed out in Shipping configurations by
+default). Common errors include:</p>
+
+    <ul>
+        <li>Using a component count other than 1, 2, 3, or 4, or
+        omitting the component count entirely.</li>
+
+        <li>Omitting the semicolon between the semantic and the
+        semantic index.</li>
+
+        <li>Using a semantic index greater than 255.</li>
+    </ul>
+
+
+<p class="NDLRefHead1">SAT Entry Syntax</p>
+
+<p>The syntax for a semantic adapter table entry in this language
+is as follows:</p>
+
+<p><span class="NDLSystemFont">COMPONENT_COUNT GENERIC_SEMANTIC
+[":" GENERIC_SEMANTIC_IDX] [RENDERER_SEMANTIC [":"
+RENDERER_SEMANTIC_IDX] ["@" SHARED_SLOT_IDX]] ";"</span></p>
+
+<p>Where:</p>
+
+<ul>
+    <li>Each of the capital terms is as discussed in the semantic
+    adapter table documentation</li>
+
+    <li>Quoted ("") items indicate literals.</li>
+
+    <li>[] indicates an optional component
+        <ul>
+            <li>If any index is omitted, it is assumed to be
+            zero.</li>
+
+            <li>If the renderer semantic is omitted, it is
+            assumed to be identical to the generic semantic.</li>
+        </ul>
+    </li>
+</ul>
+
+<p class="NDLRefHead1">Examples</p>
+
+<p>This example shows a simple rename from a logical / generic
+semantic to a specific hardware semantic.</p>
+
+<p>String and corresponding table:</p>
+
+<p>"3 POSITION ; 2 UV:0 TEXCOORD : 0 ;"</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Entry</th>
+
+            <th>Generic Semantic Name</th>
+
+            <th>Generic Semantic Index</th>
+
+            <th>Renderer Semantic Name</th>
+
+            <th>Renderer Semantic Index</th>
+
+            <th>Component Count</th>
+
+            <th>Shared Renderer Semantic Position</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>0</td>
+
+            <td>POSITION</td>
+
+            <td>0</td>
+
+            <td>POSITION</td>
+
+            <td>0</td>
+
+            <td>3</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td>UV</td>
+
+            <td>0</td>
+
+            <td>TEXCOORD</td>
+
+            <td>0</td>
+
+            <td>2</td>
+
+            <td>0</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>This example shows how to pack multiple logical texture
+coordinates into a single renderer semantic/index pair, and thus
+a single interpolation unit. It requires that the texture
+coordinates are stored interleaved together sequentially in
+increasing shared position order, which will be validated before
+rendering. In the vertex shader, the first set of texture
+coordinates can be extracted from xy and the second set from
+zw.</p>
+
+<p>String and corresponding table:</p>
+
+<p>"3 POSITION ; "</p>
+
+<p>"2 TEXCOORD:0 TEXCOORD:0 @ 0; "</p>
+
+<p>"2 TEXCOORD:1 TEXCOORD:0 @ 1; "</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Entry</th>
+
+            <th>Generic Semantic Name</th>
+
+            <th>Generic Semantic Index</th>
+
+            <th>Renderer Semantic Name</th>
+
+            <th>Renderer Semantic Index</th>
+
+            <th>Component Count</th>
+
+            <th>Shared Renderer Semantic Position</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>0</td>
+
+            <td>POSITION</td>
+
+            <td>0</td>
+
+            <td>POSITION</td>
+
+            <td>0</td>
+
+            <td>3</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td>TEXCOORD</td>
+
+            <td>0</td>
+
+            <td>TEXCOORD</td>
+
+            <td>0</td>
+
+            <td>2</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+
+            <td>TEXCOORD</td>
+
+            <td>1</td>
+
+            <td>TEXCOORD</td>
+
+            <td>0</td>
+
+            <td>2</td>
+
+            <td>1</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

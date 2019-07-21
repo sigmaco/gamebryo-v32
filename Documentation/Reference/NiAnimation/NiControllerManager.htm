@@ -1,0 +1,1111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiControllerManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<p class="NDLRefHeadClassTitle">NiControllerManager</p>
+
+<p class="NDLRefParentage">: public <span><a HREF="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span></p>
+
+<p class="NDLRefHeaderFile">&lt;NiControllerManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>An <span class="NDLSystemFont">NiControllerManager</span> 
+ controls animation sequences on a specific &quot;character&quot; or branch 
+ of the scene graph. As such, it provides the ability to activate, deactivate, 
+ and blend sequences in a variety of ways to produce smooth animation on 
+ the character. <span class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ objects, stored in KF files, are added to the controller manager for future 
+ playback of the contained animation sequences. An <span class="NDLSystemFont"><a 
+ HREF="NiControllerSequence.htm">NiControllerSequence</a></span> is temporarily 
+ created upon activation of a registered <span class="NDLSystemFont">NiSequenceData</span>. 
+ This <span class="NDLSystemFont">NiControllerSequence</span> represents 
+ the active animation and is destroyed or <a href="NiControllerManager.htm#Sequence_Recycling">recycled</a> 
+ shortly after the active sequence runs to completion.</p>
+
+<p>The controller manager makes use of three helper objects 
+ to assist with animation playback: <span class="NDLSystemFont"><a HREF="NiPoseBinding.htm">NiPoseBinding</a></span>, 
+ <span class="NDLSystemFont"><a HREF="NiPoseBlender.htm">NiPoseBlender</a></span>, 
+ and <span class="NDLSystemFont"><a HREF="NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span>. 
+ The <span class="NDLSystemFont">NiPoseBinding</span> maintains the character's 
+ mapping of sequence evaluator channels to pose buffer data locations. 
+ The <span class="NDLSystemFont">NiPoseBlender</span> allows the controller 
+ manager to smoothly blend the output of multiple active sequences to form 
+ the composite animation state. Lastly, the <span class="NDLSystemFont">NiMultiTargetPoseHandler</span> 
+ distributes animated values to the character's interp controllers and 
+ scene graph objects. The internal mappings within the <span class="NDLSystemFont">NiPoseBinding</span> 
+ and <span class="NDLSystemFont">NiMultiTargetPoseHandler</span> are updated 
+ to reflect any previously unknown evaluator channels whenever an <span 
+ class="NDLSystemFont">NiSequenceData</span> is added to the manager.</p>
+
+<p><span class="NDLSystemFont"><a HREF="NiActorManager.htm">NiActorManager</a></span> 
+ is a higher level class for controlling sequences that have been set up 
+ with a KFM file in the <a HREF="../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Animation 
+ Tool</a>. <span class="NDLSystemFont">NiActorManager</span> uses <span class="NDLSystemFont">NiControllerManager</span> 
+ internally to control sequences according to its internal state machine. 
+ If <span class="NDLSystemFont">NiActorManager</span> is not used by an application, 
+ <span class="NDLSystemFont">NiControllerManager</span> can be used directly 
+ to control animation sequences.</p>
+
+ <p><span class="NDLSystemFont">NiControllerManager</span> objects are robust to
+ <span class="NDLSystemFont">NULL</span> targets. In such cases accumulation will
+ always be off and there is obviously nothing to animate, but all the sequence set
+ up functions still operate.</p>
+
+<p>Additional information regarding <span class="NDLSystemFont">NiControllerManager</span> 
+ as well as a typical usage pattern can be found in the <a HREF="NiControllerManager.htm">Overview 
+ of NiControllerManager</a>.</p>
+
+<a name="Constructors"></a><p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiControllerManager(<a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>* 
+ pkTarget, bool bCumulativeAnimations = false, <a HREF="NiPoseBinding.htm">NiPoseBinding</a>* 
+ pkPoseBinding = NULL, bool bMoveAccumTransformToChild = true)</p>
+
+<p class="NDLRefMemberDescription">The constructor takes a pointer to the 
+ target object (i.e. scene graph branch) to which the new <span class="NDLSystemFont">NiControllerManager</span> 
+ will be attached. All sequences controlled by the controller manager should 
+ be rooted at <span class="NDLSystemFont">pkTarget</span> or a descendant 
+ of <span class="NDLSystemFont">pkTarget</span>. <span class="NDLSystemFont">bCumulativeAnimations</span> 
+ tells the controller manager whether or not to <a href="NiControllerManager.htm#Transformation_Accumulation">accumulate 
+ transformations on its accumulation root</a>. This value cannot be changed 
+ once the manager has been created. When <span class="NDLSystemFont">bCumulativeAnimations</span> 
+ is true the scene graph specified by <span class="NDLSystemFont">pkTarget</span> 
+ is traversed to locate the accumulation root node. Transformation accumulation 
+ is disabled on the character if the accumulation root node cannot be located. 
+ The transform on the found root is pushed to its non-accum child node 
+ when <span class="NDLSystemFont">bMoveAccumTransformToChild</span> is true. 
+ This adjustment ensures the initial transform on the accumulation root 
+ is identity (as if no accum flags had been set on the accum root during 
+ export). The accumulation transform associated with the controller manager 
+ is initialized with the final transform on the accumulation root node. 
+ In general, this is the identity transform. <span class="NDLSystemFont">pkPoseBinding</span> 
+ specifies the pose binding for use with the controller manager. This parameter 
+ may be <span class="NDLSystemFont">NULL</span>, in which case, a new <span 
+ class="NDLSystemFont"><a href="NiPoseBinding.htm">NiPoseBinding</a></span> 
+ is created for the manager. There must be a unique <span class="NDLSystemFont">NiPoseBinding</span> 
+ for each unique character template in an application. Characters utilizing 
+ the same 3D model and associated set of animation sequences may share 
+ a single <span class="NDLSystemFont">NiPoseBinding</span> as a memory and 
+ performance optimization. For example, the baby lenguins in the <a HREF="../../Learn/FullDemos/Lenguins_on_Ice_Overview.htm">Lenguins 
+ on Ice</a> demo reuse a single <span class="NDLSystemFont">NiPoseBinding</span> 
+ since they are all clones of a template actor. On the other hand, the 
+ lenguin momma has a separate <span class="NDLSystemFont">NiPoseBinding</span> 
+ since this actor uses a different 3D model as well as a different set 
+ of sequences than the babies.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static NiControllerManager* FindControllerManager(<a 
+ href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>* 
+ pkObject)</p>
+
+<p class="NDLRefMemberDescription">This function traverses the specified 
+ scene graph branch and returns the first <span class="NDLSystemFont">NiControllerManager</span> 
+ it finds. <span class="NDLSystemFont">NULL</span> is returned when the branch 
+ does not contain an <span class="NDLSystemFont">NiControllerManager</span>.</p>
+
+<p class="NDLRefMemberFunction">static <a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>* 
+ FindAccumRoot(<a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>* 
+ pkObject)</p>
+
+<p class="NDLRefMemberDescription">This function searches the specified scene 
+ graph branch for the accumulation root node. The accumulation root node 
+ is returned upon success, and <span class="NDLSystemFont">NULL</span> otherwise. 
+ The accumulation root is assumed to be the first node having a child node 
+ of similar name that's augmented with the &quot;<span class="NDLSystemFont"> 
+ NonAccum</span>&quot; suffix. This constant string is defined by <span 
+ class="NDLSystemFont"><a href="NiAnimationConstants.htm">NiAnimationConstants</a>::GetNonAccumSuffix</span>.</p>
+
+<p class="NDLRefMemberDetailedDescription">Note: The scene 
+ graph pattern of parent and child nodes having similar names whereby the 
+ child's name equals the parent's name concatenated with &quot; NonAccum&quot; 
+ is reserved for use by Emergent. Artists should avoid this naming convention 
+ when creating models in 3ds max and Maya to ensure correct operation of <span class="NDLSystemFont">FindAccumRoot</span>. 
+ For example, a node named &quot;elbow&quot; should not have a child node 
+ named &quot;elbow NonAccum&quot;.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<a name="Functions_for_updating"></a><p class="NDLRefMemberFunction">virtual 
+ void Update(float fTime)</p>
+
+<p class="NDLRefMemberDescription">This function overrides the virtual <span 
+ class="NDLSystemFont">Update</span> function from <span class="NDLSystemFont"><a 
+ HREF="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> 
+ and calls <span class="NDLSystemFont">Update</span> on each active sequence 
+ (i.e. <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span>) 
+ controlled by the manager. If multiple sequences are active, the manager 
+ asks its <span class="NDLSystemFont"><a HREF="NiPoseBlender.htm">NiPoseBlender</a></span> 
+ to compute their blended animation state. Next, the manager calls <span 
+ class="NDLSystemFont">Update</span> on its <span class="NDLSystemFont"><a 
+ HREF="NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span> 
+ to propagate the animated state to the scene graph. Lastly, the manager 
+ removes inactive sequences from its <span class="NDLSystemFont">NiControllerSequence</span> 
+ (i.e. active sequence) list. These removed sequences are candidates for 
+ <a href="NiControllerManager.htm#Sequence_Recycling">recycling</a>. <span 
+ class="NDLSystemFont">fTime</span> typically is the application's global 
+ animation time.</p>
+
+<p class="NDLRefHead2">Functions to access held objects</p>
+
+<p class="NDLRefMemberFunction"><a HREF="../../Reference/NiMain/NiAVObjectPalette.htm">NiAVObjectPalette</a>* 
+ GetObjectPalette() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the <span class="NDLSystemFont"><a 
+ HREF="../../Reference/NiMain/NiAVObjectPalette.htm">NiAVObjectPalette</a></span> 
+ that is used by the manager and its registered sequences to look up objects 
+ in the scene graph by name. The result may be <span class="NDLSystemFont">NULL</span>
+ if the target was not specified during construction.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiPoseBinding.htm">NiPoseBinding</a>* 
+ GetPoseBinding() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the pose binding 
+ associated with the manager. The pose binding maintains the manager's 
+ mapping of sequence evaluator channels to pose buffer data locations.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiPoseBlender.htm">NiPoseBlender</a>* 
+ GetPoseBlender() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the pose blender 
+ associated with the manager. The pose blender allows the controller manager 
+ to smoothly blend the output of multiple active sequences to form the 
+ composite animation state. </p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a>* 
+ GetMultiTargetPoseHandler() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the multi-target 
+ pose handler associated with the manager. The multi-target pose handler 
+ distributes animated values to scene graph targets associated with the 
+ manager.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiSkinningLODController.htm">NiSkinningLODController</a>* 
+ GetSkinningLODController() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the optional <span 
+ class="NDLSystemFont">NiSkinningLODController</span> associated with the 
+ manager. The returned value is <span class="NDLSystemFont">NULL</span> when 
+ an <span class="NDLSystemFont">NiSkinningLODController</span> is not present 
+ in the manager's associated scene graph. This function is a convenience 
+ function for getting a pointer to the <span class="NDLSystemFont">NiSkinningLODController</span> 
+ in order to switch the level of detail (LOD) for the character. As an 
+ optimization, the animation system does not update evaluators whose effects 
+ are hidden at the character's current LOD.</p>
+
+<a name="Functions_for_adding_sequences"></a><p class="NDLRefHead2">Functions for 
+ adding sequence datas</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiSequenceData.htm">NiSequenceData</a>* 
+ AddSequenceDataFromFile(const char* pcFilename, unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiSequenceData.htm">NiSequenceData</a>* 
+ AddSequenceDataFromFile(const NiStream&amp; kStream, unsigned int uiIndex)</p>
+
+<p class="NDLRefMemberDescription">These functions load sequences from a 
+ KF file. The first function takes the full path to a KF file in the <span 
+ class="NDLSystemFont">pcFilename</span> parameter and proceeds to load the 
+ KF file and get the sequence located at <span class="NDLSystemFont">uiIndex</span> 
+ in that KF file. The second function uses the stream that has already 
+ been loaded to add the sequence. After the sequence is loaded, it is added 
+ to the manager. If the sequence was not loaded or added correctly, these 
+ functions return <span class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction">bool AddAllSequenceDatasFromFile(const char* 
+ pcFilename)</p>
+
+<p class="NDLRefMemberDescription">This function takes the full path to a 
+ KF file in the <span class="NDLSystemFont">pcFilename</span> parameter and 
+ proceeds to load all the <span class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ objects stored in that KF file, adding each one to the manager after it 
+ is loaded. The function returns true if all of the sequences are loaded 
+ and added correctly, and false otherwise.</p>
+
+<p class="NDLRefMemberFunction">bool AddSequenceData(<a HREF="NiSequenceData.htm">NiSequenceData</a>* 
+ pkSeqData)</p>
+
+<p class="NDLRefMemberDescription">This function adds the specified <span 
+ class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ to the manager. The function returns true if the sequence was successfully 
+ added, and false otherwise.</p>
+
+<a name="Functions_for_creating_pose_sequences"></a><p class="NDLRefMemberFunction"><a 
+ href="NiSequenceData.htm">NiSequenceData</a>* AddPoseSequenceData(const 
+ <a href="NiSequenceData.htm">NiSequenceData</a>* pkSeqDataToSynchronize, 
+ bool bTempPose = true, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kName = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function creates a new <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> and adds it to the 
+ manager. This new sequence is constructed such that it produces constant 
+ animation data which matches the current state of the manager's associated 
+ scene graph (i.e. a snapshot of the character's current pose). <span class="NDLSystemFont">pkSeqDataToSynchronize</span> 
+ dictates which scene graph attributes are captured in the new sequence. 
+ If <span class="NDLSystemFont">bTempPose</span> is true, the new sequence 
+ is marked as a temporary pose. <span class="NDLSystemFont">NiSequenceData</span> 
+ objects flagged in this manner are automatically removed from the manager 
+ after playback of their first activation completes. This is a bookkeeping 
+ convenience which prevents the build-up of temporary pose-type sequences 
+ in the manager. By default the new sequence is given the name of &quot;<span 
+ class="NDLSystemFont">__PoseFrom<em>&lt;name 
+ of sync sequence&gt;</em>__</span>&quot; where 
+ <span class="NDLSystemFont"><em>&lt;name of sync sequence&gt;</em></span> 
+ is the name of <span class="NDLSystemFont">pkSeqDataToSynchronize</span>. 
+ Additional underbars may be appended to the name to make it unique. This 
+ default name may be overridden through the use of the <span class="NDLSystemFont">kName</span> 
+ parameter. Upon success the function returns a pointer to the new <span 
+ class="NDLSystemFont">NiSequenceData</span>, and <span class="NDLSystemFont">NULL</span> 
+ otherwise.</p>
+
+<a name="Functions_for_removing_sequences"></a><p class="NDLRefHead2">Functions 
+ for removing sequence datas</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiSequenceData.htm">NiSequenceDataPtr</a> 
+ RemoveSequenceData(const <a HREF="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kName)</p>
+
+<p class="NDLRefMemberDescription">This function removes the <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> with the specified 
+ name from the manager. The sequence is returned via a smart pointer so 
+ that it is not immediately destroyed upon removal. All default activation 
+ callbacks explicitly assigned to this manager are removed from the returned 
+ sequence. Note this function does not deactivate or remove any <span class="NDLSystemFont"><a 
+ HREF="NiControllerSequence.htm">NiControllerSequence</a></span> objects 
+ (i.e. active sequences) which utilize the returned sequence as a source 
+ <span class="NDLSystemFont">NiSequenceData</span>. The application must 
+ handle these <span class="NDLSystemFont">NiControllerSequence</span> objects 
+ separately.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiSequenceData.htm">NiSequenceDataPtr</a> 
+ RemoveSequenceData(<a HREF="NiSequenceData.htm">NiSequenceData</a>* pkSeqData)</p>
+
+<p class="NDLRefMemberDescription">This function removes the specified <span 
+ class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ from the manager. The sequence is returned via a smart pointer so that 
+ it is not immediately destroyed upon removal. All default activation callbacks 
+ explicitly assigned to this manager are removed from the returned sequence. 
+ Note this function does not deactivate or remove any <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> objects 
+ (i.e. active sequences) which utilize the returned sequence as a source 
+ <span class="NDLSystemFont">NiSequenceData</span>. The application must 
+ handle these <span class="NDLSystemFont">NiControllerSequence</span> objects 
+ separately.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAllSequenceDatas()</p>
+
+<p class="NDLRefMemberDescription">This function removes all the <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> objects that have 
+ been added to the manager. All default activation callbacks explicitly 
+ assigned to this manager are removed from the registered sequences. Note 
+ this function does not deactivate or remove any <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> objects 
+ (i.e. active sequences) running on the manager. The application must handle 
+ these <span class="NDLSystemFont">NiControllerSequence</span> objects separately.</p>
+
+<a name="Functions_for_retrieving_sequences"></a><p class="NDLRefHead2">Functions 
+ for retrieving sequence datas</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSequenceDataCount() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the total number 
+ of <span class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ objects that have been added to the manager.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiSequenceData.htm">NiSequenceData</a>* 
+ GetSequenceDataByName(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ pcName) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> with the specified 
+ name that has been added to the manager. If no sequence with that name 
+ is found, it returns <span class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiSequenceData.htm">NiSequenceData</a>* 
+ GetSequenceDataAt(unsigned int uiIndex) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> at the specified index 
+ in the manager's <span class="NDLSystemFont">NiSequenceData</span> array. 
+ <span class="NDLSystemFont">uiIndex</span> must be less than <span class="NDLSystemFont">GetSequenceDataCount</span>. 
+ The list is not kept in compact form so the returned pointer may be <span 
+ class="NDLSystemFont">NULL</span> for any given index.</p>
+
+<a name="Functions_for_activating_sequences"></a><p class="NDLRefHead2">Functions 
+ for activating sequences</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiControllerSequence.htm">NiControllerSequence</a>* 
+ ActivateSequence(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSequenceDataName, int iPriority = 0, float fWeight = 1.0f, float fEaseInTime 
+ = 0.0f, <a href="NiControllerSequence.htm">NiControllerSequence</a>* pkTimeSyncSeq 
+ = NULL, float fFrequency = SEQUENCE_DATA_FREQUENCY, float fStartFrame 
+ = 0.0f,  bool bAdditiveBlend = false, float fAdditiveRefFrame = 0.0f)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ ActivateSequence(NiSequenceData* pkSeqData, int iPriority = 0, float fWeight 
+ = 1.0f, float fEaseInTime = 0.0f, <a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkTimeSyncSeq = NULL, float fFrequency = SEQUENCE_DATA_FREQUENCY, float 
+ fStartFrame = 0.0f, bool bAdditiveBlend = false, float fAdditiveRefFrame = 0.0f)</p>
+
+<p class="NDLRefMemberDescription">These functions play the specified <span 
+ class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ at the specified <a href="NiControllerManager.htm#Priorities">priority</a> 
+ and <a href="NiControllerManager.htm#Weights">weight</a>. It also allows you to specify
+ whether <a href="Animation_Blending_Overview.htm#AdditiveBlending">additive blending</a> will
+ be used and what frame to use as the additive animation reference frame. The specified 
+ <span class="NDLSystemFont">NiSequenceData</span> must have been previously 
+ added to the manager. An <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ is created to represent the active animation and maintain the required 
+ instance data to play back the sequence on this character. <span class="NDLSystemFont">fEaseInTime</span> 
+ specifies a time period over which the weight will be ramped up from 0.0 
+ to the weight specified by <span class="NDLSystemFont">fWeight</span>. This 
+ is used for <a href="NiControllerManager.htm#Easing_In_and_Out">easing 
+ in</a> sequences so that they do not pop when activated over other running 
+ sequences. <span class="NDLSystemFont">pkTimeSyncSeq</span> is an optional 
+ sequence with which the time for the activated sequence is <a href="NiControllerManager.htm#Time_Synchronization">synchronized</a>. 
+ This synchronization is done via the morph text keys in each sequence. 
+ If at least one pair of identical morph text keys is not found in each 
+ sequence, this function will return <span class="NDLSystemFont">NULL</span>. 
+ The requirements for synchronizing two sequences are similar to those 
+ for morphing two sequences. See the <a href="NiControllerManager.htm#Time_Synchronization">notes</a> 
+ below for a description of time synchronization and the morph text key 
+ requirements for the sequences involved. <span class="NDLSystemFont">fFrequency</span> 
+ specifies the speed at which the sequence should be played where 2.0 is 
+ twice the normal playback speed. When <span class="NDLSystemFont">fFrequency</span> 
+ equals <span class="NDLSystemFont">SEQUENCE_DATA_FREQUENCY</span> the frequency 
+ defaults to that of <span class="NDLSystemFont">pkSeqData</span>, the source 
+ <span class="NDLSystemFont">NiSequenceData</span>. <span class="NDLSystemFont">fStartFrame</span> 
+ specifies the frame at which to begin sequence playback. This frame time 
+ is interpreted in the local timeline of <span class="NDLSystemFont">pkSeqData</span> 
+ whereby 0.0 is its first frame and <span class="NDLSystemFont">pkSeqData-&gt;<a 
+ HREF="NiSequenceData.htm#GetDuration">GetDuration</a></span> is its final 
+ frame. This function returns the newly created <span class="NDLSystemFont">NiControllerSequence</span> 
+ upon successful activation, and <span class="NDLSystemFont">NULL</span> 
+ otherwise.</p>
+
+<p class="NDLRefMemberDescription">Upon activation, the default <a HREF="NiSequenceData.htm#Callback_Objects">callback 
+ objects</a> associated with <span class="NDLSystemFont">pkSeqData</span> 
+ are added to the newly created <span class="NDLSystemFont">NiControllerSequence</span> 
+ using a simple matching scheme based on the associated <span class="NDLSystemFont">NiControllerManager</span>. 
+ The <span class="NDLSystemFont">ActivationChanged</span> function of these 
+ added callbacks is executed to communicate the initial animation state 
+ of the <span class="NDLSystemFont">NiControllerSequence</span>.</p>
+
+<a name="Functions_for_deactivating_sequences"></a><p class="NDLRefHead2">Functions 
+ for deactivating sequences</p>
+
+<p class="NDLRefMemberFunction">bool DeactivateSequence(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSequenceName, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberFunction">bool DeactivateSequence(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSequence, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberDescription">These functions deactivate the specified 
+ <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span>. 
+ They return true if the sequence was successfully deactivated, and false 
+ otherwise. <span class="NDLSystemFont">fEaseOutTime</span> specifies a time 
+ period over which the sequence weight will be ramped down from its set 
+ value to 0.0. This is used for <a href="NiControllerManager.htm#Easing_In_and_Out">easing 
+ out</a> the sequence to avoid a pop when other sequences are still running. 
+ The <span class="NDLSystemFont">ActivationChanged</span> function of all 
+ <a HREF="NiSequenceData.htm#Callback_Objects">callback objects</a> associated 
+ with the deactivated <span class="NDLSystemFont">NiControllerSequence</span> 
+ is called to communicate the latest animation state.</p>
+
+<p class="NDLRefMemberFunction">void DeactivateAll(float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberDescription">This function deactivates all the <span 
+ class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ objects in the manager, using the specified <a href="NiControllerManager.htm#Easing_In_and_Out">ease 
+ out</a> time for each. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a href="NiSequenceData.htm#Callback_Objects">callback 
+ objects</a> associated with each deactivated <span class="NDLSystemFont">NiControllerSequence</span> 
+ is called to communicate the latest animation state.</p>
+
+<a name="Functions_for_retrieving_actively_playing_sequences"></a><p class="NDLRefHead2">Functions 
+ for retrieving active sequences</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSequenceCount() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the number of entries 
+ in the manager's <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ (i.e. active sequence) list.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ GetSequenceByName(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ pcName) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the first <span 
+ class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ in the manager's <span class="NDLSystemFont">NiControllerSequence</span> 
+ (i.e. active sequence) list with the specified name. If no sequence with 
+ that name is found, it returns <span class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ GetSequenceBySequenceData(const <a href="NiSequenceData.htm">NiSequenceData</a>* 
+ pkSeqData) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the first <span 
+ class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ in the manager's <span class="NDLSystemFont">NiControllerSequence</span> 
+ (i.e. active sequence) list with the specified source <span class="NDLSystemFont"><a 
+ href="NiSequenceData.htm">NiSequenceData</a></span>. If no sequence has 
+ <span class="NDLSystemFont">pkSeqData</span> as its source, it returns <span 
+ class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ GetSequenceAt(unsigned int uiIndex) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> at the 
+ specified index in the manager's <span class="NDLSystemFont">NiControllerSequence</span> 
+ (i.e. active sequence) list. <span class="NDLSystemFont">uiIndex</span> 
+ must be less than <span class="NDLSystemFont">GetSequenceCount</span>. The 
+ list is not kept in compact form so the returned pointer may be <span 
+ class="NDLSystemFont">NULL</span> for any given index.</p>
+
+<a name="Functions_for_removing_actively_playing_sequences"></a><p class="NDLRefHead2">Functions 
+ for removing actively playing sequences</p>
+
+<p class="NDLRefMemberFunction">void RemoveAllSequences()</p>
+
+<p class="NDLRefMemberDescription">This function removes all sequences from 
+ the manager's <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ (i.e. active sequence) list regardless of their animation state. The <span 
+ class="NDLSystemFont">ActivationChanged</span> function of <a HREF="NiSequenceData.htm#Callback_Objects">callback 
+ objects</a> associated with each <span class="NDLSystemFont">NiControllerSequence</span> 
+ is not called. This operation does not affect associated <span class="NDLSystemFont"><a 
+ href="NiSequenceData.htm">NiSequenceData</a></span> objects except those 
+ designated as <a href="NiControllerManager.htm#Functions_for_creating_pose_sequences">temporary 
+ poses</a>. Removed sequences are candidates for <a href="NiControllerManager.htm#Sequence_Recycling">recycling</a>.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAllInactiveSequences(bool bIgnoreRefCount 
+ = false)</p>
+
+<p class="NDLRefMemberDescription">This function searches the manager's <span 
+ class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ (i.e. active sequence) list for sequences in the <span class="NDLSystemFont"><a 
+ HREF="NiControllerSequence.htm#NiAnimState">INACTIVE</a></span> state 
+ and removes them. This operation does not affect associated <span class="NDLSystemFont"><a 
+ href="NiSequenceData.htm">NiSequenceData</a></span> objects except those 
+ designated as <a href="NiControllerManager.htm#Functions_for_creating_pose_sequences">temporary 
+ poses</a>. All inactive sequences are removed regardless of their reference 
+ count when <span class="NDLSystemFont">bIgnoreRefCount</span> is true. If 
+ <span class="NDLSystemFont">bIgnoreRefCount</span> is false, only inactive 
+ sequences with no outstanding references are removed. Removed sequences 
+ are candidates for <a href="NiControllerManager.htm#Sequence_Recycling">recycling</a>. 
+ Note the manager already performs this operation as part of its <span 
+ class="NDLSystemFont">Update</span> function. <span class="NDLSystemFont">RemoveAllInactiveSequences</span> 
+ is provided to handle special cases whereby inactive sequences must be 
+ flushed from the manager at a specific time.</p>
+
+<a name="Functions_for_setting_sequence_weight"></a><p class="NDLRefHead2">Functions 
+ for setting sequence weight</p>
+
+<p class="NDLRefMemberFunction">bool SetSequenceWeight(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSequenceName, float fWeight)</p>
+
+<p class="NDLRefMemberFunction">bool SetSequenceWeight(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSequence, float fWeight)</p>
+
+<p class="NDLRefMemberDescription">These functions set the stored <a href="NiControllerManager.htm#Weights">weight</a> 
+ for the specified <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span>. 
+ The weight is not ramped from its previous value to its new value, so 
+ changing the sequence weight by a large amount may result in a visible 
+ pop in the animated character.</p>
+
+<a name=Functions_for_cross_fading_two_sequences></a><p class="NDLRefHead2">Functions 
+ for cross fade transitions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ CrossFade(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, float fDuration, int iPriority = 0, float fDestWeight 
+ = 1.0f, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTimeSyncSeqName = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ CrossFade(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSourceSequence, <a href="NiSequenceData.htm">NiSequenceData</a>* pkDestSeqData, 
+ float fDuration, int iPriority = 0, float fDestWeight = 1.0f, <a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkDestTimeSyncSeq = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberDescription">These functions trigger a <a href="NiControllerManager.htm#Cross_Fade_Transitions">cross 
+ fade transition</a> between the two specified sequences over the specified 
+ duration (given in seconds). The source sequence must be an actively playing 
+ <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span>. 
+ The destination <span class="NDLSystemFont"><a href="NiSequenceData.htm">NiSequenceData</a></span> 
+ must have been previously added to the manager. These functions return 
+ a newly created <span class="NDLSystemFont">NiControllerSequence</span> 
+ representing the newly activated destination sequence. <span class="NDLSystemFont">iPriority</span> 
+ specifies the new priority for both sequences. <span class="NDLSystemFont">fDestWeight</span> 
+ specifies the weight of the destination sequence at the end of the transition 
+ (ramping up from 0.0 at its start). If a time sync sequence is specified, 
+ the destination sequence is synchronized with it. <span class="NDLSystemFont">fDestFrequency</span> 
+ specifies the speed at which the destination sequence should be played. 
+ When <span class="NDLSystemFont">fDestFrequency</span> equals <span class="NDLSystemFont">SEQUENCE_DATA_FREQUENCY</span> 
+ the frequency defaults to that of the destination <span class="NDLSystemFont">NiSequenceData</span>. 
+ If any problems occur, <span class="NDLSystemFont">NULL</span> is returned. 
+ The <span class="NDLSystemFont">ActivationChanged</span> function of all 
+ <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> associated 
+ with the source and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state.</p>
+
+<a name=Functions_for_blend_transitions></a><p class="NDLRefHead2">Functions 
+ for blend transitions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ BlendFromSequence(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, float fDuration, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTextKey, int iPriority = 0, float fSourceWeight = 1.0f, float fDestWeight 
+ = 1.0f, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTimeSyncSeqName = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ BlendFromSequence(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, float fDuration, float fDestFrame = 0.0f, int iPriority 
+ = 0, float fSourceWeight = 1.0f, float fDestWeight = 1.0f, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTimeSyncSeqName = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ BlendFromSequence(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSourceSequence, <a href="NiSequenceData.htm">NiSequenceData</a>* pkDestSeqData, 
+ float fDuration, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTextKey, int iPriority = 0, float fSourceWeight = 1.0f, float fDestWeight 
+ = 1.0f, <a href="NiControllerSequence.htm">NiControllerSequence</a>* pkDestTimeSyncSeq 
+ = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ BlendFromSequence(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSourceSequence, <a href="NiSequenceData.htm">NiSequenceData</a>* pkDestSeqData, 
+ float fDuration, float fDestFrame = 0.0f, int iPriority = 0, float fSourceWeight 
+ = 1.0f, float fDestWeight = 1.0f, <a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkDestTimeSyncSeq = NULL, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">BlendFromSequence</span> 
+ performs a <a href="NiControllerManager.htm#Blend_Transitions">blend transition</a> 
+ from the specified source <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ to the specified frame in the destination <span class="NDLSystemFont"><a 
+ href="NiSequenceData.htm">NiSequenceData</a></span> over the specified 
+ duration (given in seconds). The source sequence must be an actively playing 
+ <span class="NDLSystemFont">NiControllerSequence</span>. The destination 
+ <span class="NDLSystemFont">NiSequenceData</span> must have been previously 
+ added to the manager. These functions return a newly created <span class="NDLSystemFont">NiControllerSequence</span> 
+ representing the newly activated destination sequence. If <span class="NDLSystemFont">pcDestTextKey</span> 
+ is <span class="NDLSystemFont">NULL</span> or <span class="NDLSystemFont">fDestFrame</span> 
+ is 0.0, the blend will be to the first frame of the destination sequence. 
+ <span class="NDLSystemFont">iPriority</span> specifies the <a href="NiControllerManager.htm#Priorities">priority</a> 
+ at which to (re)activate both sequences. <span class="NDLSystemFont">fSourceWeight</span> 
+ and <span class="NDLSystemFont">fDestWeight</span> specify the final <a 
+ href="NiControllerManager.htm#Weights">weights</a> to assign to the source 
+ and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects. If a time sync sequence is provided, the destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ is <a href="NiControllerManager.htm#Time_Synchronization">synchronized</a> 
+ to it. <span class="NDLSystemFont">fDestFrequency</span> specifies the speed 
+ at which the destination sequence should be played. When <span class="NDLSystemFont">fDestFrequency</span> 
+ equals <span class="NDLSystemFont">SEQUENCE_DATA_FREQUENCY</span> the destination 
+ frequency defaults to that of the destination <span class="NDLSystemFont">NiSequenceData</span>. 
+ These functions return NULL if the blend cannot be successfully started. 
+ The remainder of the destination sequence will play after the blend transition 
+ has completed. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> 
+ associated with the source and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state. Blends 
+ in progress can be stopped by calling <span class="NDLSystemFont">StopBlendFromSequence</span>.</p>
+
+<p class="NDLRefMemberFunction"><a name=StopBlendfromSequence></a>bool StopBlendFromSequence(const 
+ <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSequenceName, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberFunction">bool StopBlendFromSequence(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSourceSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkDestSequence, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberDescription">These functions prematurely stop an active 
+ <a href="NiControllerManager.htm#Blend_Transitions">blend transition</a> 
+ between the specified source and destination <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> objects. 
+ They return true when the blend had been active and both sequences were 
+ successfully deactivated; otherwise, false is returned. An optional <a 
+ href="NiControllerManager.htm#Easing_In_and_Out">ease out</a> time can 
+ be specified for deactivating the sequences. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> 
+ associated with the source and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state.</p>
+
+<a name="Functions_for_morph_transitions"></a><p class="NDLRefHead2">Functions 
+ for morph transitions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ Morph(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, float fDuration, int iPriority = 0, float fSourceWeight 
+ = 1.0f, float fDestWeight = 1.0f, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ Morph(<a href="NiControllerSequence.htm">NiControllerSequence</a>* pkSourceSequence, 
+ <a href="NiSequenceData.htm">NiSequenceData</a>* pkDestSeqData, float 
+ fDuration, int iPriority = 0, float fSourceWeight = 1.0f, float fDestWeight 
+ = 1.0f, float fDestFrequency = SEQUENCE_DATA_FREQUENCY)</p>
+
+<p class="NDLRefMemberDescription">These functions perform a <a href="NiControllerManager.htm#Morph_Transitions">morph 
+ transition</a> between the specified source <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> and the 
+ specified destination <span class="NDLSystemFont"><a href="NiSequenceData.htm">NiSequenceData</a></span> 
+ over the specified duration (given in seconds). The source sequence must 
+ be an actively playing <span class="NDLSystemFont">NiControllerSequence</span>. 
+ The destination <span class="NDLSystemFont">NiSequenceData</span> must have 
+ been previously added to the manager. These functions return a newly created 
+ <span class="NDLSystemFont">NiControllerSequence</span> representing the 
+ newly activated destination sequence. <span class="NDLSystemFont">iPriority</span> 
+ indicates the <a href="NiControllerManager.htm#Priorities">priority</a> 
+ at which each sequence should be (re)activated. <span class="NDLSystemFont">fSourceWeight</span> 
+ and <span class="NDLSystemFont">fDestWeight</span> specify the final <a 
+ href="NiControllerManager.htm#Weights">weights</a> to assign to the source 
+ and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects. <span class="NDLSystemFont">fDestFrequency</span> specifies the 
+ speed at which the destination sequence should be played. When <span class="NDLSystemFont">fDestFrequency</span> 
+ equals <span class="NDLSystemFont">SEQUENCE_DATA_FREQUENCY</span> the destination 
+ frequency defaults to that of the destination <span class="NDLSystemFont">NiSequenceData</span>. 
+ <span class="NDLSystemFont">NULL</span> is returned if the morph transition 
+ cannot be successfully started. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> 
+ associated with the source and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state.</p>
+
+<p class="NDLRefMemberFunction">bool StopMorph(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSourceSequenceName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSequenceName, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberFunction">bool StopMorph(<a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkSourceSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>* 
+ pkDestSequence, float fEaseOutTime = 0.0f)</p>
+
+<p class="NDLRefMemberDescription">These functions prematurely stop an active 
+ <a href="NiControllerManager.htm#Morph_Transitions">morph transition</a> 
+ between the specified source and destination <span class="NDLSystemFont"><a 
+ href="NiControllerSequence.htm">NiControllerSequence</a></span> objects. 
+ They return true when the morph had been active and both sequences were 
+ successfully deactivated; otherwise, false is returned. An optional <a 
+ href="NiControllerManager.htm#Easing_In_and_Out">ease out</a> time can 
+ be specified for deactivating the sequences. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> 
+ associated with the source and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state.</p>
+
+<a name="Alternate_functions_for_blend_transitions"></a><p class="NDLRefHead2">Alternate 
+ blend transition functions which blend from the current state of the scene 
+ graph</p>
+
+<p>The following functions have performance and memory 
+ penalties associated with them in comparison to <span class="NDLSystemFont"><a 
+ href="NiControllerManager.htm#Functions_for_blend_transitions">BlendFromSequence</a></span>. 
+ Consequently, it is recommended that <span class="NDLSystemFont">BlendFromPose</span> 
+ be used only when <span class="NDLSystemFont">BlendFromSequence</span> is 
+ not applicable. See the <a href="NiControllerManager.htm#Blend_Transitions">notes</a> 
+ section below for more information about blend transitions and how to 
+ use them.</p>
+
+<p class="NDLRefMemberFunction">bool BlendFromPose(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTextKey, float fDuration, int iPriority, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSeqDataToSynchronize, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkPoseSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkDestSequence)</p>
+
+<p class="NDLRefMemberFunction">bool BlendFromPose(const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestSeqDataName, float fDestFrame, float fDuration, int iPriority, const 
+ <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kSeqDataToSynchronize, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkPoseSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkDestSequence)</p>
+
+<p class="NDLRefMemberFunction">bool BlendFromPose(<a href="NiSequenceData.htm">NiSequenceData</a>* 
+ pkDestSeqData, const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ kDestTextKey, float fDuration, int iPriority, <a href="NiSequenceData.htm">NiSequenceData</a>* 
+ pkSeqDataToSynchronize, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkPoseSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkDestSequence)</p>
+
+<p class="NDLRefMemberFunction">bool BlendFromPose(<a href="NiSequenceData.htm">NiSequenceData</a>* 
+ pkDestSeqData, float fDestFrame, float fDuration, int iPriority, <a href="NiSequenceData.htm">NiSequenceData</a>* 
+ pkSeqDataToSynchronize, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkPoseSequence, <a href="NiControllerSequence.htm">NiControllerSequence</a>*&amp; 
+ pkDestSequence)</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">BlendFromPose</span> 
+ performs a <a href="NiControllerManager.htm#Blend_Transitions">blend transition</a> 
+ from the current scene graph state of the character to the specified frame 
+ in the destination <span class="NDLSystemFont"><a href="NiSequenceData.htm">NiSequenceData</a></span> 
+ over the specified duration (given in seconds). The destination <span 
+ class="NDLSystemFont">NiSequenceData</span> must have been previously added 
+ to the manager. If <span class="NDLSystemFont">pcDestTextKey</span> is <span 
+ class="NDLSystemFont">NULL</span> or <span class="NDLSystemFont">fDestFrame</span> 
+ is 0.0, the blend will be to the first frame of the destination sequence. 
+ <span class="NDLSystemFont">iPriority</span> specifies the <a href="NiControllerManager.htm#Priorities">priority</a> 
+ at which to activate both sequences. <span class="NDLSystemFont"><a href="NiControllerManager.htm#Functions_for_creating_pose_sequences">AddPoseSequenceData</a></span> 
+ is called internally to create a temporary <span class="NDLSystemFont">NiSequenceData</span> 
+ to hold the character's pose. <span class="NDLSystemFont">pkSeqDataToSynchronize</span> 
+ dictates which scene graph attributes are captured in this new pose sequence. 
+ The newly created <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ objects for the pose sequence and destination sequence are returned via 
+ the last two parameters. These functions return false if the blend cannot 
+ be successfully started. The remainder of the destination sequence will 
+ play after the blend transition has completed. The <span class="NDLSystemFont">ActivationChanged</span> 
+ function of all <a HREF="NiSequenceData.htm#Callback_Objects">callbacks</a> 
+ associated with the pose and destination <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects is executed to communicate their latest animation state. Blends 
+ in progress can be stopped by calling <span class="NDLSystemFont"><a href="NiControllerManager.htm#StopBlendfromSequence">StopBlendFromSequence</a></span>.</p>
+
+<a name="Functions_relating_to_transformation_accumulation"></a><p class="NDLRefHead2">Functions 
+ relating to transformation accumulation</p>
+
+<p>See the <a href="NiControllerManager.htm#Transformation_Accumulation">notes</a> 
+ below for the explanation of transformation accumulation.</p>
+
+<p class="NDLRefMemberFunction">bool GetCumulativeAnimations() const</p>
+
+<p class="NDLRefMemberDescription">This function returns true when <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is enabled on the manager, and false otherwise. Transformation 
+ accumulation can only be enabled via the <span class="NDLSystemFont">NiControllerManager</span> 
+ constructor. Once activated on a character, transformation accumulation 
+ cannot be deactivated.</p>
+
+<p class="NDLRefMemberFunction">const <a href="../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp; 
+ GetAccumRootName() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the name of the 
+ accumulation root node for the manager. An empty string is returned when 
+ the accumulation root has not been defined or <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is inactive.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>* 
+ GetAccumRoot() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the scene graph 
+ node on which the root transform is accumulated for the manager. <span 
+ class="NDLSystemFont">NULL</span> is returned when the accumulation root 
+ has not been defined or <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is inactive.</p>
+
+<p class="NDLRefMemberFunction">bool GetAccumulatedTransform(<a HREF="NiQuatTransform.htm">NiQuatTransform</a>&amp; 
+ kTransform) const</p>
+
+<p class="NDLRefMemberDescription">If <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is enabled on the manager, this function returns true 
+ and obtains the current value of the character's accumulated transform. 
+ This function returns false when transformation accumulation is not active.</p>
+
+<p class="NDLRefMemberFunction">void SetAccumulatedTransform(const <a HREF="NiQuatTransform.htm">NiQuatTransform</a>&amp; 
+ kTransform)</p>
+
+<p class="NDLRefMemberDescription">If <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is enabled on the manager, this function sets the character's 
+ accumulated transform. Any changes to this accumulation value are immediately 
+ propagated to the local transform of the accumulation root node.</p>
+
+<p class="NDLRefMemberFunction">void ClearCumulativeAnimations()</p>
+
+<p class="NDLRefMemberDescription">If <a href="NiControllerManager.htm#Transformation_Accumulation">transformation 
+ accumulation</a> is enabled on the manager, this function clears the character's 
+ accumulated transform by setting it to identity. This modification is 
+ immediately propagated to the local transform of the accumulation root 
+ node.</p>
+
+<a name="Functions_for_recycling_sequences"></a><p class="NDLRefHead2">Functions 
+ for recycling sequences</p>
+
+<p>See the <a href="NiControllerManager.htm#Sequence_Recycling">notes</a> 
+ below for a description of sequence recycling.</p>
+
+<p class="NDLRefMemberFunction">unsigned short GetNumRecycledSequences() 
+ const</p>
+
+<p class="NDLRefMemberDescription">This function returns the number of recycled 
+ <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ objects held by the controller manager which are available for use upon 
+ the next sequence activation.</p>
+
+<p class="NDLRefMemberFunction">unsigned short GetMaxRecycledSequences() 
+ const</p>
+
+<p class="NDLRefMemberDescription">This function returns the maximum number 
+ of recycled <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ objects the controller manager will hold onto for use with subsequent 
+ sequence activations. The default maximum is <span class="NDLSystemFont">USHRT_MAX</span>, 
+ which is essentially unlimited. Applications may call <span class="NDLSystemFont">SetMaxRecycledSequences</span> 
+ to modify the maximum.</p>
+
+<p class="NDLRefMemberFunction">void SetMaxRecycledSequences(unsigned short 
+ usMaxRecycledSequences)</p>
+
+<p class="NDLRefMemberDescription">This function sets the maximum number 
+ of recycled <span class="NDLSystemFont"><a href="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ objects the controller manager will hold onto for use with subsequent 
+ sequence activations. Setting the maximum to 0 flushes the recycled sequence 
+ list and disables sequence recycling. If recycling is disabled on a character, 
+ all <span class="NDLSystemFont">NiControllerSequence</span> objects played 
+ on the character will be destroyed shortly after the animation completes.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAllRecycledSequences()</p>
+
+<p class="NDLRefMemberDescription">This function flushes the recycled sequence 
+ list.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name=Priorities></a><p class="NDLRefHead2">Priorities</p>
+
+<p>Each sequence that is activated is assigned a priority. 
+ The priority indicates what precedence the sequence has over other active 
+ sequences. The default priority for all sequences is 0. If a sequence 
+ is activated with a higher priority, it will take complete precedence 
+ over the lower priority sequences once it is at full strength (i.e. not 
+ easing in or out). This is useful for activating sequences that control 
+ part of a character while a full body sequence plays at a lower priority. 
+ For example, a full body walk sequence could be active with a priority 
+ of 0 and an arm wave sequence could be activated with a priority of 1. 
+ The arm wave sequence would take precedence over the walk sequence for 
+ the bones it controls, causing the arm to wave while the remainder of 
+ the body continues to walk. Refer to this <a href="Animation_Blending_Overview.htm#Overview_of_Sequence_Blending">section</a> 
+ in Animation Basics for additional information regarding sequence blending 
+ with priority and weight.</p>
+
+<a name=Weights></a><p class="NDLRefHead2">Weights</p>
+
+<p>Upon activation each sequence is assigned a weight in 
+ the range from 0.0 to 1.0. This value defines the maximum weight the sequence 
+ will have once it reaches full strength (i.e. not easing in or out). If 
+ multiple sequences are active on a given bone, sequence weights are normalized 
+ at each priority level before blending with sequences at other priorities. 
+ Effectively, this means the weight of a sequence describes how it blends 
+ with other sequences at the same priority. For example, &quot;look right&quot; 
+ and &quot;look left&quot; sequences can be activated at priority 0 with 
+ a weight of 0.5 each to achieve an end result of looking straight ahead. 
+ These same sequences can both be weighted 1.0 (or even 0.0) to produce 
+ an identical outcome due to the normalization process that occurs at each 
+ priority level. Weights can be changed on the fly with <span class="NDLSystemFont">SetSequenceWeight</span>, 
+ which is particularly useful for adjusting weights within sequence groups 
+ to reflect changes in the environment or modifications to a character's 
+ internal state during gameplay. Refer to this <a href="Animation_Blending_Overview.htm#Overview_of_Sequence_Blending">section</a> 
+ in Animation Basics for additional information regarding sequence blending 
+ with priority and weight.</p>
+
+<a name=Easing_In_and_Out></a><p class="NDLRefHead2">Easing In and Out</p>
+
+<p>When sequences are activated and deactivated their effective 
+ weight values can be eased in and out to achieve smooth transitions in 
+ the final result. The durations for this easing are specified in the <span 
+ class="NDLSystemFont">ActivateSequence</span> and <span class="NDLSystemFont">DeactivateSequence</span> 
+ functions as well as most transition functions. When being eased in, the 
+ weight value is ramped up from 0.0 to the weight that was specified in 
+ the activation function. Similarly, when being eased out, the weight value 
+ is ramped down from the specified weight to 0.0. Refer to this <a href="Animation_Blending_Overview.htm#Overview_of_Sequence_Blending">section</a> 
+ in Animation Basics for additional information regarding sequence blending 
+ with priority and weight.</p>
+
+<a name=Blend_Transitions></a><p class="NDLRefHead2">Blend Transitions</p>
+
+<p>A blend transition moves between static frames in two 
+ sequences and is activated with the <span class="NDLSystemFont"><a href="NiControllerManager.htm#Functions_for_blend_transitions">BlendFromSequence</a></span> 
+ function. The source sequence is eased out while the destination sequence 
+ is eased in over the duration of the blend, with each sequence being locked 
+ to a particular frame. Blend transitions are good for smoothly transitioning 
+ between two sequences with very different styles of movement (e.g. between 
+ an <em>idle</em> animation and a <em>walk</em> animation). Note that when 
+ accumulating transformations for the character, using a blend transition 
+ will cause all forward movement to stop for the duration of the blend, 
+ since only a static frame in each sequence is used.</p>
+
+<p>An alternate type of blend is one that blends from the 
+ current scene graph pose of the character to a specified frame in some 
+ destination sequence. This type of blend is activated with the <span class="NDLSystemFont"><a 
+ href="NiControllerManager.htm#Alternate_functions_for_blend_transitions">BlendFromPose</a></span> 
+ function. This can be useful when the character is in a random position 
+ (e.g. after a physics simulation) and a smooth transition is needed back 
+ to a sequence. Note, however, that a temporary sequence is created for 
+ <span class="NDLSystemFont">BlendFromPose</span> that contains current scene 
+ graph data for the character, such as bone transforms, so there is some 
+ processing and memory overhead associated with this type of blend. Whenever 
+ possible, it is recommended that <span class="NDLSystemFont">BlendFromSequence</span> 
+ be used instead. <span class="NDLSystemFont">BlendFromPose</span> should 
+ only be used if the character is not currently in a position corresponding 
+ to a frame in another sequence.</p>
+
+<a name=Cross_Fade_Transitions></a><p class="NDLRefHead2">Cross Fade Transitions</p>
+
+<p>A cross fade transition eases out a source sequence 
+ while easing in a destination sequence over a specified duration. No time 
+ synchronization is performed between the two sequences, so if they are 
+ different lengths or have different frequencies, visual artifacts may 
+ occur. <span class="NDLSystemFont"><a href="NiControllerManager.htm#Functions_for_cross_fading_two_sequences">CrossFade</a></span> 
+ is simply a convenience function that calls <span class="NDLSystemFont">Deactivate</span> 
+ on the source sequence and <span class="NDLSystemFont">Activate</span> on 
+ the destination sequence, specifying the duration for the fade out and 
+ fade in times. Cross fade transitions are good for smoothly transitioning 
+ between two sequences that have similar styles of movement and for transitions 
+ in which the flow of movement needs to be continuous where the sequences 
+ need not be synchronized.</p>
+
+<a name=Morph_Transitions></a><p class="NDLRefHead2">Morph Transitions</p>
+
+<p>A morph transition eases out a source sequence while 
+ easing in a destination sequence over a specified duration. Time synchronization 
+ is performed between the sequences, with the destination sequence determining 
+ the update time that is used by the source sequence. See the <a href="NiControllerManager.htm#Time_Synchronization">time 
+ synchronization notes</a> section for more information about this. A morph 
+ transition is just a cross fade transition that performs time synchronization. 
+ Morph transitions are good for smoothly transitioning between two sequences 
+ that have similar styles of movement and for transitions in which the 
+ flow of movement needs to be continuous where the sequences must be synchronized.</p>
+
+<a name=Time_Synchronization></a><p class="NDLRefHead2">Time Synchronization</p>
+
+<p>With time synchronization, the update time for one sequence 
+ is determined by another sequence. This results in time compression being 
+ performed for the first sequence so that its timing directly corresponds 
+ with the second sequence. This allows sequences with different lengths 
+ and frequencies to be run simultaneously, with one sequence synchronized 
+ to the other. This eliminates potential artifacts of animation blending, 
+ such as having foot falls come at different points in each sequence, which 
+ is common with walk and run sequences. Any activated sequence can be optionally 
+ synchronized to any other sequence. Circular dependencies are detected 
+ and rejected by the activation functions.</p>
+
+<p>In order for time synchronization to be used between 
+ two sequences, the sequences must have been marked with identical pairs 
+ of morph text keys in 3ds max or Maya. For example, a <em>walk</em> animation 
+ and a <em>run</em> animation could each have a morph text key named &quot;morph: 
+ knees together&quot; at the point in each animation where the knees are 
+ together. Additionally, they could also have an identical pair of morph 
+ text keys called &quot;morph: left foot down&quot; at the point in each 
+ animation when the left foot is on the ground. All identical pairs of 
+ morph text keys that are found in the two sequences are used for synchronization 
+ so the animation looks correct even if the two sequences are of different 
+ lengths. See the <a HREF="../../Art/Max/Animation_Manager_Reference_and_Description.htm">3ds 
+ max</a> and <a HREF="../../Art/Maya/Animation_Sequence_Window.htm">Maya</a> 
+ documentation for more information about defining morph text keys for 
+ sequences.</p>
+
+<a name=Transformation_Accumulation></a><p class="NDLRefHead2">Transformation 
+ Accumulation</p>
+
+<p>A scene graph node which supports transformation values 
+ may be designated as the accumulation root for a character, in which case, 
+ animated transform data (i.e. translation, rotation, and scale) applied 
+ to this node is accumulated from one Update frame to the next. In essence, 
+ the animated data is treated as relative or delta values instead of absolute 
+ values. This mechanism is particularly useful for walk cycles and other 
+ sequences which propel the character through the world. For example, if 
+ the accumulation root is translated from 0.0 to 10.0 the first time a 
+ sequence is played, it would translate from 10.0 to 20.0 the next time 
+ the animation is played.</p>
+
+<p>The accumulation root and the accumulation options for 
+ each sequence are specified inside 3ds max and Maya before export. During 
+ execution of the <a HREF="../../../Tool_Plug_ins/Controller_Extractor.htm">Controller 
+ Extractor export plug-in</a>, the transforms on the accumulation root 
+ are re-arranged such that all the transformations on the accumulation 
+ root are accumulated, and those that are not reside on a &quot;NonAccum&quot; 
+ node below it in the scene graph. This adjustment allows the <span class="NDLSystemFont">NiControllerManager</span> 
+ to accumulate just the desired channels on the accumulation root during 
+ runtime playback.</p>
+
+<p>In addition to setting the accumulation options during 
+ sequence export, transformation accumulation must be enabled at runtime 
+ on the <span class="NDLSystemFont">NiControllerManager</span> via the <span 
+ class="NDLSystemFont">bCumulativeAnimations</span> parameter in its constructor. 
+ During construction the accumulation transform associated with the manager 
+ is initialized with the transform on the accumulation root node. In general, 
+ this is the identity transform (see the <a href="NiControllerManager.htm#Constructors">constructor</a> 
+ for details). If accumulation is not enabled, the manager will treat all 
+ sequence data on the accumulation root as absolute data instead of relative 
+ delta values regardless of the sequence export options.</p>
+
+<p>When transformation accumulation is enabled on a manager 
+ the first two indices of the float, point3, and quaternion data sections 
+ of associated sequence <a HREF="NiPoseBuffer.htm">pose buffers</a> are 
+ reserved for accumulation data. Index 0 holds the absolute accumulation 
+ transform, and index 1 stores the delta with respect to the accumulation 
+ transform at the previous Update time. Active sequences fill these pose 
+ buffer locations with their latest data on each <span class="NDLSystemFont">Update</span> 
+ call. The actual accumulation is performed by the <span class="NDLSystemFont"><a 
+ HREF="NiMultiTargetPoseHandler.htm">NiMutiTargetPoseHandler</a></span> 
+ owned by the controller manager. To minimize accumulated floating point 
+ round-off error the multi-target pose handler uses the absolute transform 
+ value stored at index 0 in the pose buffer if a single sequence is active; 
+ otherwise, it adds the delta value contained at index 1 to the current 
+ accumulation transform. In addition to updating its internal accumulation 
+ transform, the multi-target pose handler immediately propagates the new 
+ value to the local transform of the accumulation root node in the scene 
+ graph.</p>
+
+<a name=Sequence_Recycling></a><p class="NDLRefHead2">Sequence Recycling</p>
+
+<p>An <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ object is temporarily created whenever an <span class="NDLSystemFont"><a 
+ HREF="NiSequenceData.htm">NiSequenceData</a></span> is activated (i.e. 
+ played) on a character. This <span class="NDLSystemFont">NiControllerSequence</span> 
+ represents the active animation and is destroyed shortly after the active 
+ sequence runs to completion. Sequence recycling allows these <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects to be reused on subsequent sequence activations rather than created 
+ and destroyed for each activation.</p>
+
+<p>Each <span class="NDLSystemFont">NiControllerManager</span> 
+ maintains a list of recycled inactive <span class="NDLSystemFont">NiControllerSequence</span> 
+ objects that were previously played on the character. Upon sequence activation 
+ the controller manager grabs an <span class="NDLSystemFont">NiControllerSequence</span> 
+ from this recycled list to play the newly activated animation. A new <span 
+ class="NDLSystemFont">NiControllerSequence</span> is constructed whenever 
+ the recycled list is empty. After an active animation runs to completion 
+ the <span class="NDLSystemFont">NiControllerManager</span> places the now 
+ inactive <span class="NDLSystemFont">NiControllerSequence</span> in the 
+ recycled list instead of destroying it. This technique of recycling sequences 
+ improves runtime performance and minimizes memory fragmentation at the 
+ expense of a slightly larger memory footprint.</p>
+
+<p>Recycling is enabled by default on each character. Applications 
+ can limit the number of recycled sequences on a character via <span class="NDLSystemFont"><a 
+ href="NiControllerManager.htm#Functions_for_recycling_sequences">SetMaxRecycledSequences</a></span>. 
+ This same function may be used to disable recycling altogether, in which 
+ case, all <span class="NDLSystemFont">NiControllerSequence</span> objects 
+ played on the character will be destroyed shortly after each animation 
+ completes.</p>
+
+<p>Note that recycling is controlled on a character by 
+ character basis. Clones of an <span class="NDLSystemFont">NiControllerManager</span> 
+ are initialized with the recycling behavior of their source manager.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

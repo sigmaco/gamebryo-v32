@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Shader Service Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Shader Service Overview</h1>
+
+<p>The <a href=
+"../../Reference/QuickRef_Services/svc_qckref_shader_svc.htm"><span class="NDLSystemFont">
+ecr::ShaderService</span></a> class is used to load shaders. Most
+applications that render objects will register an instance of the
+<span class="NDLSystemFont">ecr::ShaderService</span> class with
+the <a href=
+"../../Reference/efd/efd__ServiceManager.htm">ServiceManager</a>.</p>
+
+<p>All of the work of the ShaderService is done during
+<span class="NDLSystemFont">OnInit</span> and <span class=
+"NDLSystemFont">OnShutdown</span>. The service requests all
+assets with a mime type matching known shader libraries (see
+<a href=
+"../../Reference/NiMain/NiShaderLibrary.htm">NiShaderLibrary</a>).
+Each shader library reports a set of mime types associated with that
+library. For example, the NiD3DXEffectShaderLibrary supports mime types
+"urn:fx-shader" and "urn:fx-shader-compiled". In order for the ShaderService
+to load the shaders for a given shader library that library <i>must</i> be 
+linked into the application and have its top level header included in the application.</p>
+
+<p>
+All of the Gamebryo shader libraries make use of the Gamebryo SDM (static data manager) 
+initialization chain. Each shader library registers itself with the NiShaderFactory when
+they are initialized through the SDM initialization chain. However, for a shader library's
+to be initialized it <i>must</i> be both linked into the application and have it's top
+level header included in the application. If an application fails to both link in and 
+include a shader library's top level then the shader library will not be registered and
+the ShaderService will not load any shaders for that library. Additionally, the shader service 
+uses an <a href="../AssetRuntimeService/asset_runtime_intro.htm">asset locator
+request</a> to find shaders to load. It is thus essential that
+shaders be including in the directories processed by the Asset
+Locator.</p>
+
+<p>To prevent large hitches while loading shaders the ShaderService will spend a maximum of 10 milliseconds, by default, 
+in <span class="NDLSystemFont">OnInit</span>. The 
+time restriction on <span class="NDLSystemFont">OnInit</span> is to allow time for other
+services to tick while shader loading is occurring. Due to the <span class="NDLSystemFont">OnInit</span> time restriction 
+the ShaderService may require many ticks before it is able to complete initialization. The 
+<span class="NDLSystemFont">ShaderService::OnInit</span> operation time is evaluated after every shader load. Meaning it
+is possible for the ShaderService to spend more than the maximum allowed amount of time in 
+<span class="NDLSystemFont">ShaderService::OnInit</span> if a single shader takes longer than that amount of time to load.
+</p>
+
+<p>Shaders that are located by the Asset Locator are loaded and
+made available for the Core Runtime shader system. No further
+processing is done until <span class=
+"NDLSystemFont">OnShutdown</span>, when all of the shader
+resources are released.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

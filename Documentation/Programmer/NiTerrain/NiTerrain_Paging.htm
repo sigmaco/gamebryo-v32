@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Paging System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiTerrain Paging System</h1>
+
+  <p>The terrain paging system refers to the automatic process of loading and unloading sectors of 
+  terrain according to some predefined algorithm. This algorithm may simply be a selection set of 
+  sectors to load to full detail, or perhaps a more complicated process determined by a reference 
+  camera's distance to a sector.</p>
+  
+  <p>This system is implemented through the definition of a 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainSectorSelector.htm">NiTerrainSectorSelector</a></span> object. Each 
+  instance of a <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrain.htm">NiTerrain</a></span> must have an implementation of this class assigned to it, and by default, 
+  the terrain will use the <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainSectorSelectorDefault.htm">NiTerrainSectorSelectorDefault</a></span> implementation. Sector selectors are 
+  responsible for creating a selection set of sectors and generating a list of 'page' commands for 
+  the terrain streaming to execute.</p>
+  <h2>
+    Configuring the sector selectors
+  </h2>
+  <p>This release of the terrain engine supplies two implementations of 
+    <span class="NDLSystemFont">NiTerrainSectorSelector</span>. 
+  These implementations are; the default sector selector, and the paging sector selector. These 
+  implementations are intended as reference implementations and provide very basic functionality 
+  with little features.</p>
+  
+  <p>Configuration of a sector selector object involves assigning the selector object to the terrain 
+  through code like the following:</p>
+  
+  <pre>NiCamera* pkCamera = GetPagingReferenceCamera();
+NiTerrain* pkTerrain = GetTerrain();
+NiTerrainSectorSelector* pkTerrainPager = NiNew NiTerrainSectorPager(pkTerrain , pkCamera);
+pkTerrain-&gt;SetSectorSelector(pkTerrainPager);</pre>
+  
+  <p>Like other configurable points on the terrain object, the sector selector object should be 
+  applied to the terrain before loading begins.</p>
+  <h2>
+    The default sector selector
+  </h2>
+  <p>The default sector selector provides a very basic sector selector implementation. The default 
+  operation of this selector is to simply load a 2D range of sectors, starting with sector [0,0] and 
+  extending 1 sector in each direction. This will cause only sector [0,0] of a terrain asset to load 
+  automatically when the scene is loaded. All sectors within the configured range are loaded to 
+  their maximum level of detail.</p>
+  
+  <p>Both the starting sector, and the range of sectors to load are configurable through the class 
+  interface. See the class reference for details on how to configure this selector further.</p>
+  
+  <p>This sector selector is appropriate for simple terrains within a scene that do not require 
+  dynamic loading/unloading.</p>
+  <h2>
+    The paging sector selector
+  </h2>
+  <p>The paging sector selector provides a basic implementation of automatically loading sectors 
+  based upon the current location of a camera object. Sectors within a range around the camera are 
+  considered for loading, the closest sectors are loaded to the highest level of detail, whilst
+   sectors surrounding those are loaded to progressively lower levels of detail. As the camera moves 
+   around the scene, sectors are automatically streamed in and out of memory providing the 
+   appearance of a seamless landscape.</p>
+  
+  <p>Please see <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainSectorSelector.htm">
+    NiTerrainSectorSeletor</a></span> class reference for details on how to configure this selector.</p>
+  
+  <p>This sector selector is intended as an example implementation of what the sector selector 
+  system is capable of achieving, though it has not been highly tested, nor does it provide a fully 
+  featured configurable interface. It is recommended that this selector not be used in a released 
+  application, but developers are encouraged to take inspiration from it and extend it to their own 
+  purposes.</p>
+  <h2>
+    Extending the paging system
+  </h2>
+  <p>The <span class="NDLSystemFont">NiTerrainSectorSelector</span> class's algorithm revolves around a single virtual function 
+  "UpdateSectorSelection". This function is called every time the terrain object is updated 
+  (generally once every frame). Generally, this function would calculate which sectors should be 
+  loaded at the present time, and add them to the selection by calling the function "AddToSelection" 
+  with the appropriate arguments.</p>
+  
+  <p>The base sector selector class implements functionality to check if that sector is a valid 
+  selection (check to see if it is on disk) and that it hasn't already been requested to load to the 
+  requested level of detail.</p>
+  
+  <p>The terrain's interaction with the sector selector every frame is illustrated in the following 
+  diagram.</p>
+  
+  <div class="FigureContainer">
+    <img alt="NiTerrainSectorSelector" src="images/NiTerrainSectorSelector.png">
+    <p class="FigureCaption">Diagram: <i>NiTerrainSectorSelector Interaction</i></p>
+  </div>
+  
+  <p>
+    Each frame, the terrain requests the selector to update its selection. It then fetches the 
+    selection (note: because of the internals of AddToSelection, only the changed sectors will be 
+    returned in the call to GetSelectedSectors). The terrain then clears this selection set. If for 
+    any reason the terrain could not begin processing a request, it will resubmit it to the selector 
+    so that it may be returned and requested in the next frame. A common reason for a request not 
+    being able to be executed at the current frame could be that the sector is already processing a 
+    previous request and is unable to abort it.
+  </p>
+
+  <p>
+    ***When extending the paging system, please consider the limitations described in the section on 
+    Multi-sector terrain, and design your algorithms appropriately.
+  </p>
+
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Entity interaction examples</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Entity interaction examples</h1>
+
+<p>The following code snippets demonstrate ways to make entities interact, either in C++ or Lua
+scripting.</p>
+
+<p>Modifying properties directly or calling behaviors in C++ from a system service look the same as
+the C++ Behaviors, with the exception of how to find the Scheduler:</p>
+
+<pre>
+Scheduler* pScheduler = m_pServiceManager->GetSystemServiceAs&lt;Scheduler&gt;();
+</pre>
+
+<h4>From a C++ behavior, modify your own properties</h4>
+
+<pre>
+void MoveMyEntity(Entity* pEntity, ParameterList* pArgs)
+{
+    // amount to move in each direction x, y, and z
+    efd::Float32 x;
+    efd::Float32 y;
+    efd::Float32 z;
+
+    // grab arguments out of the list
+    pArgs-&gt;GetParameter("X", x);
+    pArgs-&gt;GetParameter("Y", y);
+    pArgs-&gt;GetParameter("Y", z);
+
+    // move the entity by directly setting the position property to a new value
+    Point3 position;
+
+    // get the old value
+    pEntity-&gt;GetPropertyValue("Position", position);
+
+    // move the entity
+    position.x += x;
+    position.y += y;
+    position.z += z;
+
+    // set the new value
+    pEntity-&gt;SetPropertyValue("Position", position);
+}
+</pre>
+
+<h4>From a C++ behavior, command another Entity to move</h4>
+
+<pre>
+void MoveSomeOtherEntityBehavior(Entity* pEntity, ParameterList* pArgs)
+{
+    // id of the entity to move
+    EntityID tgtEntityID;
+    // amount to move in each direction x, y, and z
+    efd::Float32 x;
+    efd::Float32 y;
+    efd::Float32 z;
+
+    // grab arguments out of stream
+    pArgs-&gt;GetParameter("Target", tgtEntityID);
+    pArgs-&gt;GetParameter("X", x);
+    pArgs-&gt;GetParameter("Y", y);
+    pArgs-&gt;GetParameter("Z", z);
+
+    // Create and fill the ParameterList that will be handed to the MoveMyEntity behavior.
+    // In this simple example we could have just passed the pArgs list and since parameters are
+    // accessed by name the extra parameter would simply be ignored.
+    efd::ParameterListPtr spParams = EE_NEW efd::ParameterList();
+    spParams-&gt;AddParameter("X", x);
+    spParams-&gt;AddParameter("Y", y);
+    spParams-&gt;AddParameter("Z", z);
+
+    // send an event that will trigger the behavior that will actually move the Entity
+    pEntity-&gt;SendEvent(tgtEntityID, "", "MoveMyEntity", spParams, "", 0.0);
+}
+</pre>
+
+<h4>From a C++ behavior, modify property of another Entity directly</h4>
+
+<pre>
+void MoveSomeOtherEntityDirect(Entity* pEntity, efd::ParameterList* pArgs)
+{
+    // id of the entity to move
+    EntityID tgtEntityID;
+    // amount to move in each direction x, y, and z
+    efd::Float32 x;
+    efd::Float32 y;
+    efd::Float32 z;
+    
+    // grab arguments out of list
+    pArgs-&gt;GetParameter("Target", tgtEntityID);
+    pArgs-&gt;GetParameter("X", x);
+    pArgs-&gt;GetParameter("Y", y);
+    pArgs-&gt;GetParameter("Z", z);
+    
+    // Find the Scheduler to lookup the Entity we wish to modify
+    Scheduler* pScheduler = g_bapiContext.GetSystemServiceAs&lt;Scheduler&gt;();
+    pEntityToMove = pScheduler-&gt;FindEntity(tgtEntityID);
+    
+    // get the old value
+    pEntityToMove-&gt;GetPropertyValue("Position", position);
+    
+    // move the entity
+    position.x += x;
+    position.y += y;
+    position.z += z;
+    
+    // set the new value
+    pEntityToMove-&gt;SetPropertyValue("Position", position);
+}
+</pre>
+
+<h4>From a Lua behavior, command Entities in a platoon to move:</h4>
+
+<pre>
+function MoveSomeOtherEntityBehavior(self, params)
+    -- Category subscribed to by everyone in the platoon
+    local platoonCategory = params:Get("Target")
+
+    -- amount to move in each direction x, y, and z
+    local x = params:Get("X")
+    local y = params:Get("Y")
+    local z = params:Get("Z")
+
+    -- create and fill the ParameterList that will be handed to the MoveMyEntity behavior
+    local outstrm = ParameterList.ParameterList()
+    outstrm:PutFloat32("X", x)
+    outstrm:PutFloat32("Y", y)
+    outstrm:PutFloat32("Z", z)
+    
+    -- send an event that will trigger the behavior that will actually move each Entity
+    BehaviorAPI.SendEvent(platoonCategory, "MoveMyEntity", outstrm)
+end
+</pre>
+
+<h4>From a Lua behavior, modify property of another Entity directly</h4>
+
+<pre>
+function MoveSomeOtherEntityDirectLua(self, params)
+    -- id of the entity to move
+    local entityToMove = params:GetEntityID("EntityToMove")
+
+    -- amount to move in each direction x, y, and z
+    local x = params:GetFloat32("x")
+    local y = params:GetFloat32("y")
+    local z = params:GetFloat32("z")
+
+    -- get the old value
+    local position = entityToMove.Position
+
+    -- move the entity
+    position.x = position.x + x
+    position.y = position.y + y
+    position.z = position.z + z
+
+    -- set the new value
+    entityToMove.Position = position
+end
+</pre>
+
+<h4>From a Lua behavior, make one entity track another's position</h4>
+
+<pre>
+function AttachToEntityLua(self, params)
+    -- id of the entity to attach to
+    local entityToAttachTo = params:GetEntityID("AttachToEntity")
+    
+    -- name of a scnee graph node on that entity from which to pull position
+    local nodeToAttachTo = params:GetString("AttachToNode")
+
+    -- Tell the scene graph service, and do not inherit the scale
+    ecr.AttachEntity(self, entityToAttachTo, nodeToAttachTo, false)
+end
+</pre>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+  <li><a href="entity_interaction_overview.htm">Entity interaction overview</a></li>
+  <li><a href="entity_interaction_how_work.htm">How entity interaction works</a></li>
+  <li><a href="entity_interaction_best_practice.htm">Best practices for working with entity
+    interaction</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

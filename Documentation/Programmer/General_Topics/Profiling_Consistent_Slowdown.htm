@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Profiling Consistent Slowdown</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Profiling Consistent Slowdown</h1>
+
+<p>If the performance issues in an application are persistent, 
+ there are a variety of steps to take in profiling your application. The 
+ first step is determining where in the application loop you are having 
+ slowdowns. There are four main areas in which to focus your attention:</p>
+
+<ul>
+<li>Application Logic</li>
+<li>Gamebryo Update</li>
+<li>Rendering</li>
+<li>Swapping Buffers (aka GPU issues)</li>
+</ul>
+
+
+<h2>Determining the Area of Slowdown</h2>
+
+<p>Determining the area of slowdown will generally take 
+ some level of application instrumentation using either <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStopWatch.htm">NiStopWatch</a></span>, 
+ <span class="NDLSystemFont"><a href="../../Reference/NiSystem/System_Query_Routines.htm">NiGetCurrentTimeInSec</a></span>, 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiSystem/System_Query_Routines.htm">NiGetPerformanceCounter</a></span>. An example of an <span class="NDLSystemFont">OnIdle</span> loop from <span class="NDLSystemFont">NiApplication</span> below shows how we can do this. First, we show the code uninstrumented.</p>
+
+<pre>
+void ProfileApplication::OnIdle(void)
+{
+     // MeasureTime returns false if the frame rate is over the pre-set limit
+     if (!MeasureTime())
+         return;
+    
+     UpdateFrame();
+     BeginFrame();
+     RenderFrame();
+     EndFrame();
+     DisplayFrame();
+    
+     m_iClicks++;
+}
+</pre> 
+
+
+<p>This code performs a fairly standard idle loop. The function <span class="NDLSystemFont">UpdateFrame</span> handles all of the application logic including AI updates, input updates, and scene updates. Then, we perform some rendering operations.</p>
+
+<p> Now, let's instrument the code with <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiStopWatch.htm">NiStopWatch</a></span> objects to see where our slowdown occurs. The following version of the function uses four <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStopWatch.htm">NiStopWatch</a></span> 
+ objects that are members of ProfileApplication to capture timing data 
+ for various processes in our application.</p>
+
+<pre>
+void ProfileApplication::OnIdle(void)
+{
+     // MeasureTime returns false if the frame rate is over the pre-set limit
+     if (!MeasureTime())
+         return;
+    
+     // The "UpdateTimer" actually measures all application updates. If this
+     // timer shows a bottleneck, then the application should probably break
+     // it out into several timers to see if app work or animation updates
+     // are the actual bottleneck
+     m_kUpdateTimer.Start();
+     UpdateFrame();
+     m_kUpdateTimer.Stop();
+    
+     m_kRenderTimer.Start();
+     BeginFrame();
+     RenderFrame();
+     EndFrame();
+     m_kRenderTimer.Stop();
+    
+     // The "SwapTimer" actually measures both swap time and the time spent
+     // waiting for the 3D HW to finish rendering the submitted geometry
+     // If this timer shows a bottleneck, then the slowdown may be fill rate
+     // or the number of individual geometry objects passed to the 3D HW
+     m_kSwapTimer.Start();
+     DisplayFrame();
+     m_kSwapTimer.Stop();
+    
+     m_iClicks++;
+}
+</pre>
+
+<p>Once we collect this data with our stop watch objects, we can see the relative impact of each section of code. Our hope in profiling 
+ an application is that some section of the application is not performing 
+ as expected and is grossly more expensive than the other sections. This 
+ case is the easiest to fix. The next few sections of the documentation 
+ outline things to look for if you are performance bound at the application, 
+ Gamebryo update, camera click, or swap buffers level.</p>
+
+<p>If all of the sections are approximately the same, then 
+ the application is relatively balanced and you must look to reduce complexity 
+ by simplifying tasks, reducing the number of objects, or optimizing common 
+ sections of code that are called repeatedly throughout the application.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

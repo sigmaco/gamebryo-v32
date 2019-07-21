@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Tips for working with physics in the Animation Tool</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Tips for working with physics in the Animation Tool</h1>
+
+<p>Several issues can arise when you work with physical sequence in Animation Tool.</p>
+
+<h2>Sequence Groups with physics are not supported</h2>
+
+<p>Sequence Groups that overlay a physical sequence onto a key-frame sequence cannot be previewed in Animation Tool. If you do attempt this, you will typically see a fixed physics pose blended with the key-frames. Applications can set up layers of physics control with key-frame control, but it must be done in code.</p>
+
+<h2>Which transitions work best?</h2>
+
+<p>We recommend the following types of transitions:</p>
+
+<ul>
+	
+	<li>Moving from a key-framed sequence to a physical sequence&mdash;We recommend cross-fades in this case, with a short transition time (a few frames at most). The advantage of cross-fades is that both sequences continue to play, so the momentum transfer appears visually smooth. Keep the time duration short to avoid significant divergence between the physical situation and the rendered situation.</li>
+	
+	<li>Moving from a physical sequence to a key-framed sequence&mdash;We recommend immediate blends in cases when the character is almost at rest when transitioning away from physics, because this stops the physical simulation and prevents any divergence. This allows long blends to move between a pose that 
+ is unlikely to match the animation to the start pose of the animation. 
+ A cross fade might work when there is still significant motion in the 
+ physics that you want to blend out. Do not use delayed blends unless you 
+ have a specific key marked in the physical sequence and you always want 
+ the physics to run to that key.</li>
+	
+	<li>Physical sequences can be involved in a chain transition, but you might need extra text-keys to coordinate the chain.</li>
+	
+	<li>Any sequence type that relies on alignment of specific keys, such as a morph transition, is unlikely to work well with physics because the keys are hard to define.</li>
+</ul>
+
+<h2>Application seems to hang? It is physics catching up.</h2>
+
+<p>Sometime an action that causes an animation to reset and run-up to the time slider position will frequently cause long unresponsive periods that can last for a couple of seconds to a minute or more. This occurs because physics cannot be rewound or immediately stepped to an arbitrary time. Things that cause this behavior include:</p>
+
+<ul>
+	
+	<li>Dragging the Timeline scrubber around while a physical sequence is playing or while a transition involving physics is in preview.</li>
+	
+	<li>Modifying any parameters of a transition while the preview is playing.</li>
+</ul>
+
+<p>It is best to stop playing the animation, reset it to the beginning, and then make changes to parameters. No run-up is required in such a case.</p>
+
+<h2>Physical objects fall off the character</h2>
+
+<p>Many physics behaviors depend on the relationships between objects when the simulation is reset. This is particularly true for cloth objects in which the cloth must be penetrating a shape in order for it to attach to the shape. Always be certain to check the <span class="NDLGUILabel">Initial States from Sequences</span> checkbox in the options for the PhysX Extractor tool plug-in when the sequence is exported. This causes appropriate physics initial conditions to be saved for each sequence and allows physics to reset correctly to the start pose of the sequence.</p>
+
+<h2>Adjusting the ground plane makes physics unstable</h2>
+
+<p>Due to the way in which Animation Tool updates state during ground plane motion, significant penetration can arise between the physics object that represents the ground plane and any other object that rests on it. Physics resolves these penetrations with very large forces that might push objects very high into the air or otherwise make the simulation misbehave. It is best not to adjust the ground plane while a physical animation is playing and to reset the animation after the ground plane adjustment.</p>
+
+<p>An extreme variation of this problem occurs if the ground plane is disabled and then re-enabled. In such cases, the character can even fall all the way through the ground object, so when the ground is re-activated the character continues to fall as if the ground is not there. Reset the animation to put the character back above the ground.</p>
+
+<h2>Some physics always plays</h2>
+
+<p>Any physics that is not also controlled by a keyframe sequence will always play whenever anything is animating. This is desirable behavior because it allows you to see what secondary objects, such as a cape or a sword, will do when the character is animating. Note that if a character is loaded without any sequences, it will also behave as a purely physical object until a sequence is loaded from a KF file.</p>
+
+<h2>PhysX debug geometry is offset from Gamebryo geometry</h2>
+
+<p>There are two reasons why the displayed PhysX debug geometry may appear offset from the rendered Gamebryo geometry:</p>
+
+<ul>
+	
+	<li>When the character is moving quickly, offsets due to differences in PhysX and Gamebryo time-steps might be visible. Gamebryo uses application frame times to sample the animations for rendering. Physics, on the other hand, use a fixed time-step and goes to the nearest application time. The time represented by the physics debug geometry may not be exactly the same as the time represented by the Gamebryo geometry. Gamebryo deals with the time offset by interpolating state, but the physics debug geometry cannot be interpolated and appears exactly where it is for the time that physics stepped to. The faster the character is moving, the larger the errors.</li>
+	
+	<li>When working with animation accumulation, the bind pose of the character (frame 0 in the art tools) must have the accumulation root node located so that there is no offset in any accumulated dimension. This problem will be visible even if the character is moving.</li>
+</ul>
+
+<h2>Why does a transition preview go crazy?</h2>
+
+<p>Sometimes, if a key-framed sequence loops immediately before or during a transition, the velocity computed by the physics system is extremely high. The physics keeps this velocity - it doesn't know that there was a jump in the motion. If you are seeing problems with physics objects shooting off into the distance, try adjusting the time at which the transition occurs on the time slider.</p>
+
+<h2>Deleting sequences does not restore original state</h2>
+
+<p>When a sequence is deleted for a character with physics associated with it, the character may not be returned to the same state as if that sequence never existed. In particular, any portion of the character that was controlled by the sequence will never be returned to automatic physical control, even if no other sequence is controlling that actor. Consider the situation in which all the sequences are deleted from a character. Normally, a character with no sequences behaves completely physically all the time, but if sequences had been attached at one time and then deleted this will not be the case.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+  <li> <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+   Extractor tool plug-in</a></li>
+  <li><a HREF="Working_With_Physical_Sequences_in_Animation_Tool.htm">Working 
+   With Physical Sequences in Animation Tool</a></li> 
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

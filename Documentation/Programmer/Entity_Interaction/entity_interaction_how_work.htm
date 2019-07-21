@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How entity interaction works</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>How entity interaction works</h1>
+
+<p>When an interaction request (Event) arrives at an Entity, the Entity must have implemented the
+Behavior named in the request. This checking is performed at arrival time. It is not generally
+possible to check the type of the target Entity before sending the request, particularly if the
+request is an environmental request which goes to one or more Entities. Using a Model as an
+Interface, it becomes easier to indicate that an Entity can be interacted with in a particular way
+by mixing in that interface Model, then implementing the specialized (or leaving the default)
+logic. This approach makes it convenient to just make the request and have all Entities respond
+that are capable of responding, instead of having the sender query for Entities by type, or iterate
+them and check for capabilities.</p>
+
+<p>Performing an interaction requires several steps:</p>
+
+<ol>
+    <li>Create the request event, often by calling the built-in to send a Behavior request. This
+    involves passing parameters by streaming them into a data-stream object.</li>
+
+    <li>Route the request message to the appropriate Scheduler service</li>
+
+    <li>Schedule the event to be executed based on a delay time if applicable</li>
+
+    <li>Identify Entities subscribed to the Category of the event</li>
+
+    <li>Invoke the matching Behavior on each of those matching Entities.</li>
+
+    <li>Execute the code in the Behavior, possibly taking more than one tick if the scripted
+    behavior runs a wait-for built-in.</li>
+
+    <li>Optionally return a response to the caller.</li>
+</ol>
+
+<p>Behavior parameters are managed by explicitly placing them into a data-stream. This allows any
+number and any type of parameter to be transmitted or returned. Care must be taken, as in most
+scripting languages, that the parameters are correctly provided and interpreted. Note that errors
+become a runtime concern, rather than a compile or edit time concern.</p>
+
+<p>System Services and built-ins are used to look up Entities or Categories to be interacted with.
+Examples would include environmental, scene graph, or terrain services that are keeping track of
+the position of Entities. The Entity Manager Service keeps track of all Entity instances and can be
+queried for Entities of a given type (having a given Model mixed in), or other lookup key.</p>
+
+<p>Built-ins exist for Behaviors to inspect the metadata of other Entities by querying about the
+Property and Behavior descriptors of a given Model. This can be used to decide whether a target
+Entity is appropriate to interact with. For example, a caller may inspect an Entity to see if it
+has a Behavior named "Action_*", perhaps matching "Action_Sit" or "Action_Open" to indicate the
+target can be sat upon or opened. This approach can be used by an AI planning system or dynamic
+user menu system.</p>
+
+<p>Interactions may consume multiple ticks and many steps. For example, an attack-run might require
+refueling, transit to the target, aligning, strafe, and egress. Multiple Entities will be involved
+in this interaction, including a tanker, anti-air weapons, target entity, and so on. The
+interaction may be a linear, uninterpretable sequence, or may have several logic branches. But
+eventually the sequence will complete, marking the end of the interaction after which the Entity
+goes idle. This is a fairly common pattern: a longer term interaction occurs, many Behaviors and
+events are executed, then the interaction finishes and the participating Entities go idle.</p>
+
+<p>Some interactions are apparently spontaneous, such as collision. The physics system would invoke
+the interaction, probably on each Entity that is involved. This approach is event-oriented, driven
+by the processing of the physics system, as opposed to ticking each Entity and having the Entity
+itself determine proximity each tick. Once the interaction is invoked, the Entity can then react in
+any appropriate way, such as trading blows, affecting hit points, or playing special effects.</p>
+
+<p>Some Entities are considered "inactive" and do not execute Behaviors. However these Entities may
+have a changeable state. For example, a tree may be whole or burned. To interact in that situation,
+a Behavior on another Entity would directly modify the state of the target. It may be more
+appropriate to make the tree active, and create a doBurn Behavior, allowing many trees to be
+affected by one environment interaction. It would certainly localize the logic about when burning
+would occur instead of copying it to many bits of code that might be causes of the damage.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_interaction_overview.htm">Entity interaction overview</a></li>
+
+    <li><a href="entity_interaction_best_practice.htm">Best practices for working with entity
+    interaction</a></li>
+
+    <li><a href="entity_interaction_examples.htm">Entity interaction examples</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

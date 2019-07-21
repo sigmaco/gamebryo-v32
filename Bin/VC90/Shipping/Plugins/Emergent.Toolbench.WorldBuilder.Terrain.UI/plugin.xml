@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin
+  xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+  name="World Builder Terrain UI"
+  id="Emergent.Toolbench.WorldBuilder.Terrain.UI"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies"
+  class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Plugin">
+
+  <!-- ======================================================================================== -->
+  <!-- Extension points -->
+  <!-- ======================================================================================== -->
+  <extension-point id="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushTypeUI"
+                   schema="Schemas/ExtPoint-BrushTypeUI.xsd"/>
+
+  <extension-point id="Emergent.Toolbench.Worldbuilder.Terrain.UI.BrushElementDropDownUI"
+                   schema="Schemas/ExtPoint-BrushElementCustomDropDownUI.xsd"/>
+
+  <extension-point id="Emergent.Toolbench.Worldbuilder.Terrain.UI.TerrainCreationWizardUI"
+                   schema="Schemas/ExtPoint-TerrainCreationWizardUI.xsd"/>
+
+  <!-- ======================================================================================== -->
+  <!-- Extensions -->
+  <!-- ======================================================================================== -->
+
+  <!-- Settings. -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Terrain.UI.EnableLightingUpdates"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Terrain"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Automatically Refresh Lighting</display-name>
+        <description>When toggled, lighting is updated as the user paints instead of when a stroke 
+                     is finished.</description>
+      </setting>
+      <setting scope="PerUserPerContent"
+             content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+             id="Emergent.WorldBuilder.Terrain.UI.UseAirBrush"
+             path="World Builder\Terrain"
+             property-type="Boolean" visible="false">
+        <value>false</value>
+      </setting>
+      <setting scope="PerUserPerContent"
+             content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+             id="Emergent.WorldBuilder.Terrain.UI.DisplayPaintingGuide"
+             path="World Builder\Terrain"
+             property-type="Boolean" visible="false">
+          <value>false</value>
+      </setting>
+      <setting scope="PerUserPerContent"
+             content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+             id="Emergent.WorldBuilder.Terrain.UI.PaintBrushMaxSize"
+             path="World Builder\Terrain"
+             property-type="String" visible="false">
+          <value>32</value>
+      </setting>
+      <setting scope="PerUserPerContent"
+             content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+             id="Emergent.WorldBuilder.Terrain.UI.StandardBrushInnerRadius"
+             path="World Builder\Terrain"
+             property-type="Float" visible="false">
+          <value>0.0</value>
+      </setting>
+      <setting scope="PerUserPerContent"
+             content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+             id="Emergent.WorldBuilder.Terrain.UI.StandardBrushOuterRadius"
+             path="World Builder\Terrain"
+             property-type="Float" visible="false">
+          <value>0.5</value>
+      </setting>
+    </settings>
+  </extension>
+
+    <!-- Terrain Toolbar, menus, and actions. -->
+    <extension point="Emergent.Toolbench.Workbench.ActionSet">
+        <actionset label="World Builder Terrain Debug Actions"
+                   visible="true"
+                   id="Emergent.Toolbench.WorldBuilder.Terrain.UI.DebugOptions.ActionSet">
+        </actionset>
+    </extension>
+
+  <!-- Terrain Toolbar, menus, and actions. -->
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="World Builder Terrain Actions"
+               visible="true"
+               id="Emergent.Toolbench.WorldBuilder.Terrain.UI.ActionSet">
+
+      <!-- Actions -->
+      <action id="Emergent.Toolbench.WorldBuilder.Terrain.UI.CreateNewTerrainAction"
+              label="Create &amp;New Terrain..."
+              tooltip="Creates a new terrain entity"
+              small-icon="Icons/createnewterrain_small.png"
+              large-icon="Icons/createnewterrain_large.png"
+              handler="Emergent.Toolbench.WorldBuilder.Terrain.UI.CreateNewTerrainAction"/>
+
+      <action id="Emergent.Toolbench.WorldBuilder.Terrain.UI.SnapEntitySelectionAction"
+              label="&amp;Snap Selection To Terrain"
+              tooltip="Snaps the selected entities to the terrain"
+              handler="Emergent.Toolbench.WorldBuilder.TerrainService.SnapEntitySelectionAction"
+              small-icon="Icons/TerrainSnapSmall.png"
+              large-icon="Icons/TerrainSnapLarge.png"/>
+
+      <action id="Emergent.Toolbench.WorldBuilder.Terrain.UI.ViewTerrainProperties"
+              label="View Terrain &amp;Properties..."
+              tooltip="Opens the properties for the current terrain"
+              handler="Emergent.Toolbench.WorldBuilder.Terrain.UI.ViewTerrainPropertiesAction"/>
+
+      <action id="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainGizmoAction"
+              path="Emergent.Toolbench.WorldBuilder.UI.GizmoActionSet"
+              label="Terrain Edit Gizmo"
+              tooltip="Enables entity selection in the viewports"
+              small-icon="Icons/terrainedit_small.png"
+              large-icon="Icons/terrainedit_large.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, TerrainEdit" />
+
+      <!-- Gizmo toolbar item -->
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.Terrain.UI.GizmoToolbar.TerrainEdit"
+                   tooltip="Terrain Edit Gizmo|Enables the ability to edit terrain"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+                small-icon="Icons/terrainedit_small.png"
+                large-icon="Icons/terrainedit_large.png"
+                value="TerrainEdit"/>
+      </toolbaritem>
+
+      <!-- Menu items -->
+      <menu label="&amp;Terrain"
+            id="Emergent.Toolbench.WorldBuilder.Terrain.UI.Menu.Terrain"
+            path="World Builder"
+            priority="61"/>
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.Terrain.UI.Menu.Terrain.CreateNewTerrainAction"
+                action="Emergent.Toolbench.WorldBuilder.Terrain.UI.CreateNewTerrainAction"
+                path="World Builder\Terrain"
+                priority="10"/>
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.Terrain.UI.Menu.Terrain.ViewTerrainProperties"
+                action="Emergent.Toolbench.WorldBuilder.Terrain.UI.ViewTerrainProperties"
+                path="World Builder\Terrain"
+                priority="20" />
+
+      <separator path="World Builder\Terrain" 
+                priority="30" />
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.Terrain.UI.Menu.Terrain.SnapSelection"
+                action="Emergent.Toolbench.WorldBuilder.Terrain.UI.SnapEntitySelectionAction"
+                path="World Builder\Terrain"
+                priority="40" />
+
+    </actionset>
+  </extension>
+
+
+  <!-- Terrain editor view. Has the brush elements and brush types used to paint terrain. -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainEditorView"
+          name="Terrain Editor"
+          class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainEditorView"
+          icon="Icons/terraineditor_view.png"
+          default-dock="DockRight"/>
+  </extension>
+
+  <!-- Material editor view. Allows the user to create/edit/remove terrain materials and apply
+         them to the terrain. -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainMaterialEditorView"
+          name="Terrain Material Editor"
+          class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainMaterialEditorView"
+          icon="Icons/materialeditor_view.png"
+          default-dock="DockRight"/>
+  </extension>
+
+  <!-- Map the views and actions for terrain editing into the world building perspective. -->
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Perspective">
+      <view id="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainEditorView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainMaterialEditorView"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.Terrain.UI.ActionSet"/>
+    </mapping>
+  </extension>
+
+  <!-- Add the dynamic context menu strip for Terrain properties -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicFormContextMenuProvider">
+    <provider name="TerrainEntityFormContextMenuProvider"
+          type="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+          key="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+          class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainEntityFormContextMenuProvider" />
+  </extension>
+
+  <!-- Add the dynamic context menu strip for Sector Management -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicFormContextMenuProvider">
+    <provider name="SectorManagementFormContextMenuProvider"
+       type="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+       key="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+       class="Emergent.Toolbench.WorldBuilder.Terrain.UI.SectorManagementFormContextMenuProvider" />
+  </extension>
+
+  <!-- Add the dynamic context menu strip for Material Removal -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicFormContextMenuProvider">
+    <provider name="MaterialRemovalFormContextMenuProvider"
+       type="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+       key="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+       class="Emergent.Toolbench.WorldBuilder.Terrain.UI.MaterialRemovalFormContextMenuProvider" />
+  </extension>
+
+  <!-- Add the dynamic context menu used for material texture slot clearing -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicContextMenuProvider">
+    <provider name="TextureSlotContextMenuProvider"
+              type="System.Object"
+              key="Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial"
+              class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TextureSlotContextMenuProvider" />
+  </extension>
+
+  <!-- Add the dynamic context menu for material editor material removal -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicContextMenuProvider">
+    <provider name="MaterialEditorContextMenuProvider"
+             type="System.Object"
+             key="Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial"
+             class="Emergent.Toolbench.WorldBuilder.Terrain.UI.MaterialEditorContextMenuProvider" />
+  </extension>
+
+    <!-- Add the dynamic context menu for material editor material removal -->
+    <extension point="Emergent.Toolbench.Workbench.DynamicContextMenuProvider">
+        <provider name="TerrainPropertyMaterialContextMenuProvider"
+                 type="System.Object"
+                 key="Emergent.Toolbench.WorldBuilder.TerrainService.SurfaceLayer"
+                 class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainPropertyMaterialContextMenuProvider" />
+    </extension>
+
+  <!-- Default terrain creation methods -->
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.TerrainCreationWizardUI">
+    <TerrainCreationWizardUI 
+      class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Wizards.CreateBlankTerrainMethod"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.TerrainCreationWizardUI">
+    <TerrainCreationWizardUI
+      class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Wizards.UseExistingTerrainMethod"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.TerrainCreationWizardUI">
+    <TerrainCreationWizardUI
+      class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Wizards.ImportOldTerrainAssetMethod"/>
+  </extension>
+
+  <!-- Defines the brush elements provided by the plug-in. -->
+
+  <!-- Elevate brush element. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushElement">
+      <brushelement class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.ElevateBrushElement"
+                    name="Elevate" icon="Icons/terrain_brushelement_elevate.png"
+                    category="Terrain Sculpt">
+          Increases or decreases the height of the terrain. Hold down the Ctrl key to decrease
+          height.
+      </brushelement>
+  </extension>
+
+  <!-- Flatten brush element. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushElement">
+      <brushelement class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.FlattenBrushElement"
+                    name="Flatten" icon="Icons/terrain_brushelement_flatten.png"
+                    category="Terrain Sculpt">
+          Flattens a portion of the terrain. The height in which the terrain will flatten is
+          specified in the tweak-able settings.
+      </brushelement>
+  </extension>
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.BrushElementDropDownUI">
+      <brushelementdropdownui class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.FlattenBrushElementDropDownUI"
+                              brush-element="Flatten"/>
+  </extension>
+
+  <!-- Noise brush element. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushElement">
+      <brushelement class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.NoiseBrushElement"
+                    name="Noise" icon="Icons/terrain_brushelement_noise.png"
+                    category="Terrain Sculpt">
+          Applies noise to the terrain. The frequency and pattern of the noise is specified
+          in the tweak-able settings.
+      </brushelement>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.BrushElementDropDownUI">
+      <brushelementdropdownui class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.NoiseBrushElementDropDownUI"
+                              brush-element="Noise"/>
+  </extension>
+
+  <!-- Smooth brush element. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushElement">
+      <brushelement class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.SmoothBrushElement"
+                    name="Smooth" icon="Icons/terrain_brushelement_smooth.png"
+                    category="Terrain Sculpt">
+          Applies a blur to the terrain as it is painted to smooth out steep slopes.
+      </brushelement>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.BrushElementDropDownUI">
+      <brushelementdropdownui class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.SmoothBrushElementDropDownUI"
+                              brush-element="Smooth"/>
+  </extension>
+ 
+  <!-- Material painting brush element. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushElement">
+      <brushelement class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.PaintMaterialBrushElement"
+                    name="Paint" icon="Icons/terrain_brushelement_paintmaterial.png"
+                    category="Material Painting">
+          Paints the material selected in the tweak-able settings to the terrain. Note, if the
+          specified material has not yet been painted on a given cell, it will first be added
+          to the cell. If there are more than 4 materials on cell, the material will not be applied.
+      </brushelement>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Worldbuilder.Terrain.UI.BrushElementDropDownUI">
+      <brushelementdropdownui
+          class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushElements.PaintMaterialBrushElementDropDownUI"
+          brush-element="Paint"/>
+  </extension>
+
+  <!-- Add the brush type logic objects. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.TerrainCore.BrushType">
+      <brushtype class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushTypes.StandardBrushType"/>
+  </extension>
+
+  <!-- Add the UI for the standard brush types. -->
+  <extension point="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushTypeUI">
+      <brushtypeui class="Emergent.Toolbench.WorldBuilder.Terrain.UI.BrushTypes.StandardBrushTypeControl"
+                   brush-type="Standard"/>
+  </extension>
+    
+    <!-- Default terrain query types -->
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQuery">
+        <DataQuery class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Terrain3DMouseRayQuery"
+                   name="3D Mouse Ray Query"
+                   category="Terrain Geometry"
+                   active="False">
+        </DataQuery>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQueryUI">
+        <DataQueryUI ContentUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMouseQueryUIContent"
+                     HeaderUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayQueryUIHeader"
+                     SceneQuery="3D Mouse Ray Query">
+        </DataQueryUI>
+    </extension>
+    
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQuery">
+        <DataQuery class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Terrain2DMouseRayQuery"
+                   name="2D Mouse Ray Query"
+                   category="Terrain Geometry"
+                   active="False">
+        </DataQuery>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQueryUI">
+        <DataQueryUI ContentUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMouseQueryUIContent"
+                     HeaderUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayQueryUIHeader"
+                     SceneQuery="2D Mouse Ray Query">
+        </DataQueryUI>
+    </extension>
+    
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQuery">
+        <DataQuery class="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayQuery"
+                   name="Manual Ray Query"
+                   category="Terrain Geometry"
+                   active="False">
+        </DataQuery>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQueryUI">
+        <DataQueryUI ContentUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayQueryUIContent"
+                     HeaderUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayQueryUIHeader"
+                     SceneQuery="Manual Ray Query">
+        </DataQueryUI>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQuery">
+        <DataQuery class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Terrain3DMaterialQuery"
+                   name="Terrain Material Query"
+                   category="Terrain Materials"
+                   active="False">
+        </DataQuery>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQueryUI">
+        <DataQueryUI ContentUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMaterialUIContent"
+                     HeaderUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMaterialUIHeader"
+                     SceneQuery="Terrain Material Query">
+        </DataQueryUI>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQuery">
+        <DataQuery class="Emergent.Toolbench.WorldBuilder.Terrain.UI.Terrain3DBlendedMetaDataQuery"
+                   name="Blended Meta-Data Query"
+                   category="Terrain Materials"
+                   active="False">
+        </DataQuery>
+    </extension>
+
+    <extension point ="Emergent.Toolbench.Worldbuilder.UI.SceneQueryUI">
+        <DataQueryUI ContentUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMetaDataUIContent"
+                     HeaderUserControl="Emergent.Toolbench.WorldBuilder.Terrain.UI.TerrainRayMetaDataUIHeader"
+                     SceneQuery="Blended Meta-Data Query">
+        </DataQueryUI>
+    </extension>
+
+    <!-- ======================================================================================== -->
+  <!-- Dependencies -->
+  <!-- ======================================================================================== -->
+  <requires>
+    <import plugin="Emergent.Toolbench.WorldBuilder.TerrainService"/>
+    <import plugin="Emergent.Toolbench.WorldBuilder.TerrainCore"/>
+    <import plugin="Emergent.Toolbench.WorldBuilder.UI"/>
+    <import plugin="Emergent.Toolbench.Settings.UI"/>
+  </requires>
+
+  <runtime>Emergent.Toolbench.WorldBuilder.Terrain.UI.dll</runtime>
+
+</plugin>

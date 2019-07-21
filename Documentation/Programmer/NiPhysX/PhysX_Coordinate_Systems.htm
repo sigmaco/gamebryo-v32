@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Coordinate Systems</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Coordinate Systems</h1>
+
+<p>The coordinate system in which physics is simulated may not be the same as
+the one that the corresponding Gamebryo objects use. Furthermore, when two
+PhysX props are loaded from a file and placed in the same scene, there may be
+some relative transformation between them. This page discusses the coordinate
+systems involved in working with PhysX in Gamebryo.</p>
+
+<h2>PhysX Coordinate Transformations</h2>
+
+<p>There are many situations in which the global coordinates of a PhysX scene
+may not correspond to Gamebryo global coordinates. This is particularly the
+case of large or small worlds, because PhysX has an optimal scale at which to
+operate which may differ from the units you wish to use in your game. Relative
+transformations are then needed to convert your world scale to a manageable
+PhysX scale. PhysX is tuned with the assumption that 1 unit is about 1 meter in
+physical coordinates.</p>
+
+<p>Two transformations are used to convert from PhysX coordinates to Gamebryo
+global coordinates. Starting in PhysX coordinates, all linear dimensions are
+uniformly scaled by an application-defined scale factor, accessed through
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#physx_coordinate_system">NiPhysXScene::SetScaleFactor</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#physx_coordinate_system">NiPhysXScene::GetScaleFactor</a></span>.
+If you are creating PhysX collision shapes in software, it is extremely
+important that you scale it by the inverse of the scale factor, so that when
+the PhysX state is scaled back again for Gamebryo, everything comes out in the
+right place and size. In fact, everything that an application <em>directly</em>
+sends to the PhysX SDK should be scaled for PhysX coordinates, in the knowledge
+that Gamebryo will scale it by the Scale Factor before applying it back to the
+scene graph. Use debug geometry to verify these settings.</p>
+
+<p>The Scale Factor can also be set in the art tools so that geometry is
+pre-scaled for use as collision geometry. Note that the art tool scale input,
+in the <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX
+Extractor Tool Plug-in</a>, is the inverse of this scale factor (or the scale
+from Gamebryo to transform to PhysX). The scale is applied to velocities,
+forces, and any other physical quantity with a spatial element to its
+definition.</p>
+
+<p>The second transformation is the PhysX Scene transform, accessed through
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#physx_coordinate_system">NiPhysXScene::SetSceneXform</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#physx_coordinate_system">NiPhysXScene::GetSceneXform</a></span>.
+This transformation should be set at run-time to translate and rotate the PhysX
+scene coordinate system with respect to the Gamebryo scene. While it may
+contain scale components, scaling a PhysX scene using this transform is not
+recommended, if only because it is much harder to keep track of transformations
+if you do so.</p>
+
+<p>You can modify this transformation at runtime if you want the PhysX global
+coordinates to move in the Gamebryo scene (for example, simulating objects on a
+moving vehicle). Note that if you animate this transform the inertial effects
+on the PhysX objects will be incorrect. The physics motion will remain valid in
+only a limited set of cases, such as constant linear velocity of the PhysX
+global frame (a constant inertial frame).</p>
+
+<h2>Prop Coordinate Systems</h2>
+
+<p>It is important that the <span class="NDLSystemFont">NiPhysXScene</span>
+object and all of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> objects have
+the same value for the Scale Factor. Incorrect transformations will result if
+this rule is broken.</p>
+
+<p><span class="NDLSystemFont">NiPhysXProp</span> objects have an additional
+transformation that is applied once when the prop is added to the scene. It is
+used to transform the PhysX properties of the object, and should be the
+relative transformation between the <span class=
+"NDLSystemFont">NiPhysXScene</span> coordinate system that the prop is in, and
+the prop's internal coordinate system (the coordinate system it was created
+in). For instance, if adding many crates to a scene, the prototype crate would
+be created at the origin in its scene, then each instance would be added with
+an initial transform placing the crate in its target position in the scene.</p>
+
+<p>The transformation for props is accessed by <span class=
+"NDLSystemFont">NiPhysXProp::GetXform</span> and <span class=
+"NDLSystemFont">NiPhysXProp::SetXform</span>. In addition to object creation,
+the transformation is also used to transform state during <a href=
+"Snapshots_and_State_Restoration.htm">snapshot operations</a>.</p>
+
+<p>If a PhysX actor is driving a Gamebryo scene graph node, then the prop's
+transformation will take precedence over any Gamebryo scene graph
+transformation as soon as <span class="NDLSystemFont">UpdateDestinations</span>
+is called. For PhysX actors driven by sources, the scene graph transformation
+will take precedence as soon as <span class=
+"NDLSystemFont">UpdateSources</span> is called.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

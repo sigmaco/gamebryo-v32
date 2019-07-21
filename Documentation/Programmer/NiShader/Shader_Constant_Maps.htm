@@ -1,0 +1,1227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Shader Constant Maps</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Shader Constant Maps</h1>
+
+<p>Within the scope of an implementation, shader constant 
+ map sections can optionally be defined. These constant mappings can be 
+ considered global to the shader. All shader constant maps will be contained 
+ in an instance of an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShaderConstantMap.htm">NiShaderConstantMap</a></span>-derived 
+ class held by the shader upon loading.</p>
+
+<p>There may be more than one shader constant map section 
+ for each shader program in an implementation, although constant maps beyond 
+ the first for a given shader program type may not be supported on most 
+ renderers.</p> 
+ 
+<p>Under D3D10 and D3D11, each shader constant map represents a single shader 
+ constant buffer in the shader program using a one-to-one mapping. The name of the constant map
+ must match the name of the constant buffer. For the <span class="NDLSystemFont">$Globals</span> 
+ constant buffer, the constant map name should not be specified. In the case of constant buffers
+ that are used by more than one shader type in a pass (for example, the vertex shader and the
+ geometry shader), it is only necessary to include a single Constantmap section,
+ which will have its ShaderType set to one of the shader types that will use the constant buffer.</p>
+
+<p>The constant maps declared in the implementation do 
+ not conflict with the ones declared in the individual passes. </p>
+
+<p>A constant map section will look like this:</p>
+
+<pre>
+ConstantMap OPTIONAL_ConstantMapName
+{
+    ShaderType = SHADERTYPE
+    [Constant map entry]
+    ...
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+}
+</pre>
+
+<p>For backwards compatibility, constant map sections can also be specified like this:</p>
+
+<pre>
+VS_Constantmap OPTIONAL_ConstantMapName
+{
+    [Constant map entry]
+    ...
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+}
+ 
+GS_Constantmap OPTIONAL_ConstantMapName
+{
+    [Constant map entry]
+    ...
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+}
+ 
+PS_Constantmap OPTIONAL_ConstantMapName
+{
+    [Constant map entry]
+    ...
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+    {
+        Platform = [Platform declaration]
+        [Platform-specific constant map entry]
+        ....
+    }
+}
+</pre>
+
+<p>The constant map consists of mapping entries that come 
+ in a variety of types. Those types are the following:</p>
+
+<ul>
+	
+	<li><a href="Shader_Constant_Maps.htm#Object_Entry">Object 
+ Entry</a></li>
+	
+	<li><a href="Shader_Constant_Maps.htm#Defined_Entry">Defined 
+ Entry</a></li>
+	
+	<li><a href="Shader_Constant_Maps.htm#Attribute_Entry">Attribute 
+ Entry</a></li>
+	
+	<li><a href="Shader_Constant_Maps.htm#Constant_Entry">Constant 
+ Entry</a></li>
+	
+	<li><a href="Shader_Constant_Maps.htm#Global_Entry">Global 
+ Entry</a></li>
+	
+	<li><a href="Shader_Constant_Maps.htm#Operator_Entry">Operator 
+ Entry</a></li>
+</ul>
+
+<p>General Notes:</p>
+
+<ul>
+	
+	<li>If the <span class="NDLSystemFont">Register</span> 
+ entry for any of the mapping types is -1, the data will NOT get set in 
+ the shader constant registers. This technique is a handy way to have data 
+ available to your shader constant map without requiring that the data be
+ set on the hardware.</li>
+	
+	<li>Variable names will 
+ be used to bind instead of registers when the shader was written in a 
+ high-level language (this includes pre-compiled shaders that were originally 
+ written in HLSL or Cg). On 
+ PS3, the variable names should always be present unless the shader was 
+ stripped. On 
+ D3D derived renderers, if a variable table is present, a pre-compiled 
+ shader will be treated as high-level (and register indices ignored), otherwise 
+ it will be treated as an assembly shader and register indices will be 
+ used.</li>
+</ul>
+
+<a name=Object_Entry></a><h2>Object Entry</h2>
+
+<p>This type of constant map entry refers to object parameters that have
+previously been defined in the <span class="NDLSystemFont"><a href="Objects_Section_in_NSF_Files.htm">Objects</a></span> section of the NSF file. Such an entry
+begins with CM_Object and takes one of the two following forms:</p>
+
+<pre>
+CM_Object  NameOfObject  Parameter  Register
+CM_Object  NameOfObject  Parameter  VarName
+</pre>
+
+<p><span class="NDLSystemFont">NameOfObject</span> references the <span class="NDLSystemFont">LocalName</span>
+of an object defined in the <span class="NDLSystemFont"><a href="Objects_Section_in_NSF_Files.htm">Objects</a></span>
+section. If the associated shader program is written in a higher level shader
+language like HLSL or Cg, then <span class="NDLSystemFont">VarName</span> will be the name of the variable into
+which the parameter will be placed. If the shader program is in assembly, the
+numerical value in <span class="NDLSystemFont">Register</span> will indicate the constant register in which to
+store the parameter. <span class="NDLSystemFont">Parameter</span> specifies the parameter of the object to store
+in the constant map.</p>
+
+<h3>Parameters</h3>
+
+<p>The valid values for <span class="NDLSystemFont">Parameter</span> change based on the object type according to
+the table below. Note that the table lists each parameter along with its data
+type and the object types that do not support that parameter. Specifying a
+parameter for one of its unsupported types will result in a shader parser
+error. If the referenced <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span> for a parameter is not present (for example,
+there is only one light in the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDynamicEffectState.htm">NiDynamicEffectState</a></span> for the object but the
+shader references two lights), the invalid value is used for that parameter.
+The invalid values for all parameters are listed in a table in a later
+section.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Parameter
+            </th>
+            <th>
+                Type
+            </th>
+            <th>
+                Description
+            </th>
+            <th>
+                Object Types Supported By Parameter
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> <span class="NDLSystemFont">Dimmer</span> </td>
+            <td> float </td>
+            <td> The dimmer value of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">UndimmedAmbient</span> </td>
+            <td> float3 </td>
+            <td> The undimmed ambient color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">UndimmedDiffuse</span> </td>
+            <td> float3 </td>
+            <td> The undimmed diffuse color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">UndimmedSpecular</span> </td>
+            <td> float3 </td>
+            <td> The undimmed specular color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">Ambient</span> </td>
+            <td> float3 </td>
+            <td> The dimmed ambient color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">Diffuse</span> </td>
+            <td> float3 </td>
+            <td> The dimmed diffuse color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">Specular</span> </td>
+            <td> float3 </td>
+            <td> The dimmed specular color of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldPosition Position</span> </td>
+            <td> float3 </td>
+            <td> The world-space position of the object </td>
+            <td> All </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelPosition</span> </td>
+            <td> float3 </td>
+            <td> The model-space position of the object </td>
+            <td> All </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldDirection Direction</span> </td>
+            <td> float3 </td>
+            <td> The world-space direction of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelDirection</span> </td>
+            <td> float3 </td>
+            <td> The model-space direction of the light </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldTransform World</span> </td>
+            <td> float4x4 </td>
+            <td> The world-space transformation of the object </td>
+            <td> All </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelTransform</span> </td>
+            <td> float4x4 </td>
+            <td> The model-space transformation of the object </td>
+            <td> All </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">SpotAttenuation</span> </td>
+            <td> float3 </td>
+            <td> Attenuation of the spot light (cos(?/2), cos(F/2), spot exponent) </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">Attenuation</span> </td>
+            <td> float3 </td>
+            <td> The attenuation of the light (constant, linear, quadratic) </td>
+            <td> <span class="NDLSystemFont">Effect_*Light</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldProjectionMatrix Projection</span> </td>
+            <td> float3x3 </td>
+            <td> The world-space projection matrix for the texture effect </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelProjectionMatrix</span> </td>
+            <td> float3x3 </td>
+            <td> The model-space projection matrix for the texture effect </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldProjectionTranslation ProjectionTranslation</span> </td>
+            <td> float3 </td>
+            <td> The world-space projection translation for the texture effect </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelProjectionTranslation</span> </td>
+            <td> float3 </td>
+            <td> The model-space projection translation for the texture effect </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">WorldClippingPlane ClippingPlane</span> </td>
+            <td> float4 </td>
+            <td> The world-space clipping plane for the texture effect (normal, constant) </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">ModelClippingPlane</span> </td>
+            <td> float4 </td>
+            <td> The model-space clipping plane for the texture effect (normal, constant) </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+        <tr>
+            <td> <span class="NDLSystemFont">TexCoordGen</span> </td>
+            <td> float </td>
+            <td> A float representing the D3DTSS_TCI flag for the texture effect </td>
+            <td> <span class="NDLSystemFont">Effect_*Map</span> </td>
+        </tr>
+    </tbody>
+</table>
+
+<p><span class="NDLSystemFont">TexCoordGen</span> is returned as a float that represents
+the <span class="NDLSystemFont">D3DTSS_TCI</span>
+texture coordinate capability flag set for the texture effect. Its values
+map to D3D values in the following manner:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                TexCoordGen Value
+            </th>
+            <th>
+                D3DTSS_TCI Value
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                0.0
+            </td>
+            <td>
+                D3DTSS_TCI_PASSTHRU
+            </td>
+        </tr>
+        <tr>
+            <td>
+                1.0
+            </td>
+            <td>
+                D3DTSS_TCI_CAMERASPACENORMAL
+            </td>
+        </tr>
+        <tr>
+            <td>
+                2.0
+            </td>
+            <td>
+                D3DTSS_TCI_CAMERASPACEPOSITION
+            </td>
+        </tr>
+        <tr>
+            <td>
+                3.0
+            </td>
+            <td>
+                D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR
+            </td>
+        </tr>
+        <tr>
+            <td>
+                4.0
+            </td>
+            <td>
+                D3DTSS_TCI_SPHEREMAP
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p><span class="NDLSystemFont">SpotAttenuation</span> represents the attenuation of a spot light. It is
+represented as (cos(?/2), cos(F/2), spot exponent), where ? is the angle of
+the inner cone and F is angle of the outer cone. <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSpotLight.htm">NiSpotLight</a></span> currently only
+allows specification of a single angle, F, so this becomes (1.0,
+cos(GamebryoAngle), GamebryoExponent).</p>
+
+<h3>World Space vs. Model Space</h3>
+
+<p>Many of the parameters described above are prefixed with the words <span class="NDLSystemFont">World</span>
+or <span class="NDLSystemFont">Model</span> to indicate which coordinate space they are in.</p>
+
+<p>World space is relative to the world. For example, the world-space
+position of a light is obtained by calling <span class="NDLSystemFont">GetWorldTranslate</span> on the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiLight.htm">NiLight</a></span>
+object. This position does not change for different geometry rendered with
+that light.</p>
+
+<p>Model space is relative to the object being rendered. The model-space
+position of a light changes with each object being rendered that uses that
+light. It is equivalent to transforming the result of <span class="NDLSystemFont">GetWorldTranslate</span> on
+the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiLight.htm">NiLight</a></span> object by the inverse world transformation of the object being
+rendered.</p>
+
+<h3>Vectors</h3>
+
+<p>Because shader constant maps store vectors of four floats each rather
+than individual floats, parameter values are set to the entire vector
+instead of just some of its values. This means that for a parameter with a
+<span class="NDLSystemFont">float</span> type as indicated in the table above, all four values of the vector
+will be set. The first value will contain the requested parameter, and the
+rest of the vector will contain 0.0. Similarly, for any <span class="NDLSystemFont">float3</span> or <span class="NDLSystemFont">float3x3</span>
+parameters, the remaining vector values will be filled in appropriately
+(e.g., adding 1.0 for colors, positions, and directions). If you are
+binding these parameters to an HLSL variable, however, you can make the
+variable size match the type listed in the table. This will allow you to
+retrieve only the relevant data from the parameter.</p>
+
+<h3>Invalid Parameter Values</h3>
+
+<p>When a parameter is requested for an object that cannot be found, an
+invalid value for that parameter will be returned. Below is a list of each
+parameter and the invalid value that it returns.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Parameter
+            </th>
+            <th>
+                Invalid Value
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Dimmer</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 0.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">UndimmedAmbient</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">UndimmedDiffuse</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">UndimmedSpecular</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Ambient</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Diffuse</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Specular</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldPosition</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelPosition</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldDirection</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelDirection</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldTransform</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0,<br/>
+                0.0, 1.0, 0.0, 0.0,<br/>
+                0.0, 0.0, 1.0, 0.0,<br/>
+                0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelTransform</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0,<br/>
+                0.0, 1.0, 0.0, 0.0,<br/>
+                0.0, 0.0, 1.0, 0.0,<br/>
+                0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">SpotAttenuation</span>
+            </td>
+            <td>
+                (-1.0, -1.0, 0.0, 0.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attenuation</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldProjectionMatrix</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0,<br/>
+                0.0, 1.0, 0.0, 0.0,<br/>
+                0.0, 0.0, 1.0, 0.0,<br/>
+                0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelProjectionMatrix</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0,<br/>
+                0.0, 1.0, 0.0, 0.0,<br/>
+                0.0, 0.0, 1.0, 0.0,<br/>
+                0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldProjectionTranslation</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelProjectionTranslation</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 1.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">WorldClippingPlane</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">ModelClippingPlane</span>
+            </td>
+            <td>
+                (1.0, 0.0, 0.0, 0.0)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">TexCoordGen</span>
+            </td>
+            <td>
+                (0.0, 0.0, 0.0, 0.0)
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>By default, the Gamebryo shader system will not print out a warning
+message if an invalid parameter has been used. This is to avoid flooding
+the debug output window with a message each frame for every object that
+uses the shader. If these warning messages are desired, they can be enabled
+by calling the static function
+<span class="NDLSystemFont">NiD3DErrorSettings::SetAllowDynEffectNotFound(true)</span> during application
+startup.</p>
+
+<h3>Lights and Parameters</h3>
+
+<p>Any parameter that is valid for a light is valid for all supported light
+types. For parameters that would ordinarily not make sense for a particular
+light type, an appropriate value is returned. For example, The
+<span class="NDLSystemFont">WorldPosition</span> parameter for an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDirectionalLight.htm">NiDirectionalLight</a></span> will return its world
+direction vector multiplied by some constant (-2<sup>20</sup> in this case) to
+represent a point sufficiently in the distance to behave as if at infinity.
+In another case, the <span class="NDLSystemFont">WorldDirection</span> parameter for an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPointLight.htm">NiPointLight</a></span> will
+return a normalized vector from the world translation of the <span class="NDLSystemFont">NiPointLight</span>
+object to the world bounding volume center of the rendered object to
+simulate a directional light for that object. For the purposes of these
+parameters, each light is treated as a fully-attenuated spot light. This
+enables the use of <span class="NDLSystemFont">Effect_GeneralLight</span> objects that retrieve whichever
+parameters are desired without needing to care about the actual type of
+each general light, if that behavior is desired.</p>
+
+<h2>Defined Entry</h2>
+
+<p>This type of entry maps a Gamebryo-supplied predefined value into the
+shader registers. The format for a predefined mapping entry in an NSF
+constant map is one of the two following format:</p>
+
+<pre>
+CM_Defined  DefinedMappingName  Register  ExtraData
+CM_Defined  DefinedMappingName  VarName   ExtraData
+</pre>
+
+<p><span class="NDLSystemFont">CM_Defined</span> is the keyword for identifying mappings of this type.</p>
+
+<p><span class="NDLSystemFont">DefinedMappingName</span> is the predefined mapping name for the
+DefinedMappings enumerations provided by the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShaderConstantMap.htm">NiShaderConstantMap</a></span> class. The
+table at <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShaderConstantMap.htm#DefinedMappings">NiShaderConstantMap::DefinedMappings</a></span> shows the string mappings for
+each enumeration.</p>
+
+<p><span class="NDLSystemFont">Register</span> is an unsigned integer that represents the shader program
+constant register to map the data into. This specification should only be
+used for shader programs written in assembly language.</p>
+
+<p><span class="NDLSystemFont">VarName</span> is a string indicating the name of the variable that should
+receive the data. This specification should only be used for shader
+programs written in a higher level shader language such as HLSL or Cg.</p>
+
+<p><span class="NDLSystemFont">ExtraData</span> is an unsigned integer that is used to provide additional data
+for some mappings.</p>
+
+<p>There are some special cases provided for pre-defined entries. One of
+these is related to the mapping of bone matrices in skinning. The format
+for these particular defines takes the following format:</p>
+
+<pre>
+CM_Defined  BoneMatrixMappingName  Register  StartBoneIndex  BoneCount
+CM_Defined  BoneMatrixMappingName  VarName   StartBoneIndex  BoneCount
+</pre>
+
+<p><span class="NDLSystemFont">BoneMatrixMappingName</span> is <span class="NDLSystemFont">SkinBoneMatrix3</span>.</p>
+
+<p><span class="NDLSystemFont">Register</span> is an unsigned integer that represents the starting register of
+the shader program constant map to place the bone matrices at.</p>
+
+<p><span class="NDLSystemFont">VarName</span> is a string indicating the name of the variable that should
+receive the data. The variable should be declared as an array of matrices,
+where the array has BoneCount entries. This specification should only be
+used for shader programs written in a higher level shader language such as
+Microsoft's HLSL.</p>
+
+<p><span class="NDLSystemFont">StartBoneIndex</span> is the index of the first bone to place into the
+registers.</p>
+
+<p><span class="NDLSystemFont">BoneCount</span> is the number of bones following the start index to pack into
+registers.</p>
+
+<p>For example:</p>
+
+<pre>
+CM_Defined  SkinBoneMatrix3  10  0  20
+</pre>
+
+<p>This line will pack bones 0-19 into the registers starting at 10. Since
+<span class="NDLSystemFont">*SkinBoneMatrix3</span> is used, each bone matrix will be of the 3x4 variety and
+take up 3 registers, and thus, the total number of registers taken by this
+command will be (20 * 3) = 60. So constant registers 10-70 will be taken up
+by the bone matrices for the object.</p>
+
+<p>Another special case is for the texture transform matrices for the decal
+and shader maps. Since each of these map types can occur multiple times on
+an object, an index must also be specified. This index needs to be passed
+in as the <span class="NDLSystemFont">ExtraData</span> parameter for these entries.</p>
+
+<h2>Attribute Entry</h2>
+
+<p>This type of entry maps a per-object attribute into the shader registers.
+The format for an attribute mapping entry in an NSF constant map is as
+follows:</p>
+
+<pre>
+CM_Attribute  AttributeName  Register  RegisterCount  ExtraData
+</pre>
+
+<p><span class="NDLSystemFont">CM_Attribute</span> is the keyword for identifying mappings of this type.</p>
+
+<p><span class="NDLSystemFont">AttributeName</span> is the key name of the attribute to be mapped into the shader
+constant registers. This attribute MUST be contained in the per-object
+attribute list of the shader the constant map is contained in. [NOTE: If the
+attribute is not present in an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> object attached to the geometry at
+run-time, the shader will use the default value for the constant specified in
+the NSF file. Developers can optionally 'hand-attach' the extra data to objects
+in their application, but this approach is less than optimal with respect to
+the usage of the shader system. The object should be exported from the art
+tools with the appropriate shader attached to guarantee that the proper
+instances of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> will exist for the shader.] In the case of shader
+programs written in a higher level shader language like HLSL or Cg, this value
+is also used for the name of the variable that will store the data.</p>
+
+<p><span class="NDLSystemFont">Register</span> is an unsigned integer that represents the register to start
+packing the constant into. It will be ignored unless the shader program was
+written in assembly.</p>
+
+<p><span class="NDLSystemFont">RegisterCount</span> is the number of registers the constant will take. If the
+register count is larger than the number of registers required, the data will
+be duplicated into multiple registers if possible. In the case of shader
+programs written in a higher level shader language like Microsoft's HLSL, this
+value is ignored.</p>
+
+<p><span class="NDLSystemFont">ExtraData</span> is an unsigned integer that is used to provide additional data for
+some mappings. This value is currently not used by any attribute mapping in the
+Gamebryo Shader System.</p>
+
+<h2>Constant Entry</h2>
+
+<p>This type of entry maps a set of values defined directly with the entry into
+the shader registers. The format for a constant mapping entry in an NSF
+constant map is as follows:</p>
+
+<pre>
+CM_Constant  ConstantName  Register  RegisterCount  VALUES
+CM_Constant is the keyword for identifying mappings of this type.
+</pre>
+
+<p><span class="NDLSystemFont">ConstantName</span> is the name assigned to this entry in the constant map. In the
+case of shader programs written in a higher level shader language like HLSL or
+Cg, this value is also used for the name of the variable that will store the
+data.</p>
+
+<p><span class="NDLSystemFont">Register</span> and <span class="NDLSystemFont">RegisterCount</span> are the starting register to pack the data into
+and the number of registers it should take, respectively. In the case of shader
+programs written in a higher level shader language like HLSL or Cg, these
+values are ignored.</p>
+
+<p><span class="NDLSystemFont">VALUES</span> are the actual data that will be put in the register(s). Values can
+consist of 2, 3, 4, 8, 9, 12, or 16 comma-separated float values.</p>
+
+<h2>Global Entry</h2>
+
+This type of entry maps a global attribute into the shader registers. The format for a constant mapping entry in an NSF constant map is as follows:
+
+<pre>
+CM_Global  GlobalName  Register  RegisterCount
+</pre>
+
+<p><span class="NDLSystemFont">CM_Global</span> is the keyword for identifying mappings of this type.</p>
+
+<p><span class="NDLSystemFont">GlobalName</span> is the key name of the global attribute to be mapped into the
+shader constant registers. This attribute MUST be contained in the
+<span class="NDLSystemFont">Global_Attribute</span> section of the shader the constant map is contained in. In the
+case of shader programs written in a higher level shader language like
+Microsoft's HLSL, this value is also used for the name of the variable that
+will store the data.  If the attribute is an array attribute, only the name of
+the array should be used (i.e. not including the "[N]" dimensioning).</p>
+
+<p><span class="NDLSystemFont">Register</span> is an unsigned integer that represents the register to start
+packing the entry into. In the case of shader programs written in a higher
+level shader language like Microsoft's HLSL, this value is ignored.</p>
+
+<p><span class="NDLSystemFont">RegisterCount</span> is the number of registers the constant will take. If the
+register count is larger than the number of registers required, the data will
+be duplicated into multiple registers if possible. Shader authors should take
+care to use the proper number of registers. In the case of shader programs
+written in a higher level shader language like Microsoft's HLSL, this value is
+ignored.</p>
+
+<h2>Operator Entry (Vertex Shader Constant Maps Only)</h2>
+
+<p>This type of entry maps the result of an operation on two other entries into
+the shader registers. <span class="NDLSystemFont">CM_Object</span> entries cannot be used with an operator entry.
+The format for an operator entry in an NSF constant map is as follows:</p>
+
+<pre>
+CM_Operator  OpEntryName  Register  RegisterCount  Entry1Name operator Entry2Name
+    OPTIONAL_Inverse  OPTIONAL_Transpose
+</pre>
+
+<p><span class="NDLSystemFont">CM_Operator</span> is the keyword for identifying mappings of this type.</p>
+
+<p><span class="NDLSystemFont">OpEntryName</span> is the name for this mapping entry. In the case of shader
+programs written in a higher level shader language like Microsoft's HLSL, this
+value is also used for the name of the variable that will store the data.</p>
+
+<p><span class="NDLSystemFont">Register</span> is an unsigned integer that represents the register to start
+packing the entry into. In the case of shader programs written in a higher
+level shader language like Microsoft's HLSL, this value is ignored.</p>
+
+<p><span class="NDLSystemFont">RegisterCount</span> is the number of registers the result of the operator will
+take. Shader authors should take care to use the proper number of registers. In
+the case of shader programs written in a higher level shader language like
+Microsoft's HLSL, this value is ignored.</p>
+
+<p>Entry1Name is the name of the first entry to use in the operation. This
+entry MUST be either a Defined Entry or a Global Entry. The data type is also
+restricted to an unsigned int, float, point4, or a matrix4.</p>
+
+<p>Operator is the operation you wish to perform. For example, a multiply
+operation is accomplished by simply putting an '*' between the two entries. The
+list of operators and their valid operands are described below.</p>
+
+<p>Entry2Name is the name of the second entry to use in the operation. This
+entry MUST be either a Defined Entry or a Global Entry. The data type is also
+restricted to an unsigned int, float, point4, or a matrix4.</p>
+
+<p><span class="NDLSystemFont">OPTIONAL_Inverse</span> is used to inform the system to invert the results of the
+operation. This step is accomplished by putting the keyword "Inverse" (case
+sensitive), after Entry2Name. Inversion only applies to matrices at this time.
+If you do not wish to invert the result, don't put the keyword there.</p>
+
+<p><span class="NDLSystemFont">OPTIONAL_Transpose</span> is used to inform the system to transpose the results of
+the operation. This step is accomplished by putting the keyword "Transpose"
+(case sensitive), after the optional inverse, or if it is not present, after
+Entry2Name. Inversion only applies to matrices at this time. If you do not wish
+to transpose the result, don't put the keyword there.</p>
+
+<p>The following table describes the various operators and their valid
+operands. Any operation or set of operands not listed should be considered
+unsupported.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Operator
+            </th>
+            <th>
+                Operand 1 Type
+            </th>
+            <th>
+                Operand 2 Type
+            </th>
+            <th>
+                Meaning
+            </th>
+            <th>
+                Result
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> * </td>
+            <td> Point4 </td>
+            <td> UInt </td>
+            <td> vector-scalar multiplication </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Point4 </td>
+            <td> Float </td>
+            <td> vector-scalar multiplication </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Point4 </td>
+            <td> Point4 </td>
+            <td> piece-wise multiplication </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Point4 </td>
+            <td> Transform </td>
+            <td> transform the vector using the matrix </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Color </td>
+            <td> UInt </td>
+            <td> vector-scalar multiplication </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Color </td>
+            <td> Float </td>
+            <td> vector-scalar multiplication </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Color </td>
+            <td> Point4 </td>
+            <td> piece-wise multiplication </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Color </td>
+            <td> Color </td>
+            <td> piece-wise multiplication </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Color </td>
+            <td> Transform </td>
+            <td> transform the vector using the matrix </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Transform </td>
+            <td> UInt </td>
+            <td> matrix-scalar multiplication </td>
+            <td> Transform </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Transform </td>
+            <td> Float </td>
+            <td> matrix-scalar multiplication </td>
+            <td> Transform </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Transform </td>
+            <td> Point4 </td>
+            <td> transform the vector using the matrix </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Transform </td>
+            <td> Color </td>
+            <td> transform the vector using the matrix </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> * </td>
+            <td> Transform </td>
+            <td> Transform </td>
+            <td> matrix-matrix multiplication </td>
+            <td> Transform </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Point4 </td>
+            <td> UInt </td>
+            <td> vector-scalar division </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Point4 </td>
+            <td> Float </td>
+            <td> vector-scalar division </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Point4 </td>
+            <td> Point4 </td>
+            <td> piece-wise division </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Color </td>
+            <td> UInt </td>
+            <td> vector-scalar division </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Color </td>
+            <td> Float </td>
+            <td> vector-scalar division </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> / </td>
+            <td> Color </td>
+            <td> Color </td>
+            <td> piece-wise division </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> UInt </td>
+            <td> UInt </td>
+            <td> scalar addition </td>
+            <td> UInt </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> UInt </td>
+            <td> Float </td>
+            <td> scalar addition </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> Float </td>
+            <td> UInt </td>
+            <td> scalar addition </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> Float </td>
+            <td> Float </td>
+            <td> scalar addition </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> Point4 </td>
+            <td> Point4 </td>
+            <td> piece-wise addition </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> + </td>
+            <td> Color </td>
+            <td> Color </td>
+            <td> piece-wise addition </td>
+            <td> Color </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> UInt </td>
+            <td> UInt </td>
+            <td> scalar subtraction </td>
+            <td> UInt </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> UInt </td>
+            <td> Float </td>
+            <td> scalar subtraction </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> Float </td>
+            <td> UInt </td>
+            <td> scalar subtraction </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> Float </td>
+            <td> Float </td>
+            <td> scalar subtraction </td>
+            <td> Float </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> Point4 </td>
+            <td> Point4 </td>
+            <td> piece-wise subtraction </td>
+            <td> Point4 </td>
+        </tr>
+        <tr>
+            <td> - </td>
+            <td> Color </td>
+            <td> Color </td>
+            <td> piece-wise subtraction </td>
+            <td> Color </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Platform-specific constant map entries</h2>
+
+<p>The NSF format allows for platform-specific constant map entries. This is
+useful for cases where you may want to use a different value in a constant
+register when running on PC versus some other platform. To declare
+platform-specific constants, simply include the constants in a bracket with a
+platform assignment as follows:</p>
+
+<pre>
+VS_Constantmap
+{
+    //
+    // Shared constants...
+    //
+    {
+        Platform = MYPLATFORM|DX9
+        CM_Constant   HueColor    4  1  1.0,0.0,0.0,1.0
+        CM_Constant   AuraColor   5  1  1.0,1.0,0.0,0.5
+    }
+    {
+        Platform = MYPLATFORM
+        CM_Constant   HueColor    4  1  0.0,1.0,0.0,1.0
+        CM_Constant   AuraColor   5  1  1.0,1.0,1.0,0.5
+    }
+}
+</pre>
+
+<p>This example would set the <span class="NDLSystemFont">HueColor</span> constant register contents to red on the
+PC, but to green on the hypothetical "MYPLATFORM". The <span class="NDLSystemFont">AuraColor</span> constant
+register contents would be set to yellow on PC and white on "MYPLATFORM".</p>
+
+<h2>ConstantMap Example</h2>
+
+<p>An example vertex shader constant map:</p>
+
+<pre>
+ConstantMap SampleConstantMap
+{
+    ShaderType = Vertex
+    CM_Attribute  SelectedColor         4  1  0
+    CM_Constant   RandomConstant        5  1  0.2,0.4,0.5,0.1
+    CM_Defined    World                -1  0
+    CM_Defined    ViewProj             -1  0
+    CM_Operator   TransformTranspose    0  4  World * ViewProj Transpose
+    CM_Object     Light1  ModelPosition 6
+}
+</pre>
+
+<p>This example maps a per-object attribute named "<span class="NDLSystemFont">SelectedColor</span>" into vertex
+shader constant register 4, taking up only 1 register.</p>
+
+<p>It maps a point4 (4 floats) constant with a value of (0.2,0.4,0.5,0.1) into
+shader register 5.</p>
+
+<p>It declares two pre-defined mappings, the <span class="NDLSystemFont">World</span> transformation matrix and
+the <span class="NDLSystemFont">ViewProj</span> concatenation, that will be used by the map. Take note that their
+Registers values are set to&mdash;1 so that they do not get packed into shader
+constant registers.</p>
+
+<p>It defines an operator entry, "<span class="NDLSystemFont">TransformTranspose</span>", which takes the
+transpose of the result of the <span class="NDLSystemFont">World</span> matrix concatenated with the <span class="NDLSystemFont">ViewProj</span>
+matrix, and places it into shader constant registers c0-c3.</p>
+
+<p>Finally, it maps the model position of a previously defined object called
+<span class="NDLSystemFont">Light1</span> into shader register 6.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

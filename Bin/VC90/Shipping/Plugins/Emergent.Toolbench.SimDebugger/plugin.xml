@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin
+  xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"  
+  name="Sim Debugger" 
+  id="Emergent.Toolbench.SimDebugger"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies">
+
+  <extension-point id="Emergent.Toolbench.SimDebugger.SimEvent"
+                   schema="Schemas\ExtPoint-SimEvent.xsd"/>
+
+  <extension-point id="Emergent.Toolbench.SimDebugger.SimWorldDatabase"
+                   schema="Schemas\ExtPoint-SimWorldDatabase.xsd"/>
+
+  <!-- Add the content related extensions. -->
+  <extension point="Emergent.Toolbench.ContentService.ContentCategory">
+    <category name="Debugging"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentType">
+    <content-type id="Emergent.Toolbench.SimDebugger.SimDebuggerSession"
+                  category="Debugging"
+                  semantic="document/xml"
+                  filter-description="Sim Debugger Sessions"
+                  requires-solution="false"
+                  file-association-allowed="true">
+    </content-type>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentFactory">
+    <document-factory id="Emergent.Toolbench.SimDebugger.SessionDocumentFactory"
+                      name="Sim Debugger Session"
+                      description="A Sim Debugger session record used for game debugging."
+                      content-type="Emergent.Toolbench.SimDebugger.SimDebuggerSession"
+                      icon="Icons/session.png"
+                      file-extension=".simdebug"
+                      class="Emergent.Toolbench.SimDebugger.SessionDocumentFactory">
+    </document-factory>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentAspectType">
+    <aspect id="Emergent.Toolbench.SimDebugger.UserSettingsAspect"
+            class="Emergent.Toolbench.Settings.SettingsAspect">
+      <supported-content id="Emergent.Toolbench.SimDebugger.SimDebuggerSession"/>
+    </aspect>
+  </extension>
+
+  <extension point="Emergent.Toolbench.ContentService.ContentAspectType">
+    <aspect id="Emergent.Toolbench.SimDebugger.SimWorldAspect"
+            class="Emergent.Toolbench.SimDebugger.SimWorldAspect">
+      <supported-content id="Emergent.Toolbench.SimDebugger.SimDebuggerSession"/>
+    </aspect>
+  </extension>
+
+  <extension point="Emergent.Toolbench.SimDebugger.SimEvent">
+    <sim-event class="Emergent.Toolbench.SimDebugger.SessionStartedSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.LogMessageSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.FlatModelDefinedSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.EntityCreatedSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.EntityDestroyedSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.UpdateActorSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.PropertyChangedSimEvent"/>
+    <sim-event class="Emergent.Toolbench.SimDebugger.PropertyDroppedSimEvent"/>
+  </extension>
+
+  <extension point="Emergent.Toolbench.SimDebugger.SimWorldDatabase">
+    <sim-world-database class="Emergent.Toolbench.SimDebugger.ModelDatabase"/>
+    <sim-world-database class="Emergent.Toolbench.SimDebugger.PropertyDatabase"/>
+    <sim-world-database class="Emergent.Toolbench.SimDebugger.EntityDatabase"/>
+    <sim-world-database class="Emergent.Toolbench.SimDebugger.PositionDatabase"/>
+  </extension>
+
+  <!-- Settings for throttling entity updates coming from the connected game -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerContent"
+               id="Emergent.Toolbench.SimDebugger.ActorUpdateBuckets"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               path="Sim Debugger"
+               property-type="Integer"
+               visible="true">
+        <value>10</value>
+        <display-name>Actor Update Buckets</display-name>
+        <description>The number of divisions used to amortize the cost of Actor-based entity position and rotation checks across ticks.</description>
+      </setting>
+      <setting scope="PerContent"
+               id="Emergent.Toolbench.SimDebugger.PositionUpdateThreshold"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>50.0</value>
+        <display-name>Update Threshold - Position</display-name>
+        <description>The distance an entity must move to trigger an update to Toolbench.</description>
+      </setting>
+      <setting scope="PerContent"
+               id="Emergent.Toolbench.SimDebugger.RotationUpdateThreshold"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>45.0</value>
+        <display-name>Update Threshold - Rotation</display-name>
+        <description>The angle an entity's facing must change to trigger an update to Toolbench.</description>
+      </setting>
+    </settings>
+  </extension>
+
+  <!-- Setting to adjust Actor orientations to match art assets -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerContent"
+               id="Emergent.Toolbench.SimDebugger.ActorFacingOffset"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>0.0</value>
+        <display-name>Actor Facing Offset</display-name>
+        <description>Angle in degrees to adjust the facing indicator of Actor-based entities, to account for coordinate system conventions in art assets.</description>
+      </setting>
+    </settings>
+  </extension>
+
+  <!-- Settings to control the generation of heat maps -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.SimDebugger.HeatMapBaseScale"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>250.0</value>
+        <display-name>Heat Map - Base Scale</display-name>
+        <description>The granularity of heat map data in world units.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.SimDebugger.HeatMapExtents"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>10000.0</value>
+        <display-name>Heat Map - Extents</display-name>
+        <description>The maximum world coordinate covered by the heat map.</description>
+      </setting>
+    </settings>
+  </extension>
+
+  <!-- Setting to influence live image generation -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.SimDebugger.SnapshotCameraZ"
+               path="Sim Debugger"
+               property-type="Float"
+               visible="true">
+        <value>3000.0</value>
+        <display-name>Snapshot Camera Z</display-name>
+        <description>The Z position of the camera used to render live snapshots of the connected game.</description>
+      </setting>
+    </settings>
+  </extension>
+
+  <requires>
+    <import plugin="Emergent.Toolbench.ContentService"/>
+    <import plugin="Emergent.Toolbench.GameSolution"/>
+    <import plugin="Emergent.Toolbench.Settings"/>
+  </requires>
+
+  <runtime>Emergent.Toolbench.SimDebugger.dll</runtime>
+
+</plugin>

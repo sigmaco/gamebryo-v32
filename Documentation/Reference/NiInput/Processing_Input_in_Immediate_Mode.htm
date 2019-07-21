@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Processing Input in Immediate Mode</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Processing Input in Immediate Mode</h1>
+
+<p>All processing of data when operating in <em>Immediate 
+ Mode</em> is accomplished via polling. Each device type contains a set 
+ of functions that provide polling ability. </p>
+
+<p>For game pad devices, applications can use the following 
+ functions to poll the analog axes:</p>
+
+<ul>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::GetAxisValue">NiInputGamePad::GetAxisValue</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::GetStickAxisValue">NiInputGamePad::GetStickAxisValue</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::GetStickValue">NiInputGamePad::GetStickValue</a></span></li>
+</ul>
+
+<p>The following functions allow for polling game pad buttons 
+ (both digital and analog):</p>
+
+<ul>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::GetCurrentButtons">NiInputGamePad::GetCurrentButtons</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::GetNewButtons">NiInputGamePad::GetNewButtons</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::ButtonIsDown">NiInputGamePad::ButtonIsDown</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::ButtonWasPressed">NiInputGamePad::ButtonWasPressed</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::ButtonWasReleased">NiInputGamePad::ButtonWasReleased</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputGamePad.htm#NiInputGamePad::ButtonState">NiInputGamePad::ButtonState</a></span></li>
+</ul>
+
+<p>For keyboard devices, applications can use the following 
+ functions to poll for key events:</p>
+
+<ul>
+  <li><span class="NDLSystemFont"><a HREF="NiInputKeyboard.htm#NiInputKeyboard::AnyKeyDown">NiInputKeyboard::AnyKeyDown</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputKeyboard.htm#NiInputKeyboard::KeyIsDown">NiInputKeyboard::KeyIsDown</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputKeyboard.htm#NiInputKeyboard::KeyWasPressed">NiInputKeyboard::KeyWasPressed</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputKeyboard.htm#NiInputKeyboard::KeyWasReleased">NiInputKeyboard::KeyWasReleased</a></span></li>
+</ul>
+
+<p>For mouse devices, applications can use the following 
+ functions to poll the mouse axes:</p>
+
+<ul>
+<li><span class="NDLSystemFont"><a HREF="NiInputMouse.htm#NiInputMouse::GetPositionDelta">NiInputMouse::GetPositionDelta</a></span></li>
+</ul>
+
+<p>The following functions allow for polling mouse buttons:</p>
+
+<ul>
+  <li><span class="NDLSystemFont"><a HREF="NiInputMouse.htm#NiInputMouse::ButtonIsDown">NiInputMouse::ButtonIsDown</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputMouse.htm#NiInputMouse::ButtonWasPressed">NiInputMouse::ButtonWasPressed</a></span></li>
+  <li><span class="NDLSystemFont"><a HREF="NiInputMouse.htm#NiInputMouse::ButtonWasReleased">NiInputMouse::ButtonWasReleased</a></span></li>
+</ul>
+
+<p>As an example, the following code is performed to check 
+ the keyboard and any valid game pad for exit conditions in 
+ <span class="NDLSystemFont">NiApplication</span>:</p>
+
+<pre>
+// Check the keyboard for the exit app condition
+NiInputKeyboard* pkKeyboard = GetInputSystem()-&gt;GetKeyboard();
+if (pkKeyboard)
+{
+    // Quit on 'Q' or ESCAPE press
+    if (pkKeyboard-&gt;KeyWasPressed(NiInputKeyboard::KEY_Q) ||
+        pkKeyboard-&gt;KeyWasPressed(NiInputKeyboard::KEY_ESCAPE))
+    {
+        QuitApplication();
+    }
+}
+ 
+// Allow ANY gamepad to exit the app
+NiInputGamePad* pkGamePad;
+for (unsigned int uiPort = 0; uiPort &lt; NiInputSystem::MAX_GAMEPADS;
+    uiPort++)
+{
+    pkGamePad = m_spInputSystem-&gt;GetGamePad(uiPort);
+    if (pkGamePad)
+    {
+        // SELECT must be held, and then START must be pressed.
+        if (pkGamePad-&gt;ButtonWasPressed(NiInputGamePad::NIGP_START) &amp;&amp;
+            pkGamePad-&gt;ButtonIsDown(NiInputGamePad::NIGP_SELECT))
+        {
+            QuitApplication();
+        }
+    }
+}
+</pre>
+ 
+<p>The following code snippet demonstrates how to sample 
+ the left analog stick on a game pad:</p>
+
+<pre>
+// This code assumes m_spGamePad points to a valid
+// game pad instance.
+int iHorz, iVert;
+ 
+m_spGamePad-&gt;GetStickValue(NiInputGamePad::NIGP_STICK_LEFT, iHorz, iVert);
+</pre> 
+
+<p>Note that these values will be mapped to the range specified 
+ in the <span class="NDLSystemFont">CreateParams</span> when the system was 
+ created.</p>
+
+<p>With respect to mice, axes can (currently) only return 
+ position deltas from the last update. The following snippet demonstrates 
+ how to retrieve this data:</p>
+
+<pre>
+// This code assumes m_spMouse points to a valid mouse instance.
+int iValue, iX, iY, iZ;
+ 
+// Version one - get a specific axis delta
+m_spMouse-&gt;GetPositionDelta(NiInputMouse::NIM_AXIS_X, iValue);
+// Version two - get all three axes' delta values
+m_spMouse-&gt;GetPositionDelta(iX, iY, iZ);
+</pre>
+ 
+
+<p>For a larger example of processing input in Immediate 
+ Mode, please refer to the InputDemo sample.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

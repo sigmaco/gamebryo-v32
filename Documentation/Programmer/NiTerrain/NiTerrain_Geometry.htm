@@ -1,0 +1,521 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Geometry</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiTerrain Geometry</h1>
+
+  <p>The terrain engine stores its data in a quadtree format to allow fast culling and level of 
+  detail. When rendering the scene, each cell is checked for its visibility and distance to the 
+  camera. Cells that are closer to the camera are allowed to subdivide to their higher detail 
+  representations whilst distant cells are forced to render at low detail.&nbsp;
+  </p>
+  <p>Because of the nature of the sub division, terrain sizes are limited to powers of two, further, 
+  because cells are stitched with bordering cells, each cell be represented by a square array of 
+  vertices with dimensions that satisfy the following equation:
+  </p>
+  
+  <div class="FigureContainer">
+    <p><img alt="dimension 2^x + 1" src="images/EXTERN_0000.png">&nbsp;&nbsp;&nbsp;where x is any 
+    positive integer</p>
+  </div>
+  <p>Note that there is duplication of vertex information on the border of cells to allow a seamless 
+  terrain system to be rendered.<br>
+  </p>
+</div>
+<div>
+  <h3>
+    Tessellation
+  </h3>
+  <p>The basic tessellation of the terrain occurs in patches of triangles arranged by alternating 
+  the triangle subdivision of a quad between 4 verts of the terrain. The following diagram 
+  illustrates the basic approach to tessellation of the terrain's height field.</p>
+  
+  <div class="FigureContainer">
+    <img alt="Basic tesselation of an 8x8 terrain" src="images/Tessellation8x8.png">
+    <p class="FigureCaption">Figure 1: <i>Basic tesselation of an 8x8 terrain</i></p>
+  </div>
+  
+  <p>Each cell in the terrain is represented by a mesh similar to the above image, cells are 
+  spatially placed beside each other to form a progressively larger patch of terrain. Cells may 
+  however be drawn at different levels of detail. Because of this, a method of stitching the seams 
+  between cells must be employed to prevent cracks from appearing. The engine automatically stitches 
+  the seams of cells of differing levels of detail by removing every second vertex along the 
+  relevant border on the higher detail cell. The following diagram illustrates this method, with red 
+  outlines used to highlight the bounding area of individual cells.</p>
+  <div class="FigureContainer">
+    <img alt="Stitching of borders" src="images/borderstitching.png">
+    <p class="FigureCaption">Figure 2: <i>Stitching of borders</i></p>
+  </div>
+  <p>
+    These changes in the tessellation are applied by the terrain engine by swapping around the 
+    current index stream on each cell for a particular situation allowing it to merge pairs of 
+    triangles along the edge of a seam between two cells of differing LoD.
+  </p>
+  <h3>Morphing</h3>
+  <p>The terrain engine supports geometry morphing as the user's camera navigates through the scene. 
+  Instead of higher detailed terrain patches popping in instantaneously, the geometry of those 
+  patches are gradually morphed to higher detail as the user gets closer to that patch.</p>
+  
+  <p>Customizations to the morphing system may be made through a few functions on the 
+    <span class="NDLSystemFont"><a href="../../Reference/NiTerrain/NiTerrain.htm">NiTerrain</a></span> 
+  object. These customizations must be applied at runtime to the object and are not stored as a part 
+  of a particular terrain's asset. Customization of these values may allow the developer to tweak 
+  the terrain detail levels for different systems at runtime. The following functions are available 
+  to tweak the parameters of the morphing algorithm:</p>
+  
+  <pre>bool SetLODMode(NiUInt32 uiLODMode);</pre>
+  
+  <p>This function allows the developer to select different morphing modes and even disable the 
+  system entirely. The following table describes the different modes available, and their operation.
+  </p>
+  
+    <table>
+      <thead>
+        <tr>
+          <th>
+            Mode
+          </th>
+          <th>
+            Description
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <span class="NDLSystemFont">NiTerrainSectorData::LOD_MODE_2D </span>
+          </td>
+          <td>
+            <i>(Default)</i><br>
+            The level of detail for a specific region of the terrain is determined by the 2D
+            XY position of the camera relative to the region.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="NDLSystemFont">NiTerrainSectorData::LOD_MODE_25D </span>
+          </td>
+          <td>
+            The level of detail for a specific region of the terrain is determined by the 2D
+            XY position of the camera relative to the region. The level of detail for the region
+            is capped according to the Z height of the camera relative to the 0 position of
+            the terrain.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="NDLSystemFont">NiTerrainSectorData::LOD_MODE_3D </span>
+          </td>
+          <td>
+            The level of detail for a specific region of the terrain is determined by the 3D
+            XYZ position of the camera relative to the region. This mode may cause adjacent
+            cells to render at levels of detail more than 1 LOD apart which may result in cracks
+            appearing between sectors of the terrain. Please test this mode thoroughly with
+            your assets to make sure this is not an issue before using it in a released application.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="NDLSystemFont">NiTerrainSectorData::LOD_MODE_MORPH_ENABLE </span>
+          </td>
+          <td>
+            <i>(Default)</i><br>
+            Specify this flag to enable the morphing system. Without this flag, all morphing
+            will be disabled.<br>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+<pre>void SetLODScale(float fScale);</pre>
+  
+  <p>This function allows the developer to adjust the overall detail level of the terrain. A scale 
+  value of 1.0 results in the default level of detail for the terrain. Lower values will cause the 
+  terrain's detail to decrease proportionally and higher values will cause the terrain's detail to 
+  increase exponentially. For example, a value of 0.5 will cause the terrain to render only half of 
+  its LOD's, and a value of 2.0 will cause the radius of high detail geometry to double.</p>
+  
+  <h3>Stream usage</h3>
+  
+  <p>Each cell in the terrain quadtree stores data for a mesh to represent that cell in the scene. 
+  This data is stored in standard Gamebryo GPU streams, and includes positional and lighting 
+  information.</p>
+  
+  <p>The following table shows the stream usage per vertex for the default PC configuration of 
+  terrain.</p>
+  
+    <table>
+        <thead>
+            <tr>
+                <th>Stream</th>
+                <th>Elements</th>
+                <th>Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Position
+                </td>
+                <td>
+                    Element 1: X, Y
+                </td>
+                <td>
+                    The X/Y position of the the vertex.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+                <td>
+                    Element 1: Z
+                </td>
+                <td>
+                    The height of the vertex.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+                <td>
+                    Element 1: W
+                </td>
+                <td>
+                    <i>(Optional) </i>
+                    <br>
+                    The height of the vertex in the lower level of detail.<br>
+                    <br>
+                    Without this element, morphing will not be available on the mesh.<br>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Normal/Tangent
+                </td>
+                <td>
+                    Element 1: X, Y
+                </td>
+                <td>
+                    <i>(Optional)</i><br>
+                    The X,Y direction of the normal.<br>
+                    <br>
+                    Without this element, dynamic lighting will not be available on the mesh unless
+                    an object space low detail normal map is supplied to the shader.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+                <td>
+                    Element 1: Z, W
+                </td>
+                <td>
+                    <i>(Optional)</i><br>
+                    The X,Y direction of the normal in the lower level of detail.<br>
+                    <br>
+                    Without this element, morphing will not be available on the mesh.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+                <td>
+                    Element 2: X, Y
+                </td>
+                <td>
+                    <i>(Optional)</i><br>
+                    The X,Z direction of the tangent.<br>
+                    <br>
+                    Without this element, normal and parallax mapping will not be available on the 
+                    mesh.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+                <td>
+                    Element 2: Z, W
+                </td>
+                <td>
+                    <i>(Optional)</i><br>
+                    The X,Z direction of the tangent in the lower level of detail.<br>
+                    <br>
+                    Without this element, morphing will not be available on the mesh.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+  <p>The optional entries in the streams are dependent upon the terrain configuration, and if a 
+  particular cell is a high detail leaf, or a low detail node.</p>
+  
+  <p>It is also worth noting that the unknown components of the lighting values are calculated based 
+  on the known values in the shader.</p>
+  
+  <h3>
+    Useful calculations
+  </h3>
+  <p>
+    This section contains a number of standard calculations that can be performed to calculate 
+    various properties of the terrain. The intent in this section is to highlight the various 
+    mathematical relationships between the parameters of the terrain. In each of the calculations, 
+    the following variables may be used:
+  </p>
+  <ul>
+    <li>
+      <i>LOD </i>- The number of subdivided levels of detail that the terrain stores.
+    </li>
+    <li>
+      <i>CellSize </i>- The width of a cell in terrain space.
+    </li>
+    <li>
+      <i>CellSizeInVerts </i>- The number of verts stored on a cell's mesh.
+    </li>
+    <li>
+      <i>SectorSize </i>- The width of a sector in terrain space.
+    </li>
+    <li>
+      <i>SectorSizeInVerts </i>- The number of verts stored on a sector's high detail mesh.
+    </li>
+    <li>
+      <i>NumberOfCells </i>- The total number of cells stored in a sector
+    </li>
+    <li>
+      <i>NumberOfHighDetailCells </i>- The number of high detail cells stored on a sector<br>
+    </li>
+  </ul>
+  
+  <p>Calculations:</p>
+  
+  <div class="FigureContainer">
+    <img alt="CellSizeInVerts = CellSize + 1" src="images/EXTERN_0001.png"<br>
+    <br>
+    <br>
+    <img alt="SectorSizeInVerts = SectorSize + 1" src="images/EXTERN_0002.png"<br>
+    <br>
+    <br>
+    <img alt="SectorSize = CellSize * 2^{LOD}" src="images/EXTERN_0003.png"<br>
+    <br>
+    <br>
+    <img alt="NumberOfHighDetailCells = 4 ^ {LOD}" src="images/EXTERN_0004.png"<br>
+    <br>
+    <br>
+    <img alt="NumberOfCells = \frac{1 - 4 ^ {LOD + 1}}{1 - 4}"  src="images/EXTERN_0005.png"<br>
+  </div>
+  <h2>
+    How to choose the best geometry format
+  </h2>
+  <p>One of the difficult decisions to make when first setting up a new terrain scene is what 
+  geometry configuration to use. The difficulty lies in the fact that once the format has been 
+  selected, it cannot be easily changed again without losing the material painting data.</p>
+  
+  <p>Considerations:</p>
+  <ul>
+    <li>
+      How much detail should be shown in the distance?
+    </li>
+    <ul>
+      <li>
+        In general, a smaller cell size reduces the view distance, whilst increasing the number of 
+        levels of detail. This allows higher concentrations of detail in the foreground of the 
+        scene, at the expense of vertex shader load, increased draw calls, higher memory footprint 
+        and slower streaming.
+      </li>
+      <li>
+        A larger number of levels of detail will mean distant geometry can be rendered in less 
+        triangles (potential performance increase).
+      </li>
+      <li>
+        A larger number of levels of detail will mean more individual meshes to render, and hence 
+        more draw calls involved in rendering. This may be a cause for degraded performance.
+      </li>
+    </ul>
+  </ul>
+  <ul>
+    <li>
+      How many materials need to be painted upon the terrain in an area?
+    </li>
+    <ul>
+      <li>
+        Each cell on the terrain can support 4 materials. More cells will mean each sector can have 
+        more materials, though again, this is subject to potential performance degradation due to 
+        draw calls.
+      </li>
+      <li>
+        A smaller cell size will allow a higher concentration of materials in an area, however, will 
+        also increase the load on the vertex shader, and reduce the efficiency of the blend masks.
+      </li>
+      <li>
+        It is worth noting that whilst each cell can potentially support 4 unique materials, in 
+        order to paint across the border of cells and achieve a smooth blending of the materials, 
+        the material being painted must exist on the adjacent cell as well.
+      </li>
+    </ul>
+  </ul>
+  
+  <p>Recommendations:</p>
+  
+  <ul>
+    <li>
+      Experiment with the geometry first to get an understanding for the detail that can be 
+      achieved, and the performance in those scenes.
+    </li>
+    <ul>
+      <li>
+        Note, the performance will vary greatly with the number of materials you use on the terrain. 
+        When testing, paint a simple number of surfaces on the terrain to get an accurate idea of 
+        the performance.
+      </li>
+    </ul>
+  </ul>
+  <ul>
+    <li>
+      Use each vertex of the terrain to represent 0.5m of game units, then use normal and parallax 
+      maps to increase detail in the foreground.
+    </li>
+  </ul>
+  <ul>
+    <li>
+      Using more than 4 levels of detail on a terrain begins to reduce performance rapidly. Try to 
+      keep this value below 5.
+    </li>
+  </ul>
+  <ul>
+    <li>
+      Sectors of size 512x512 perform quite well, consider using a multiple sector approach to 
+      represent larger terrains.
+    </li>
+  </ul>
+  <ul>
+    <li>
+      Before spending a lot of time perfecting the painting of materials on the terrain, make sure 
+      you are happy with the performance under the current configuration. As mentioned before, it is 
+      currently impossible to migrate a terrain to a different format once it has been created 
+      without losing some information.<br>
+    </li>
+  </ul>
+  <h3>
+    Techniques to change the format
+  </h3>
+  <p>In the event that a change to the geometry format is unavoidable, the following table lists a 
+  few methods that might be used to adjust the format and what information may be lost in the 
+  process.</p>
+  <br>
+
+      <table border=1 bordercolor=#000000 cellpadding=3 cellspacing=0 class="" id=p7t6>
+      <thead>
+      <tr>
+      <th>Technique</th>
+      <th>Issues with this technique</th>
+      </tr>
+      </thead>
+        <tbody>
+        <tr>
+          <td>
+            <ol>
+              <li>
+                Export the heightmap of each sector of the terrain.
+              </li>
+              <li>
+                Stitch the heightmaps together in a paint application.
+              </li>
+              <li>
+                Create a new terrain with the new format settings.
+              </li>
+              <li>
+                Reformat the heightmaps to match the new format settings.
+              </li>
+              <li>
+                Slice up the overall heightmap into sector-sized chunks
+                in the new format.
+              </li>
+              <li>
+                Import the heightmaps onto each sector of the terrain.
+              </li>
+            </ol>
+          </td>
+          <td>
+            This technique does not preserve material painting data.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <ol>
+              <li>
+                Modify the ToolTerrainService to save using the NiTerrainSectorFileDeveloper file 
+                format. (See the storage section of the documentation)
+              </li>
+              <li>
+                Save the entire terrain in the new format.
+              </li>
+              <li>
+                Salvage the blendmask data and surface mask information for each sector from the 
+                terrain's path.
+              </li>
+              <li>
+                Create a new terrain with the new format settings.
+              </li>
+              <li>
+                Save the new terrain.
+              </li>
+              <li>
+                Paste the original blend mask data and surface mask information over the saved data.
+              </li>
+              <li>
+                Modify the ToolTerrainService to load using the NiTerrainSectorFileDeveloper file 
+                format, and save in the standard file format.
+              </li>
+              <li>
+                Load the terrain and save it again.
+              </li>
+              <li>
+                Revert all modifications to the ToolTerrainService.
+              </li>
+            </ol>
+          </td>
+          <td>
+            This technique preserves material painting data. But is only feasible if the new terrain 
+            format contains the same number of LOD as the original terrain format.
+          </td>
+        </tr>
+        </tbody>
+      </table>
+
+  <p>Future releases of the terrain engine are planned to incorporate these techniques into a tool 
+  within Toolbench.</p>
+
+  
+</body>
+</html>

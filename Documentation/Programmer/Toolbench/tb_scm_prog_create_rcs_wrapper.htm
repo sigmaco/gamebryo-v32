@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a Toolbench Revision Control Wrapper</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="SCM" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a Toolbench Revision Control Wrapper</h1>
+
+<p>Gamebryo LightSpeed includes support for both the Perforce and Subversion
+revision control systems. Additional revision control systems can be added
+using existing programmatic interfaces.</p>
+
+<p>The first step to adding support for a new revision control system is to
+create a C++ wrapper around the revision control system's API. Refer to the
+<a href="../RevisionControlWrapper/rcs_wrap_intro.htm">Revision Control Wrapper
+Programming</a> section for additional details.</p>
+
+<p>The next step is to create a new Toolbench plug-in that exposes revision
+control functionality to the rest of Toolbench. Refer to the Perforce and
+Subversion plug-ins as examples:</p>
+
+<ul>
+    <li>
+    <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\Source\Tools\Toolbench\Plugins\Emergent.Toolbench.RevisionControl.Perforce</span></li>
+
+    <li>
+    <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\Source\Tools\Toolbench\Plugins\Emergent.Toolbench.RevisionControl.Subversion</span></li>
+</ul>
+
+<p>The following steps provide an outline of the process:</p>
+
+<ol>
+    <li>First you'll be creating an extension for the
+    Emergent.Toolbench.RevisionControl.Provider extension point. The name
+    attribute is the display name of the provider. The id attribute is the
+    unique identifier corresponding to your provider's entry in its
+    dll's string resource table.
+        <pre>
+&lt;extension point="Emergent.Toolbench.RevisionControl.Provider"&gt;<br>
+    &lt;provider name="Provider" id="Provider" class="Company.Toolbench.RevisionControl.Provider.MyProvider"&gt;<br>
+    &lt;/provider&gt;<br>
+&lt;/extension&gt;
+</pre>
+    </li>
+
+    <li>Your Company.Toolbench.RevisionControl.Provider.MyProvider class will
+    need to implement the Emergent.Toolbench.RevisionControl. IRevisionProvider
+    interface.</li>
+
+    <li>A bare minimum implementation for your CLI/C++ Revision provider should
+    look something like this:
+        <pre>
+#include "stdafx.h"
+
+#include "MyProvider.h"
+
+using namespace System;
+
+using namespace Emergent::Toolbench::RevisionControl;
+using namespace Emergent::Toolbench::RevisionControl::Provider;
+
+//---------------------------------------------------------------------------
+void MyProvider::Initialize(IntPtr nativeProvider)
+{
+}
+//---------------------------------------------------------------------------
+void MyProvider::Shutdown()
+{
+}
+//---------------------------------------------------------------------------
+bool MyProvider::BeforeExecute(IRevisionCommand^ command)
+{
+    return true;
+}
+//---------------------------------------------------------------------------
+void MyProvider::Execute(IRevisionService^ service, 
+IRevisionCommand^ command)
+{
+    command-&gt;Execute(service, this);
+}
+//---------------------------------------------------------------------------
+</pre>
+    </li>
+</ol>
+
+<p>Some helpful tips when doing your IRevisionProvider:</p>
+
+<ul>
+    <li>Remember, revision control commands are being run after the disk IO has
+    already occurred. (This is not the case for rename and delete, your
+    integration is responsible for making sure the file gets renamed).</li>
+
+    <li>Depending on how you wrote your <a href=
+    "../../Reference/etkRCS/etk__RCSProvider.htm">RCSProvider</a>, you may need
+    to massage the state of the files on disk so that your provider can
+    correctly handle the situation. For example, in perforce when doing a
+    rename, we first need to store the users work off in a temporary directory,
+    because we will need to revert the state of their work in case they have
+    already edited the file because perforce does not allow transitions
+    directly from Edit to Integrate, only Integrate to Edit. So the .Net layer
+    copies the file to a temporary location so that when the revert occurs, it
+    can replace the newly reverted/integrated/edited file with the contents of
+    the file from before the rename.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="tb_scm_prog_plugin_files_rcs.htm">Placing Toolbench Plug-in
+    Files Under Revision Control</a></li>
+
+    <li><a href="../RevisionControlWrapper/rcs_wrap_intro.htm">Revision Control
+    Wrapper Programming</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

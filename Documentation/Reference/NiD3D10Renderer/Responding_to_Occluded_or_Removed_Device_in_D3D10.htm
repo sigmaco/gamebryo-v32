@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Responding to Occluded or Removed Device in D3D10</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Responding to Occluded or Removed Device in D3D10</h1>
+
+<p>The Direct3D device is never lost in D3D10 as it is in DX9,
+but it can either become occluded or removed. A device is
+occluded if the rendering window is minimized, offscreen, or
+entirely covered by another window. In this situation, the D3D10
+documentation suggests that the application enter an idle state
+and stop rendering. A removed device, on the other hand, is a
+condition where the current rendering device is no longer
+responding, either because an adapter was shut down or the device
+hung for some reason. In this situation, an application needs to
+release all D3D10 resources, including the device, and create a
+new device before it can continue running.</p>
+
+<h2>Occluded Device</h2>
+
+<p>Gamebryo will automatically check for either an occluded
+device or a released device whenever it attempts to render a new
+frame (in response to <span class=
+"NDLSystemFont">NiRenderer::DisplayFrame</span>). When a device
+is occluded, Gamebryo will automatically skip the execution of
+all draw calls until the device is no longer occluded. If an
+application wants to take further steps to reduce CPU usage while
+occluded, it can register a callback function with the
+<span class="NDLSystemFont"><a href=
+"NiD3D10Renderer.htm">NiD3D10Renderer</a></span> that will be
+called when the device first becomes occluded and again when it
+becomes no longer occluded.</p>
+
+<p>The callback function has this signature:</p>
+
+<p><span class="NDLSystemFont">typedef bool
+(*OCCLUDEDNOTIFYFUNC)(bool bBeginOccluded, void*
+pvData);</span></p>
+
+<p>The <span class="NDLSystemFont">bBeginOccluded</span>
+parameter is a Boolean flag that is <span class=
+"NDLSystemFont">true</span> when the renderer first learns of the
+occlusion, and <span class="NDLSystemFont">false</span> when the
+occlusion ends. The <span class="NDLSystemFont">pvData</span>
+parameter is an optional pointer that an application can register
+with the renderer when it registers the callback.</p>
+
+<p>Applications can register functions that match this signature
+with the renderer using the function <span class=
+"NDLSystemFont">NiD3D10Renderer::AddOccludedNotificationFunc</span>.
+Any number of notification functions may be registered, and the
+functions will get called in the order in which they were
+registered.</p>
+
+<h2>Removed Device</h2>
+
+<p>A removed device is a much more serious problem, though it
+should be fairly rare. Just as with an occluded device,
+applications can register a callback so they will be notified
+when Gamebryo discovers that the device has been removed.</p>
+
+<p>The callback function has this signature:</p>
+
+<p><span class="NDLSystemFont">typedef bool
+(*DEVICEREMOVEDNOTIFYFUNC)(void* pvData);</span></p>
+
+<p>The <span class="NDLSystemFont">pvData</span> parameter is an
+optional pointer that an application can register with the
+renderer when it registers the callback.</p>
+
+<p>Applications can register functions that match this signature
+with the renderer using the function <span class=
+"NDLSystemFont">NiD3D10Renderer::AddDeviceRemovedNotificationFunc</span>.
+Any number of notification functions may be registered, and the
+functions will get called in the order in which they were
+registered.</p>
+
+<p>When an application does get this message, it has few options.
+It can choose to quit, or it can release the <span class=
+"NDLSystemFont">NiD3D10Renderer</span> and attempt to create a
+new one. Releasing the renderer will require purging all renderer
+data in the application, including geometry data, texture data,
+shaders, additional swap chains.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

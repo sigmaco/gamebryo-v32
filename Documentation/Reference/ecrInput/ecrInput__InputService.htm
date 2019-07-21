@@ -1,0 +1,1004 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ecrInput::InputService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">ecrInput::InputService</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../efd/efd__ISystemService.htm">efd::ISystemService</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;InputService.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classecr_input_1_1_input_service.gif" alt="Inheritance graph for ecrInput::InputService"/>
+  <p class="FigureCaption">Inheritance graph for ecrInput::InputService</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">The Input Service handles user input by interfacing to the Core Runtime NiInput library. </p>
+<p class="NDLNormal">The service manages action maps, events and actions. It processes input each tick, sending out messages when events occur. This class also facilitates serializing all input mappings to and from XML files.</p>
+<p class="NDLNormal">The input service consists of three basic components - action maps, events and actions. Action maps contain events that are triggered when actions occur.</p>
+<p class="NDLNormal">Action maps (represented by the <span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">ecrInput::InputServiceActionMap</a></span> class) are collections of events. An application can define any number of action maps. They are managed as a stack: when some action map is activated, it is "pushed" to a top of stack; when it is deactivated, it is "popped" from stack and the previously active action map becomes active. There is one action map with the name "Global" which always exists. Events added to it are always processed, regardless of the presence of an active action map. At each time, only one or two action maps process input - the global action map and the active action map (on top of the stack). If the stack is empty (no active action map), only the global action map is processed. Action maps are named objects and are accessed through their names. Names are case-sensitive and unique.</p>
+<p class="NDLNormal">Each action map contains a list of named events (represented by the <span class="NDLSystemFont"><a href="ecrInput__InputServiceEvent.htm">ecrInput::InputServiceEvent</a></span> class). An event corresponds to a message, which is sent when the event occurs. Message categories are provided by the application on event creation. Application receive the event by registering a handler for the particular category. This allows a variety of input handling approaches: a single message category may be used to direct all events to a single handler, or a unique category and handler may be used for each message, or somewhere in between. Each event must have a unique name; no event with a duplicate name may be created.</p>
+<p class="NDLNormal">Each event contains a list of actions, which are assignments to physical device controls (buttons, sticks, etc). Event flags specify when the event is triggered and what type of message it sends. An event can be triggered when:</p>
+<ul>
+<li>Any action is triggered (default behavior) - usable for assigning a few physical keys on different controllers.</li>
+<li>All actions are triggered simultaneously. This can be useful when an application needs to monitor when keys are pressed simultaneously and modifiers are not sufficient.</li>
+<li>Actions are triggered as a combo - a sequence of actions where the time between each is smaller than some specified threshold.</li></ul>
+<p class="NDLNormal">An event can send 2 types of messages:</p>
+<ul>
+<li>An <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">ecrInput::InputActionMessage</a></span> class message reports only magnitude and user-specified data. Use the ecrInput::InputService::EventFlags::RETURN_MAGNITUDE event flag to specify this behavior. Magnitude has different meanings for different actions:
+<ul>
+<li>for digital buttons: 0.0 when button released, 1.0 when pressed</li>
+<li>for analog buttons it is a magnitude of press in range [0.0,1.0]</li>
+<li>for axis it is position in range [-1.0,1.0]</li>
+<li>for mouse axis it is a delta from last position</li></ul></li>
+<li>An <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">ecrInput::InputStickMessage</a></span> class message has an additional 3 coordinates that report position of a mouse, stick, or d-pad. Use the ecrInput::InputService::EventFlags::RETURN_COORD event flag to specify this behavior. Button and axis coordinates are always zero. Coordinates for sticks and d-pads define point on a unit circle (or unit sphere in the case of a 3D custom stick), magnitude is radius from circle / sphere center to stick position. Coordinates for mice define change since last frame in arbitrary hardware units, with the mouse wheel carried in the Z coordinate; magnitude is always zero.</li></ul>
+<p class="NDLNormal">All actions are derived from the <span class="NDLSystemFont"><a href="ecrInput__InputServiceActionBase.htm">ecrInput::InputServiceActionBase</a></span> class. There are 3 types of actions:</p>
+<ul>
+<li>Button / axis actions (<span class="NDLSystemFont"><a href="ecrInput__InputServiceAction.htm">ecrInput::InputServiceAction</a></span> class) can be assigned to a single button or axis. They can check range, or not, and trigger on press (or enter range), release (or leave range), continuously while pressed or when magnitude changes. The action can be device-specific, or not. If the action is not device-specific, it checks itself on all available controllers of a compatible type.</li>
+<li>D-Pad actions (<span class="NDLSystemFont"><a href="ecrInput__InputServiceDPad.htm">ecrInput::InputServiceDPad</a></span> class) are stick-like controls that monitor 4 directional buttons and fill coordinates as a position on the unit circle, magnitude always equal to 1.0. It can be used to emulate a stick input. A custom D-Pad can be defined by specifying semantics of 4 keys for up, down, left and right. Predefined D-Pads include left and right game pad d-pads, keyboard arrows, keyboard numpad arrows, and keyboard WSAD. Range can be specified. Actions can be triggered on activation or direction change, deactivation (X == Y == 0.0), continuously sending while active (X != 0.0 || Y != 0.0)</li>
+<li>Stick actions (<span class="NDLSystemFont"><a href="ecrInput__InputServiceStick.htm">ecrInput::InputServiceStick</a></span> class) are like analog D-Pads. They provide direction as coordinates on the unit circle and position of the stick as radius (in the magnitude field). For game pad sticks, the magnitude is in the range [0.0,1.0], but for joysticks the magnitude can be in range [0.0,sqrt(2)] because some joysticks allow moving the stick in a square zone. Sticks can return actual coordinates with magnitude set to 1.0 instead of direction / magnitude pair. Range can be sector (where min and max magnitude specified along with min and max angles or pair of angles for 3D sphere) or square zone (where min x,y,z and max x,y,z are set). A stick can be triggered on position change or continuous sending and with selected range on enter, leave, and while in range.</li>
+<li>Mouse actions (<span class="NDLSystemFont"><a href="ecrInput__InputServiceMouse.htm">ecrInput::InputServiceMouse</a></span> class) provide access to an attached mouse (or mice), updating with the change in mouse coordinates since the last frame. Units are the arbitrary values reported by <span class="NDLSystemFont"><a href="../NiInput/NiInputMouse.htm">NiInputMouse</a></span>. Just like a stick, a mouse event can be triggered on position change or set to send updates continuously (one per frame).</li></ul>
+<p class="NDLNormal">Users can subclass events or action base classes (<span class="NDLSystemFont"><a href="ecrInput__InputServiceEvent.htm">ecrInput::InputServiceEvent</a></span> and <span class="NDLSystemFont"><a href="ecrInput__InputServiceActionBase.htm">ecrInput::InputServiceActionBase</a></span>) to define custom processing of actions and directly interface with input devices.</p>
+<p class="NDLNormal">The Input Service also offers a mode where messages are sent for every keyboard or mouse event. See the constructor for details. This mode is only supported for use in Gamebryo Tool Services and class that interact with them.</p>
+<p class="NDLNormal">The class documentation refers to parameters and flags defined in the Core Runtime NiInput reference documentation (Reference / CoreRuntime Reference / UtilityLibs / NiInput). </p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+<a name="classecr_input_1_1_input_service_1a9c3c71e808b76618c57757b9c7864c4b"></a>
+<p class=NDLRefHead2>ecrInput::InputService::ActionFlags</p>
+
+
+
+<p class="NDLRefMemberDetailedDescription">Flags that indicate how an action is triggered. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">ON_ACTIVATE</span></td>
+    <td>Message sent on button press or when an analog input enters a specified range. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ON_DEACTIVATE</span></td>
+    <td>Message sent on button release or when an analog input leaves a specified range. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">CONTINUOUS</span></td>
+    <td>Message sent continuously while a button is pressed or when an analog input remains in a specified range. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ANALOG</span></td>
+    <td>Analog button request. For digital buttons, the magnitude can only be 0 or 1. This is only valid for button actions. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">RANGED</span></td>
+    <td>Check the range for analog inputs. This is not valid for digital buttons. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">SPHERIC_COORDS</span></td>
+    <td>Transform stick coordinates from a unit square to a unit sphere. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">DEVICE_SPECIFIC</span></td>
+    <td>Send a message only if the event occurred on the specified DeviceID. If this flag is not set, then check all available devices of the corresponding type. Currently, only multiple game pads are supported. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USE_MODIFIERS</span></td>
+    <td>Send a message only if modifiers match. This gives the ability to trigger action only if specific buttons are pressed or released. Modifiers are device-specific and listed in the device documentation: <span class="NDLSystemFont"><a href="../NiInput/NiInputKeyboard.htm">NiInputKeyboard</a></span> and <span class="NDLSystemFont"><a href="../NiInput/NiInputMouse.htm">NiInputMouse</a></span>. GamePads have no modifiers. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">REVERSE_X_AXIS</span></td>
+    <td>This flag reverses the X axis. Applicable for sticks and D-Pads. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">REVERSE_Y_AXIS</span></td>
+    <td>This flag reverses the Y axis. Applicable for sticks and D-Pads. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">REVERSE_Z_AXIS</span></td>
+    <td>This flag reverses the Z axis. Applicable for sticks and D-Pads. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="classecr_input_1_1_input_service_1ac790b43bcc1586b26ca086cb2a91ca8c"></a>
+<p class=NDLRefHead2>ecrInput::InputService::EventFlags</p>
+
+
+<p class="NDLRefMemberDescription">Event flags that specify how actions trigger events and what messages get sent. </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">RETURN_MAGNITUDE</span></td>
+    <td>Event sends <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">ecrInput::InputActionMessage</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">RETURN_COORD</span></td>
+    <td>Event sends <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">ecrInput::InputStickMessage</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">RETURN_MASK</span></td>
+    <td>Mask for message type. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACTION_AND</span></td>
+    <td>Specifies that all actions in the event must simultaneously trigger for message to be sent. It is recommended to set the action flags to continuously report while pressed / in range. If no ACTION_* flags are specified, the default behavior is to send a message when any of the actions are triggered. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACTION_COMBO</span></td>
+    <td>Specifies that this is a combo event. A combo event fires when a sequence of actions completes within a given time. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">COMBO_SEND_ACTIONS</span></td>
+    <td>This flag specifies that individual matching actions that are part of the combo will also be sent. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACTION_MASK</span></td>
+    <td>Mask for action type. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="classecr_input_1_1_input_service_1a206a758b04c716edceb62b1900ab64ae"></a>
+<p class=NDLRefHead2>ecrInput::InputService::StickType</p>
+
+
+<p class="NDLRefMemberDescription">Specifies the stick used for an input action. </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">INVALID_STICK</span></td>
+    <td>This type is only used to detect uninitialized objects. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_STICK_LEFT</span></td>
+    <td>Left stick of game pad or joystick primary stick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_STICK_RIGHT</span></td>
+    <td>Right stick of game pad or some control (analog throttle, pedals, etc) on other game controllers. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_STICK_X1</span></td>
+    <td>Stick X1, can appear on advanced controllers. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_STICK_X2</span></td>
+    <td>Stick X2, can appear on advanced controllers. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">CUSTOM_STICK</span></td>
+    <td>Custom stick. Semantics of 3 axes must be specified. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="classecr_input_1_1_input_service_1a0ab98d7ec15fec7ceb3203205c297c59"></a>
+<p class=NDLRefHead2>ecrInput::InputService::DPadType</p>
+
+
+<p class="NDLRefMemberDescription">Specifies the directional pad used for an input action. </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">INVALID_DPAD</span></td>
+    <td>This type is only used to detected uninitialized objects. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_DPAD_L</span></td>
+    <td>Game pad left or primary joystick directional pad. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">GP_DPAD_R</span></td>
+    <td>Directional pad, formed by game pad right 4 buttons buttons. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">KEY_DPAD_ARROWS</span></td>
+    <td>Directional pad, formed by keyboard arrow keys. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">KEY_DPAD_NUMPAD</span></td>
+    <td>Directional pad, formed by keyboard numeric pad arrow keys. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">KEY_DPAD_WSAD</span></td>
+    <td>Directional pad, formed by keyboard W, S, A and D keys. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">CUSTOM_DPAD</span></td>
+    <td>Custom D-Pad, formed by any 4 buttons on keyboard or game pad. All 4 buttons must be on one device. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="classecr_input_1_1_input_service_1a3b62ee77771033a1f3f772f668aca75d"></a>
+<p class=NDLRefHead2>ecrInput::InputService::CallbackType</p>
+
+
+<p class="NDLRefMemberDescription">For input script actions, describe the way in which the callback behavior is to be invoked - normal (via SendEvent) or immediate (via CallBehavior). </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">CALLBACK_NORMAL</span></td>
+    <td>Normal callback type - SendEvent will be used. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">CALLBACK_IMMEDIATE</span></td>
+    <td>Immediate callback type - CallBehavior will be used. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1ae4a7669c73b85f6ffb05845bf3fd1550"></a>
+<p class="NDLRefMemberFunction">typedef void(*  InputFilteringCallback)(efd::UInt32 appData, efd::Float32 &x, efd::Float32 &y, efd::Float32 &z)</p>
+<p class="NDLRefMemberDescription">Typedef for filtering function, which can change raw stick data. </p>
+<a name="public_static_methods"></a>
+<p class="NDLRefHead1">Public Static Methods</p>
+
+
+<a name="classecr_input_1_1_input_service_1a710d0e683431010b41ae8b527c429f2c"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  MessageCategory()</p>
+<p class="NDLRefMemberDescription">Accessor for the category used for Input Service Messages. </p>
+<p class="NDLRefMemberDetailedDescription">This category is used for ActionMapLoadResponse messages.</p>
+<p class="NDLRefMemberDetailedDescription">Action response messages are sent on the category with which the action was registered.</p>
+<p class="NDLRefMemberDetailedDescription">Single input messages (when enabled) are sent on the default local category. </p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classecr_input_1_1_input_service_1a591165b77d525e11e376d2f79c4aa735"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiInput/NiInputSystem.htm">NiInputSystem</a></span>*  GetInputSystem()</p>
+<p class="NDLRefMemberDescription">Accessor for the underlying core runtime input system. </p>
+<a name="action_creation_shortcuts"></a>
+<p class="NDLRefHead1">Action Creation Shortcuts</p>
+
+
+<a name="classecr_input_1_1_input_service_1a0cc1b8e5db531594adea5c7f2291a540"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  AddAction(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> actionCat, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> semantic, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> actionFlags, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> appData = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> deviceID = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> modifiers = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> minRange = -1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> maxRange = 1.0f)</p>
+<p class="NDLRefMemberDescription">Add a button or axis action. </p>
+<p class="NDLRefMemberDetailedDescription">If the event with specified name does not exist, a new event is created in the active action map. If no action map is active, then the event is added to the global action map. A unique message type is automatically assigned for any new event. A button or axis action added in this way will always return the magnitude in an <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">ecrInput::InputActionMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">eventName</span></td>
+    <td>Name of the event. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionCat</span></td>
+    <td>Message category. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">semantic</span></td>
+    <td>Semantic associated with this action, from <span class="NDLSystemFont"><a href="../NiInput/NiAction.htm">NiAction::Semantic</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionFlags</span></td>
+    <td>An ORed combination of <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a9c3c71e808b76618c57757b9c7864c4b">ecrInput::InputService::ActionFlags</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">appData</span></td>
+    <td>User-defined data. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">deviceID</span></td>
+    <td>Device on which this action should be checked. Typically, deviceID is always 0 for keyboard and mouse, and may be 0 to NiInputSystem::MAX_GAMEPADS for GamePads. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">modifiers</span></td>
+    <td>Action modifiers. These should be an ORed combination of modifiers specific to the device type, taken from one of <span class="NDLSystemFont"><a href="../NiInput/NiInputKeyboard.htm">NiInputKeyboard::Modifiers</a></span> or <span class="NDLSystemFont"><a href="../NiInput/NiInputMouse.htm">NiInputMouse::Modifiers</a></span> (there are no modifiers for GamePad input). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">minRange</span></td>
+    <td>Minimum range of magnitude / axis value. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">maxRange</span></td>
+    <td>Maximum range of magnitude / axis value. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the action was added, or false if the parameters are invalid. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1aeb60b1c904cf6446cf22387c3f46a485"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  AddDPad(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> actionCat, <br/><span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a0ab98d7ec15fec7ceb3203205c297c59">InputService::DPadType</a></span> dpadType, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> actionFlags, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> appData = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> deviceID = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> modifiers = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> upSemantic = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> downSemantic = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> leftSemantic = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> rightSemantic = 0)</p>
+<p class="NDLRefMemberDescription">Add a D-Pad action. </p>
+<p class="NDLRefMemberDetailedDescription">If the event with specified name does not exist, a new event is created in the active action map. If no action map is active, then the event is added to the global action map. A unique message type is automatically assigned for any new event. A D-Pad action added in this way will always return the coordinates in an <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">ecrInput::InputStickMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">eventName</span></td>
+    <td>Name of the event. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionCat</span></td>
+    <td>Message category. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">dpadType</span></td>
+    <td>Pad type, from <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a0ab98d7ec15fec7ceb3203205c297c59">ecrInput::InputService::DPadType</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionFlags</span></td>
+    <td>An ORed combination of <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a9c3c71e808b76618c57757b9c7864c4b">ecrInput::InputService::ActionFlags</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">appData</span></td>
+    <td>User-specified data. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">deviceID</span></td>
+    <td>Device on which this action should be checked. Typically, deviceID is always 0 for keyboard and mouse, and may be 0 to NiInputSystem::MAX_GAMEPADS for GamePads. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">modifiers</span></td>
+    <td>Modifiers for this action. These should be an ORed combination of modifiers specific to the device type, taken from one of <span class="NDLSystemFont"><a href="../NiInput/NiInputKeyboard.htm">NiInputKeyboard::Modifiers</a></span> or <span class="NDLSystemFont"><a href="../NiInput/NiInputMouse.htm">NiInputMouse::Modifiers</a></span> (there are no modifiers for GamePad input). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">upSemantic</span></td>
+    <td>Semantic of up button for custom D-Pad. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">downSemantic</span></td>
+    <td>Semantic of down button for custom D-Pad. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">leftSemantic</span></td>
+    <td>Semantic of left button for custom D-Pad. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">rightSemantic</span></td>
+    <td>Semantic of right button for custom D-Pad. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the action was added, or false if the parameters are invalid. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1a943251bf43401394fe4a4543059d5cc0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  AddStick(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> actionCat, <br/><span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a206a758b04c716edceb62b1900ab64ae">InputService::StickType</a></span> stickType, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> actionFlags, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> appData = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> deviceID = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> modifiers = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> minRangeX = -1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> maxRangeX = 1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> minRangeY = -1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> maxRangeY = 1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> minRangeZ = -1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> maxRangeZ = 1.0f, <br/><span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1ae4a7669c73b85f6ffb05845bf3fd1550">InputFilteringCallback</a></span> pFilter = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> axisSemanticX = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> axisSemanticY = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> axisSemanticZ = 0)</p>
+<p class="NDLRefMemberDescription">Add a stick action. </p>
+<p class="NDLRefMemberDetailedDescription">If the event with specified name does not exist, a new event is created in the active action map. If no action map is active, then the event is added to the global action map. A unique message type is automatically assigned for any new event. A D-Pad action added in this way will always return the coordinates in an <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">ecrInput::InputStickMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">eventName</span></td>
+    <td>Name of the event. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionCat</span></td>
+    <td>Message category. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">stickType</span></td>
+    <td>See <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a206a758b04c716edceb62b1900ab64ae">InputService::StickType</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">actionFlags</span></td>
+    <td>An ORed combination of <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a9c3c71e808b76618c57757b9c7864c4b">ecrInput::InputService::ActionFlags</a></span>. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">appData</span></td>
+    <td>User-specified data. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">deviceID</span></td>
+    <td>Which device to listen for events on. Typically, deviceID is always 0 for keyboard and mouse, and may be 0 to NiInputSystem::MAX_GAMEPADS for GamePads. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">modifiers</span></td>
+    <td>Device modifiers. These should be an ORed combination of modifiers specific to the device type, taken from one of <span class="NDLSystemFont"><a href="../NiInput/NiInputKeyboard.htm">NiInputKeyboard::Modifiers</a></span> or <span class="NDLSystemFont"><a href="../NiInput/NiInputMouse.htm">NiInputMouse::Modifiers</a></span> (there are no modifiers for GamePad input). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">minRangeX</span></td>
+    <td>Minimum range on X axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">maxRangeX</span></td>
+    <td>Maximum range on X axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">minRangeY</span></td>
+    <td>Minimum range on Y axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">maxRangeY</span></td>
+    <td>Maximum range on Y axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">minRangeZ</span></td>
+    <td>Minimum range on Z axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">maxRangeZ</span></td>
+    <td>Maximum range on Z axis for this action. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pFilter</span></td>
+    <td>A post-process callback for input. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">axisSemanticX</span></td>
+    <td>Semantic of the X axis for custom stick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">axisSemanticY</span></td>
+    <td>Semantic of the Y axis for custom stick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">axisSemanticZ</span></td>
+    <td>Semantic of the Z axis for custom stick. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the action was added, or false if the parameters are invalid. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1aa541330e78af6b294bbc7aee6e18694b"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont"><a href="ecrInput__InputServiceActionBase.htm">InputServiceActionBase</a></span>*  CreateAction(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> actionClsID)</p>
+<p class="NDLRefMemberDescription">Create an instance of an action by class ID. </p>
+<a name="action_map_functions"></a>
+<p class="NDLRefHead1">Action Map functions</p>
+
+
+<a name="classecr_input_1_1_input_service_1a43958ea77d206b45a620be2df65fcc9c"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">InputServiceActionMap</a></span>*  CreateActionMap(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& actionMapName)</p>
+<p class="NDLRefMemberDescription">Create a new action map with the given name. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">actionMapName</span></td>
+    <td>The name to use for the new action map. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Pointer to the created action map or NULL if there was an error, such as if the action map with the provided name already exists. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1a2d7603696010d5eb91bfbb0e07b7b634"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetActionMapCount() const</p>
+<p class="NDLRefMemberDescription">Return the number of action maps. </p>
+
+<a name="classecr_input_1_1_input_service_1adff6dd54ed101794527ba8da1cd5d83b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">InputServiceActionMap</a></span>*  GetActionMap(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& mapName) const</p>
+<p class="NDLRefMemberDescription">Returns a pointer to the action map with the given name or NULL if none exists. </p>
+
+<a name="classecr_input_1_1_input_service_1a6a4e621caecd6d8fc4c4819e44394e46"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">InputServiceActionMap</a></span>*  GetActionMapAt(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> mapIdx) const</p>
+<p class="NDLRefMemberDescription">Returns a pointer to the action map with the given index or NULL if the index is invalid. </p>
+
+<a name="classecr_input_1_1_input_service_1a7ce6abafaf1fa56554511a4a27381dea"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetActionMapName(<br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> mapIdx, <br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& mapName) const</p>
+<p class="NDLRefMemberDescription">Query the name of the action map at the given index. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false for invalid indices. </p>
+
+<a name="classecr_input_1_1_input_service_1aa284128790338f876a29db1ab50f9fe0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  RemoveActionMapAt(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> mapIdx)</p>
+<p class="NDLRefMemberDescription">Removes the action map at the given index. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false for invalid indices. </p>
+
+<a name="classecr_input_1_1_input_service_1a5b95de64fcd9bf43f607e452ba97998d"></a>
+<p class="NDLRefMemberFunction">void  DeleteActionMaps()</p>
+<p class="NDLRefMemberDescription">Removes all defined action maps and clears the global action map. </p>
+
+<a name="classecr_input_1_1_input_service_1a006fd82000f97508ea03092d28306f62"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetActiveActionMapName(<span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& actionMapName) const</p>
+<p class="NDLRefMemberDescription">Queries the name of the active action map. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false if the stack is empty. </p>
+
+<a name="classecr_input_1_1_input_service_1a4a7e19057019fdc574ff9662e0f4c9d5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">InputServiceActionMap</a></span>*  GetActiveActionMap() const</p>
+<p class="NDLRefMemberDescription">Returns a pointer to the active action map on top of the stack. </p>
+<p class="NDLRefMemberDetailedDescription">Returns NULL if empty. </p>
+
+<a name="classecr_input_1_1_input_service_1a924a3bfd39803e83c40dfafa94b98c8a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceActionMap.htm">InputServiceActionMap</a></span>*  GetGlobalActionMap()</p>
+<p class="NDLRefMemberDescription">Returns a pointer to the global action map. </p>
+<p class="NDLRefMemberDetailedDescription">This map is always named "Global". </p>
+
+<a name="classecr_input_1_1_input_service_1a6ec60135b2272a09ec9af7c1e6734aa8"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  PushActionMap(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& actionMapName)</p>
+<p class="NDLRefMemberDescription">Push the action map with a given name to the top of the stack, making it active. </p>
+<p class="NDLRefMemberDetailedDescription">If the action map has not been created, this returns false. </p>
+
+<a name="classecr_input_1_1_input_service_1a936220d109088a7b710bfb35b4b5fd68"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  PushActionMap(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> mapIdx)</p>
+<p class="NDLRefMemberDescription">Push the action map with a given index to the top of the stack, making it active. </p>
+<p class="NDLRefMemberDetailedDescription">If the index is invalid, this returns false. </p>
+
+<a name="classecr_input_1_1_input_service_1acfbb3b2f55a6628571cca4d04fb3035d"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  PopActionMap()</p>
+<p class="NDLRefMemberDescription">Pop the current action map and activate the previous one (if any). </p>
+<p class="NDLRefMemberDetailedDescription">Returns false if the stack is empty. </p>
+
+<a name="classecr_input_1_1_input_service_1a678b1cf44c7e0c5b87f235dd6eef5998"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SaveAllActionMaps(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& fileName)</p>
+<p class="NDLRefMemberDescription">Save all action maps (including the global one) to an XML file. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">fileName</span></td>
+    <td>Name of file. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True on success or false if file cannot be created. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1acc2da1c2bc4b2debe7bd55189080d594"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  LoadAllActionMaps(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& urn)</p>
+<p class="NDLRefMemberDescription">Request loading of an action map. </p>
+<p class="NDLRefMemberDetailedDescription">The loading is asychronous. An <span class="NDLSystemFont"><a href="ecrInput__InputActionMapsLoaded.htm">InputActionMapsLoaded</a></span> message will be sent on the category given by <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a710d0e683431010b41ae8b527c429f2c">ecrInput::InputService::MessageCategory()</a></span> when the load is completed. The message will be sent even when the load fails, so check the success status of the message when it is received. The actions maps requested by this call will not be available before the <span class="NDLSystemFont"><a href="ecrInput__InputActionMapsLoaded.htm">InputActionMapsLoaded</a></span> message is sent by the service.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">urn</span></td>
+    <td>Action map urn to load. Be sure that the urn locates only a single action map file; the load will fail otherwise. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the load request could be sent, otherwise false. The send will fail if there is no asset factory manager available or if the given urn does not contain "urn". </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="construction_and_destruction."></a>
+<p class="NDLRefHead1">Construction and Destruction.</p>
+
+
+<a name="classecr_input_1_1_input_service_1a270535137057001ccb14594603dcb67a"></a>
+<p class="NDLRefMemberFunction">InputService(<br/>const <span class="NDLSystemFont">efd::Bool</span> sendSingleMessages = false, <br/>const <span class="NDLSystemFont">efd::Bool</span> legacyMode = false)</p>
+<p class="NDLRefMemberDescription">Constructs the input service. </p>
+<p class="NDLRefMemberDetailedDescription">The input specific data is not actually allocated or created until the service's OnInit method is invoked.</p>
+<p class="NDLRefMemberDetailedDescription">By default, the Input Service manages only Action Map based messaging. However, messages for individual mouse and keyboard events will be sent out when the sendSingleMessages parameter is true, regardless of whether or not those events are action mapped. See <span class="NDLSystemFont"><a href="ecrInput__MouseMessage.htm">ecrInput::MouseMessage</a></span> (and derived classes), <span class="NDLSystemFont"><a href="ecrInput__KeyDownMessage.htm">ecrInput::KeyDownMessage</a></span> and <span class="NDLSystemFont"><a href="ecrInput__KeyUpMessage.htm">ecrInput::KeyUpMessage</a></span>. When operating in this mode, events are sent for every mouse and keyboard event, and the applications must filter the input appropriately.</p>
+<p class="NDLRefMemberDetailedDescription">For legacy compatibility, the Input Service will send either an <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">InputActionMessage</a></span> or an <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">InputStickMessage</a></span> message to the category set for each event in the actionmap data file whenever that event is triggered. Now it is recommended that you instead call the ListenForInput*Event events to request callbacks for specific events. If you wish to disable this additional message and use only the registered callbacks then you can pass false for the legacyMode parameter. </p>
+
+<a name="classecr_input_1_1_input_service_1a65420b660f3b17584e9845628dd50c9d"></a>
+<p class="NDLRefMemberFunction">virtual ~InputService()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+<a name="event_management_functions"></a>
+<p class="NDLRefHead1">Event Management Functions</p>
+
+
+<a name="classecr_input_1_1_input_service_1a879f738995876a1cfe099057d768b009"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceEvent.htm">InputServiceEvent</a></span>*  FindEvent(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName) const</p>
+<p class="NDLRefMemberDescription">Searches for the event in all action maps and returns a pointer to it. </p>
+<p class="NDLRefMemberDetailedDescription">Returns NULL if event could not be found. </p>
+
+<a name="classecr_input_1_1_input_service_1a308e8812827a9186fc081e68fa065eb5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="ecrInput__InputServiceEvent.htm">InputServiceEvent</a></span>*  FindCreateEvent(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> msgCat, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> eventFlags = RETURN_MAGNITUDE, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> timeout = 1.0f)</p>
+<p class="NDLRefMemberDescription">Searches for a given event by name in all action maps. </p>
+<p class="NDLRefMemberDetailedDescription">If none is found, it creates a message with the given category, flags, and timeout.</p>
+<p class="NDLRefMemberDetailedDescription">Returns a pointer to the found or created event. </p>
+
+<a name="classecr_input_1_1_input_service_1a0952e1557087cf707970b0e2689256bb"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  GetEventMsgCategory(const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName) const</p>
+<p class="NDLRefMemberDescription">Returns the message category for the event with the given name. </p>
+<p class="NDLRefMemberDetailedDescription">If the event doesn't exist, it returns kCAT_INVALID. </p>
+
+<a name="classecr_input_1_1_input_service_1a0577e3a1cb80dd11223f76c5131fde25"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetEventFlags(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>& eventFlags) const</p>
+<p class="NDLRefMemberDescription">Query flags for the event with the given name. </p>
+<p class="NDLRefMemberDetailedDescription">The eventFlags returned will be an ORed combination of <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1ac790b43bcc1586b26ca086cb2a91ca8c">ecrInput::InputService::EventFlags</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription">Returns false if event doesn't exist, otherwise true. </p>
+
+<a name="classecr_input_1_1_input_service_1a51836938cda2ce27bfd2b97669435fd9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetEventTimeout(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span>& timeout) const</p>
+<p class="NDLRefMemberDescription">Query timeout for the event with the given name. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false if event doesn't exist. </p>
+
+<a name="classecr_input_1_1_input_service_1a80a43e2fe75272ba4ee4c46410a00bb8"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetEventFlags(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> eventFlags)</p>
+<p class="NDLRefMemberDescription">Set the flags for the event with the given name. </p>
+<p class="NDLRefMemberDetailedDescription">The eventFlags must be an ORed combination of <span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1ac790b43bcc1586b26ca086cb2a91ca8c">ecrInput::InputService::EventFlags</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription">Returns false if event doesn't exist. </p>
+
+<a name="classecr_input_1_1_input_service_1aee2af66b7fc3cada64513acecad4d123"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetEventTimeout(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& eventName, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> timeout)</p>
+<p class="NDLRefMemberDescription">Set the timeout for the event with the given name. </p>
+<p class="NDLRefMemberDetailedDescription">Returns false if event doesn't exist. </p>
+<a name="event_response_handling"></a>
+<p class="NDLRefHead1">Event response handling</p>
+
+<p class="NDLRefMemberDescription">Methods for requesting notification when various events are triggered.</p>
+<p class="NDLRefMemberDescription">Response can be requested via Message or via Behavior invocation. Events only send notifications for registered actions. </p>
+
+<a name="classecr_input_1_1_input_service_1aca6aa971b53babd02868a4485f1167d5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  ListenForInputEvent(<br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> inputEvent, <br/><span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> behavior, <br/><span class="NDLSystemFont"><a href="ecrInput__InputService.htm#classecr_input_1_1_input_service_1a3b62ee77771033a1f3f772f668aca75d">CallbackType</a></span> type = CALLBACK_NORMAL)</p>
+<p class="NDLRefMemberDescription">Install an input event listener to call a behavior when the event fires. </p>
+<p class="NDLRefMemberDetailedDescription">This function works for both <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">InputActionMessage</a></span> and <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">InputStickMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">inputEvent</span></td>
+    <td>Name of the input event (should match the actionmap file). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">entityID</span></td>
+    <td>Entity which should receive the callback </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">behavior</span></td>
+    <td>Name of the behavior which should be called </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">type</span></td>
+    <td>Type of callback - immediate (call with CallBehavior) or normal (call with SendEvent)</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Either kINVALID_CALLBACK or a callback ID. The callback ID can be used to cancel the callback later. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1a245c8d5613c74a0e30d1792df4e3d11b"></a>
+<p class="NDLRefMemberFunction">void  ClearRegisteredInputEvents(<span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID)</p>
+<p class="NDLRefMemberDescription">Delete all registered input events for a given entityID. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">entityID</span></td>
+    <td>Entity to clear. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1a253e2350bbca98004174c7ea6d9653fd"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  ListenForInputActionEvent(<br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> inputEvent, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> callback, <br/>void* userdata = 0)</p>
+<p class="NDLRefMemberDescription">Install an input event listener to call a C++ function when the event fires. </p>
+<p class="NDLRefMemberDetailedDescription">This function works for <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">InputActionMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">inputEvent</span></td>
+    <td>Name of the input event (should match the actionmap file). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">callback</span></td>
+    <td>Callback category which will receive <span class="NDLSystemFont"><a href="ecrInput__InputActionMessage.htm">InputActionMessage</a></span> messages. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">userdata</span></td>
+    <td>User-supplied data pointer which will be delivered with the callback.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Either kINVALID_CALLBACK or a callback ID. The callback ID can be used to cancel the callback later. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1a93df14eda5a2fcd27ce37169e228df08"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  ListenForInputStickEvent(<br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> inputEvent, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> callback, <br/>void* userdata = 0)</p>
+<p class="NDLRefMemberDescription">Install an input event listener to call a C++ function when the event fires. </p>
+<p class="NDLRefMemberDetailedDescription">This function works for <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">InputStickMessage</a></span>.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">inputEvent</span></td>
+    <td>Name of the input event (should match the actionmap file). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">callback</span></td>
+    <td>Callback category which will receive <span class="NDLSystemFont"><a href="ecrInput__InputStickMessage.htm">InputStickMessage</a></span> messages. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">userdata</span></td>
+    <td>User-supplied data pointer which will be delivered with the callback.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Either kINVALID_CALLBACK or a callback ID. The callback ID can be used to cancel the callback later. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classecr_input_1_1_input_service_1acf269428a928d1fe3c8866d5a8ec9d11"></a>
+<p class="NDLRefMemberFunction">void  ClearRegisteredInputEvent(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> callbackID)</p>
+<p class="NDLRefMemberDescription">Delete the specified callback. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">callbackID</span></td>
+    <td>ID of the callback to delete. The ID is returned from the various ListenFor*Event calls. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="system_service_methods"></a>
+<p class="NDLRefHead1">System Service methods</p>
+
+
+<a name="classecr_input_1_1_input_service_1a278639bb052d4539762ac179e3843cd2"></a>
+<p class="NDLRefMemberFunction">virtual const char*  GetDisplayName() const</p>
+<p class="NDLRefMemberDescription">Returns "InputService". </p>
+
+<a name="classecr_input_1_1_input_service_1ada52fe94e27837b6f42c3aa6062dcda3"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a62e4d1bc94248c629612480b748bfd0e">efd::SyncResult</a></span>  OnPreInit(<span class="NDLSystemFont"><a href="../efd/efd__IDependencyRegistrar.htm">efd::IDependencyRegistrar</a></span>* pDependencyRegistrar)</p>
+<p class="NDLRefMemberDescription">Pre-initialization function. </p>
+<p class="NDLRefMemberDetailedDescription">On the Win32 platform, the window and instance reference are discovered from the <span class="NDLSystemFont"><a href="../efd/efd__Win32PlatformService.htm">efd::Win32PlatformService</a></span>, if present. If not present, the application must call SetInstanceRef and SetWindowRef before OnInit is called for the service.</p>
+<p class="NDLRefMemberDetailedDescription">The service also subscribes to messages for action map lookup. </p>
+
+<a name="classecr_input_1_1_input_service_1a550bd245d9a9894b11444c325ee34112"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnInit()</p>
+<p class="NDLRefMemberDescription">Initialize the core runtime input system and start processing input. </p>
+<p class="NDLRefMemberDetailedDescription">The default platform-dependent parameters are used with <span class="NDLSystemFont"><a href="../NiInput/NiInputSystem.htm">NiInputSystem::Create</a></span>. Devices are discovered and opened.</p>
+<p class="NDLRefMemberDetailedDescription">Initialization will fail if there is no keyboard or mouse on Win32, or if devices cannot otherwise be enumerated. </p>
+
+<a name="classecr_input_1_1_input_service_1af74e232c735d65b46a79ea27f23af73a"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnTick()</p>
+<p class="NDLRefMemberDescription">Process global and active action maps and send input messages. </p>
+
+<a name="classecr_input_1_1_input_service_1a359b0fe6ced3d333ef916230b7cd3341"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a></span>  OnShutdown()</p>
+<p class="NDLRefMemberDescription">Destroy action maps, events, and actions and release core runtime input system. </p>
+<a name="win32_methods"></a>
+<p class="NDLRefHead1">Win32 methods</p>
+
+<p class="NDLRefMemberDescription">The settings in this section must be done before OnInit in order to take effect.</p>
+
+<a name="classecr_input_1_1_input_service_1a58fdd4b4325f38adb3cdcb00a491d5cc"></a>
+<p class="NDLRefMemberFunction">void  SetInstanceRef(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a44529db8f506c0982da416ef92e816e8">efd::InstanceRef</a></span> instanceRef)</p>
+<p class="NDLRefMemberDescription">Set instance reference. </p>
+<p class="NDLRefMemberDetailedDescription">Required for creation of input system on Win32 when the <span class="NDLSystemFont"><a href="../efd/efd__Win32PlatformService.htm">efd::Win32PlatformService</a></span> is not present. This method must be called before OnPreInit. </p>
+
+<a name="classecr_input_1_1_input_service_1a3daf8ef52f5bf6941b7ed11751f76647"></a>
+<p class="NDLRefMemberFunction">void  SetWindowRef(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a1c90207c9a9f0384d8ad0e75c8b68edf">efd::WindowRef</a></span> winRef)</p>
+<p class="NDLRefMemberDescription">Set window reference. </p>
+<p class="NDLRefMemberDetailedDescription">Required for creation of input system on Win32 when the <span class="NDLSystemFont"><a href="../efd/efd__Win32PlatformService.htm">efd::Win32PlatformService</a></span> is not present. This method must be called before OnPreInit. </p>
+
+<a name="classecr_input_1_1_input_service_1a7401d501ad22e1d37863876fc19e3233"></a>
+<p class="NDLRefMemberFunction">void  SetExclusiveKeyboard(<span class="NDLSystemFont">efd::Bool</span> exclusive)</p>
+<p class="NDLRefMemberDescription">Controls if the keyboard will be used exclusively by application, or not. </p>
+<p class="NDLRefMemberDetailedDescription">This method must be called before OnInit. </p>
+
+<a name="classecr_input_1_1_input_service_1ab9ab0437772c7c15df70e37f05812507"></a>
+<p class="NDLRefMemberFunction">void  SetExclusiveMouse(<span class="NDLSystemFont">efd::Bool</span> exclusive)</p>
+<p class="NDLRefMemberDescription">Controls if the mouse will be used exclusively by application, or not. </p>
+<p class="NDLRefMemberDetailedDescription">This method must be called before OnInit. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Adding New Data Types</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Adding New Data Types</h1>
+
+<p>The Emergent Game Framework comes with a comprehensive set of primitive data types. It includes
+generic SWIG bindings to pass these types into and out of scripting languages. You might find it
+necessary to define your own data types. This section describes how to add new data types to the
+framework.</p>
+
+<h2>Exposing Your Own Data Type to Scripting</h2>
+
+<p>For instances when you only need to pass your data type from the scripting language to C++
+simply define a class for your data type, generate a SWIG wrapper for your type, and register this
+wrapper with the appropriate runtime.</p>
+
+<p>See <em>%EMERGENT_PATH%</em>\Samples\GameFrameworkTechDemos\CustomTypeExample1" for a full
+source example of this.</p>
+
+<ol>
+    <li>Define a class to encapsulate your data type.
+        <pre>
+    #ifndef CUSTOMTYPE_H
+    #define CUSTOMTYPE_H
+
+    #include &lt;efd/UniversalTypes.h&gt;
+    #include &lt;efd/utf8string.h&gt;
+
+    class CustomType
+    {
+    public:
+        CustomType(efd::Float32 delta, const efd::utf8string&amp; name);
+
+        efd::Float32 GetDelta() const;
+        
+        efd::utf8string GetName() const;
+
+        efd::Float32 CalculateFoo(efd::Float32 value) const;
+
+    private:
+        efd::Float32 m_delta;
+        efd::utf8string m_name;
+    };
+
+    #endif // CUSTOMTYPE_H
+</pre>
+    </li>
+
+    <li>Create a SWIG .i file to expose your data type in script.
+        <pre>
+    // The following name is the namespace exposed in scripting languages.
+    %module CustomType
+
+    // include your header here    
+    %{
+    #include "CustomType.h"
+    %}
+
+    // Include behavior API transform functions for Lua.
+    #if defined(SWIGLUA)
+    %{
+    #include &lt;egfLua/bapiLua.h&gt;
+    %}
+    #endif
+
+    // For an explanation of this typedef see egf/BehaviorAPI.i
+    typedef efd::UInt64 egf::EntityID;
+
+    // Include the typemaps we need for standard egf data types.
+    #if defined(SWIGLUA)
+    %include &lt;egfLua/bapiLuaTypeMaps.i&gt;
+    #else
+    #error "This language is not currently supported."
+    #endif
+
+    // make sure to include our new type last.
+    %include "CustomType.h"
+</pre>
+    </li>
+
+    <li>Create custom build rules on your .i file to generate a _wrap file for the language(s) you
+    want to support.
+
+        <p class="indent1">Custom build command line for Lua to generate a wrap file in debug
+        configurations:</p>
+        <pre>
+SET SWIG_LIB=%EMERGENT_PATH%\Source\3rdParty\SWIG\Lib
+@REM the following lines must be on the same line in your custom build command
+%EMERGENT_PATH%\Source\3rdParty\SWIG\swig.exe -c++ -lua 
+    -DEE_EXTERNAL_RUNTIME=egfLua\SWIGLuaRuntime.h 
+    -DWIN32 -DEE_PLATFORM_WIN32
+    -I"%EMERGENT_PATH%\Source\3rdParty\Lua\Package\src"
+    -I"%EMERGENT_PATH%\Source\3rdParty\Lua\Package\src\.."
+    -I"%EMERGENT_PATH%\Source\3rdParty\STLPort\Package"
+    -I"%EMERGENT_PATH%\Source\3rdParty\STLPort\Package\stlport" 
+    -I"%EMERGENT_PATH%\Source\3rdParty\TinyXML\Package"
+    -I"%EMERGENT_PATH%\Source\Foundation"
+    -I"%EMERGENT_PATH%\Source\GameFramework"
+    -o Debug\CustomType_LuaWrap_Debug.cpp CustomType.i
+</pre>
+
+        <p class="indent1">Outputs for Lua (Debug configuration):</p>
+        <pre>
+    Debug\CustomType_LuaWrap_Debug.cpp    
+</pre>
+    </li>
+
+    <li>Add the generated _wrap file(s) to your project and compile.</li>
+
+    <li>Register the _wrap initialization method with the language runtime.
+
+        <p class="indent1">Register the _wrap initialization method with the language runtime. This
+        must happen before the runtime is initialized by the scheduler to ensure your new type is
+        properly initialized before it is used. SWIG generates the initialization function, which
+        is always named "luaopen_[ModuleName]". As this function is only in the generated C++ file
+        you need to make a matching declaration before calling the function.</p>
+        <pre>
+    extern "C" int luaopen_CustomType(lua_State *);
+    SchedulerLua::AddStaticBuiltinInitFunction(luaopen_CustomType);
+</pre>
+    </li>
+</ol>
+
+<p>Now you can create instances of your data type in script and pass your type to or return your
+types from built-in API functions. This may be all you need if you only want to pass your custom
+data type between script and C++. For example, in Lua:</p>
+<pre>
+    local myData = CustomType.CustomType(25.3, "Sample")
+
+   // call my built-in
+   MyBuiltinModule.doSomething(myData)
+</pre>
+
+<h2>Using Your Data Type as Entity Properties</h2>
+
+<p>If you want use your new data type as an Entity property type or pass them as a behavior
+argument then additional steps are required. To do this you need to define a property type for your
+custom data type. See <a href="../Entity_Properties/entity_property_adding.htm">Adding new entity
+properties</a> for a full description of how to use your custom data type as an entity
+property.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_custom_creating.htm">Creating custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_deleting.htm">Deleting custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_dynamic_load.htm">Dynamically loading custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_static_load.htm">Statically loading custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_adding.htm">Adding custom built-in API functions to the scripting
+    system</a></li>
+
+    <li><a href="../Entity_Properties/entity_property_adding.htm">Adding new entity
+    properties</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

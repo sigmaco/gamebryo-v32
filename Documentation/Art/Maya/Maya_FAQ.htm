@@ -1,0 +1,336 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Maya FAQ</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Maya FAQ</h1>
+
+
+<p>This page contains answers to some frequently asked 
+ questions about Gamebryo and Maya.</p>
+
+<ul>
+	
+	<li><a href="#Transparent_Textures">How 
+ do I get transparent textures in Gamebryo?</a></li>
+	
+	<li><a href="#Large_Number_of_Moving_Objects">I 
+ have a large number of moving objects. Why does it run so slow in Gamebryo?</a></li>
+	
+	<li><a href="#Time_Range_and_Looping">My 
+ time range is correct in Maya, but my animation does not loop the same 
+ in Gamebryo. What's going on?</a></li>
+	
+	<li><a href="#UV_Mapping">I 
+ have UV mapping set on only a few faces of my object, while the remaining 
+ faces have no UV mapping. The results are undesirable. Why?</a></li>
+	
+	<li><a href="#Looping_Smoothly">Why 
+ are my animations not looping smoothly?</a></li>
+	
+	<li><a href="#Multiple_Sequences">How 
+ do I get multiple sequences per KF file?</a></li>
+	
+	<li><a href="#Texture_and_Triangle_Problems">My 
+ textures do not look right or triangles are missing. How can I fix this?</a></li>
+	
+	<li><a href="#Animations_Are_Different">Why 
+ do my animations look different in Gamebryo?</a></li>
+	
+	<li><a href="#JPG_Textures">Why 
+ is it that when I export compressed JPG textures, the scene file is the 
+ same size as if I exported uncompressed 32-bit TGA files?</a></li>
+	
+	<li><a href="#Pause_on_Export">Why 
+ does Maya pause when I am exporting large scenes?</a></li>
+	
+	<li><a href="#Incorrect_Bounding_Volume">Why 
+ is my character's bounding volume slightly incorrect?</a></li>
+	
+	<li><a href="#Incorrect_Bounding_Volume2">Why 
+ is my skinned object's bounding volume way off?</a></li>
+	
+	<li><a href="#Platform_specific_Export">I 
+ export a NIF file with platform-specific textures for a console, but the 
+ texture is a colorful checkerboard when I look at the NIF in Scene Viewer 
+ or the other tools. What is happening?</a></li>
+</ul>
+
+<a name=Transparent_Textures></a><h2>Q: How do I get transparent 
+ textures in Gamebryo?</h2>
+
+<h3>A: Gamebryo uses the alpha of your base texture for transparency.</h3>
+
+<p>To use textures with alpha, use one of the Gamebryo-supported formats like a 32-bit TGA format or the DirectX .DDS format that store 8-bit information into the alpha channel of the image. If the image has alpha, the Gamebryo Shader will automatically use it for transparency unless otherwise specified in the Shader parameters. </p>
+
+<p>If you want to have alpha on a per material basis, simply adjust the Material Alpha property in the Material rollout. (Black is transparent and white is opaque.)</p>
+
+<div class="FigureContainer">
+    <img src="./images/image004_03.gif" width="269" height="203" />
+          <p class="FigureCaption">Transparent Textures and Cross Hatch Trees</p>
+</div>
+
+<p>Rendering in real time engines typically happens in two stages. First, all opaque objects are drawn using the ZBuffer to guarantee only top-most objects are drawn last. Next, all of the alpha objects are sorted by distance to the camera and then rendered from back to front. The distance is computed based off the bounding sphere center of your shape. The problem comes when one object is both in front of and behind another. Cross Hatch Trees.mb is an example of this problem.</p>
+
+<p>The tree on the left, &quot;Center_Tree&quot;, was created 
+ with two overlapping planes, but their center is at the same location. 
+ Both planes have alpha, but the planes of the left tree are fighting each 
+ other for drawing order and drawing incorrectly. The Tree on the right, 
+ &quot;Linear Tree&quot;, is created with three planes centered at different 
+ locations. The sorter can now distinguish between the pieces and the tree 
+ will draw correctly.</p>
+
+<a name=Large_Number_of_Moving_Objects></a><h2>Q: I have a 
+ large number of moving objects. Why does it run so slow in Gamebryo?</h2>
+
+<h3>A: You might be unknowingly bloating the scene graph.</h3>
+
+<p>There are fundamental differences between transforms in Gamebryo and Maya:</p>
+
+<ul>
+	
+	<li>In Gamebryo, a transform comprises the following:
+		<ul>
+			<li>translation</li>
+			<li>rotation</li>
+			<li>scale</li>
+		</ul>
+	</li>
+	
+	<li>In Maya, a transform comprises the following:
+<ul>
+<li>translate</li>
+<li>rotate</li>
+<li>scale</li>
+<li>rotate pivot</li>
+<li>scale pivot</li>
+<li>rotate axis</li>
+<li>joint orientation</li>
+</ul>
+
+... to start with. Add some history to that object and a parent, and you have a lot of extra nodes. Each becomes an object in Gamebryo. This bloating is caused when an animated transform uses Rotate Axis, Joint Orientation, Rotation Pivot, or Scale Pivot.</li>
+</ul>
+
+<p>In the example file Bloating Scene Graph.mb, you can see how this situation occurs. The transform for an animated sphere with rotate and scale pivot becomes three NiNodes. A joint with rotate axis and joint orientation will become three NiNodes!</p>
+
+
+<div class="FigureContainer">
+    <img src="./images//image002_03.gif" width="282" height="168" />
+          <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>This doesn't mean that you should never use pivots or orientation, but you should avoid using them unless absolutely necessary. Also, freezing transforms can create extra pivots while the orientation can be created with the default 
+ options of the joint tool while not adding extra nodes to the scene graph.</p>
+
+<p>Creation of the joint orient and rotation axis nodes will not occur if quaternion sampling is used.</p>
+
+<h4>Freezing Transforms Creates Unneeded NiNode Objects</h4>
+
+<p>Freezing transforms is possibly the single Maya feature that causes the most confusion and unexpected results. When you &quot;Freeze&quot; the transforms of an object, you push the translation, rotation, and scale  down into the vertices. Maya then zeros out the transform and creates an appropriate pivot so future transforms will still appear correct. When you view the Freezing 
+ Transforms.mb example file with the Gamebryo Asset Viewer, you can see the NiNodes that get created to simulate the pivots on this object. Also, this capability causes some confusion when viewing the NiNode for these objects. You can no longer merely look at the translation to find the objects location. 
+ Now you must look at all the vertices to determine where the object is 
+ located.</p>
+ 
+<a name=Time_Range_and_Looping></a><h2>Q: My time range is correct in Maya, but my animation does not loop the same in Gamebryo. What's going on?</h2>
+
+<h3>A: This is normal behavior. It is because of your displayed viewing time in Maya.</h3>
+
+<p>In Maya, it is easy to create looping animations that get out of phase with each other. The Out Of Phase Animations.mb example file illustrates this point. When you play the animation in Maya, all three balls bounce in unison as the animation loops based on the view time in Maya. When you export the scene, the balls only bounce together the first time. On successive loops, the three balls 
+ become more out of phase with each other. The problem comes from length 
+ of each animation. The &quot;Long&quot;, &quot;Medium&quot;, and &quot;Short&quot; balls bounce for 50, 45, and 40 frames respectively. Because the animations are looping, the shorter animation finishes and begins again before the longer animation has finished. The confusion comes from viewing the animation in Maya. When you play the animation in Maya, time loops back to frame 0 after frame 50 (the displayed viewing time) so all of the animations 
+ are forced to reset every loop.</p>
+ 
+<a name=UV_Mapping></a><h2>Q: I have UV mapping set on only a few faces of my object, while the remaining faces have no UV mapping. The results are undesirable. Why?</h2>
+
+<h3>A: UV sets must include your entire object.</h3>
+
+<p>In Maya, you can create a UV set that is only defined for some of the faces of an object. The UV set is undefined for the remaining faces. In Gamebryo all UV sets are defined for all of the faces of an object. By default, the UV coordinate of all undefined vertices is (0,0). This may cause some unexpected results.</p>
+
+<a name=Looping_Smoothly></a><h2>Q: Why are my animations not looping smoothly?</h2>
+
+<h3>A: Bones in that sequence are at different positions in your start and end keys.</h3>
+
+<p>A common mistake when creating looping animations is for the starting key frames and ending key frames to be different positions. In Maya, it appears as if each &quot;Frame&quot; lasts for a specific duration, and the final frame will also have a specific duration. Gamebryo uses absolute time for its animations, which means there is no time between the last key frame and the first key frame while looping. In this case, any difference in pose will result in an instantaneous jump.</p>
+
+<a name=Multiple_Sequences></a><h2>Q: How do I get multiple sequences per KF file?</h2>
+
+<h3>A: Change your Controller Extractor export plug-in options.</h3>
+
+<p>A KF file contains one or more animation sequences as 
+ determined by the needs of your character. For example, if your character 
+ has just a couple of sequences, such as walk, run, attack, and die, you 
+ probably want all of the sequences in one KF file. The character is about 
+ equally likely to do any of those things at any time, and you need to 
+ have all the sequences loaded into memory to be ready for any of those 
+ events to occur. Having all the sequences in one KF file is simpler and 
+ makes loading faster. But if your character has a large number of sequences, 
+ including both in-game cut scenes and typical game play maneuvers, you'd 
+ probably want multiple KF files, because you don't need the cut scene 
+ sequences during normal gameplay and vice-versa. Loading all of them at 
+ one time when you don't need them wastes memory, and multiple KF files 
+ organize the sequences logically.</p>
+
+<p>There are two ways to switch between using single or multiple sequences per KF file; you can either change the options used in the default character script, or you can create another script. When you export from Maya, you will see the "Script Selection" dialog. Select the "Default Character Export" script and click the "Script Editor" button. In the "Script Editor" dialog on the right side you will see "Plugin List for Current Script". This is the ordered list of plug-ins which will be run. Next select the "Controller Extractor" and click the "Edit Plug-in" button to open the "Controller Extractor Options" dialog. Here you can toggle between "Export all sequences to a single KF file" or "Export a separate KF file for each sequence". Choose the option you want and click "OK". From the "Script Editor" save the script so you can use it later.</p>
+
+<p>Having your character span multiple Maya files is more difficult than exporting all of the sequences to the same file, and requires you to do some bookkeeping. Remember that the bone and skin hierarchies need to be exactly the same between the files.their animations will be different, but the hierarchies must be the same. The one difference will be the &quot;Accumulation Root" nodes, which have the list of sequences for the file, so it will be different between files. When you export the character you will get a NIF file (which will be the same for each Maya file), a KFM file, and the KF files. To test the character you need to save a NIF, a KFM, and all the KF files to the same directory and then run the Gamebryo Animation Tool. In the Animation Tool you will be able to add the other KF files and their sequences to the KFM.</p>
+
+<a name=Texture_and_Triangle_Problems></a><h2>Q: My textures do not look right or triangles are missing. How can I fix this?</h2>
+
+<h3>A: Delete the construction history for the object.</h3>
+
+<p>Maya keeps the complete construction history of objects in the scene graph. During export this history can cause problems. Typically, you will see materials assigned to the wrong faces, or you will see triangles missing from an object. You can delete the construction history of an object in Maya by selecting the object and choosing <span class="NDLGUILabel">Edit > Delete by Type > History</span>. This works under the majority of cases and is advisable to do on a regular basis. The one major downfall is that it will delete the skinning information from a skinned character, so be sure to delete only non-deformer history (supported by most Maya versions that Gamebryo supports).</p>
+
+<a name=Animations_Are_Different></a><h2>Q: Why do my animations look different in Gamebryo?</h2>
+
+<h3>A: Gamebryo interpolates between frames.</h3>
+
+<p>There are subtle differences between how Maya shows time and how Gamebryo shows time. Through Maya's interface you see time based on frames, while Gamebryo displays time continuously, it interpolates between frames. That way, if you're getting 20 fps or 60 fps, you still see the same result based on the global time, not your frame rate.</p>
+
+<p>The problem comes when you are viewing animations in Maya where movement takes a single frame. The Frame Time.mb example file illustrates this problem. When you play the animation in Maya, the cube moves smoothly back and forth in the perspective view. When you look down at the graph view, you see the animation is much more complex and is not at all smooth. The problem comes from the fact the Maya only renders &quot;Frames&quot; at whatever frame rate you specify. Gamebryo will render as fast as it can, sampling the animation curves 
+ at the current application time. Because Gamebryo renders much faster, you 
+ see the animation as it actually is.</p>
+
+<h3>A: Gamebryo does not have weighted tangents.</h3>
+
+<p>If you use weighted tangents and do not sample the animation, Gamebryo will not be able to represent the animation accurately.</p>
+
+<h3>A: Gamebryo does not have individual tangents per translation axis.</h3>
+
+<p>Gamebryo lacks individual tangents for each translation axis. Sample all animation and use quaternion sampling.</p>
+
+<a name=JPG_Textures></a><h2>Q: Why is it that when I export 
+ compressed JPG textures, the scene file is the same size as if I exported 
+ uncompressed 32-bit TGA files?</h2>
+
+<h3>A: Maya Exports all internal textures as uncompressed 32-bit.</h3>
+
+<p>Regardless of the original texture format used, Maya provides all textures as uncompressed 32-bit textures. This limitation of Maya has been partially circumvented by Gamebryo, but only for some texture formats. This behavior means that 8-bit GIF or JPG textures could become much larger in size.</p>
+
+<h4>Don't Export JPG Textures</h4>
+
+<p>There is a problem with the way Maya exports JPG textures. Under most circumstances, it will export correctly. About 5-10% of textures will be smeared and distorted badly. This problem is consistent across exports, but there seems no consistent reason for the problem.</p>
+
+<p>For game development, it is suggested that you use DDS instead of JPG for compression. The DDS Photoshop plug-in to export a DDS file is available at <a href="http://developer.nvidia.com/object/photoshop_dds_plugins.html" target="_blank">http://developer.nvidia.com/object/photoshop_dds_plugins.html</a>.</p>
+
+<h4>Gamebryo Supported Texture Formats</h4>
+
+<p>The Gamebryo Maya Plug-in supports the direct reading of a variety of texture formats. During export, the plug-in can directly read: TGA, BMP, DDS, SGI, RGB, RGBA, INT, and INTA formats. Because of the problems with getting textures from Maya where they are all 32-bit or they don't export correctly, the plug-in reads the textures directly from disk so the texture can be read correctly and the format preserved.</p>
+
+<a name=Pause_on_Export></a><h2>Q: Why does Maya pause when I am exporting large scenes?</h2>
+
+<h3>A: Maya keeps an internal texture cache.</h3>
+
+<p>From time to time, Maya will pause for an extended period of time when viewing a large scene. It appears that Maya keeps an internal texture cache associated with complex materials like the NiMultiShader. This cache keeps one copy of the texture for each object. Any number of different events causes Maya to flush and rebuild this cache, so it can happen enough to be annoying. The texture size is based on the &quot;In Maya Texture Size&quot; of the material.</p>
+
+<p>For example, if you view an NiMultiShader material in the Attribute Editor, you might have the &quot;In Maya Texture Size&quot; set to 32. When you change the &quot;In Maya Texture Size&quot; to 128, Maya pauses for a number of seconds as it rebuilds this internal cache. Textured objects are now drawn with a 128x128 texture. A 128x128 texture is generated for each object that has this material applied, which can be time consuming for very large scenes. The &quot;In Maya Texture Size&quot; only affects how you see the object in Maya. It does <em>not</em> change how they are displayed in Gamebryo.</p>
+
+<p>There are two ways to get around this problem. First, you may keep the &quot;In Maya Texture Size&quot; small in general and only bump up the textures you are currently using. The other option is to use the &quot;Single Map Only&quot; material options. When you use &quot;Single Map Only&quot;, Maya does not create a composite texture cache and the update pause goes away. </p>
+
+<a name=Incorrect_Bounding_Volume></a><h2>Q: Why is my character's bounding volume slightly incorrect?</h2>
+
+<h3>A: The bounding volume is computed based on the position of the bones.</h3>
+
+<p>You may notice the &quot;bound&quot; of a character seems to lag by a single frame. This would be noticeable on the rare occasion when a skinned object isn't drawn when it should be. During rendering, the bound of an object is clipped against the camera's view frustum. If the camera can see the bound, we need to draw the object. The bound of a skinned object is computed based on the position of the bones. If you update the skin before updating the bones, the skin bound will be computed based on the bone positions from last frame since they haven't been moved yet. You can see the update order when you view the scene graph in Maya's Hypergraph window. Groups are updated from left to right order and their children are updated in top to bottom order. The first group and all of its children will update before the second group. To avoid the one frame lag, make sure the bones are to the left of the skin. If they are in the 
+ same group, make sure the skin is below the bones.</p>
+
+
+<div class="FigureContainer">
+    <img src="./images//UpdateOrder.jpg" width="666" height="394"
+/>
+          <p class="FigureCaption">Update order in Hypergraph window</p>
+</div>
+
+
+<a name=Incorrect_Bounding_Volume2></a><h2>Q: Why is my skinned object's bounding volume way off?</h2>
+
+<h3>A: A scale may have been introduced before the bind-pose was set.</h3>
+
+<p>If a scale has been introduced prior to setting the bind-pose, then the bounds may become scaled incorrectly. At present, this can only be detected and fixed in art. The method that has proved successful is to do the following:</p>
+
+<ol>
+	
+	<li>Remove any scaling that effects the bone hierarchy (return to a uniform scale of (<span class="NDLSystemFont">1, 
+ 1, 1</span>))</li>
+	
+	<li>Select the &quot;root bone&quot;</li>
+	
+	<li>Then select its hierarchy (using the mel command:)
+		<p class="indent1"><span class="NDLSystemFont">select -hi;</span></p>
+	</li>
+	
+	<li>Reset the bind-pose. (using the mel command:)
+		<p class="indent1"><span class="NDLSystemFont">dagPose -reset -bindPose;</span></p>
+	</li>
+		
+	<li>Return any scaling that effects the bone hierarchy.</li>
+	
+	<li>Export the scene.</li>
+</ol>
+
+<a name=Platform_Specific_Export></a><h2>Q: I exported a NIF file with platform-specific textures for a console, but the texture is a colorful checkerboard when I look at the NIF in Scene Viewer or the other tools. What is happening?</h2>
+
+<h3>A: The texture is in a format that cannot be loaded or rendered by the version of Direct3D used by the tool on Win32.</h3>
+
+<p>If platform-specific textures are used, the renderer will load the associated persistent source texture renderer data directly into a renderer-specific resource at application load time, assuming that the specific platform can support the pixel format in question. This mechanism bypasses the application-level <span class="NDLSystemFont">NiPixelData</span> object and all <span class="NDLSystemFont">NiImageConverter</span>-based 
+ texture conversion at load time entirely. The primary motivation for such 
+ an approach is improved memory usage and performance at load time.</p>
+
+<p>A caveat to this approach is that the texture is configured specifically for a target platform (or graphics card), and may not be loadable for use with alternative platforms or graphics cards, or with tools on the PC. If a texture is configured specifically for one target platform or graphics card, but an attempt is made to load it on a platform or graphics card that can't support it, &quot;error&quot; replacement textures are used to indicate load-time errors.</p>
+
+<p>If application requirements dictate fully general support of textures within a NIF file on multiple platforms or graphics cards, then <span class="NDLSystemFont">NiPixelData</span>-based textures may be used, since they enable on the fly texture format conversions at load time. To specify <span class="NDLSystemFont">NiPixelData</span>-based textures for export from the art packages, you may select one of four export options:</p>
+<ul>
+<li>&quot;generic&quot; platform type, but include textures in main NIF</li>
+<li>save textures as separate NIFs</li>
+<li>textures as original images</li>
+<li>textures as original images VRAM</li>
+</ul>
+ 
+
+<p>However, the best recommendation may be to work with generic textures with all the tools throughout a development cycle. Then, prior to final release, textures may be re-exported specifically for various target platforms. This approach offers the most flexibility during the majority of the development cycle, yet also offers the best performance for the final application version.</p>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+    <ul>
+        <li><a href="Where_to_Find_the_Maya_Artist_Examples.htm">Where to find the Maya Artist Examples</a>
+        </li>
+			<li><a href="../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Introduction to Animation Tool</a>
+			</li>
+			<li><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a>
+			</li>
+			<li><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a>
+			</li>
+			<li><a href="../../Programmer/Texturing/Failures.htm">Image Conversion Failures</a>
+			</li>
+			<li><a href="../../Programmer/Object_Systems/Streaming.htm#TextureStreamingOptions">Texture Streaming Options</a>
+			</li>
+			<li><a href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a>
+			</li>
+    </ul> 
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

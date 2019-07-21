@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Property Visualization Service Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Property Visualization Service Overview</h1>
+
+<p>The property visualization service (<a href=
+"../../Reference/QuickRef_Services/svc_qckref_prop_visualization_svc.htm">
+<span class=
+"NDLSystemFont">egmVisualizers::PropertyVisualizationService</span></a>)
+is a service which handles visually representing entity
+properties which do not typically lend themselves to graphic
+visualization. For instance, a property visualizer allows a
+"Radius" property to be represented as a sphere in the graphical
+world, where the sphere's size will adjust based on the value of
+the Radius property.</p>
+
+<h2>Entity Handling</h2>
+
+<p>The property visualization service handles entity discovery
+messages, looking at the newly created entity for any extra data
+indicating that the entity has property visualizers attached.
+This data then gets handed off to a <span class=
+"NDLSystemFont">PropertyVisualizerFactory</span> object which
+inspects the data and creates the appropriate visualizer
+implementing the IPropertyVisualizer interface. The visualizer
+itself is responsible for creating and updating its geometry.</p>
+
+<p>On an entity update message, the property visualizations
+service inspects the updated entity for any created visualizers.
+If the entity has visualizers, than the visualizer's <span class=
+"NDLSystemFont">UpdateGeometry</span> method is called, allowing
+the visualizer to check which entity properties were updated and
+modify the visualizer geometry appropriately.</p>
+
+<p>On an entity removal message, the property visualization
+service inspects the entity for any created visualizers. If the
+entity has visualizers, then the visualizer's <span class=
+"NDLSystemFont">RemoveGeometry</span> method is called, allowing
+the visualizer to remove any geometry it created and perform
+other necessary cleanup. The visualizer is then removed from the
+property visualization service.</p>
+
+<h2>Related Classes</h2>
+
+<p><span class="NDLSystemFont">IPropertyVisualizer</span> is the
+interface which all property visualizers must inherit from.
+Instances of classes inheriting <span class=
+"NDLSystemFont">IPropertyVisualizer</span> are only created by
+the <span class="NDLSystemFont">PropertyVisualizerFactory</span>,
+which inspects extra data attached to an entity and constructs a
+class of the appropriate type.</p>
+
+<p>There are two helper classes which the property visualization
+service makes use of: the <span class=
+"NDLSystemFont">VisualizerConnectionTracker</span> and the
+<span class="NDLSystemFont">VisualizerVisibilityTracker</span>.
+The <span class=
+"NDLSystemFont">VisualizerConnectionTracker</span> keeps track of
+entity visibility such that visualizers can be made invisible
+when the entities they're attached to become invisible.
+<span class="NDLSystemFont">The
+VisualizerConnectionTracker</span> keeps track of entity
+connections - certain visualizers (for instance, the Connection
+visualizer) need to know about other entities other than the one
+to which the visualizer is attached; the <span class=
+"NDLSystemFont">VisualizerConnectionTracker</span> keeps track of
+the connections and allows visualizers a common point to access
+this information.</p>
+
+<h2>Implementation Details</h2>
+
+<p>Property visualizers that rely on other entities other than
+the ones to which they are attached (for instance, the Connection
+visualizer) introduce complications to the Entity Handling scheme
+presented earlier. These visualizers need to know when entity
+updates occur not only on the entities to which they are attached
+but also on the entities to which they are connected. Thus, on
+entity update and removal messages, the <span class=
+"NDLSystemFont">VisualizerConnectionTracker</span> object is
+queried to see if visualizers not attached to the updated/removed
+entity need to be updated, and those visualizers have their
+<span class="NDLSystemFont">UpdateGeometry</span> method
+called.</p>
+
+<h2>Using Property Visualizers</h2>
+
+<p>See the section <a href=
+"../../Tools/EntityModelingTool/emt_model_property_visualizers.htm">
+Defining Property Visualizers</a> for more information on how to
+create property visualizers in the Entity Modeling Tool.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

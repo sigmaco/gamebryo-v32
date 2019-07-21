@@ -1,0 +1,279 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a New Asset Factory</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating a New Asset Factory</h1>
+
+<p>The job of an asset factory is to load or otherwise generate the runtime C++ objects that are associated
+with an asset. The simplest loader, the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__GenericAssetFactory.htm">efd::GenericAssetFactory</a></span> class,
+streams the data from the file into a buffer and returns the buffer. More complex factories load a
+primary asset, then identify sub-assets and load those, and register the asset with some other
+service, before returning a message to say that the asset is ready for use. An asset factory is
+free to do anything necessary to factory the asset, and may work closely with the system that is
+requesting the asset.</p>
+
+<h2>Summary of Asset Factory Requirements</h2>
+
+<ul>
+    <li>All asset factories must derive from the <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__IAssetFactory.htm">efd::IAssetFactory</a></span> interface class and
+    implement its pure virtual functions. This interface makes the asset factory usable with the
+    Asset Factory Manager. Most factories will also want the functionality found in the
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__BaseAssetFactory.htm">efd::BaseAssetFactory</a></span> class, and
+    should derive from it instead.</li>
+
+    <li>Asset factories must correctly indicate that they are safe to call from the application
+    main thread (the foreground) and/or the background loading thread. Asset factories that may be
+    invoked in either the foreground or background thread must be thread safe, as they may be
+    called from both threads simultaneously. Factories that operate in the background must ensure
+    that any calls they make into another object are thread safe when that object is also used by
+    the foreground thread. This is particularly true when using system services in the foreground
+    thread.</li>
+
+    <li>Asset Locate Request messages are the only messages that may be sent by an asset factory in
+    the background thread, and these must be routed via the Asset Factory Manager.</li>
+
+    <li>Asset factories that take more than one tick to load an asset (that is, more than one call
+    to <span class="NDLSystemFont">efd::IAssetFactory::LoadAsset</span>) must be capable of
+    handling multiple simultaneous loads. When an asset takes more than one tick, other requests
+    may be processed in the same tick, or a preemptive request may come in while part way through
+    an in-order load.</li>
+
+    <li>An asset factory is responsible for remembering if has been asked to cancel a request and
+    has indicated that it could not do so immediately. In such cases, the factory should do some
+    work on each tick until it can cancel, and then actually cancel and return the fact that it
+    cancelled.</li>
+</ul>
+
+<p>In addition, the asset factory should, if possible, be able to load an asset over several calls
+to the load function. For each call that does not complete, it returns the appropriate result and
+the Asset Factory Manager service will make sure it is called again. The factory should do some
+chunk of work on each invocation; how much is a difficult question. Ideally, about 10-20ms would be
+good to allow the background thread to tick over at about 50Hz. However, there are no strict
+requirements on this as it is difficult for some factories to control their step size.</p>
+
+<h2>Deriving from efd::IAssetFactory</h2>
+
+<p>All asset factories must derive from the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__IAssetFactory.htm">efd::IAssetFactory</a></span> interface class. Several
+pure virtual methods must be implemented from this interface. See the class reference for the
+details of each of these functions.</p>
+
+<ul>
+    <li><span class="NDLSystemFont">LoadAsset</span> is the function called by the Asset Factory
+    Manager to load an asset.</li>
+
+    <li><span class="NDLSystemFont">GetThreadSafety</span> informs other code of the thread safety
+    of the factory.</li>
+</ul>
+
+<p>As an example of an implementation of <span class="NDLSystemFont">LoadAsset</span>, here is the
+version from <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__GenericAssetFactory.htm">efd::GenericAssetFactory</a></span></p>
+<pre>
+IAssetFactory::LoadStatus GenericAssetFactory::LoadAsset(
+    AssetFactoryManager* pFactoryManager,
+    const AssetLoadRequest* pRequest,
+    AssetLoadResponse*&amp; pResponse)
+{
+    /* The Asset Factory Manager that is invoking the loader is provided. It is important that
+       any functionality that accesses the Asset Factory Manager use this pointer, as it
+       is sure to be the one in the same thread as the loader.
+    */
+    EE_UNUSED_ARG(pFactoryManager);
+    
+    EE_ASSERT(pRequest);
+    EE_ASSERT(pRequest-&gt;GetAssetPath().length());
+
+    /* In order to track multiple simultaneous loads, we maintain a map from request message
+       pointers to a block of response data. The <a href=
+"../../Reference/efd/efd__BaseAssetFactory.htm">efd::BaseAssetFactory</a> class, from which
+       the GenericAssetFactory is derived, provides some functionality to simplify the management
+       of this data.
+    */
+    ResponseData* pData = 0;
+    IAssetFactory::LoadStatus status = GetResponseDataAs&lt;ResponseData&gt;(pRequest, pData);
+
+    /* If anything other than LOAD_RUNNING is returned by GetResponseDataAs, then there is already
+       something loading the requested URN, or the load is otherwise blocked.
+    */
+    if (status != IAssetFactory::LOAD_RUNNING)
+    {
+        return status;
+    }
+
+    /* HandleNewRequest opens the requested file, allocates a buffer for the data, creates
+       an empty response message and adds it to the map of pending requests. It returns the
+       response data.
+    */
+    if (!pData)
+    {
+        pData = HandleNewRequest(pRequest);
+    }
+
+    /* If an error occurred, say the file was not found, the response message has its error flag
+       set. Note that LoadAsset returns LOAD_COMPLETE when the processing has been finished for
+       an asset, regardless of the result of that processing. Error status or other information
+       for the requestor should be included in the response message, as it is the only thing
+       that finds its way back to the requesting code. 
+    */
+    if (pData-&gt;m_pResponse-&gt;GetResult() != AssetLoadResponse::ALR_Success)
+    {
+        pResponse = pData-&gt;m_pResponse;
+        return IAssetFactory::LOAD_COMPLETE;
+    }
+
+    /* At this point we are ready to load some data. The GenericAssetFactory has a parameter to
+       control the number of bytes read per tick. We cap any given tick to that size.
+    */
+    UInt32 fileSize = pData-&gt;m_pFile-&gt;GetFileSize();
+
+    UInt32 bytesToRead = fileSize - pData-&gt;m_bytesRead;
+    if (bytesToRead &gt; m_bytesPerTick)
+        bytesToRead = m_bytesPerTick;
+
+    if (bytesToRead &gt; 0)
+    {
+        UInt32 readSize = pData-&gt;m_pFile-&gt;Read(pData-&gt;m_pBuffer + pData-&gt;m_bytesRead, bytesToRead);
+        EE_ASSERT(bytesToRead == readSize);
+        pData-&gt;m_bytesRead += readSize;
+    }
+
+    /* If we have loaded all the data, we can clean up and set the output response message.
+       That response parameter should only be set non-NULL when the load has completed and
+       no more work can be done.
+    */
+    if (fileSize == pData-&gt;m_bytesRead)
+    {
+        pResponse = pData-&gt;m_pResponse;
+
+        EE_DELETE pData-&gt;m_pFile;
+
+        RemoveResponseData(pRequest);
+
+        if (m_appendNULL)
+        {
+            pData-&gt;m_pBuffer[pData-&gt;m_bytesRead] = '\0';
+            ++pData-&gt;m_bytesRead;
+        }
+
+        return IAssetFactory::LOAD_COMPLETE;
+    }
+
+    /* If we didn't finish the load we return LOAD_RUNNING, so that the Asset Factory Manager
+       knows to invoke the loader again to load additional data. LOAD_BLOCKED should be returned
+       if no work at all was done on this tick (say while waiting for an asset locate response).
+    */
+    return IAssetFactory::LOAD_RUNNING;
+}
+</pre>
+
+<p>The <span class="NDLSystemFont">efd::IAssetFactory::GetThreadSafety</span> function is called to
+verify that a request for foreground or background loading may be met. It should return the
+appropriate value for the thread safety status of the factory. If you appear to be having thread
+contention issues with your loader, try setting this method to return foreground only as a
+debugging step.</p>
+
+<h2>Using Asset Location Services from an Asset Factory</h2>
+
+<p>Due to thread safety issues in the Gamebryo messaging system, factories invoked in the
+background thread cannot send or receive messages to foreground services. Special provision is made
+for asset locate requests and responses because factories frequently require such services. Asset
+Load Response messages also move to the foreground thread, but those must be returned from
+<span class="NDLSystemFont">LoadAsset</span> calls.</p>
+
+<p>If asset location is required, and the loader may be invoked in the foreground, it must register
+its handler for asset locate responses. The examples in this section are from the <span class=
+"NDLSystemFont"><a href="../../Reference/egf/egf__WorldFactory.htm">egf::WorldFactory</a></span>
+class.</p>
+<pre>
+EE_HANDLER_WRAP(WorldFactory, HandleAssetLocatorResponse, 
+                AssetLocatorResponse, kMSGID_AssetLocatorResponse);
+</pre>
+
+<p>The factory must also subscribe to messages on the appropriate category. We strongly recommend
+that this be done lazily when a request for a foreground load is first received. The <span class=
+"NDLSystemFont">efd::BaseAssetFactory</span> class provides a member variable for tracking
+subscription. The underlying reason for lazy subscription is that asset factories are not system
+services, and hence do not have an <span class="NDLSystemFont">OnInit</span> function in which it
+is safe to assume that a message service is ready for subscription. However, if processed inside an
+asset load request you can assume that the message service is ready (otherwise the request would
+never have been received).</p>
+
+<p>When there is the potential for background invocation, the factory must also register a handler
+with the Asset Factory Manager.</p>
+<pre>
+    pFactoryManager-&gt;RegisterAssetLocateHandler(m_privateCategory, this);
+</pre>
+
+<p>In order to register this way, the factory must implement the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__IAssetFactory.htm">efd::IAssetFactory::HandleAssetLocate</a></span>
+member function. This function will be called by the background instance of the Asset Factory
+Manager when an asset locate response on the registered category is passed from the foreground
+thread.</p>
+
+<p>Regardless of whether the factory is invoked in the foreground or background, all factory asset
+locate requests must go through the Asset Factory Manager passed in to the <span class=
+"NDLSystemFont">LoadAsset</span> function.</p>
+<pre>
+pFactoryManager-&gt;AssetLocate(urn, m_privateCategory);
+</pre>
+
+<p>Failure to do so will result in system instability if the factory is in the background.</p>
+
+<p>Depending on whether the factory is in the foreground or background, the locate response message
+will be delivered to either the statically registered message handler or the handler registered
+with the Asset Factory Manager. Typically, the logic for handling the locate response is placed in
+one handler and the other handler calls the first.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_load_svcs_overview.htm">Asset Loading Services Overview</a></li>
+
+    <li><a href="asset_load_svcs_how_work.htm">How Asset Loading Services Work</a></li>
+
+    <li><a href="asset_runtime_customize_asset_loaders.htm">Adding New Asset Types</a></li>
+
+    <li><a href="asset_custom_architecture.htm">Architectural Choices Related to New Asset
+    Types</a></li>
+
+    <li><a href="asset_custom_metadata.htm">Adding New Asset Types to Metadata</a></li>
+
+    <li><a href="asset_custom_rapid_iteration.htm">Rapid Iteration support for New Asset
+    Types</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

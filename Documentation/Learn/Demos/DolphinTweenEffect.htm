@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>DolphinTweenEffect</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>DolphinTweenEffect</h1>
+
+<p>This effect duplicates the Dolphin tweening shader found in
+the DirectX SDK. It makes use of the same vertex shader program
+code (on DX9), but uses an NSF file to get the shader into
+Gamebryo.</p>
+
+<p>Each of the three dolphin poses is stored in its own NIF file,
+and the <span class="NDLSystemFont">DolphinTweenEffect</span>
+loads all three models and stores the vertices and normals of
+each of the second two dolphin meshes as data in additional
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span> objects
+attached to the first dolphin mesh, which has the <span class=
+"NDLSystemFont">DolphinTween</span> shader applied to it at
+application time. The <span class="NDLSystemFont">SemanticAdapterTable</span> section
+of the NSF file contains the remapping from generic semantics
+(given when the individual NIFs are combined at load time) to
+valid renderer semantics that the vertex shader can make use
+of.</p>
+
+<p>One trick that the effect does in the NSF file is to make use
+of a global constant that contains the global diffuse lighting
+color, but to multiply that constant by the material's diffuse
+lighting color using a <span class=
+"NDLSystemFont">CM_OPERATOR</span> constant map entry. This
+allows the calculation to be done on the CPU once per mesh,
+rather than in the vertex shader once per vertex.</p>
+
+<p>In order to more closely duplicate the DirectX sample on which
+this effect is based, the effect also loads the sea floor model,
+and applies a series of 32 textures to both the dolphin and the
+sea floor that replicate the caustic effect of light interacting
+with the water surface.</p>
+
+<p>As with all other effects, this class relies on a static
+instance of a dummy helper class to create an instance of a
+<span class="NDLSystemFont">DolphinTweenEffect</span>. This
+allows the effect to handle its own creation and initialization
+without any need to change the code for the default application
+or any other effects.</p>
+
+<p>The D3D10/D3D11 version of this shader adds a geometry shader to the
+sea floor that causes the edges of the triangles to be rendered
+as lines, effectively creating a wireframe effect.</p>
+
+<h2>Initialization</h2>
+
+<p>During initialization, the first thing to happen is the
+<span class="NDLSystemFont">ShaderEffect::Init</span> function
+gets called, so the <span class=
+"NDLSystemFont">RegisterShaderLibrary</span> will get a chance to
+load the shader library. Then, the first dolphin mesh is loaded
+and the <span class="NDLSystemFont">DolphinTween</span> shader is
+attached to it. This is followed by the sea floor mesh being
+loaded along with the 32 caustic textures. Then, the other two
+dolphin NIFs are loaded, whose vertex positions and normals will
+be used for the blending operations. Additional <span class=
+"NDLSystemFont">NiDataStreams</span> are added to the original
+mesh object to serve two purposes: first, to store the actual
+vertex and normal data from the two additional dolphin NIFs (so
+that their entire scene graphs don't need to be kept in memory),
+and second, to provide pointers to that additional per-vertex
+data to the shader system, which will assign that data into the
+vertex streams defined in the NSF file.</p>
+
+<p>Once this is done, the effect sets the global diffuse lighting
+color (via the global shader constant named "LightDiffuse") along
+with the global weights (via the global shader constant named
+"weights"). Then it stores pointers to some objects in the scene
+that will be useful later. These include pointers to the 
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span>
+objects applied to the dolphin and to the sea floor</p>
+
+<p>Finally, the dolphin is scaled appropriately, the scene is
+updated, and the presence of the required "<span class=
+"NDLSystemFont">DolphinTween</span>" shader is tested to
+determine whether the shader was loaded correctly.</p>
+
+<p>The <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render click</a> created by this function simply holds an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span>
+with the main scene and camera. This render click is added to the
+<a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">
+render step</a> created by <span class="NDLSystemFont"><a href=
+"ShaderEffect.htm">ShaderEffect</a>::Init</span>.</p>
+
+<h2>Shutdown</h2>
+
+<p>The default shutdown function <span class=
+"NDLSystemFont">ShaderEffect::Shutdown</span> is called, and the
+effect clears out its remaining data.</p>
+
+<h2>UpdateScene</h2>
+
+<p>During <span class="NDLSystemFont">UpdateScene</span>, the
+transform of the dolphin and the weights of each dolphin mesh in
+the final tweened result are updated manually (as in the DirectX
+sample) via calls to <span class=
+"NDLSystemFont">NiFloatsExtraData::SetValue</span> called upon
+the "weights" object that is attached to the dolphin mesh.  Then,
+the model-space light direction is calculated and set as a global
+shader constant, and the caustic shader constants and textures
+are updated.</p>
+
+<h2>Enable</h2>
+
+<p>Before calling the default enabling function <span class=
+"NDLSystemFont">ShaderEffect::Enable</span>, the effect updates
+the camera parameters to values appropriate for the scene.</p>
+
+<p>Refer to <a href=
+"ShaderSample_Platform_Considerations.htm">Platform
+Considerations</a> for additional details on platform-specific
+issues.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

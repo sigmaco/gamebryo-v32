@@ -1,0 +1,1120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin
+  xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+  name="World Builder UI (Gamebryo)"
+  id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies"
+  class="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Plugin">
+
+  <!-- Extension Points -->
+  <!-- ======================================================================================== -->
+
+  <extension-point id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderMode"
+                   schema="Schemas\ExtPoint-RenderMode.xsd"/>
+
+  <!-- Game Solution Libraries -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.GameSolution.ImportLocation">
+    <location path="%EMERGENT_PATH%\Media"/>
+  </extension>
+
+  <!-- Settings -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.PlayAnimations"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Play Animations</display-name>
+        <description>This setting controls if worldbuilder should continually render the scene to play animations.  If this setting is off, animations will not play, but WorldBuilder will consume much less CPU power when the user is not changing the world.</description>
+      </setting>
+
+      <setting scope="PerContent" id="Emergent.WorldBuilder.World.Scale"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\World"
+               property-type="Float" visible="true">
+        <value>1.0</value>
+        <display-name>World Scale</display-name>
+        <description>Changing the World Scale will affect camera movement rates when working with this content.  It is preferrable to establish a standard scale for all content and set the Toolbench user settings for camera movement to convenient values.</description>
+      </setting>
+
+      <!-- Renderer -->
+      <!-- ========================================================================================== -->
+      <setting scope="PerUser"
+         id="Emergent.WorldBuilder.Renderer.PreferredD3DVersion"
+         path="World Builder\Renderer"
+         property-type="String"
+         visible="true">
+        <value>DX9</value>
+        <display-name>Preferred D3D Version</display-name>
+        <description>Indicates which D3D renderer to use.  Valid targets are "DX9", "D3D10", and "D3D11".  If the selected renderer can not be created, a DX9 renderer will be used.  Setting takes effect when a renderer is created.
+        </description>
+      </setting>
+      
+      <!-- Camera -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.MovementSpeedScale"
+               path="World Builder\Camera"
+               property-type="Float" visible="true">
+        <value>1.0</value>
+        <display-name>Movement Scale</display-name>
+        <description>Sets a movement scale for the cameras in World Builder.</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.TurboScale"
+               path="World Builder\Camera"
+               property-type="Float" visible="true">
+        <value>3.0</value>
+        <display-name>Turbo Scale</display-name>
+        <description>Turbo Scale controls how much faster the cameras in World Builder will move when [Shift] is pressed.</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.KeyboardBaseMovement"
+               path="World Builder\Camera"
+               property-type="Float" visible="true">
+        <value>10</value>
+        <display-name>Keyboard Base Movement</display-name>
+        <description>Sets the base keyboard movement rate of a camera in World Builder, measured in units per second.  The actual rate = [Keyboard Base Movement] * [Movement Scale] * [PerContent World Scale].</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.MouseBaseMovement"
+               path="World Builder\Camera"
+               property-type="Float" visible="true">
+        <value>0.10</value>
+        <display-name>Mouse Base Movement</display-name>
+        <description>Sets the base mouse movement rate of the camera in World Builder, measured in units per pixel.  The actual rate = [Mouse Base Movement] * [Movement Scale] * [PerContent World Scale].</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.LookSpeedScale"
+               path="World Builder\Camera"
+               property-type="Float" visible="true">
+        <value>1.0</value>
+        <display-name>Look Sensitivity</display-name>
+        <description>Look Sensitivity will effect the sensitivity of mouse look.</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Camera.FlyLevel"
+               path="World Builder\Camera"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Fly Level</display-name>
+        <description>Controls if the camera should fly level when moved with WASD.</description>
+      </setting>
+
+      <!-- Lights -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Lights.UseDefaultLights"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Lights"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Use Default Lights</display-name>
+        <description>A value indicating if the default lights should be used to light the scene.  This is only relevant at design time.</description>
+      </setting>
+
+      <!-- Grid -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.ShowGrid"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Grid"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Show Grid</display-name>
+        <description>Toggles the display of the world grid.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.PropertyVisualization.ShowPropertyVisualization"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Show Property Visualization</display-name>
+        <description>Toggles the display of property visualization.</description>
+      </setting>
+      <setting scope="PerContent" id="Emergent.WorldBuilder.CustomShaders.CustomShaderDirectory"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder"
+               property-type="String" visible="true">
+        <value></value>
+        <display-name>Custom Shader Directory</display-name>
+        <description>Directory containing custom shaders.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.MinorLineColor"
+               path="World Builder\Grid"
+               property-type="Color (RGB)" visible="true">
+        <value>DimGray</value>
+        <display-name>Grid Minor Line Color</display-name>
+        <description>The color of minor lines in the world grid.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.MajorLineColor"
+               path="World Builder\Grid"
+               property-type="Color (RGB)" visible="true">
+        <value>Firebrick</value>
+        <display-name>Grid Major Line Color</display-name>
+        <description>The color of major lines in the world grid.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.MinorLineSpacing"
+               path="World Builder\Grid"
+               property-type="Float" visible="true">
+        <value>1.0</value>
+        <display-name>Minor Line Spacing</display-name>
+        <description>The distance between minor world grid lines.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.MajorLineSpacing"
+               path="World Builder\Grid"
+               property-type="Float" visible="true">
+        <value>10.0</value>
+        <display-name>Major Line Spacing</display-name>
+        <description>The distance between major world grid lines.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.Extents"
+               path="World Builder\Grid"
+               property-type="Float" visible="true">
+        <value>500.0</value>
+        <display-name>Grid Extents</display-name>
+        <description>The distance to render the world grid in each direction.</description>
+      </setting>
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.UseVerticalInterval"
+               path="World Builder\Grid"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Use Vertical Interval</display-name>
+        <description>Indicates if the vertical interval should be used when placing items on the grid.</description>
+      </setting>
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Grid.VerticalInterval"
+               path="World Builder\Grid"
+               property-type="Float" visible="true">
+        <value>200</value>
+        <display-name>Vertical Interval</display-name>
+        <description>Sets the vertical interval that the grid will appear at.</description>
+      </setting>
+
+      <!-- Viewport Layout -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUser" id="Emergent.WorldBuilder.Viewport.DefaultLayout"
+               path="World Builder\Viewport"
+               property-type="Integer"
+               visible="true">
+        <value>1</value>
+        <display-name>Default Layout</display-name>
+        <description>The default viewport layout.  Valid values for the layout are 1 - 4.  The number determines the number of visible viewports (1 - single viewport, 2 - two viewports split horizontally, and so on).</description>
+      </setting>
+
+      <!-- Gizmo -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Gizmo"
+               property-type="String" visible="false">
+        <value>Selection</value>
+        <display-name>Active Gizmo</display-name>
+        <description>Toggles the active gizmo in the editor.</description>
+      </setting>
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Gizmo.CreationModeActive"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Gizmo"
+               property-type="Boolean" visible="false">
+        <value>False</value>
+        <display-name>Creation Mode</display-name>
+        <description>Toggles creation mode in the editor.</description>
+      </setting>
+      
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Gizmo.TranslationGizmoUserOctantFacing"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Gizmo"
+               property-type="Boolean" visible="false">
+        <value>False</value>
+        <display-name>Facing Translation Gizmo</display-name>
+        <description>Toggles flipping of the translation gizmo to make sure each axis is visible.</description>
+      </setting>
+      
+      <!-- Camera -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Camera.ActiveCameraMode"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Camera"
+               property-type="String" visible="false">
+        <value>Standard</value>
+        <display-name>The active camera mode in the scene.</display-name>
+        <description>Toggles the active camera mode.</description>
+      </setting>
+
+      <!-- Placement Modes -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.PlacementMode"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Transforms"
+               property-type="Integer" visible="false">
+        <value>0</value>
+        <display-name>Placement Mode</display-name>
+        <description>Behavior for positioning entities in the world relative to other surfaces.</description>
+      </setting>
+
+      <!-- Precision -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerContent" id="Emergent.WorldBuilder.Grid.TranslationPrecisionEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Precision"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Translation Precision Enabled</display-name>
+        <description>Toggles enforcement of translation precision.</description>
+      </setting>
+      <setting scope="PerContent" id="Emergent.WorldBuilder.Grid.TranslationPrecision"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Precision"
+               property-type="Float" visible="true">
+        <value>0.1</value>
+        <display-name>Translation Precision</display-name>
+        <description>Distance increment to which final positions will be rounded off.</description>
+      </setting>
+
+      <setting scope="PerContent" id="Emergent.WorldBuilder.Grid.ScalePrecisionEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Precision"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Scale Precision Enabled</display-name>
+        <description>Toggles enforcement of scale precision.</description>
+      </setting>
+      <setting scope="PerContent" id="Emergent.WorldBuilder.Grid.ScalePrecision"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Precision"
+               property-type="Float" visible="true">
+        <value>0.1</value>
+        <display-name>Scale Precision</display-name>
+        <description>Distance increment to which final scale values will be rounded off.</description>
+      </setting>
+
+      <!-- Snapping -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.TranslationSnapEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Translation Snap Enabled</display-name>
+        <description>Toggles use of translation snap.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.TranslationSnap"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Float" visible="true">
+        <value>1.0</value>
+        <display-name>Translation Snap</display-name>
+        <description>Distance between each translation increment when snap is enabled.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.RotationSnapEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Rotation Snap Enabled</display-name>
+        <description>Toggles use of rotation snap.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.RotationSnap"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Float" visible="true">
+        <value>5.0</value>
+        <display-name>Rotation Snap</display-name>
+        <description>Degrees between each rotation increment when snap is enabled.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.ScaleSnapEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Boolean" visible="true">
+        <value>False</value>
+        <display-name>Scale Snap Enabled</display-name>
+        <description>Toggles use of scale snap.</description>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.Grid.ScaleSnap"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snapping"
+               property-type="Float" visible="true">
+        <value>0.1</value>
+        <display-name>Scale Snap</display-name>
+        <description>Distance between each scale increment when snap is enabled.</description>
+      </setting>
+
+      <!-- Snap Points -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.WorldBuilder.SnapPoints.SnapPointEnabled"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snap Points"
+               property-type="Boolean" visible="true">
+        <value>True</value>
+        <display-name>Snap Point Enabled</display-name>
+        <description>Enable snapping of position from "Snap Point" scene graph children objects.</description>
+      </setting>
+      <setting scope="PerContent" id="Emergent.WorldBuilder.SnapPoints.SnapPointStickinessRadius"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Snap Points"
+               property-type="Float" visible="true">
+        <value>0.5</value>
+        <display-name>Snap Point Stickiness Radius</display-name>
+        <description>Distance from a snap point the user must drag to detach the snap point.</description>
+      </setting>
+
+      <!-- Camera -->
+      <!-- ========================================================================================== -->
+
+      <setting scope="PerUserPerContent" id="Emergent.Toolbench.WorldBuilder.ViewportCameraSettings"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Viewport"
+               property-type="String" visible="false">
+        <value></value>
+      </setting>
+      <setting scope="PerUserPerContent" id="Emergent.Toolbench.WorldBuilder.ViewportSettings"
+               content-type="Emergent.Toolbench.WorldBuilder.BlockDocument"
+               path="World Builder\Viewport"
+               property-type="String" visible="false">
+        <value></value>
+      </setting>
+
+    </settings>
+  </extension>
+
+  <!-- World Builder Menu -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="World Builder Actions"
+               visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.WorldBuilderActionSet">
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.CreateCameraFromViewport"
+                action="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.CreateCameraFromViewport"
+                path="World Builder"
+                priority="150" />
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Randomizer"
+                action="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RandomizerAction"
+                path="World Builder"
+                priority="200" />
+
+      <action label="&amp;Create Camera From Viewport"
+              tooltip="Creates a camera representing the current viewport"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.CreateCameraFromViewportAction"
+              id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.CreateCameraFromViewport"/>
+
+      <action label="&amp;Randomizer"
+              tooltip="Accesses a tool for randomizing the appearance of selected entities"
+              small-icon="Icons/RandomizerSmall.png"
+              large-icon="Icons/RandomizerLarge.png"
+              id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RandomizerAction"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RandomizerAction"/>
+
+    </actionset>
+  </extension>
+
+  <!-- Settings Toolbar -->
+  <!-- ======================================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="Settings" visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.SettingsActionSet">
+
+      <toolbar id="Emergent.Toolbench.WorldBuilder.UI.SettingsToolbar"
+               visible="true"
+               name="WorldBuilderDocument"/>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleDefaultLights"
+                   tooltip="Toggle Default Lights|Toggles default lighting for the scene"
+                   path="WorldBuilderDocument"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Lights.UseDefaultLights"
+                small-icon="Icons\ToggleDefaultLightsSmallOff.png"
+                large-icon="Icons\ToggleDefaultLightsLargeOff.png"
+                small-icon-pressed="Icons\ToggleDefaultLightsSmall.png"
+                large-icon-pressed="Icons\ToggleDefaultLightsLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.PlayAnimations"
+                   tooltip="Toggle Animations|Toggles animations on all entities"
+                   path="WorldBuilderDocument"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.PlayAnimations"
+                small-icon="Icons\ToggleAnimationsSmall.png"
+                large-icon="Icons\ToggleAnimationsLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleGrid"
+                   tooltip="Toggle Grid|Toggles display of the grid"
+                   path="WorldBuilderDocument"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.ShowGrid"
+                small-icon="Icons\ToggleGridSmall.png"
+                large-icon="Icons\ToggleGridLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.TogglePropertyVisualization"
+                   tooltip="Toggle Property Visualization|Toggles display of all property visualizers"
+                   path="WorldBuilderDocument"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.PropertyVisualization.ShowPropertyVisualization"
+                small-icon="Icons\TogglePropertyVisualizationSmall.png"
+                large-icon="Icons\TogglePropertyVisualizationLarge.png"/>
+      </toolbaritem>
+
+    </actionset>
+  </extension>
+
+  <!-- ==================================================================== -->
+
+
+  <!-- Snapping Toolbar -->
+  <!-- ==================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="Snap Settings" visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.SnapSettingsActionSet">
+
+      <toolbar id="Emergent.Toolbench.WorldBuilder.UI.SnapSettingsActionSet"
+               visible="true"
+               name="SnapSettings"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.FreePlacementMode"
+                   tooltip="Free Placement|Enables free placement of entities"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.PlacementMode"
+                small-icon="Icons\PlacementFreeSmall.png"
+                large-icon="Icons\PlacementFreeLarge.png"
+                value="0"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.SnapToSurfaceMode"
+                   tooltip="Snap To Surface|Enables snapping entities to surfaces"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.PlacementMode"
+                small-icon="Icons\PlacementSnapToSurfaceSmall.png"
+                large-icon="Icons\PlacementSnapToSurfaceLarge.png"
+                value="1"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.AlignToSurfaceMode"
+                   tooltip="Align To Surface|Enables snapping and aligning entities to surfaces"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.PlacementMode"
+                small-icon="Icons\PlacementAlignToSurfaceSmall.png"
+                large-icon="Icons\PlacementAlignToSurfaceLarge.png"
+                value="2"/>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="SnapSettings" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleTranslationSnap"
+                   tooltip="Toggle Translation Snap|Toggles translation snapping for entities"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.TranslationSnapEnabled"
+                small-icon="Icons\ToggleTranslationSnapSmall.png"
+                large-icon="Icons\ToggleTranslationSnapLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.SetTranslationSnap"
+                         tooltip="Set Translation Snap|Specifies the translation snapping increment"
+                         path="SnapSettings"
+                         item-type="Custom"
+                         class="Emergent.Toolbench.Settings.UI.SettingDropDownToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.TranslationSnap">
+          <set value="0.01" />
+          <set value="0.05" />
+          <set value="0.10" />
+          <set value="0.25" />
+          <set value="0.5" />
+          <set value="1" />
+          <set value="2" />
+          <set value="4" />
+          <set value="5" />
+          <set value="8" />
+          <set value="10" />
+          <set value="16" />
+          <set value="25" />
+          <set value="32" />
+          <set value="50" />
+          <set value="64" />
+          <set value="100" />
+          <set value="128" />
+          <set value="256" />
+          <set value="500" />
+          <set value="512" />
+          <set value="1000" />
+          <set value="1024" />
+        </custom>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="SnapSettings" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleRotationSnap"
+                   tooltip="Toggle Rotation Snap|Toggles rotation snapping for entities"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.RotationSnapEnabled"
+                small-icon="Icons\ToggleRotationSnapSmall.png"
+                large-icon="Icons\ToggleRotationSnapLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.SetRotationSnap"
+                         tooltip="Set Rotation Snap|Specifies the rotation snapping increment"
+                         path="SnapSettings"
+                         item-type="Custom"
+                         class="Emergent.Toolbench.Settings.UI.RotationSnapSettingDropDownToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.RotationSnap">
+          <set value="1" text="1°" />
+          <set value="2" text="2°" />
+          <set value="5" text="5°" />
+          <set value="15" text="15°" />
+          <set value="30" text="30°" />
+          <set value="45" text="45°" />
+          <set value="90" text="90°" />
+        </custom>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="SnapSettings" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleScaleSnap"
+                   tooltip="Toggle Scale Snap|Toggles scale snapping for entities"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.ScaleSnapEnabled"
+                small-icon="Icons\ToggleScaleSnapSmall.png"
+                large-icon="Icons\ToggleScaleSnapLarge.png"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.SetScaleSnap"
+                         tooltip="Set Scale Snap|Specifies the scale snapping increment"
+                         path="SnapSettings"
+                         item-type="Custom"
+                         class="Emergent.Toolbench.Settings.UI.ScaleSnapSettingDropDownToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Grid.ScaleSnap">
+          <set value="0.05" text="5%" />
+          <set value="0.10" text="10%" />
+          <set value="0.25" text="25%" />
+          <set value="0.50" text="50%" />
+          <set value="0.75" text="75%" />
+          <set value="1" text="100%" />
+          <set value="2" text="200%" />
+        </custom>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="SnapSettings" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Toolbar.ToggleSnapPoints"
+                   tooltip="Toggle Snap Points|Toggles the use of snap points specified in assets"
+                   path="SnapSettings"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.SnapPoints.SnapPointEnabled"
+                small-icon="Icons\ToggleSnapPointsSmall.png"
+                large-icon="Icons\ToggleSnapPointsLarge.png"/>
+      </toolbaritem>
+
+    </actionset>
+  </extension>
+
+  <!-- ==================================================================== -->
+
+
+  <!-- Gizmo Toolbar -->
+  <!-- ==================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="World Builder Gizmo Actions" visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.GizmoActionSet">
+
+      <toolbar id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar"
+               visible="true"
+               name="Gizmos"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar.Selection"
+                   tooltip="Selection Gizmo|Enables entity selection in the viewports"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+                small-icon="Icons\SelectionSmall.png"
+                large-icon="Icons\SelectionLarge.png"
+                value="Selection"/>
+      </toolbaritem>
+        
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar.Translation"
+                   tooltip="Translation Gizmo|Enables the entity translation gizmo"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+          <custom setting="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+                small-icon="Icons\TranslationSmall.png"
+                large-icon="Icons\TranslationLarge.png"
+                value="Translation"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar.Rotation"
+                   tooltip="Rotation Gizmo|Enables the entity rotation gizmo"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+                small-icon="Icons\RotationSmall.png"
+                large-icon="Icons\RotationLarge.png"
+                value="Rotation"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar.UniformScale"
+                   tooltip="Uniform Scale Gizmo|Enables the entity uniform scale gizmo"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Gizmo.ActiveGizmo"
+                small-icon="Icons\UniformScaleSmall.png"
+                large-icon="Icons\UniformScaleLarge.png"
+                value="UniformScale"/>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="Gizmos" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.GizmoToolbar.Creation"
+                   tooltip="Creation Mode|Enables creation mode for the rapid placement of entities"
+                   path="Gizmos"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Gizmo.CreationModeActive"
+                small-icon="Icons\CreationSmall.png"
+                large-icon="Icons\CreationLarge.png"/>
+      </toolbaritem>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem path="Gizmos" item-type="Separator"/>
+
+      <!-- ==================================================================== -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.GizmoBasis"
+                   tooltip="Specifies the coordinate basis for the gizmos"
+                   path="Gizmos"
+                   item-type="ComboBox">
+        <combobox>
+          <action id="Emergent.Toolbench.WorldBuilder.SetWorldGizmoBasisAction" />
+          <action id="Emergent.Toolbench.WorldBuilder.SetLocalGizmoBasisAction" />
+        </combobox>
+      </toolbaritem>
+
+      <!-- Actions -->
+      <!-- ================================================================ -->
+
+      <action id="Emergent.Toolbench.WorldBuilder.UI.SelectionGizmoAction"
+              label="Selection Gizmo"
+              tooltip="Enables entity selection in the viewports"
+              small-icon="Icons/SelectionSmall.png"
+              large-icon="Icons/SelectionLarge.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, Selection" >
+      </action>
+
+      <action id="Emergent.Toolbench.WorldBuilder.UI.TranslationGizmoAction"
+              label="Translation Gizmo"
+              tooltip="Enables the entity translation gizmo"
+              small-icon="Icons/TranslationSmall.png"
+              large-icon="Icons/TranslationLarge.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, Translation"
+              shortcut="Control, W">
+      </action>
+
+      <action label="Rotation Gizmo"
+              tooltip="Enables the entity rotation gizmo"
+              small-icon="Icons/RotationSmall.png"
+              large-icon="Icons/RotationLarge.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, Rotation"
+              id="Emergent.Toolbench.WorldBuilder.RotationGizmoAction"
+              shortcut="Control, E">
+      </action>
+
+      <action label="Uniform Scale Gizmo"
+              tooltip="Enables the entity uniform scale gizmo"
+              small-icon="Icons/UniformScaleSmall.png"
+              large-icon="Icons/UniformScaleLarge.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, UniformScale"
+              id="Emergent.Toolbench.WorldBuilder.UniformScaleGizmoAction"
+              shortcut="Control, R">
+      </action>
+
+      <action label="Grab Gizmo"
+              tooltip="Enables the grab gizmo for repositioning entities"
+              small-icon="Icons/ModeGrabSmall.png"
+              large-icon="Icons/ModeGrabSmall.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, Lambda"
+              id="Emergent.Toolbench.WorldBuilder.LambdaGizmoAction">
+      </action>
+
+      <action label="Creation Mode"
+              tooltip="Enables creation mode for the rapid placement of entities"
+              small-icon="Icons/CreationSmall.png"
+              large-icon="Icons/CreationLarge.png"
+              handler="Emergent.Toolbench.Settings.SettingAction"
+              command="Emergent.WorldBuilder.Gizmo.ActiveGizmo, Creation"
+              id="Emergent.Toolbench.WorldBuilder.CreationGizmoAction">
+      </action>
+
+      <action label="Local"
+              tooltip="Sets the gizmos to act in local space"
+              handler="Emergent.Toolbench.WorldBuilder.SetLocalGizmoBasisAction"
+              id="Emergent.Toolbench.WorldBuilder.SetLocalGizmoBasisAction">
+      </action>
+
+      <action label="World"
+              tooltip="Sets the gizmos to act in world space"
+              handler="Emergent.Toolbench.WorldBuilder.SetWorldGizmoBasisAction"
+              id="Emergent.Toolbench.WorldBuilder.SetWorldGizmoBasisAction">
+      </action>
+
+    </actionset>
+  </extension>
+
+  <!-- Camera Toolbar -->
+  <!-- ==================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="World Builder Camera Actions"
+               visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.CameraActionSet">
+
+      <toolbar id="Emergent.Toolbench.WorldBuilder.UI.CameraToolbar"
+               visible="true"
+               name="Camera"/>
+
+      <!-- Toolbar Items -->
+      <!-- ================================================================ -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.FlyLevel"
+             tooltip="Toggle Fly Level|Toggles level camera flight"
+             path="Camera"
+             item-type="Custom"
+             class="Emergent.Toolbench.Settings.UI.SettingToggleToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Camera.FlyLevel"
+                small-icon="Icons\FlyLevelSmall.png"
+                large-icon="Icons\FlyLevelLarge.png"/>
+      </toolbaritem>
+
+      <!-- ================================================================ -->
+
+      <toolbaritem path="Camera" item-type="Separator" />
+
+      <!-- ================================================================ -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.Standard"
+                   tooltip="Standard Camera|Sets the camera controls to standard mode"
+                   path="Camera"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Camera.ActiveCameraMode"
+                small-icon="Icons\CameraStandardSmall.png"
+                large-icon="Icons\CameraStandardLarge.png"
+                value="Standard"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.Orbit"
+                   tooltip="Orbit Camera|Sets the camera controls to orbit mode"
+                   path="Camera"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Camera.ActiveCameraMode"
+                small-icon="Icons\CameraOrbitSmall.png"
+                large-icon="Icons\CameraOrbitLarge.png"
+                value="Orbit"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.Pan"
+                   tooltip="Pan Camera|Sets the camera controls to pan mode"
+                   path="Camera"
+                   item-type="Custom"
+                   class="Emergent.Toolbench.Settings.UI.SettingToggleGroupToolbarItem">
+        <custom setting="Emergent.WorldBuilder.Camera.ActiveCameraMode"
+                small-icon="Icons\CameraPanSmall.png"
+                large-icon="Icons\CameraPanLarge.png"
+                value="Pan"/>
+      </toolbaritem>
+
+      <!-- ================================================================ -->
+
+      <toolbaritem path="Camera" item-type="Separator" />
+
+      <!-- ================================================================ -->
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.MoveToSelection"
+                   path="Camera"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.WorldBuilder.MoveToSelection"/>
+      </toolbaritem>
+
+      <toolbaritem id="Emergent.Toolbench.WorldBuilder.UI.Toolbar.Camera.LookAtSelection"
+                   path="Camera"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.WorldBuilder.LookAtSelection"/>
+      </toolbaritem>
+
+      <!-- Actions -->
+      <!-- ================================================================ -->
+
+      <!--
+      <action label="Standard Camera"
+              tooltip="Sets the camera controls to standard mode"
+              small-icon="Icons/CameraStandardSmall.png"
+              large-icon="Icons/CameraStandardLarge.png"
+              handler="Emergent.Toolbench.WorldBuilder.StandardCameraModeAction"
+              id="Emergent.Toolbench.WorldBuilder.StandardCameraModeAction"
+              shortcut="Control, Shift, L">
+      </action>
+
+      <action label="Orbit Camera"
+              tooltip="Sets the camera controls to orbit mode"
+              small-icon="Icons/CameraOrbitSmall.png"
+              large-icon="Icons/CameraOrbitLarge.png"
+              handler="Emergent.Toolbench.WorldBuilder.OrbitCameraModeAction"
+              id="Emergent.Toolbench.WorldBuilder.OrbitCameraModeAction"
+              shortcut="Control, Shift, O">
+      </action>
+
+      <action label="Pan Camera"
+              tooltip="Sets the camera controls to pan mode"
+              small-icon="Icons/CameraPanSmall.png"
+              large-icon="Icons/CameraPanLarge.png"
+              handler="Emergent.Toolbench.WorldBuilder.PanCameraModeAction"
+              id="Emergent.Toolbench.WorldBuilder.PanCameraModeAction"
+              shortcut="Control, Shift, P">
+      </action>
+      -->
+
+      <action label="Move To Selection"
+              tooltip="Moves the camera to the center of the selected entities"
+              small-icon="Icons/MoveToSelectionSmall.png"
+              large-icon="Icons/MoveToSelectionLarge.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.MoveToSelectionAction"
+              id="Emergent.Toolbench.WorldBuilder.MoveToSelection">
+      </action>
+
+      <action label="Look At Selection"
+              tooltip="Rotates the camera to face the selected entities"
+              small-icon="Icons/LookAtSelectionSmall.png"
+              large-icon="Icons/LookAtSelectionLarge.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.LookAtSelectionAction"
+              id="Emergent.Toolbench.WorldBuilder.LookAtSelection">
+      </action>
+      
+    </actionset>
+  </extension>
+
+  <!-- Viewport Menu -->
+  <!-- ==================================================================== -->
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+    <actionset label="World Builder Viewport Layout Actions"
+               visible="true"
+               id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayoutActionSet">
+
+      <menu label="&amp;Viewport Layout"
+            id="Emergent.Toolbench.WorldBuilder.UI.Menu.ViewportLayout"
+            path="World Builder"
+            priority="100"/>
+
+      <!-- Viewport Menu Items -->
+      <!-- ================================================================ -->
+
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Menu.ViewportLayout1"
+                action="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout1"
+                path="World Builder\Viewport Layout"
+                priority="1"/>
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Menu.ViewportLayout2"
+                action="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout2"
+                path="World Builder\Viewport Layout"
+                priority="2"/>
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Menu.ViewportLayout3"
+                action="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout3"
+                path="World Builder\Viewport Layout"
+                priority="3"/>
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Menu.ViewportLayout4"
+                action="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout4"
+                path="World Builder\Viewport Layout"
+                priority="4"/>
+      <menuitem id="Emergent.Toolbench.WorldBuilder.UI.Menu.MaximizeActiveViewport"
+                action="Emergent.Toolbench.WorldBuilder.UI.MaximizeActiveViewport"
+                path="World Builder\Viewport Layout"
+                priority="5"/>
+
+      <!-- Actions -->
+      <!-- ================================================================ -->
+
+      <action id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout1"
+              label="Viewport Layout &amp;1"
+              tooltip="Configures the UI to use 1 viewport"
+              small-icon="Icons/ViewportLayout1Small.png"
+              large-icon="Icons/ViewportLayout1Large.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.ViewportLayoutAction"
+              command="One">
+      </action>
+      <action id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout2"
+              label="Viewport Layout &amp;2"
+              tooltip="Configures the UI to use 2 viewports"
+              small-icon="Icons/ViewportLayout2Small.png"
+              large-icon="Icons/ViewportLayout2Large.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.ViewportLayoutAction"
+              command="Two">
+      </action>
+      <action id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout3"
+              label="Viewport Layout &amp;3"
+              tooltip="Configures the UI to use 3 viewports"
+              small-icon="Icons/ViewportLayout3Small.png"
+              large-icon="Icons/ViewportLayout3Large.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.ViewportLayoutAction"
+              command="Three">
+      </action>
+      <action id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayout4"
+              label="Viewport Layout &amp;4"
+              tooltip="Configures the UI to use 4 viewports"
+              small-icon="Icons/ViewportLayout4Small.png"
+              large-icon="Icons/ViewportLayout4Large.png"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.ViewportLayoutAction"
+              command="Four">
+      </action>
+      <action id="Emergent.Toolbench.WorldBuilder.UI.MaximizeActiveViewport"
+              label="Maximize Active Viewport"
+              tooltip="Toggles maximization of the active viewport"
+              handler="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.MaximizeActiveViewportAction">
+      </action>
+
+    </actionset>
+  </extension>
+
+  <!-- Misc -->
+  <!-- ==================================================================== -->
+
+  <!-- Add a document perspective for the world builder. -->
+  <extension point="Emergent.Toolbench.Workbench.Perspectives">
+    <perspective name="Graphical World Builder"
+                 id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Perspective"
+                 type="ActiveContent"
+                 content-type-id="Emergent.Toolbench.WorldBuilder.BlockDocument"/>
+  </extension>
+    
+  <!-- Add a dynamic context menu strip -->
+  <extension point="Emergent.Toolbench.Workbench.DynamicFormContextMenuProvider">
+    <provider name="DeleteFormContextMenuProvider"
+                 type="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+                 key="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+                 class="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.DeleteFormContextMenuProvider" />
+  </extension>
+
+
+    <!-- Views -->
+  <!-- ==================================================================== -->
+
+  <!-- Add the primary world view. This view is responsible for rendering the current world. -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.WorldView"
+          name="World View"
+          class="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.RenderedWorldView"
+          default-dock="Document"
+          content-bound="true">
+    </view>
+  </extension>
+
+  <!-- Associate the renderer view with the world builder document content. -->
+  <extension point="Emergent.Toolbench.ContentService.PrimaryViewContentMapping">
+    <mapping content-type-id="Emergent.Toolbench.WorldBuilder.BlockDocument">
+      <primary-view id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.WorldView"/>
+    </mapping>
+  </extension>
+
+  <!-- Map the views and actions for the world building perspective. -->
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.Perspective">
+
+      <view id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.WorldView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.UI.EntityPaletteView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.UI.EntityAspectView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.UI.SelectionSetView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.UI.LayerView"/>
+      <view id="Emergent.Toolbench.WorldBuilder.UI.EntityEditorView"/>
+
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.WorldBuilderMenu"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.WorldBuilderToolbar"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.Gamebryo.WorldBuilderActionSet"/>
+
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.SettingsActionSet"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.SnapSettingsActionSet"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.GizmoActionSet"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.CameraActionSet"/>
+      <actionset id="Emergent.Toolbench.WorldBuilder.UI.ViewportLayoutActionSet"/>
+    </mapping>
+  </extension>
+
+  <!-- Dependencies -->
+  <!-- ======================================================================================== -->
+
+  <requires>
+    <import plugin="Emergent.Toolbench.Gamebryo"/>
+    <import plugin="Emergent.Toolbench.Settings.UI"/>
+    <import plugin="Emergent.Toolbench.WorldBuilder.UI"/>
+    <import plugin="Emergent.Toolbench.WorldBuilder.Framework"/>
+    <import plugin="Emergent.Toolbench.WorldBuilder.UI.EmbeddedViewer"/>
+  </requires>
+
+  <runtime>Emergent.Toolbench.WorldBuilder.UI.Gamebryo.dll</runtime>
+
+</plugin>

@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Supporting Multiple Platforms</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+        WriteNavLink(2);
+</script>
+
+<h1>Supporting Multiple Platforms</h1>
+
+<p>The ability to support platform-optimized assets is critical
+to the success of a project that is intended to ship on multiple
+platforms. The Asset Runtime Service provides a mechanism for
+these optimized assets to be selected at run-time. The system
+works by tagging platform specific assets with the name of the
+platform. For example, any assets optimized for the Xbox would be
+tagged with the label "Xbox360". At run-time, the game inserts
+this tag into all of its asset queries so that the appropriate
+asset is returned by the system. In the case where there is no
+optimized asset, the system returns a "generic version" of the
+asset that is known to work acceptably on the platform.</p>
+
+<p>The tags would normally be created for you automatically by
+the Asset Controller. A sample implementation to perform the
+tagging is provided in <span class=
+"NDLSystemFont">SamplePlatTagger.cpp</span>. This sample relies
+on a naming convention for the directories that contain the
+platform-optimized assets. The functionality of this tagging
+extension is controlled by a configuration file that is stored in
+<span class="NDLSystemFont"><em>&lt;Asset Web Root
+Directory&gt;</em>/asset-web-config/SamplePlatTagger.ini</span>.</p>
+
+<pre>
+; This configuration file controls the operation of the SamplePlatTagger auto-tagging
+; class in the Asset Controller. The tagger will tag assets with a platform specific name
+; so that the correct platform-specific asset can be loaded when the game is run on each
+; platform. It works by looking at directory names below a parent directory, and matching
+; the directory names that match one of the Platforms listed below.
+
+[SamplePlatTagger]
+; All directories immediately below the ParentDir will be checked to see if they are a platform
+; name. If so, then a corresponding tag is applied to all assets below the platform directory.
+ParentDir = GamebryoData
+
+; The preceding "=" is required for the list. Additional platform names may be added here.
+[SamplePlatTagger.Platforms]
+; add classification tags for the console platforms
+=PS3
+=Xbox360
+; add 3 classifications for Microsoft D3D versions
+=DX9
+=D3D10
+=D3D11
+</pre>
+
+<p>Basically, the naming of the directories in the path to the
+asset will determine which platform the asset is used for. This
+same directory name is applied to the asset as a tag. Thus, the
+assets can be distinguished from one another at run-time by
+including the relevant tag in your asset lookups.</p>
+
+<p>The AssetLocatorService provides a mechanism for injecting
+tags into every lookup performed through the service. This is
+done when the service is instantiated by including the additional
+parameter for <span class="NDLSystemFont">GlobalTagSpace</span>.
+For example:</p>
+
+<pre>
+// Create the Asset Locator service
+efd::AssetLocatorServicePtr spAssetLocatorService = EE_NEW efd::AssetLocatorService(
+    m_spServiceManager,
+    "urn:Xbox360");
+</pre>
+
+<p>The inclusion of the "urn:Xbox360" value above will cause
+every lookup to append the tag "Xbox360" to whatever other tags
+are specifies. Thus, if this code is used on the Xbox 360
+platform, then the correct optimized assets will be loaded into
+the game without the loading code having to understand
+platform.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_organize_assets.htm">Organizing Your Assets</a></li>
+
+    <li><a href="asset_runtime_config.htm">Configuring the Asset
+    Runtime Service</a></li>
+
+    <li><a href=
+    "asset_runtime_customize_asset_tagging_system.htm">Customizing
+    the asset tagging system</a></li>
+
+    <li><a href="asset_runtime_deploying_assets.htm">Deploying Assets</a></li>
+
+    <li><a href="asset_runtime_l10n_support.htm">Supporting Localization</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

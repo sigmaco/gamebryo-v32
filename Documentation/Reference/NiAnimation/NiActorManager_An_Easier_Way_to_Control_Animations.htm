@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiActorManager&mdash;An Easier Way to Control Animations</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiActorManager&mdash;An Easier Way to Control Animations</h1>
+
+<p>Gamebryo provides two classes to control sequence-based
+animation on in-game characters: <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> and
+<span class="NDLSystemFont"><a href=
+"NiActorManager.htm">NiActorManager</a></span>. As described in
+the <a href="NiControllerManager.htm">Overview of
+NiControllerManager</a>, the controller manager provides the
+ability to activate, deactivate, and blend sequences in a variety
+of ways to produce smooth animation on a character. The
+<span class="NDLSystemFont">NiActorManager</span> class builds
+upon <span class="NDLSystemFont">NiControllerManager</span> to
+provide the highest level of abstraction for controlling
+character animations in Gamebryo. In particular, <span class=
+"NDLSystemFont">NiActorManager</span> has additional support for
+playing sequences on an in-game actor via a simple state machine
+where each state represents a given animation sequence.
+Transitions between sequences within the state machine are
+defined via the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Gamebryo
+Animation Tool</a> and saved to disk as a KFM file. Applications
+load the KFM file to create an <span class=
+"NDLSystemFont">NiActorManager</span> representing the in-game
+actor. Animations are activated on the actor by setting a target
+sequence. The <span class="NDLSystemFont">NiActorManager</span>
+handles the details of determining how to transition to the
+target sequence based on the defined state machine. In addition
+to a simpler programming interface, the use of <span class=
+"NDLSystemFont">NiActorManager</span> allows an animator to fine
+tune transitions between sequences using the Animation Tool with
+minimal engineering support.</p>
+
+<p><span class="NDLSystemFont">NiActorManager</span> has a more
+sophisticated callback system than <span class=
+"NDLSystemFont">NiControllerManager</span>. In addition to
+registering for callbacks on specific events which occur during
+sequence playback, applications may query the actor manager for
+the next time a particular event is predicted to occur. There are
+five types of supported events: animation activated events,
+animation deactivated events, animation completed events, end of
+sequence events, and text key events. Animation completed events
+are triggered when a sequence has completed its playback or been
+aborted. This differs from the end of sequence event which
+indicates the last frame of a possibly looping sequence has been
+reached. One of the most useful event types is the text key
+event, with which the occurrence of any specified text key can be
+queried. One possible use of text key events is the placement of
+text keys in an animation to indicate when the feet hit the
+ground so that footstep sounds can be played.</p>
+
+<h2>Usage</h2>
+
+<p>The following describes a typical usage pattern for
+<span class="NDLSystemFont">NiActorManager</span>:</p>
+
+<ol>
+    <li>The <a href=
+    "../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">
+    Animation Tool</a> is used to create a KFM file which
+    specifies the actor manager's underlying resources. These
+    resources include an NIF file containing the actor's 3D
+    model, one or more KF files containing the actor's animation
+    sequences, and details on how the animation state machine
+    should transition between specific pairs of sequences. Each
+    available sequence is assigned an integer ID to be used by
+    the application when communicating with the actor manager.
+    When the Animation Tool saves a KFM file it also generates a
+    header file that contains a namespace and enumerations for
+    all the actor's <a href=
+    "NiActorManager.htm#Sequence_IDs">sequence IDs</a>. These
+    enumerations are generated from the sequence names as defined
+    in the Animation Tool, and are provided so that sequences can
+    be specified in code without hard coding the actual sequence
+    IDs.</li>
+
+    <li>Create an actor manager in the application via
+    <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Constructors">NiActorManager::Create</a></span>.
+    This static function constructs an <span class=
+    "NDLSystemFont">NiActorManager</span> using the specified KFM
+    file. The function sets up the necessary animation state
+    machine and transition information for the actor. Internally,
+    the <span class="NDLSystemFont">NiActorManager</span> creates
+    and initializes an <span class=
+    "NDLSystemFont">NiControllerManager</span> to handle most of
+    the lower level details of playing animation sequences on the
+    character. If requested, the NIF and KF files referenced by
+    the KFM file will be loaded. KF files store animation
+    sequences exported from 3ds max and Maya as <span class=
+    "NDLSystemFont"><a href=
+    "NiSequenceData.htm">NiSequenceData</a></span> objects. The
+    mapping of sequence IDs to <span class=
+    "NDLSystemFont">NiSequenceData</span> objects may be modified
+    at a later time as the game progresses using <span class=
+    "NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_change_sequences">NiActorManager::ChangeSequenceData</a></span>.
+    Registered <span class="NDLSystemFont">NiSequenceData</span>
+    objects can removed from the actor manager via <span class=
+    "NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_unload_sequences">UnloadSequenceData</a></span>.</li>
+
+    <li>Add the actor's scene graph branch to the global scene
+    graph representing the in-game world. The root node of the
+    actor's scene graph branch (i.e. 3D model) can be obtained
+    via <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_get_NIF_root">NiActorManager::GetNIFRoot</a></span>.
+    Note this may differ from <span class=
+    "NDLSystemFont">GetActorRoot</span> which returns the target
+    node of the internal <span class=
+    "NDLSystemFont">NiControllerManager</span>.</li>
+
+    <li>In the main loop which updates and renders the in-game
+    world, call <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_update">NiActorManager::Update</a></span>
+    on each in-game actor to update their internal state machines
+    based on the current global game time. After all actors have
+    been updated, call <span class="NDLSystemFont">Update</span>
+    on the root of the global scene graph so each actor's
+    internal <span class=
+    "NDLSystemFont">NiControllerManager</span> propagates its
+    animated data to the scene graph.</li>
+
+    <li>Although <span class=
+    "NDLSystemFont">NiSequenceData</span> objects were registered
+    with the <span class="NDLSystemFont">NiActorManager</span>
+    from the KFM file upon creation, the actor will remain static
+    until one or more of these sequences are activated (i.e.
+    played) by the application. Sequences can be activated via
+    <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_set_target_animation">NiActorManager::SetTargetAnimation</a></span>
+    using the sequence IDs assigned in the Animation Tool.
+    <span class="NDLSystemFont">NiActorManager</span> takes care
+    of determining how to transition to the target sequence based
+    on the defined state machine, and makes the appropriate calls
+    to the internal <span class=
+    "NDLSystemFont">NiControllerManager</span>. Upon sequence
+    activation, Gamebryo creates an <span class=
+    "NDLSystemFont"><a href=
+    "NiControllerSequence.htm">NiControllerSequence</a></span>
+    which maintains instance-based state to play back the
+    animated sequence on the given actor. This <span class=
+    "NDLSystemFont">NiControllerSequence</span> represents the
+    active animation and is destroyed or <a href=
+    "NiControllerManager.htm#Sequence_Recycling">recycled</a>
+    shortly after the active sequence runs to completion. If
+    needed, the state machine's active sequence can be accessed
+    via <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_get_current_animation">NiActorManager::GetCurAnimation</a></span>
+    and <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_get_active_sequence">GetActiveSequence</a></span>.</li>
+
+    <li>Sequences can be activated and deactivated separately
+    from the internal state machine by calling <span class=
+    "NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_activate_sequences">NiActorManager::ActivateSequence</a></span>
+    and <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_deactivate_sequences">DeactivateSequence</a></span>.
+    This feature is particularly useful for launching partial
+    body animations to augment full body animations controlled by
+    the state machine. For example, the state machine might loop
+    a walk cycle as the in-game actor walks down a street. If the
+    actor passes a neighbor on the street, <span class=
+    "NDLSystemFont">ActivateSequence</span> can be used to
+    trigger a higher priority wave sequence so the actor waves
+    while walking.</li>
+
+    <li>Events are registered and unregistered using <span class=
+    "NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_register_callbacks">NiActorManager::RegisterCallback</a></span>
+    and <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_unregister_callbacks">UnregisterCallback</a></span>.
+    Sequences activated by the state machine as well as the
+    <span class="NDLSystemFont">ActivateSequence</span> function
+    receive callbacks for registered events. Applications which
+    hold onto <span class=
+    "NDLSystemFont">NiControllerSequence</span> objects (i.e.
+    active sequences) via smart pointers should register for the
+    <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Event_Types">ANIM_COMPLETED</a></span>
+    event type which signals when a held object should be
+    released.</li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_get_next_event_time">NiActorManager::GetNextEventTime</a></span>
+    is used to query the actor manager for when a specific event
+    is scheduled to occur next. <span class=
+    "NDLSystemFont">NiActorManager</span> maintains an internal
+    timeline of sequence-based events which often allows it to
+    predict their next occurrence.</li>
+
+    <li><a href=
+    "NiControllerManager.htm#Sequence_Recycling">Sequence
+    recycling</a> can be controlled through the use of
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_recycling_sequences">NiControllerManager::SetMaxRecycledSequences</a></span>.
+    Applications may call <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_get_controller_manager">NiActorManager::GetControllerManager</a></span>
+    to access the actor's controller manager. Sequence recycling
+    is enabled by default on each character to improve runtime
+    performance and minimize memory fragmentation at the expense
+    of a slightly larger memory footprint.</li>
+
+    <li>To shut down an actor, deactivate all active sequences
+    via <span class="NDLSystemFont"><a href=
+    "NiActorManager.htm#Functions_to_reset">NiActorManager::Reset</a></span>,
+    and remove the actor's scene graph branch from the global
+    scene graph. Actor related objects such as <span class=
+    "NDLSystemFont">NiActorManager</span>, <span class=
+    "NDLSystemFont">NiControllerManager</span>, <span class=
+    "NDLSystemFont">NiControllerSequence</span>, and the actor's
+    scene graph branch will be destroyed automatically when the
+    application releases its last held reference on these
+    objects.</li>
+</ol>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction
+to Animation</a> to read about other animation concepts.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

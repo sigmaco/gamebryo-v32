@@ -1,0 +1,286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Foundation Reference Counting and Smart Pointers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Foundation Reference Counting and Smart Pointers</h1>
+
+<p>Foundation provides several different options for object
+management through reference counting. This document will provide
+an overview of these features. For more information about the
+legacy system see <a href=
+"../Object_Systems/Reference_Counting_and_Smart_Pointers.htm">Gamebryo
+Reference Counting and Smart Pointers</a>.</p>
+
+<h3>class efd::IBase</h3>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__IBase.htm">efd::IBase</a></span> is an
+abstract base class that provides some key functionality:
+Run-Time Type Identification (RTTI) and virtual Reference
+counting. All Foundation SystemServices are derived from IBase.
+You should derive from IBase when you wish to have reference
+counting and may be using multiple inheritance. IBase should also
+be used to take advantage of the <a href=
+"foundation_rtti.htm">Foundation RTTI</a> system.</p>
+
+<h3>class efd::RefCountObject</h3>
+
+<p>Provides thread-safe or non-thread safe non-virtual reference
+counting. RefCountObject is intended for use in single
+inheritance situations where performance is critical. The
+increment and decrement functions are non-virtual which makes the
+common operations for maintaining the reference count quicker at
+the cost of preventing multiple derivation from RefCountObject.
+If you require multiple inheritance (or runtime typing) then you
+should use efd::IBase instead of this class. See <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__RefCountObject.htm">efd::RefCountObject</a></span>.</p>
+
+<h3>class efd::RefCounted</h3>
+
+<p>Helper template for creating a reference counted class from a
+non-reference counted base class.</p>
+
+<h3>class efd::RefCountedMemObj</h3>
+
+<p>Helper template for creating a reference counted class from a
+class that is not reference counted and not derived from
+MemObject.</p>
+
+<h3>Reference counting Macros</h3>
+
+<p>These macros provide a simple way to inject reference counting
+into a class. Typically the macros will provide some
+implementation for IncRefCount(), DecRefCount() and DeleteThis().
+Use cases will be outlined in the table below.</p>
+
+<h3>Smart Pointers</h3>
+
+<ul>
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__SmartPointer.htm">efd::SmartPointer</a></span>
+    template class is used to create auto-reference counted
+    "smart" pointers for reference counted classes.</li>
+
+    <li>The class being pointed to must implement IncRefCount and
+    DecRefCount. <a href="../../Reference/Macros/efd_macros_reference_counting.htm">Helper macros</a> exist to make this a simple task.</li>
+
+    <li>Typically smart pointers in Emergent code will have "sp"
+    prepended to the variable name: spMyPointer.</li>
+
+    <li>These pointers are instantiated using EE_NEW and are
+    destroyed when their reference count reaches 0.</li>
+
+    <li>EE_DELETE (or any delete) should never be used on Smart
+    pointers. To release the reference to a smart pointer object,
+    simply set the smart pointer equal to 0: spMyPointer =
+    0;</li>
+</ul><br>
+
+<h2>Usage</h2>
+
+<p>There are some special template parameters used when dealing
+with the reference counting classes and macros:</p>
+
+<ul>
+    <li>AtomicRefCount - use this parameter if the object will be
+    used from multiple threads.</li>
+
+    <li>NonAtomicRefCount - use this parameter for faster
+    performance, limited to one thread at a time.</li>
+</ul><br>
+
+<table>
+    <thead>
+        <tr>
+            <th>Use case</th>
+
+            <th>Implementation details</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>To reference count an IBase derived class</td>
+
+            <td>
+                <pre>
+class BaseGameService : public efd::ISystemService
+{
+    EE_DECLARE_CONCRETE_REFCOUNT;
+...
+}
+</pre>
+
+                <p>Where EE_DECLARE_CONCRETE_REFCOUNT is defined
+                as:</p>
+                <pre>
+#define EE_DECLARE_CONCRETE_REFCOUNT \
+    EE_DECLARE_CONCRETE_REFCOUNT_EX(efd::NonAtomicRefCount)
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>For fast-performance, single-threaded
+            ref-counting</td>
+
+            <td>
+                <pre>
+class MyRefCountClass : public RefCountObject&lt;NonAtomicRefCount&gt;
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>To define an abstract class that supports
+            reference counting</td>
+
+            <td>
+                <pre>
+class EE_EFD_ENTRY IMyBaseClass: public MemObject
+{
+    EE_DECLARE_ABSTRACT_REFCOUNT
+    ...
+}
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>To forward the implementation of the reference
+            counting to a parent class. Use in classes that use
+            multiple inheritance from efd::IBase where at least
+            one base class already has a concrete reference
+            count.</td>
+
+            <td>
+                <pre>
+class MyRefCountedClass : public BaseClassOne, public BaseClassWithConcreteRefCounting
+{
+    EE_DECLARE_FORWARDED_CONCRETE_REFCOUNT(BaseClassWithConcreteRefCounting)
+    ...
+}
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>Create a reference counted MemObject class from a
+            base class that is not reference counted or a
+            MemObject</td>
+
+            <td>
+                <pre>
+typedef efd::RefCountedMemObj&lt;MyClass&gt; MyRefCountedMemObjectClass;
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>Declare a smart pointer type for your ref counted
+            class</td>
+
+            <td>
+                <pre>
+typedef efd::SmartPointer&lt;BaseGameService&gt; BaseGameServicePtr;
+</pre>
+            </td>
+        </tr>
+    </tbody>
+</table><br>
+
+<table>
+    <thead>
+        <tr>
+            <th>For more information about...</th>
+
+            <th>See...</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Introduction to Foundation Programming</td>
+
+            <td><a href=
+            "../Introduction_to_Foundation_Programming.htm">Foundation
+            Programming: Introduction</a></td>
+        </tr>
+
+        <tr>
+            <td>The Foundation Run-Time Type Information (RTTI)
+            system</td>
+
+            <td><a href="foundation_rtti.htm">Foundation
+            RTTI</a></td>
+        </tr>
+
+        <tr>
+            <td>Foundation smart pointers</td>
+
+            <td><a href=
+            "../../Reference/efd/efd__SmartPointer.htm">efd::SmartPointer
+            class</a></td>
+        </tr>
+
+        <tr>
+            <td>Foundation reference counting macro reference
+            documentation</td>
+
+            <td><a href="../../Reference/Macros/efd_macros_reference_counting.htm">Foundation Macros</a></td>
+        </tr>
+
+        <tr>
+            <td>Foundation classes related to reference
+            counting</td>
+
+            <td><a href=
+            "../../Reference/efd/efd__IBase.htm">efd::IBase</a><br>
+            <a href=
+            "../../Reference/efd/efd__RefCountObject.htm">efd::RefCountObject</a><br>
+            <a href=
+            "../../Reference/efd/efd__RefCounted.htm">efd::RefCounted</a><br>
+            <a href=
+            "../../Reference/efd/efd__RefCountedMemObj.htm">efd::RefCountedMemObj</a><br>
+            <a href=
+            "../../Reference/efd/efd__AtomicRefCount.htm">efd::AtomicRefCount</a><br>
+            <a href=
+            "../../Reference/efd/efd__NonAtomicRefCount.htm">efd::NonAtomicRefCount</a></td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

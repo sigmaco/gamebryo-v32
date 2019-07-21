@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Per-mesh Rendering code</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Per-mesh Rendering code</h1>
+
+<p>The following portions of code are from the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9Renderer.htm">NiDX9Renderer</a></span>::<span class=
+"NDLSystemFont">Do_RenderMesh</span> function, and detail the interaction between the renderer and
+the shader interface. Even though the NiDX9Renderer is used as an example, the other renderers
+follow a similar path when using the shaders. Some code has been removed or simplified in order to
+give a clearer perspective on how rendering interacts with the shader system.</p>
+
+<p><span class="NDLSystemFont">PreProcessPipeline</span> function called, as follows:</p>
+
+<p><span class="NDLSystemFont">uiRet = pkShader-&gt;PreProcessPipeline(kRCC);</span></p>
+
+<p>The <span class="NDLSystemFont">NiD3DShader</span> class will perform the following actions
+during this function: If the <span class="NDLSystemFont">UsesNIRenderState</span> flag is set, it
+will call <span class="NDLSystemFont">NiD3DRenderState::UpdateRenderState</span> with the given
+<span class="NDLSystemFont">NiPropertyState</span>. If there is a 'global' render state group in
+the shader, this render state group will also be set. The renderer checks the return value, and if
+it is not equal to zero, the <span class="NDLSystemFont">Do_RenderMesh</span> function returns.</p>
+
+<p><span class="NDLSystemFont">UpdatePipeline</span> is then called, as follows:</p>
+
+<p><span class="NDLSystemFont">uiRet = pkShader-&gt;UpdatePipeline(kRCC);</span></p>
+
+<p>The base implementation of <span class="NDLSystemFont">NiD3DShader</span> does nothing in this
+function. The legacy default shader, <span class="NDLSystemFont">NiD3DDefaultShader</span>,
+however, performs the complete setup of the rendering effect during this call. Most shaders,
+however, do not have this level of functionality, and will not perform much work in this
+function.</p>
+
+<p>The next call made is <span class="NDLSystemFont">FirstPass</span>, as follows:</p>
+
+<p><span class="NDLSystemFont">unsigned int uiRemainingPasses =
+pkShader-&gt;FirstPass();</span></p>
+
+<p>This function sets the <span class="NDLSystemFont">NiD3DShader::m_uiCurrentPass</span> value to
+0, and the <span class="NDLSystemFont">NiD3DShader::m_spCurrentPass</span> pointer to the first
+pass in its array. It returns the number of passes required for the shader effect, which is used by
+the renderer to loop over the passes and render, with the following loop:</p>
+<pre>
+while (uiRemainingPasses != 0)
+{
+    // contents described below in the per-pass rendering code section
+}
+</pre>
+
+<p>Once all passes have been processed for the current mesh, the renderer will make the following
+call:</p>
+
+<p><span class="NDLSystemFont">pkShader-&gt;PostProcessPipeline(kRCC);</span></p>
+
+<p>In the <span class="NDLSystemFont">NiD3DShader</span> implementation, this function will restore
+the 'global' render states in this function.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="Per_Pass_Rendering_code.htm">Per-pass Rendering code</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

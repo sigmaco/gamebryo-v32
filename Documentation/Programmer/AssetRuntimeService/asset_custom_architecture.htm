@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Architectural Choices Related to New Asset Types</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Architectural Choices Related to New Asset Types</h1>
+
+<p>There are a few different ways to manage the loading of a new asset type. We can refer to these
+implementation approaches as "Service-centric" and "Entity-centric." In both cases we are referring
+to the code that interfaces to the <a href="asset_load_svcs_how_work.htm">Asset Factory
+Manager</a>, sending asset load requests and handling asset load responses.</p>
+
+<h2>Service-centric Asset Loading</h2>
+
+<p>In the service-centric approach, you create a new system service that will manage the loading,
+and perhaps the caching, for your newly defined asset data. If your assets are associated with
+entities, then the system service will interface with the Scheduler (<span class=
+"NDLSystemFont"><a href="../../Reference/egf/egf__Scheduler.htm">egf::Scheduler</a></span>) and
+Entity Manager (<span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a></span>) services to attach to
+the entities. The basic program flow is that your new service subscribes to entity discovery
+messages to find new entities that will use your asset type. When your service sees one of these
+entities get created, it handles the loading of the asset. It will most likely also create an
+association between the entity and the asset. That way, the lifecycle of each may be coordinated
+with the other. This approach is most practical when only a small number of entities (if any)
+require the asset, and when there are simplicity gains with having a central service that can
+handle "<span class="NDLSystemFont">OnTick</span>" for all of the assets of this type.</p>
+
+<h2>Entity-centric Asset Loading</h2>
+
+<p>In the entity-centric approach, you create a new built-in model type that is mixed in with any
+entities that will utilize your new asset type. Your built-in model object gets instanced along
+with each entity that uses it. So, unlike the service-centric approach, there is an explicit and
+automatic association between the entity and the asset data. Also, the asset data must be managed
+in accordance with the life-cycle of its entity. There is no centralized manager of the asset data
+as in the service-centric approach. This approach is most practical when each entity can easily
+contain all the requisite functionality needed to manage its asset, and when it is likely that the
+game will create many entities that refer to your new asset type.</p>
+
+<p>One significant issue with the entity-centric approach is the lack of caching support when there
+is no central service managing the assets. This makes it inappropriate for large assets that are
+frequently re-used. A workaround in this case is a hybrid of the two approaches above. This gives
+you the option of having a centralized system service that handles certain management functions for
+your asset (for example, caching or pre-loading), along with a simple built-in model that
+associates the asset data with each entity and controls its life-cycle. If you pursue the hybrid
+approach, consider using reference counting so that both the system service and the built-in model
+can easily retain references to a single in-memory copy of your asset.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_customize_asset_loaders.htm">Adding New Asset Types</a></li>
+
+    <li><a href="asset_custom_factory.htm">Creating a New Asset Factory</a></li>
+
+    <li><a href="asset_custom_metadata.htm">Adding New Asset Types to Metadata</a></li>
+
+    <li><a href="asset_custom_rapid_iteration.htm">Rapid Iteration Support for New Asset
+    Types</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

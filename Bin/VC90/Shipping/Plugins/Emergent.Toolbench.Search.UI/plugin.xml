@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<plugin
+  xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+  name="Search UI"
+  id="Emergent.Toolbench.Search.UI"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies"
+  class="Emergent.Toolbench.Search.UI.Plugin">
+
+  <extension-point id="Emergent.Toolbench.Search.UI.SearchOptions.FileFilter"
+                   schema="Schemas\ExtPoint-SearchOptions.FileFilter.xsd"/>
+
+  <extension-point id="Emergent.Toolbench.Search.UI.FindResults.DoubleClickHandler"
+                   schema="Schemas\ExtPoint-FindResults.DoubleClickHandler.xsd"/>
+
+  <extension point="Emergent.Toolbench.Search.UI.SearchOptions.FileFilter">
+    <file-filter persist-key="egt.findinfiles.allfiles"
+                 filter="*"
+                 priority="100"/>
+  </extension>
+
+  <!-- Using the View extension point defined in the Workbench plug-in, add a new view. -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.Search.UI.Views.FindResultsView"
+          name="Find Results"
+          class="Emergent.Toolbench.Search.UI.Views.FindResultsView"
+          default-dock="DockBottom"
+          default-visible="false"
+          icon="Icons/ViewIcon_FindResults.png"/>
+  </extension>
+
+  <!-- Once we defined a view, we need to map it to a perspective. -->
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.Workbench.GlobalPerspective">
+      <view id="Emergent.Toolbench.Search.UI.Views.FindResultsView"/>
+    </mapping>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+
+    <!-- Global Actions - Always available -->
+    <actionset label="Find in Files"
+               visible="true"
+               id="Emergent.Toolbench.Search.UI.GlobalActionSet">
+
+      <separator path="Edit" priority="1000"/>
+      
+      <menuitem id="Emergent.Toolbench.Search.UI.OpenSearchOptions"
+                action="Emergent.Toolbench.Search.UI.OpenSearchOptions"
+                path="Edit"
+                priority="1100" />
+      
+      <action label="Find in Files"
+              tooltip="Searches for text in files"
+              handler="Emergent.Toolbench.Search.UI.Actions.OpenSearchOptionsAction"
+              id="Emergent.Toolbench.Search.UI.OpenSearchOptions"
+              shortcut="Control, Shift, F"/>
+    </actionset>
+
+  </extension>
+
+  <!-- Once we defined an action set, we need to map it to a perspective. -->
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.Workbench.GlobalPerspective">
+      <actionset id="Emergent.Toolbench.Search.UI.GlobalActionSet"/>
+    </mapping>
+  </extension>
+
+
+  <!--Settings-->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.SearchTerms"
+               path="Search/Find in Files"
+               property-type="String"
+               visible="false">
+        <value></value>
+        <display-name>Search Terms</display-name>
+        <description>Search Terms, separated with \n.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.SearchLocations"
+               path="Search/Find in Files"
+               property-type="String"
+               visible="false">
+        <value></value>
+        <display-name>Search Locations</display-name>
+        <description>Search Locations, separated with \n.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.SearchFilters"
+               path="Search/Find in Files"
+               property-type="String"
+               visible="false">
+        <value></value>
+        <display-name>Search Filters</display-name>
+        <description>Search Filters, separated with \n.</description>
+      </setting>
+
+
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.RegEx"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>false</value>
+        <display-name>Regular Expressions</display-name>
+        <description>Use Regular Expressions for searching files.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.MatchCase"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>false</value>
+        <display-name>Match Case</display-name>
+        <description>Make case-sensitive searches.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.IncludeSubFolders"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>true</value>
+        <display-name>Include Sub-Folders</display-name>
+        <description>Make the search recursive.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.IncludeHiddenFolders"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>false</value>
+        <display-name>Include Hidden Folders</display-name>
+        <description>Search inside hidden folders.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.IncludeHiddenFiles"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>false</value>
+        <display-name>Include Hidden Files</display-name>
+        <description>Search inside hidden files.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.SkipFilesBiggerThan"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>true</value>
+        <display-name>Skip Files Bigger Than</display-name>
+        <description>Ignore files that are bigger than the specified maximum size.</description>
+      </setting>
+
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.MaxFileSize"
+               path="Search/Find in Files"
+               property-type="String"
+               visible="false">
+        <value>512</value>
+        <display-name>Maximum File Size</display-name>
+        <description>Maximum File Size, in kb. Applies only if the 'Skip Files Bigger Than' setting is on.</description>
+      </setting>
+
+      <!-- "Find in Files" window size and position -->
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.Window.Width"
+               path="Search/Find in Files"
+               property-type="Integer"
+               visible="false">
+        <value>-10000</value>
+        <display-name>Window Width</display-name>
+        <description>Width of the Find in Files window, in pixels.</description>
+      </setting>
+      <setting scope="PerUser"
+                 id="Emergent.Toolbench.Search.UI.FindInFiles.Window.X"
+                 path="Search/Find in Files"
+                 property-type="Integer"
+                 visible="false">
+        <value>-10000</value>
+        <display-name>Window X</display-name>
+        <description>Horizontal position of the Find in Files window, in pixels, relative to the main window.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.Window.Y"
+               path="Search/Find in Files"
+               property-type="Integer"
+               visible="false">
+        <value>-10000</value>
+        <display-name>Window Y</display-name>
+        <description>Vertical position of the Find in Files window, in pixels, relative to the main window.</description>
+      </setting>
+      
+      <!-- Find Results Options -->
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.FindResults.AutoScroll"
+               path="Search/Find in Files"
+               property-type="Boolean"
+               visible="false">
+        <value>true</value>
+        <display-name>Auto Scroll Find Results</display-name>
+        <description>Automatically scroll to the end of the Find Results when new results are displayed.</description>
+      </setting>
+      <setting scope="PerUser"
+                 id="Emergent.Toolbench.Search.UI.FindInFiles.FindResults.FindInTextBoxWindow.X"
+                 path="Search/Find in Files"
+                 property-type="Integer"
+                 visible="false">
+        <value>-10000</value>
+        <display-name>Window X</display-name>
+        <description>Horizontal position of the Find window used to search within the Find Results textbox, in pixels, relative to the main window.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.Search.UI.FindInFiles.FindResults.FindInTextBoxWindow.Y"
+               path="Search/Find in Files"
+               property-type="Integer"
+               visible="false">
+        <value>-10000</value>
+        <display-name>Window Y</display-name>
+        <description>Vertical position of the Find window used to search within the Find Results textbox, in pixels, relative to the main window.</description>
+      </setting>
+
+    </settings>
+  </extension>
+
+
+  <!-- Dependencies -->
+  <requires>
+    <import plugin="Emergent.Toolbench.Actions"/>
+    <import plugin="Emergent.Toolbench.Framework"/>
+    <import plugin="Emergent.Toolbench.Search"/>
+    <import plugin="Emergent.Toolbench.Settings"/>
+    <import plugin="Emergent.Toolbench.UI"/>
+    <import plugin="Emergent.Toolbench.UI.Common"/>
+    <import plugin="Emergent.Toolbench.UI.Workbench"/>
+  </requires>
+
+  <runtime>Emergent.Toolbench.Search.UI.dll</runtime>
+
+</plugin>

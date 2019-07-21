@@ -1,0 +1,415 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Overview of NiControllerManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Overview of NiControllerManager</h1>
+
+<h2>Introduction</h2>
+
+<p>An <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> controls
+<a href="Animation_Sequences.htm">animation sequences</a> on a
+specific "character" or branch of the scene graph. As such, it
+provides the ability to activate, deactivate, and blend sequences
+in a variety of ways to produce smooth animation on the
+character. <span class="NDLSystemFont"><a href=
+"NiSequenceData.htm">NiSequenceData</a></span> objects, stored in
+KF files, are added to the controller manager for future playback
+of the contained animation sequences. An <span class=
+"NDLSystemFont"><a href=
+"NiControllerSequence.htm">NiControllerSequence</a></span> is
+temporarily created upon activation (i.e. playback) of a
+registered <span class="NDLSystemFont">NiSequenceData</span>.
+This <span class="NDLSystemFont">NiControllerSequence</span>
+represents the active animation on the character and is destroyed
+or <a href=
+"NiControllerManager.htm#Sequence_Recycling">recycled</a> shortly
+after the active sequence runs to completion.</p>
+
+<p>Each <span class="NDLSystemFont">NiControllerSequence</span>
+owns an <span class="NDLSystemFont"><a href=
+"NiPoseBuffer.htm">NiPoseBuffer</a></span> to which the
+<span class="NDLSystemFont">NiControllerSequence</span> writes
+its animated data for a given instant of time. Effectively, this
+pose buffer contains a time-based snapshot (or pose) of the
+animated sequence. Through the use of helper classes the
+controller manager propagates this snapshot data to the
+appropriate scene graph targets, which ultimately results in an
+animated character. When multiple sequences are simultaneously
+active on the character the controller manager blends the data
+from each pose buffer before distributing the final result to the
+scene graph.</p>
+
+<p>In addition to activating and deactivating sequences, the
+controller manager provides a number of mechanisms to trigger
+smooth transitions from one sequence to another. In short, the
+<span class="NDLSystemFont">NiControllerManager</span> provides a
+high level interface for sequence-based character animation. The
+controller manager and its helper classes handle the low level
+details of time controllers, key data, evaluators, scratch pad
+entries, scene graph attributes, and other animation-based
+entities. This abstraction allows an application to deal with
+animations at the relatively high level of playing sequences at
+the appropriate times on each in-game character.</p>
+
+<p>That said, the <span class="NDLSystemFont"><a href=
+"NiActorManager.htm">NiActorManager</a></span> class builds upon
+<span class="NDLSystemFont">NiControllerManager</span> to provide
+the highest level of abstraction within Gamebryo for controlling
+sequences on characters. In particular, <span class=
+"NDLSystemFont">NiActorManager</span> has additional support for
+playing sequences on an in-game actor via a simple state machine.
+Transitions between sequences in the state machine are defined
+via the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Gamebryo
+Animation Tool</a>. Since <span class=
+"NDLSystemFont">NiActorManager</span> provides a higher level
+interface than <span class=
+"NDLSystemFont">NiControllerManager</span> many developers find
+<span class="NDLSystemFont">NiActorManager</span> is an easier
+starting point for animating actors in their application. See the
+<a href=
+"NiActorManager_An_Easier_Way_to_Control_Animations.htm">NiActorManager
+Overview</a> for more details.</p>
+
+<a name="Helper_Classes" id="Helper_Classes"></a><h2>Helper Classes</h2>
+
+<p>The <span class="NDLSystemFont">NiControllerManager</span>
+makes use of several helper classes to play back animation
+sequences including <span class="NDLSystemFont"><a href=
+"NiPoseBinding.htm">NiPoseBinding</a></span>, <span class=
+"NDLSystemFont"><a href=
+"NiPoseBlender.htm">NiPoseBlender</a></span>, and <span class=
+"NDLSystemFont"><a href=
+"NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span>.
+Since the controller manager primarily works with these classes
+behind the scenes most applications should have minimal
+interaction with these helper objects. Nonetheless, it can be
+beneficial to understand how the underlying system works.</p>
+
+<p>An <span class="NDLSystemFont">NiPoseBinding</span> is
+assigned to the <span class=
+"NDLSystemFont">NiControllerManager</span> upon the manager's
+construction. This <span class=
+"NDLSystemFont">NiPoseBinding</span> assists with mapping (i.e.
+binding) sequence evaluator channels to specific data locations
+within <span class="NDLSystemFont">NiPoseBuffer</span> objects.
+Each active sequence (i.e. <span class=
+"NDLSystemFont">NiControllerSequence</span>) has an associated
+<span class="NDLSystemFont">NiPoseBuffer</span> to which the
+sequence writes its sampled evaluator data for a given update
+time. The <span class="NDLSystemFont">NiPoseBinding</span>
+determines where each piece of data is written. For example, an
+evaluator channel that drives the rotation of an elbow joint
+might be bound to the fifth quaternion in the pose buffer. Once
+bound to this specific location, all active sequences on the
+character will write their elbow rotation value to the fifth
+quaternion in their associated pose buffer. New bindings are
+added to the <span class="NDLSystemFont">NiPoseBinding</span>
+whenever an <span class="NDLSystemFont">NiSequenceData</span>
+containing previously unbound evaluator channels is loaded by the
+controller manager.</p>
+
+<p>There must be a unique <span class=
+"NDLSystemFont">NiPoseBinding</span> for each unique character
+template in an application; however, characters utilizing
+identical 3D models and associated sets of animation sequences
+may share a single <span class=
+"NDLSystemFont">NiPoseBinding</span> as a memory and performance
+optimization. For example, the baby lenguins in the <a href=
+"../../Learn/FullDemos/Lenguins_on_Ice_Overview.htm">Lenguins on
+Ice demo</a> reuse a single <span class=
+"NDLSystemFont">NiPoseBinding</span> since they are all clones of
+a template actor. On the other hand, the lenguin momma has a
+separate <span class="NDLSystemFont">NiPoseBinding</span> since
+this actor uses a different 3D model as well as a different set
+of sequences than the babies.</p>
+
+<p>When multiple sequences are active on a given character the
+controller manager makes use of an <span class=
+"NDLSystemFont">NiPoseBlender</span> to blend the data contained
+in each sequence's pose buffer. The uniform mapping provided by
+the manager's <span class="NDLSystemFont">NiPoseBinding</span>
+allows these sequence-based snapshots to be quickly blended based
+the priority and weight values of each active sequence. The
+<span class="NDLSystemFont">NiPoseBlender</span> writes the final
+blended data to a separate <span class=
+"NDLSystemFont">NiPoseBuffer</span> which is returned to the
+controller manager so the contained data may be distributed to
+the appropriate scene graph targets. See this <a href=
+"Animation_Blending_Overview.htm#Overview_of_Sequence_Blending">section</a>
+in Animation Basics for information regarding sequence
+blending.</p>
+
+<p>The controller manager utilizes an <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> to propagate pose
+buffer data to their targeted interp controllers and scene graph
+nodes. For all practical purposes the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> has become the
+scene graph interface for the <span class=
+"NDLSystemFont">NiControllerManager</span>. During its
+initialization the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> builds an
+internal array which associates pose buffer locations, as defined
+by the manager's <span class=
+"NDLSystemFont">NiPoseBinding</span>, with their target scene
+graph objects. This array is updated in conjunction with the
+<span class="NDLSystemFont">NiPoseBinding</span> as <span class=
+"NDLSystemFont">NiSequenceData</span> objects containing
+previously unbound evaluator channels are loaded by the
+controller manager. As an optimization, transform data items are
+bound directly to their target transform nodes. The remaining
+data items are bound to their target interp controllers.</p>
+
+<p>In addition to mapping pose buffer locations to target
+objects, the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> maintains a
+transform value for the accumulation root when <a href=
+"NiControllerManager.htm#Transformation_Accumulation">transformation
+accumulation</a> is enabled on the character. The <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> is responsible
+for updating the accumulation transform node as animation
+sequences are played.</p>
+
+<h2>Helper Classes</h2>
+
+<p>Although <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> is
+derived from <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span>,
+it does not utilize much of the base class interface. A typical
+application controls in-game characters via <span class=
+"NDLSystemFont">NiControllerManager</span> in the following
+manner:</p>
+
+<ol>
+    <li>Load (or create) a scene graph branch representing the
+    in-game character. 3D models are exported from 3ds max or
+    Maya as Gamebryo NIF files. Refer to <a href=
+    "../../Programmer/General_Topics/Loading_NIF_Files.htm">Loading
+    NIF Files</a> for additional information.</li>
+
+    <li>Create an <span class=
+    "NDLSystemFont">NiControllerManager</span> by specifying the
+    character's scene graph branch via the first parameter in the
+    <a href=
+    "NiControllerManager.htm#Constructors">constructor</a>.
+    Specify true for the second parameter if the character should
+    <a href=
+    "NiControllerManager.htm#Transformation_Accumulation">accumulate
+    transformations</a> on its accum root node.</li>
+
+    <li>Register one or more animation sequences with the
+    character via the <span class=
+    "NDLSystemFont">NiControllerManager</span> loading methods
+    such as <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_adding_sequences">AddSequenceDataFromFile</a></span>
+    or <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_adding_sequences">AddAllSequenceDatasFromFile</a></span>.
+    These functions load <span class="NDLSystemFont"><a href=
+    "NiSequenceData.htm">NiSequenceData</a></span> objects from
+    KF files, which are exported from 3ds max and Maya by the
+    <a href=
+    "../../Reference/Tool_Plug_ins/Controller_Extractor.htm">Controller
+    Extractor plug-in</a>. Additional <span class=
+    "NDLSystemFont">NiSequenceData</span> objects may be added to
+    the <span class="NDLSystemFont">NiControllerManager</span> at
+    a later time as the game progresses. Registered <span class=
+    "NDLSystemFont">NiSequenceData</span> objects can removed
+    from the controller manager to reduce memory usage via
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_removing_sequences">RemoveSequenceData</a></span>.</li>
+
+    <li>Add the character's scene graph branch to the global
+    scene graph representing the in-game world.</li>
+
+    <li>In the main loop which updates and renders the in-game
+    world, call <span class="NDLSystemFont">Update</span> on the
+    root of the global scene graph using the global game time.
+    Since the character's scene graph branch was added to the
+    global scene graph the controller manager's <span class=
+    "NDLSystemFont">Update</span> method will automatically be
+    called during each scene graph traversal. This function
+    causes the evaluators within each active sequence on the
+    character to write their latest values to the pose buffer,
+    blends this data when multiple sequences are active,
+    propagates the composite result to the appropriate scene
+    graph targets, and shuts down any active sequences which have
+    now completed. In essence, the character's scene graph is
+    updated to reflect the latest animation state.</li>
+
+    <li>Although <span class=
+    "NDLSystemFont">NiSequenceData</span> objects have been
+    registered with the character, the character will remain
+    static until one or more of these sequences are activated by
+    the application. <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_activating_sequences">NiControllerManager::ActivateSequence</a></span>
+    should be called to activate (i.e. play) a sequence on the
+    character. Once activated, the sequence will continue to play
+    until deactivated via <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_deactivating_sequences">
+    DeactivateSequence</a></span>.</li>
+
+    <li>After a sequence is actively playing the controller
+    manager can be used to smoothly transition the character to
+    another sequence. These functions include <span class=
+    "NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_cross_fading_two_sequences">
+    CrossFade</a></span>, <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_blend_transitions">BlendFromSequence</a></span>,
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_morph_transitions">Morph</a></span>,
+    and <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Alternate_functions_for_blend_transitions">
+    BlendFromPose</a></span>.</li>
+
+    <li>The activation and transition functions in <span class=
+    "NDLSystemFont">NiControllerManager</span> return a pointer
+    to the newly created <span class="NDLSystemFont"><a href=
+    "NiControllerSequence.htm">NiControllerSequence</a></span>,
+    which represents the active animation. If needed, the
+    application can hold onto this object via a smart pointer or
+    similar reference counting mechanism. This technique provides
+    the application the ability to query and adjust the
+    <span class="NDLSystemFont">NiControllerSequence</span> as
+    required. As described next, the application should register
+    <span class="NDLSystemFont"><a href=
+    "NiSequenceData.htm#Callback_Objects">ActivationCallback</a></span>
+    objects to determine when it should release a held
+    <span class="NDLSystemFont">NiControllerSequence</span>
+    object.</li>
+
+    <li>The application can register for activation events on
+    specific sequences via <span class="NDLSystemFont"><a href=
+    "NiControllerSequence.htm#Functions_related_to_callback_objects">
+    NiControllerSequence::AddActivationCallback</a></span> and
+    <span class="NDLSystemFont"><a href=
+    "NiSequenceData.htm#Functions_related_to_callback_objects">NiSequenceData::AddDefaultActivationCallback</a></span>.
+    The first method adds a callback object to a specific
+    sequence that is already playing. The second function is
+    likely more useful as it sets up a callback object each time
+    a sequence is activated on a specified character or
+    optionally any character. The <span class=
+    "NDLSystemFont"><a href=
+    "NiSequenceData.htm#Callback_Objects">ActivationChanged</a></span>
+    method on the callback object is executed whenever the
+    associated <span class=
+    "NDLSystemFont">NiControllerSequence</span> object is
+    activated, reactivated, or deactivated. This is particularly
+    useful when an application holds references to <span class=
+    "NDLSystemFont">NiControllerSequence</span> objects. These
+    references should be released when the callback signals that
+    the sequence has entered the <span class=
+    "NDLSystemFont"><a href=
+    "NiControllerSequence.htm#NiAnimState">INACTIVE</a></span>
+    state, meaning the sequence no longer affects the
+    character.</li>
+
+    <li>Applications which utilize transformation accumulation
+    might need to set the accumulation transform for the
+    character from time to time. This can be accomplished via
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+    NiControllerManager::SetAccumulatedTransform</a></span>.</li>
+
+    <li>To shut down a character halt all active sequences, and
+    remove the character's scene graph branch from the global
+    scene graph. Character related objects such as <span class=
+    "NDLSystemFont">NiControllerManager</span>, <span class=
+    "NDLSystemFont">NiControllerSequence</span>, and the
+    character's scene graph branch will be destroyed
+    automatically when the application releases its last held
+    reference on these objects. <span class=
+    "NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_removing_actively_playing_sequences">
+    NiControllerManager::RemoveAllSequences</a></span> can be
+    used to remove all <span class=
+    "NDLSystemFont">NiControllerSequence</span> objects from the
+    character. Similarly, <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_removing_sequences">RemoveAllSequenceDatas</a></span>
+    will unregister all its <span class=
+    "NDLSystemFont">NiSequenceData</span> objects. Shutting down
+    a character will be slightly faster if <a href=
+    "NiControllerManager.htm#Sequence_Recycling">sequence
+    recycling</a> is disabled on the character before calling
+    <span class="NDLSystemFont">RemoveAllSequences</span>.</li>
+
+    <li><a href=
+    "NiControllerManager.htm#Sequence_Recycling">Sequence
+    recycling</a> can be controlled through the use of
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm#Functions_for_recycling_sequences">NiControllerManager::SetMaxRecycledSequences</a></span>.
+    Sequence recycling is enabled by default on each character to
+    improve runtime performance and minimize memory fragmentation
+    at the expense of a slightly larger memory footprint.</li>
+
+    <li>As described above in the <a href=
+    "NiControllerManager.htm#Helper_Classes">Helper Classes</a>
+    section, new bindings are added to the <span class=
+    "NDLSystemFont"><a href=
+    "NiPoseBinding.htm">NiPoseBinding</a></span> whenever an
+    <span class="NDLSystemFont"><a href=
+    "NiSequenceData.htm">NiSequenceData</a></span> containing
+    previously unbound evaluator channels is loaded by an
+    <span class="NDLSystemFont"><a href=
+    "NiControllerManager.htm">NiControllerManager</a></span>. The
+    following technique is an optimization which ensures these
+    bindings are fully defined before an application enters its
+    main gameplay loop. Export an <span class=
+    "NDLSystemFont">NiSequenceData</span> from 3ds max or Maya
+    which contains every possible animated channel for the given
+    character. To save space this sequence may be a pose (i.e. a
+    single frame of animation). Load this sequence on the
+    character before the application enters its main gameplay
+    loop. This operation forces the associated <span class=
+    "NDLSystemFont">NiPoseBinding</span> to create bindings for
+    all channels in this sequence. If this sequence contains
+    channels for every animated attribute in the character, the
+    bindings will be fully defined. If additional <span class=
+    "NDLSystemFont">NiSequenceData</span> objects are
+    subsequently loaded by the character, even during gameplay,
+    no additional bindings will be created for the character
+    since they already exist. If the <span class=
+    "NDLSystemFont">NiSequenceData</span> containing every
+    animatable attribute will never be activated during gameplay,
+    it can be removed from the <span class=
+    "NDLSystemFont">NiControllerManager</span> without impacting
+    the character's bindings to save a little memory.</li>
+</ol>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction
+to Animation</a> to read about other animation concepts.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

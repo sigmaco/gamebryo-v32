@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::IniSource</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">efd::IniSource</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="efd__ConfigSource.htm">efd::ConfigSource</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;ConfigSource.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classefd_1_1_ini_source.gif" alt="Inheritance graph for efd::IniSource"/>
+  <p class="FigureCaption">Inheritance graph for efd::IniSource</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Class to read an INI style source and add the information to the master configuration hierarchy, updating any existing values of equal or lower priority. </p>
+<p class="NDLNormal">The INI file can have the standard form:</p>
+<p class="NDLNormal">
+<pre>
+        Name=Value
+        AnotherName=Some Other Value
+        [Section]
+        NameInSection=Some value in the section
+        [Another Section]
+        More Names=For More Values
+         </pre>
+</p>
+<p class="NDLNormal">In order to be able to define a hierarchical configuration, the class provides multiple extensions to the standard INI syntax. You may create a subsection by using dot separated section names as follows:</p>
+<p class="NDLNormal">
+<pre>
+        Name=Value
+        [Section]
+        NameInSection=Some value in the section
+        [Section.SubSection]
+        SubSection Names=SubSection Values
+        [Section.SubSection.SubSubSection]
+        SubSubSection Names=SubSubSection Values
+        [Section.AnotherSubSection]
+        AnotherSubSection Names=AnotherSubSection Values
+         </pre>
+</p>
+<p class="NDLNormal">To make the hierarchy easier to specify, relative section names are supported using curly brackets {}. This method is much less prone to typographical errors and is easier to read. It takes the form:</p>
+<p class="NDLNormal">
+<pre>
+        Name=Value
+        { Section
+            NameInSection=Some value in the section
+            { SubSection
+                SubSection Names=SubSection Values
+                { SubSubSection
+                    SubSubSection Names=SubSubSection Values
+                }
+            }
+            { AnotherSubSection
+                AnotherSubSection Names=AnotherSubSection Values
+            }
+        }
+         </pre>
+</p>
+<p class="NDLNormal">Although both methods may be used in a single file, it is not recommended. However, if they are both used in a single file, [] sections become relative to the {} section that they are in and visa versa.</p>
+<p class="NDLNormal">Another extension to the syntax is used to support linking one entry to another in the hierarchy. The equals sign (=) can be replaced with the greater than sign (&gt;) to create a link. In that case, the value of the entry should specify the name of the other entry or section to link with. This approach effectively enables items to be remapped within the hierarchy. So using the INI sample above, the following line would create a link at the root level to the entry in the SubSubSection:</p>
+<p class="NDLNormal">
+<pre>
+        MyLink&gt;Section.SubSection.SubSubSection.SubSubSection Names
+         </pre>
+</p>
+<p class="NDLNormal">To support include files in the config files, you may use the plus symbol (+) with the name and path of the file to load. Optionally, you may include a section/subsection specifier to the left of the plus sign to load all contents of the file as children of that section. Also, if you are in a section already and load an additional config file, the contents will also become children of that section. So in general you should load additional config files at the beginning of the file to prevent them from being added as children of another section. Finally, the last section of an additional file being loaded does not affect the rest of the contents of the current file being loaded. Examples to clarify include:</p>
+<p class="NDLNormal">
+<pre>
+        Config.ini
+        +Config2.ini
+        [MyExtraConfigs]
+        +ExtraConfigs.ini
+        [OtherSettings]
+        Something=SomeValue
+         </pre>
+</p>
+<p class="NDLNormal">
+<pre>
+        Config2.ini
+        NameFrom2=ValueFrom2
+        [SectionFrom2]
+        AnotherNameFrom2=AnotherValueFrom2
+         </pre>
+</p>
+<p class="NDLNormal">
+<pre>
+        ExtraConfigs.ini
+        NameFromExtra=ValueFromExtra
+        [SectionFromExtra]
+        AnotherNameFromExtra=AnotherValueFromExtra
+         </pre>
+</p>
+<p class="NDLNormal">
+<pre>
+        Should result in the equivalent configuration file
+        NameFrom2=ValueFrom2
+        [SectionFrom2]
+        AnotherNameFrom2=AnotherValueFrom2
+        [MyExtraConfigs]
+        NameFromExtra=ValueFromExtra
+        [MyExtraConfigs.SectionFromExtra]
+        AnotherNameFromExtra=AnotherValueFromExtra
+        [OtherSettings]
+        Something=SomeValue
+         </pre>
+</p>
+<p class="NDLNormal">So you can see that the fact that a section is defined in Config2.ini does not affect the hierarchy of sections in the originally config file. Also, see that the ExtrsConfig.ini contents ended up as children of the MyExtraConfigs section because that was the current section when the include was specified.</p>
+<p class="NDLNormal">This class is a system service. </p>
+
+<a name="public_static_attributes"></a>
+<p class="NDLRefHead1">Public Static Attributes</p>
+
+
+<a name="classefd_1_1_ini_source_1a2b36d130e47e343a51e2dc84ad3fe129"></a>
+<p class="NDLRefMemberFunction">static const char  kCommentChar</p>
+<p class="NDLRefMemberDetailedDescription">Comment character - must be the first none whitespace character. </p>
+
+<a name="classefd_1_1_ini_source_1a5ce34ac14eb8653c8e10a1bfb59d1886"></a>
+<p class="NDLRefMemberFunction">static const char  kSectionRelativeOpenChar</p>
+<p class="NDLRefMemberDescription">Character to open a relative section. </p>
+
+<a name="classefd_1_1_ini_source_1a14cf629223d222503322692386794427"></a>
+<p class="NDLRefMemberFunction">static const char  kSectionRelativeCloseChar</p>
+<p class="NDLRefMemberDescription">Character to close a relative section. </p>
+
+<a name="classefd_1_1_ini_source_1a1693156b9793f0444632f7497f207653"></a>
+<p class="NDLRefMemberFunction">static const char  kSectionAbsoluteOpenChar</p>
+<p class="NDLRefMemberDescription">Character to open an absolute section header. </p>
+
+<a name="classefd_1_1_ini_source_1a4b10a49be3ecb5a8a397ae7cb1612966"></a>
+<p class="NDLRefMemberFunction">static const char  kSectionAbsoluteCloseChar</p>
+<p class="NDLRefMemberDescription">Character to close an absolute section header. </p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classefd_1_1_ini_source_1a34f9f902453b2c020040977feec386a9"></a>
+<p class="NDLRefMemberFunction">IniSource(const <span class="NDLSystemFont"><a href="efd__utf8string.htm">efd::utf8string</a></span>& strFileName)</p>
+<p class="NDLRefMemberDescription">Constructor for the INI file source. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">strFileName</span></td>
+    <td>Name of file from which to read entries. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_ini_source_1abbf2bcd223958660aa6f223be1c31d45"></a>
+<p class="NDLRefMemberFunction">virtual ~IniSource()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+
+<a name="classefd_1_1_ini_source_1a6a1f7f92ef9c111ec6e5386086d6b636"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  ReadConfiguration(<span class="NDLSystemFont"><a href="efd__IConfigManager.htm">IConfigManager</a></span>* pManager)</p>
+<p class="NDLRefMemberDescription">Reads the source data and add or modifies sections and name/value pairs in the root hierarchy. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pManager</span></td>
+    <td>Pointer to the configuration manager. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the configuration data was read correctly. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

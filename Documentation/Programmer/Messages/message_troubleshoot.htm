@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Troubleshooting messages</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Troubleshooting messages</h1>
+
+<p>If you are not receiving the messages that you are expecting to receive, the
+system log file from your application is a great resource for helping you debug
+the possible causes of the problems.</p>
+
+<p>Emergent recommends the following troubleshooting methods:</p>
+
+<ul>
+    <li>
+        <a name="RegisterTroubleshoot" id="RegisterTroubleshoot"></a>Make sure
+        that your message handler is registered with the Message Service. Look
+        for log entries similar to the following:
+
+        <p class="indent1"><span class=
+        "NDLSystemFont">2008/11/2511:32:20.310|Lvl2|7|||MessageService::RegisterSimpleHandler():
+        Target class id: 0xF8002000, message id: 0x10002002|<br>
+        2008/11/25
+        11:32:20.310|Lvl2|7|||SimpleSubclassHandler::RegisterMessageFactory():
+        Target class id: 0xF8002000, message id: 0x10002002|</span></p>
+
+        <p class="indent1">Where the target class id is the ClassID of the
+        target object, and message id is the exact ClassID of the derived
+        message type that you are expecting to receive.</p>
+
+        <div class="NDLTDNote">
+            <span class="NDLTableNote">Note:</span> ClassID of messages must
+            match exactly. If you wish to handle multiple subclasses of the
+            same message you must register each message ClassID separately.
+            This means that you should see the above line for each exact
+            message ClassID you wish to receive.<br>
+            <br>
+            ClassID of message target can be of any parent or derived class.
+            Make sure when deriving from a class that it does not already
+            handle message ClassID you wish to handle in your derived class.
+            Behavior in the case of registering multiple message target
+            functions for the same message ClassID in the same class hierarchy
+            is not supported and will result in only one of the message target
+            functions being called. Which message target function that gets
+            called is undefined and may change based on compile target and
+            configuration as it will be determined by order of initialization
+            of static variables. (See highlighted sections in the code passage
+            immediately below.)
+        </div>
+        <pre>
+class A
+{
+public:
+    virtual void HandleSreamMessage(
+        const efd::StreamMessage* pMessage,
+        efd::Category targetChannel);
+};
+class B : public A
+{
+public:
+    virtual void HandleSreamOtherMessage(
+        const efd::StreamMessage* pMessage,
+        efd::Category targetChannel);
+};
+
+// Fine because there is only one message target function in the hierarchy registered
+// for the ClassID kMSGID_ApplicationSpecificMessage.
+EE_HANDLER_WRAP(
+    A, // The class that will handle the message
+    HandleSreamMessage, // The member method that will handle the message
+    efd::StreamMessage, // The message class and also the parameter to the handler method
+    kMSGID_ApplicationSpecificMessage); //  The message class id to pass to MessageWrapper
+
+<span class="CodeHighLight">//BAD</span>
+// This will cause undefined behavior because class A already handles ClassID 
+// kMSGID_ApplicationSpecificMessage. Since A::HandleSreamMessage is virtual
+// overriding it will provide the desired behavior instead.
+EE_HANDLER_WRAP(
+    B, // The class that will handle the message
+    HandleSreamOtherMessage, // The member method that will handle the message
+    efd::StreamMessage, // The message class and also the parameter to the handler method
+    kMSGID_ApplicationSpecificMessage); //  The message class id to pass to MessageWrapper
+<span class="CodeHighLight">// END BAD</span>
+
+            
+</pre>
+    </li>
+
+    <li>Make sure that you are subscribing to the category or categories that
+    the message is sent to. Look for log entries similar to the following:
+
+        <p class="indent1"><span class="NDLSystemFont">2008/11/25
+        11:32:20.341|Lvl2|7|||Actually Subscribing:
+        &lt;Category=kCAT_LocalMessage(0xC000001F3FF00005)&gt; target
+        0x00DCBB24 target class id: 0xF8002000</span></p>
+
+        <p class="indent1">Where the target is the IBase pointer to the target
+        object. The target class id should match the id from the step 1. This
+        example is for the Local Message category, but you should look for the
+        category that your message is sent onto.</p>
+    </li>
+
+    <li>Once you have verified that your handler for the message is registered
+    and you are subscribing to the category that the message is sent onto, look
+    for trace messages for the message type that indicate when it is sent such
+    as below:
+
+        <p class="indent1"><span class="NDLSystemFont">2008/11/25
+        11:32:21.435|Lvl0|10|||&lt;MsgType=?(0x10002002)&gt;: 0x0000260D|
+        SendLocalDelayed with delay 3.000 yielding time 4.191|</span></p>
+    </li>
+
+    <li>If you are trying to exchange messages over network, you also need to
+    make sure that all the communicating systems are connected to the Channel
+    Manager and the subscription information has been exchanged. Look for the
+    following message in the log files on all systems:
+
+        <p class="indent1"><span class="NDLSystemFont">2008/11/25
+        11:32:21.357|Lvl1|13|||CM Received ResubscribeComplete message from
+        &lt;ConnID=0x7F000001,13215,4832,qos=262&gt;|<br>
+        2008/11/25 11:32:21.357|Lvl1|8|||NetService notifying connection of
+        &lt;ConnID=0x7F000001,13215,4832,qos=262&gt;|</span></p>
+    </li>
+
+    <li>Another useful tool for debugging messages is the unique message
+    instance ID (<span class=
+    "NDLSystemFont">efd::IMessage::GetUniqueIdentifier</span>) which can be
+    used to track the progress of the exact message instance even over the
+    network.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="message_overview.htm">Messages overview</a></li>
+
+    <li><a href="message_features.htm">Message features</a></li>
+
+    <li><a href="message_how_work.htm">How messages work</a></li>
+
+    <li><a href="message_limitations.htm">Message limitations</a></li>
+
+    <li><a href="message_how_relates_efr.htm">How messages relate to the
+    Emergent Game Framework</a></li>
+
+    <li><a href="message_reqs.htm">Requirements for working with
+    messages</a></li>
+
+    <li><a href="message_best_practice.htm">Best practices for working with
+    messages</a></li>
+
+    <li><a href="message_using.htm">Using messages</a></li>
+
+    <li><a href="message_reference.htm">Message reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

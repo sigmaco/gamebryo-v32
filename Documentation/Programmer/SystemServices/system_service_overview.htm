@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>System services overview</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>System services overview</h1>
+
+<p>A system service is a functional module that is designed to share compute cycles with other
+system services. A typical application that is based on the Emergent Game Framework is composed of
+one or more system services. A system service should be responsible for one functional area of the
+application. Examples of systems services include the <span class="NDLSystemFont"><a href=
+"../../Reference/efdLogService/efd__LogService.htm">efd::LogService</a></span>, the <span
+class="NDLSystemFont"><a href="../../Reference/egf/egf__Scheduler.htm">egf::Scheduler</a></span>,
+and the <span class="NDLSystemFont"><a href="../../Reference/efd/efd__MessageService.htm">
+efd::MessageService</a></span>.</p>
+
+<h3>efd::ServiceManager</h3>
+
+<p>All system services are registered with the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></span> singleton. The job of
+the Service Manager is to manage the lifetime events for every system service in the application.
+(Note: this is not to be confused with managing game lifetime state, that is a higher level
+concept.) The Service Manager maintains information about service dependencies and priorites which
+determins the order in which services are initialized, ticked and shutdown.</p>
+
+<h3>efd::ISystemService</h3>
+
+<p>Every system service implements the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></span> interface, which
+defines lifetime methods that are called at specific times during the life of the service:</p>
+
+<ul>
+    <li>OnPreInit</li>
+
+    <li>OnInit</li>
+
+    <li>OnTick</li>
+<a href=
+"../../Reference/QuickRef_Services/images/SystemServiceDependencies.png">Service dependency
+diagram</a>
+    <li>OnShutdown</li>
+</ul>
+
+<p>One of these methods is invoked on a service each framework cycle, depending on the lifetime
+state of that service. Different services can be at different lifetime stages. Several methods
+return an asynchronous result, allowing service lifetime states to span multiple framework cycles.
+</p>
+
+<h4>OnPreInit</h4>
+
+<p>The <span class="NDLSystemFont">OnPreInit</span> lifetime method is called after the system
+service is registered with the Service Manager but before <span class="NDLSystemFont">OnInit</span>
+is called. This allows the system service to perform any synchronous initialization steps that are
+independent of all other services.</p>
+
+<p>Other system services may exist in this state, but you cannot depend on them being in a ready
+state. You should not call methods on other system services during <span class="NDLSystemFont">
+OnPreInit</span> unless those methods are specifically documented as being callable during <span
+class="NDLSystemFont">OnPreInit</span>. If your system service relies on the existence of another
+system service, you should register that dependency during <span class="NDLSystemFont">OnPreInit
+</span> and then wait until <span class="NDLSystemFont">OnInit</span> to interact with the other
+service. One important exception to this rule is the <a href=
+"../../Reference/efd/efd__ConfigManager.htm">efd::ConfigManager</a>, which can be used during <span
+class="NDLSystemFont">OnPreInit</span> to read configuration settings.</p>
+
+<h4>OnInit</h4>
+
+<p>The <span class="NDLSystemFont">OnInit</span> lifetime method is called after the Service Manager
+has called <span class="NDLSystemFont">OnPreInit</span> but before the first <span
+class="NDLSystemFont">OnTick</span> call is made. All services for which you expressed a dependency
+during <span class="NDLSystemFont">OnPreInit</span> will be fully initialized before your <span
+class="NDLSystemFont">OnInit</span> method is first called. It is safe to call all methods on these
+system services in the <span class="NDLSystemFont">OnInit</span> method, but service that you do not
+depend on may not be initialized yet. It is possible for many ticks to pass between <span
+class="NDLSystemFont">OnPreInit</span> and the first call to <span class="NDLSystemFont">OnInit
+</span> as the Service Manager initialize the dependent services. Once <span class="NDLSystemFont">
+OnInit</span> is completed, the system service will begin to receive <span class="NDLSystemFont">
+OnTick</span> calls begining on the next frame even though other services may still be initializing.
+</p>
+
+<h4>OnTick</h4>
+
+<p>The <span class="NDLSystemFont">OnTick</span> lifetime method is called once per framework cycle
+after the system service <span class="NDLSystemFont">OnInit</span> method completes successfully.
+This method implements the work done by the system service. The majority of a system services
+lifetime is spent in <span class="NDLSystemFont">OnTick</span>. The Service Manager will continue to
+call <span class="NDLSystemFont">OnTick</span> for the system service every cycle for as long as the
+system service returns <span class="NDLSystemFont">AsyncResult_Pending</span> from <span class=
+"NDLSystemFont">OnTick</span>.</p>
+
+<h4>OnShutdown</h4>
+
+<p>The <span class="NDLSystemFont">OnShutdown</span> lifetime method is called when the Service
+Manager is preparing to shut down. Any clean up required by the system service happens in this
+method. If you hold any references to other system services or shared resources, they should be
+released during <span class="NDLSystemFont">OnShutdown</span>. All services that your service
+depends on will continue to tick until your service completes <span class="NDLSystemFont">OnShutdown
+</span>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+    <li><a href="system_service_features.htm">System service features</a></li>
+    <li><a href="system_service_how_work.htm">How system services work</a></li>
+    <li><a href="system_service_priority_and_dependency.htm">Understanding System Service Priorities
+        and Dependencies</a></li>
+    <li><a href="system_service_limitations.htm">System service limitations</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the
+        Emergent Game Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_best_practice.htm">Best practices for working with 
+        system services</a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_log_svc.htm">Log Service Quick
+        Reference</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_msg_svc.htm">Message Service Quick
+        Reference</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_scheduler.htm">Scheduler Quick
+        Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

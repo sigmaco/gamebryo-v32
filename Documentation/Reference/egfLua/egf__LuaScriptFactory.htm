@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>egf::LuaScriptFactory</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">egf::LuaScriptFactory</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../egf/egf__IScriptFactory.htm">egf::IScriptFactory</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;LuaScriptFactory.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classegf_1_1_lua_script_factory.gif" alt="Inheritance graph for egf::LuaScriptFactory"/>
+  <p class="FigureCaption">Inheritance graph for egf::LuaScriptFactory</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">A factory for Lua behavior script files. </p>
+<p class="NDLNormal">The <span class="NDLSystemFont">LuaScriptFactory</span> loads a Lua script from disk, calculates dependencies, and then loads the script file content and its dependencies into memory. Script load requests are made using a <span class="NDLSystemFont"><a href="../egf/egf__ScriptFactoryRequest.htm">ScriptFactoryRequest</a></span> message. The resulting file content is returned using a <span class="NDLSystemFont"><a href="../egf/egf__ScriptFactoryResponse.htm">ScriptFactoryResponse</a></span> message.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">LuaScriptFactory</span> loads dependent script data based on the 'require' and 'dofile' keywords. It performs a depth-first search of these dependencies to ensure scripts are loaded in the correct order: from least dependent to most dependent.</p>
+<p class="NDLNormal">Callers to <span class="NDLSystemFont"><a href="egf__LuaScriptFactory.htm#classegf_1_1_lua_script_factory_1a8d0ea9fe1ab70b7cdee02a2ea386e349">LuaScriptFactory::LoadAsset</a></span> are responsible for looking up and setting the asset path to the underlying Lua script file in the <span class="NDLSystemFont"><a href="../egf/egf__ScriptFactoryRequest.htm">ScriptFactoryRequest</a></span>.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">LuaScriptFactory</span> is not typically called directly. Instead, it responds to a request from the AssetFactoryManager to load a particular asset. The AssetFactoryManager is responsible for locating the fully qualified path using the provided URN and setting this value in the <span class="NDLSystemFont"><a href="../egf/egf__ScriptFactoryRequest.htm">ScriptFactoryRequest</a></span> object.</p>
+<p class="NDLNormal">The caller is responsible for allocating and deallocating the <span class="NDLSystemFont"><a href="../egf/egf__ScriptFactoryRequest.htm">ScriptFactoryRequest</a></span>.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">LuaScriptFactory</span> allocates the response, it is the callers responsibility to deallocate it.</p>
+<p class="NDLNormal">The <span class="NDLSystemFont">LuaScriptFactory</span> does not add the resulting Lua script files to the Lua runtime system. The caller is responsible for doing so if required.</p>
+<p class="NDLNormal">A Lua script load goes through several stages: </p>
+<ol>
+<li>Load the Lua script file. </li>
+<li>Calculate dependencies for the current script. </li>
+<li>Locates these dependencies. </li>
+<li>For each dependency, calculate its dependencies and load them. </li>
+<li>Once all dependencies are loaded, the load is complete and response is ready. </li></ol>
+<p class="NDLNormal">Failure to load a dependent module file results in an elr_PartialSuccess result status. A module can fail to load for several reasons that may not be fatal. For example, the module is loaded from a shared library, the module is statically bound at initialization, the module was pre-loaded from a static memory buffer, etc. The <span class="NDLSystemFont">LuaScriptFactory</span> does not have access to the main thread Lua runtime to check for these conditions.</p>
+<p class="NDLNormal">
+<p class="NDLNormal">The <span class="NDLSystemFont"><a href="../egf/egf__WorldFactory.htm">WorldFactory</a></span> is available in the background thread only. </p></p>
+
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="classegf_1_1_lua_script_factory_1a9a8f79b5620cd0bed5b858df17310bc3"></a>
+<p class="NDLRefMemberFunction">LuaScriptFactory(<span class="NDLSystemFont"><a href="../efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span>* pFactoryManager)</p>
+<p class="NDLRefMemberDescription">Construct a new <span class="NDLSystemFont">LuaScriptFactory</span>. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pFactoryManager</span></td>
+    <td>The factory manager associated with this factory. Used to locate dependent scripts. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegf_1_1_lua_script_factory_1ad350d11422f632c4ebe34f8ce2fe9c0a"></a>
+<p class="NDLRefMemberFunction">~LuaScriptFactory()</p>
+<p class="NDLRefMemberDescription">Destructor. </p>
+<a name="iassetfactory_interface"></a>
+<p class="NDLRefHead1">IAssetFactory interface</p>
+
+
+<a name="classegf_1_1_lua_script_factory_1a8d0ea9fe1ab70b7cdee02a2ea386e349"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__IAssetFactory.htm#classefd_1_1_i_asset_factory_1a0724c480863f94648ecba9d81c98b262">efd::IAssetFactory::LoadStatus</a></span>  LoadAsset(<br/><span class="NDLSystemFont"><a href="../efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span>* manager, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetLoadRequest.htm">efd::AssetLoadRequest</a></span>* pRequest, <br/><span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">efd::AssetLoadResponsePtr</a></span>& pResponse)</p>
+<p class="NDLRefMemberDescription">Load a Lua script and any dependent scripts. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">manager</span></td>
+    <td>AssetFactoryManager that owns this factory. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pRequest</span></td>
+    <td>The request message for this factory. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pResponse</span></td>
+    <td>The response to this load request, allocated by this factory. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>IAssetFactory::LoadStatus the status of this load request. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegf_1_1_lua_script_factory_1ab9d21e7388f46308e46a33025ab4c9b5"></a>
+<p class="NDLRefMemberFunction">virtual void  Shutdown()</p>
+<p class="NDLRefMemberDescription">Cleanup open resources. </p>
+
+<a name="classegf_1_1_lua_script_factory_1a0f9eb7c0731b1b8f1b2cba4c2249ee24"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../efd/efd__IAssetFactory.htm#classefd_1_1_i_asset_factory_1a2f4ee7b12ae60252047e3c5e5c11bac4">efd::IAssetFactory::ThreadSafetyDescription</a></span>  GetThreadSafety() const</p>
+<p class="NDLRefMemberDescription">Return the thread safety description for this loader. </p>
+<a name="iscriptfactory_interface"></a>
+<p class="NDLRefHead1">IScriptFactory interface</p>
+
+
+<a name="classegf_1_1_lua_script_factory_1af7222dd04eb991ecd2388fcc9231d25c"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/egf.htm#namespaceegf_1addeb6c47daeb31df2cb1531e64d65df2">egf::BehaviorTypes</a></span>  GetScriptType() const</p>
+<p class="NDLRefMemberDescription">Get the behavior type supported by this script factory. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>the type of scripted behavior associated with this factory. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

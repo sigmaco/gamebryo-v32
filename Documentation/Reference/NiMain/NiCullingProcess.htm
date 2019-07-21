@@ -1,0 +1,387 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiCullingProcess</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiCullingProcess</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiRefObject.htm">NiRefObject</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiCullingProcess.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiCullingProcess</span> forms the
+core interface of the hierarchical scene culling system. A
+culling process object serves to convert a camera and a scene
+graph into a flat container (<a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>) of visible geometry. 
+This object is passed through the hierarchical culling traversal,
+and serves not only to implement the culling behavior, but also
+to serve as a holding point for data that must be carried
+throughout the entire culling pass. <a href=
+"NiAVObject.htm"><span class=
+"NDLSystemFont">NiAVObject</span></a> and its subclasses actually
+implement the culling traversal, but <span class=
+"NDLSystemFont">NiCullingProcess</span> implements the culling
+behavior at each node traversed (including the ability to skip
+the traversal of a node and thus any subtree below it).</p>
+
+<p>The abstract base class implements frustum culling; subclasses
+can implement additional or replacement culling behaviors. The
+discussion below includes information that is of use to those who
+would create a subclass of <span class=
+"NDLSystemFont">NiCullingProcess</span>. Note, however, that you
+can not directly subclass <span class=
+"NDLSystemFont">NiCullingProcess</span> since all constructors
+are private. Users must instead subclass from the friend class,
+<span class="NDLSystemFont">NiMeshCullingProcess,</span> to
+insure proper execution of mesh modifiers.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiCullingProcess(<a href=
+"NiVisibleArray.htm">NiVisibleArray</a>* pkVisibleSet, <a href=
+"../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a>*
+pkWorkflowManager)</p>
+
+<p class="NDLRefMemberDescription">This constructor sets the
+internally-held visible array pointer to the passed-in visible
+array. Note that the culling process does not take ownership of
+this visible array, and will not delete it upon deletion of the
+culling process. NULL is a valid value for the pointer to the
+visible array, but if no visible array is passed in to the
+constructor, then one must be attached with <span class=
+"NDLSystemFont">SetVisibleSet</span> prior to calling
+<span class="NDLSystemFont">Process</span>, or else the
+<span class="NDLSystemFont">Process</span> call must include a
+pointer to a valid visible array. It will also set the internal
+camera pointer to NULL and the frustum to a default (zero)
+frustum. These latter members are set automatically within the
+top-level <span class="NDLSystemFont">Process</span> call. The
+workflow manager pointer is simply set to internal storage so the
+base class can return it without virtual function overhead.
+Subclasses should manage the lifetime of that object.</p>
+
+<p class="NDLRefMemberFunction">NiCullingProcess(<a href=
+"NiVisibleArray.htm">NiVisibleArray</a>* pkVisibleSet, <a href=
+"../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a>*
+pkWorkflowManager, bool bUseVirtualAppend)</p>
+
+<p class="NDLRefMemberDescription">This protected constructor is
+only used when declaring subclasses of <span class=
+"NDLSystemFont">NiCullingProcess</span> via <span class=
+"NDLSystemFont">NiMeshCullingProcess</span>. This constructor
+allows subclasses to set the value of the const member variable
+<span class="NDLSystemFont">m_bUseVirtualAppend</span> to true. 
+All other members are set in the same manner as the above
+constructor. See the "Subclassing <span class=
+"NDLSystemFont">NiCullingProcess</span>" notes section below for
+details.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p>Note that unlike some other Gamebryo class references, some of
+the member functions listed below are protected. They are listed
+to provide insight to the user on what methods to override when
+creating subclasses of <span class=
+"NDLSystemFont">NiCullingProcess</span>. Protected members will
+be referenced as such in the documentation to avoid
+confusion.</p>
+
+<p class="NDLRefHead2">Culling Functions</p>
+
+<p class="NDLRefMemberFunction">void Cull(const <a href=
+"NiCamera.htm">NiCamera</a>* pkCamera, <a href=
+"NiAVObject.htm">NiAVObject</a>* pkScene, <a href=
+"NiVisibleArray.htm">NiVisibleArray</a>* pkVisibleSet)</p>
+
+<p class="NDLRefMemberDescription">This is the top-level public
+entry point for culling. <span class="NDLSystemFont">Cull</span>
+will call into <span class="NDLSystemFont">Process</span> with
+the same arguments that are passed to it. Cull exists as a
+non-virtual entry point allowing Gamebryo to enforce proper
+execution of mesh modifiers in subclasses of <span class=
+"NDLSystemFont">NiCullingProcess</span>.</p>
+
+<p class="NDLRefMemberDescription">The camera and scene are
+required parameters; they must point to a valid camera and scene,
+which will be used as the source information for
+culling&mdash;the given scene will be culled according to the
+view represented by the given camera. The visible array argument
+is normally optional. If it is non-NULL, then the given visible
+array will replace the culling process's existing internally-held
+culling process <em>for the duration of the <span class=
+"NDLSystemFont">Process</span> call</em>. At the end of the
+<span class="NDLSystemFont">Process</span> call, the previous
+visible array will be reinstated. Note that if the culling
+process has no internally-held visible array at the time of the
+<span class="NDLSystemFont">Process</span> call, then a valid one
+<em>must</em> be provided in the <span class=
+"NDLSystemFont">Process</span> parameters. The basic idea of the
+visible array argument is to allow the caller to pass in an
+optional destination to the function.</p>
+
+<p class="NDLRefMemberFunction">virtual void Process(const
+<a href="NiCamera.htm">NiCamera</a>* pkCamera, <a href=
+"NiAVObject.htm">NiAVObject</a>* pkScene, <a href=
+"NiVisibleArray.htm">NiVisibleArray</a>* pkVisibleSet) = 0</p>
+
+<p class="NDLRefMemberDescription">Note that <span class=
+"NDLSystemFont">Process</span> is pure virtual. A default
+implementation is provided, however, which subclasses can access
+by calling <span class=
+"NDLSystemFont">NiCullingProcess::Process</span>. That
+implementation is described below.</p>
+
+<p class="NDLRefMemberDescription">The function sets the frustum
+and local camera to the passed-in camera object, and then culls
+the given scene into the active visible array (either the
+parameter to the <span class="NDLSystemFont">Process</span> call,
+or the existing visible array, as discussed above). Note that
+the visible array is not reset during this call - all geometry
+will be appended onto the end of any existing geometry already
+culled into the array. Thus, multiple calls to <span class=
+"NDLSystemFont">Process</span> will simply append the all of the
+visible geometry into a single visible array.</p>
+
+<p class="NDLRefMemberFunction">virtual void Process(<a href=
+"NiAVObject.htm">NiAVObject</a>* pkObject)</p>
+
+<p class="NDLRefMemberDescription">This protected function is
+used internally by each traversed <span class=
+"NDLSystemFont">NiAVObject</span> (which is a friend of
+<span class="NDLSystemFont">NiCullingProcess</span>) to cull
+itself, including internal nodes. The base class version
+computes frustum culling of the object against the frustum,
+calling <span class="NDLSystemFont"><a href=
+"NiAVObject.htm">NiAVObject</a>::OnVisible</span> if the object
+is found to be within the frustum. This function is virtual and
+can be overridden by a subclass to change the culling behavior of
+the system. For example, a version of this function that simply
+called <span class="NDLSystemFont">OnVisible</span> upon each
+object passed in would equate to a "pass through" culler,
+accepting the entire scene as visible.</p>
+
+<p class="NDLRefHead2">Visible Set Functions</p>
+
+<p class="NDLRefMemberFunction">void SetVisibleSet(<a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>* pkVisibleSet)</p>
+
+<p class="NDLRefMemberDescription">Replaces the existing <a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a> with the given object. 
+Note that the culling process does not take ownership of either
+the existing or new this visible array, and will not delete it
+upon deletion of the culling process or upon replacement by
+another via a call to this function.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiVisibleArray.htm"><span class=
+"NDLSystemFont">NiVisibleArray</span></a>* GetVisibleSet()</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the
+current visible array associated with the culling process, or
+NULL if no array is associated with it.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiCamera.htm">NiCamera</a>* GetCamera() const</p>
+
+<p class="NDLRefMemberDescription">If the culling process object
+is currently in the process of culling (i.e. is inside of a
+recursive <span class="NDLSystemFont">Process</span> call), this
+function returns a valid pointer to the camera being used to
+cull. If the culling process is not currently culling a scene,
+this function will return NULL.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a>*
+GetWorkflowManager()</p>
+
+<p class="NDLRefMemberDescription">Returns the internally stored
+pointer to the workflow manager. This manager is set by
+subclasses and used by the <span class=
+"NDLSystemFont">NiMesh</span> library to execute mesh modifiers
+efficiently.</p>
+
+<p class="NDLRefMemberFunction">bool GetSubmitModifiers()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetSubmitModifiers(bool
+bSubmitModifiers)</p>
+
+<p class="NDLRefMemberDescription">Specifies whether mesh
+modifiers should be submitted during culling. This value defaults
+to true. If the culled objects are to be rendered, this value
+should be true to ensure that mesh modifiers are submitted
+properly. Setting this flag to false will allow a culling pass to
+be performed without submitting mesh modifiers and hence without
+requiring their modifiers to be subsequently completed. If
+multiple culling passes are desired in a given frame without
+rendering or manual completion of mesh modifiers between the
+passes, this value should be set to true for the last pass and
+false for all the previous passes in that frame. <span class=
+"NDLSystemFont">CompleteTasks</span> will still be called on mesh
+modifiers with the appropriate point during culling regardless of
+this flag.</p>
+
+<p class="NDLRefHead2">Frustum Access Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiFrustum.htm">NiFrustum</a>&amp; GetFrustum() const</p>
+
+<p class="NDLRefMemberDescription">Returns the currently-active
+frustum being used to cull geometry. This function is designed
+to be used during a <span class="NDLSystemFont">Process</span>
+pass (i.e. when the culling process is actually culling
+geometry).</p>
+
+<p class="NDLRefMemberFunction">void SetFrustum(const <a href=
+"NiFrustum.htm">NiFrustum</a>&amp; kFrustum)</p>
+
+<p class="NDLRefMemberDescription">Sets the frustum - this
+function can only be called when there is a valid camera
+associated with the culling process object, which is during a
+<span class="NDLSystemFont">Process</span> pass (i.e. when the
+culling process is actually culling geometry). This function not
+only sets the frustum itself, but also updates the <a href=
+"NiFrustumPlanes.htm"><span class=
+"NDLSystemFont">NiFrustumPlanes</span></a> object according to
+the camera and frustum values.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiFrustumPlanes.htm"><span class=
+"NDLSystemFont">NiFrustumPlanes</span></a>&amp;
+GetFrustumPlanes() const</p>
+
+<p class="NDLRefMemberDescription">Returns the set of frustum
+planes and the active plane state for the culling process. This
+state is only valid while the culling process is in a recursive
+sequence of <span class="NDLSystemFont">Process</span> calls
+(i.e. the culling process is currently culling a scene). Since
+the planes are based upon the culling process's frustum,
+read-only access is provided - a call to <span class=
+"NDLSystemFont">NiCullingProcess::SetFrustum</span> is required
+to change the planes themselves. </p>
+
+<p class="NDLRefHead2">Internal Geometry Addition Functions</p>
+
+<p class="NDLRefMemberFunction">void Append(<a href=
+"NiRenderObject.htm">NiRenderObject</a>&amp; kVisible)</p>
+
+<p class="NDLRefMemberDescription">This function is called by
+<span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span>::AppendToCullingProcess
+to declare itself as a visible object. This function does one of
+two things, depending on the value of the <span class=
+"NDLSystemFont">const bool</span> member variable <span class=
+"NDLSystemFont">m_bUseVirtualAppend</span>. If <span class=
+"NDLSystemFont">m_bUseVirtualAppend</span> is <span class=
+"NDLSystemFont">false</span> (which it is for concrete
+<span class="NDLSystemFont">NiCullingProcess</span> objects),
+then this inline function simply adds the geometry to the culling
+process's visible array. However, if <span class=
+"NDLSystemFont">m_bUseVirtualAppend</span> is true (as it could
+be in a subclass), then the function calls the subclass's
+override of <span class="NDLSystemFont">VirtualAppend</span> . 
+This system avoids a virtual function call in most cases (at the
+expense of a single conditional), while allowing subclasses the
+ability to override the base class behavior if desired.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+AppendVirtual(<a href=
+"NiRenderObject.htm">NiRenderObject</a>&amp; kVisible)</p>
+
+<p class="NDLRefMemberDescription">This protected virtual is
+called by <span class="NDLSystemFont">Append</span> to register
+visible geometry objects if the class instance was constructed
+with <span class="NDLSystemFont">m_bUseVirtualAppend</span> equal
+to <span class="NDLSystemFont">true</span>. Thus, a subclass may
+override the <span class="NDLSystemFont">Append</span> behavior
+by overriding <span class="NDLSystemFont">AppendVirtual</span>
+and setting <span class="NDLSystemFont">bUseVirtual</span> to
+<span class="NDLSystemFont">true</span> in the base class
+constructor. This second step is required - simply overriding
+<span class="NDLSystemFont">AppendVirtual</span> will not
+suffice, as the system avoids the virtual call altogether when
+<span class="NDLSystemFont">m_bUseVirtualAppend</span> is
+<span class="NDLSystemFont">false</span> .</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Subclassing <span class=
+"NDLSystemFont">NiCullingProcess</span></p>
+
+<p><span class="NDLSystemFont">NiCullingProcess</span> includes
+three virtual functions that are designed to allow subclassing to
+add behavior to the base class. Note, however, that subclasses
+must derive from <span class=
+"NDLSystemFont">NiMeshCullingProcess</span> to insure proper
+execution of mesh modifiers. One of these virtual functions is
+called once per overall culling pass over a scene graph:</p>
+
+<p><span class="NDLSystemFont">Process(const NiCamera*,
+NiAVObject*, NiVisibleArray*)</span>. It is overridden to
+control the top-level culling of a scene. It sets up the culling
+process (including view data, a visible array, etc) for a culling
+pass, initiates the culling pass via a call to the scene graph
+root's <span class="NDLSystemFont">Cull</span> function, and then
+does any required post-processing after the <span class=
+"NDLSystemFont">Cull</span> function returns.</p>
+
+<p><span class="NDLSystemFont">Process(NiAVObject*)</span> is
+called for each potentially visible object in the scene,
+including internal nodes. A subclass may override this function
+to change how culling is computed at each and every scene node. 
+If the given object is determined to be visible, then this
+function should call <span class="NDLSystemFont"><a href=
+"NiAVObject.htm">NiAVObject::OnVisible</a></span> upon it.</p>
+
+<p>The final function, as described above is <span class=
+"NDLSystemFont">AppendVirtual</span>. A subclass that needs to
+handle visible geometry in a manner more complex than simply
+adding it to the visible array can do so by overriding
+<span class="NDLSystemFont">AppendVirtual</span> and passing
+<span class="NDLSystemFont">true</span> to the <span class=
+"NDLSystemFont">bUseVirtualAppend</span> argument of the base
+class. If this <span class="NDLSystemFont">const bool</span> is
+true for a given instance, then the base class non-virtual
+<span class="NDLSystemFont">Append</span> will call <span class=
+"NDLSystemFont">AppendVirtual</span> to allow it to do whatever
+it needs to the visible geometry.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

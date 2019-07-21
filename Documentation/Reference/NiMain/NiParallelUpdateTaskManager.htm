@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiParallelUpdateTaskManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiParallelUpdateTaskManager</p>
+
+<p class="NDLRefHeaderFile">: public <a href=
+"NiTaskManager.htm">NiTaskManager</a></p>
+
+<p class="NDLRefHeaderFile">
+&lt;NiParallelUpdateTaskManager.h&gt;</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                This class is planned for deprecation in a future
+                Gamebryo release. Applications should migrate to
+                Floodgate for parallel task management as soon as
+                possible. This class should not be used in new
+                code.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiParallelUpdateTaskManager</span>
+is a singleton class used by Gamebryo to allow tasks normally
+processed during scene graph update to be updated in the
+background of the normal update process. This can significantly
+reduce the CPU time needed for update and culling on
+multi-processor machines by moving the processes such as geometry
+morphing or particle update to a secondary processor.
+Applications can additionally create subclasses of <span class=
+"NDLSystemFont"><a href="NiTask.htm">NiTask</a></span> which can
+be submitted to this manager and run in the background. The
+parallel update task manager is priority-aware allowing
+prioritized execution of background tasks.</p>
+
+<p class="NDLRefHead1">Constructors and Destructors</p>
+
+<p>All constructors and destructors are declared as protected.
+Users should call the static initialization and shutdown methods
+to make sure that the system manages the singleton correctly.</p>
+
+<p class="NDLRefHead1">Supported Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static bool Initialize(unsigned
+int uiMaxQueueSize)</p>
+
+<p class="NDLRefMemberFunction">static void Shutdown()</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">Initialize</span> and <span class=
+"NDLSystemFont">Shutdown</span> methods initialize and destroy
+the singleton instance of the class. It is safe to call these
+methods multiple times. The max queue size controls the size of
+the task queues that will be used internally. Applications can
+use this as a coarse load balancing mechanic. A smaller queue
+size will offload less work to the background thread.</p>
+
+<p class="NDLRefMemberFunction">static
+NiParallelUpdateTaskManager* Get()</p>
+
+<p class="NDLRefMemberDescription">Get a pointer to the singleton
+instance of the class.</p>
+
+<p class="NDLRefMemberFunction">static void BeginUpdate()</p>
+
+<p class="NDLRefMemberFunction">static void EndUpdate()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">BeginUpdate</span> and <span class=
+"NDLSystemFont">EndUpdate</span> are used to signal the system
+that tasks should be added to the manager. These functions should
+always be called as a pair around the application update loop.
+They should also be matched with a pair of calls to <span class=
+"NDLSystemFont">SignalRenderSema</span> and <span class=
+"NDLSystemFont">WaitRenderSema</span>. <span class=
+"NDLSystemFont">BeginUpdate</span> sets the manager's active flag
+to <span class="NDLSystemFont">true</span>. <span class=
+"NDLSystemFont">EndUpdate</span> inserts a special task that
+signals a synchronization primitive when complete and sets the
+active flag to <span class="NDLSystemFont">false</span>.. For
+more information on these methods and how to use them, please
+refer to the "Notes" section below.</p>
+
+<p class="NDLRefMemberFunction">static int SignalRenderSema()</p>
+
+<p class="NDLRefMemberFunction">static int WaitRenderSema()</p>
+
+<p class="NDLRefMemberDescription">Before an application can
+render, it must insure that all tasks have completed execution in
+the background by calling <span class=
+"NDLSystemFont">WaitRenderSema</span>. Similarly, the application
+must signal the system that it is done rendering by calling
+<span class="NDLSystemFont">SignalRenderSema</span>. These two
+methods should always be called as a pair and should always match
+a pair of calls to <span class="NDLSystemFont">BeginUpdate</span>
+and <span class="NDLSystemFont">EndUpdate</span>. For more
+information on these methods and how to use them, please refer to
+the "Notes" section below.</p>
+
+<p class="NDLRefMemberFunction">static bool IsActive()</p>
+
+<p class="NDLRefMemberDescription">Return a flag indicating
+whether the system is actively receiving tasks. The system is
+considered active only between calls to <span class=
+"NDLSystemFont">BeginUpdate</span> and <span class=
+"NDLSystemFont">EndUpdate</span>.</p>
+
+<p class="NDLRefHead1">Supported Methods Functions</p>
+
+<p class="NDLRefMemberFunction">bool SetAffinity(const <a href=
+"../../Reference/NiSystem/NiProcessorAffinity.htm">NiProcessorAffinity</a>&amp;
+kAffinity)</p>
+
+<p class="NDLRefMemberDescription">Set the processor affinity of
+the background thread. On some systems you must call this
+function to transition the thread away from the processor on
+which the system was created.</p>
+
+<p class="NDLRefMemberFunction">bool
+SetPriority(NiThread::Priority)</p>
+
+<p class="NDLRefMemberDescription">Set the priority of the
+background thread. By default the priority is <span class=
+"NDLSystemFont">NiThread::BELOW_NORMAL</span>.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"../../Reference/NiSystem/NiThread.htm">NiThread</a>*
+GetThread()</p>
+
+<p class="NDLRefMemberDescription">Get a reference to the thread
+running the background update for querying affinity or
+priority.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Synchronization Functions</p>
+
+<p>Because this task manager uses multiple
+threads of execution to update tasks in the background, a certain
+amount of synchronization is required in the application idle
+loop to insure that results are ready at the appropriate time.
+The following code below illustrates the proper order to call the
+synchronization methods: <span class=
+"NDLSystemFont">BeginUpdate</span>, <span class=
+"NDLSystemFont">EndUpdate</span>, <span class=
+"NDLSystemFont">WaitRenderSema</span>, and <span class=
+"NDLSystemFont">SignalRenderSema</span>. Note that this code
+assumes that the appropriate flags have been set in classes like
+<span class="NDLSystemFont">NiPSParticleSystem</span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiGeomMorpherController.htm">NiGeomMorpherController</a></span>
+to activate background updates and that the class has been
+initialized elsewhere in the application.</p>
+
+<pre>
+void OnIdle
+{
+    // Call BeginUpdate to set the manager active.
+    NiParallelUpdateTaskManager::BeginUpdate();
+ 
+    // Call the application update function.
+    UpdateScene();
+ 
+    // Call EndUpdate to set the synchronization fence for the system.
+    NiParallelUpdateTaskManager::EndUpdate();
+ 
+    // Do some application level work here. If the application immediately
+    // calls WaitRenderSema then the background thread will not have enough
+    // time to finish all its tasks.
+    DoExpensiveCPUWork();
+ 
+    // Call WaitRenderSema to make sure that all tasks have finished.
+    NiParallelUpdateTaskManager::WaitRenderSema();
+ 
+    // Perform the scene render.
+    RenderScene();
+ 
+    // Let the system know that rendering is complete.
+    NiParallelUpdateTaskManager::SignalRenderSema();
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

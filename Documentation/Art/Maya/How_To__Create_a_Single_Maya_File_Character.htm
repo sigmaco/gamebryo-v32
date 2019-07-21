@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a Single Maya File Character</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a Single Maya File Character</h1>
+
+<h4>1. Start in the Bind Pose</h4>
+
+<p>As a rule of thumb it is best to start the character off at
+frame zero in the bind pose. To properly export the relationship
+between skin and bones, it is necessary to get the skeleton back
+into its bind pose. As you are using Maya, it is possible to
+alter the scene graph so the skeleton can no longer get back to
+its bind pose. By starting the character in the bind pose, you
+may circumvent some of these problems.</p>
+
+<h4>2. Create a Sequence</h4>
+
+<p>Start by clicking the <span class="NDLGUILabel">Create
+Character Sequence</span> button.</p>
+
+<div class="FigureContainer">
+    <img src="images/MyImmerseSequenceIcon.png" width="32"
+    height="32" alt="MyImmerseSequenceIcon (1K)">
+
+    <p class="FigureCaption">Create Sequence button</p>
+</div>
+
+<div class="FigureContainer">
+    <img src="images/SequenceEditorShowingEveryt.gif" width="627"
+    height="346" alt="SequenceEditorShowingEveryt (14K)">
+
+    <p class="FigureCaption">Sequence Editor</p>
+</div>
+
+<p>Select the object in your scene that you want as the Character
+Root. In the Character Roots section, click on the <span class=
+"NDLGUILabel">Add Selected</span> button. This will set the
+Character Root as the Accumulation Root by default. Additionally
+a Character Root is also a Layer Root.</p>
+
+<p>In the Sequence Window, click the <span class=
+"NDLGUILabel">Add</span> button and set your sequence name. It is
+important to remember that every sequence name must be unique.
+The programmers will be using the sequence name when they start
+animations in the game. Enter the start frame, and the end frame
+and set the appropriate check boxes for the animation.</p>
+
+<p>There are two kinds of sequences: full body and layer. A layer
+sequence only affects part of the character and can be played on
+top of other sequences. When you look at the DestroyerBot
+example, there are full body animations for walking and running,
+but there are also layer sequences for firing lasers, missiles,
+and flares. Gamebryo's Actor Manager allows you to play both
+animations simultaneously. This reduces the number of animations
+you need to produce and adds flexibility. Creating a Layer
+Sequence is just like creating a full body one except that you
+select a different root node in Maya before you click the
+<span class="NDLGUILabel">Create Character Sequence</span>
+button. In the DestroyerBot example, the layer sequences are on
+the | DestroyerBot | Accumulation_Root | Hips | Body node. It is
+important to remember that only the Layer Root and its children
+will be part of the Layer Sequence.</p>
+
+<h4>3. Create an Animation</h4>
+
+<p>Creating your character animations is fairly straightforward
+using either key frame animation or IK animation. Since your
+character is in its bind pose at frame zero, you need to pick a
+range of frames to hold your animation. For example, the
+DestroyerBot's walk animation goes from frame 336 to 384. There
+are a couple of things to consider:</p>
+
+<ul>
+    <li>Only animate the attributes you will be changing. It
+    seems obvious, but it is worth mentioning that the fastest
+    animated attributes are the ones that aren't animated.</li>
+
+    <li>
+        <p>IK Solver Stability: By default Gamebryo samples
+        rotation with quaternions, which prevents flipping.
+        However, if euler angles are used instead, the animation
+        should be prebaked inside Maya and after which the artist
+        should apply an euler filter to the rotation curves. The
+        explanation that follows only applies if quaternion
+        sampling is turned off.</p>
+
+        <p>Since Gamebryo only supports key frame animation, it
+        is necessary for the exporter to automatically "bake"
+        your animation. Between two consecutive frames, it is
+        possible for an IK solver to choose a radically different
+        solution. For example, it might use a 180 degree X
+        rotation one frame and then use a -180 degree X rotation
+        the next. These rapid transitions happen between frames
+        in Maya, but they can appear as a flash in Gamebryo.
+        Setting joint limits should help alleviate the problem
+        but may not completely eliminate it.</p>
+    </li>
+
+    <li>Keep at least one frame between the end of one sequence
+    and the beginning of the next. Most of the time, the ending
+    position of one sequence isn't the beginning position of the
+    next. If you leave one frame between the sequences, then it
+    will give you time to get from one pose to the next. Once
+    your animations are created, you can fix this problem, but it
+    is annoying and easy to avoid in the first place.</li>
+
+    <li>Create a key for everything animated on your character at
+    the beginning and at the end of your sequence. This will
+    prevent the changes you make in this sequence from affecting
+    other sequences.</li>
+</ul>
+
+<h4>4. Build Remaining Sequences</h4>
+
+<p>Just keep repeating steps 2 and 3 until you have created all
+of your sequences.</p>
+
+<h4>5. Set Character Compression Options (Optional)</h4>
+
+<p>The Gamebryo Maya exporter can attempt to automatically reduce
+the size of your animation data using B-spline curve fitting and
+compact keys. Just select the Accumulation Root and click the
+<span class="NDLGUILabel">Character Animation Compression</span>
+button.</p>
+
+<div class="FigureContainer">
+    <img src=
+    "images/MyImmerseCreateCharacterKeyReductionIcon.png" width=
+    "32" height="32" alt=
+    "MyImmerseCreateCharacterKeyReductionIcon (1K)"> 
+    <!--  <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<h4>6. Export the Character</h4>
+
+<div class="FigureContainer">
+    <img src="images/ScriptSelection.jpg" width="504" height=
+    "391" alt="ScriptSelection (55K)">
+
+    <p class="FigureCaption">Script Selection dialog box</p>
+</div>
+
+<p>When you export the character with Maya's Export All menu, you
+will need to select a script that includes the Controller
+Extractor export plug-in. The "Default Character Export" script
+is a good one to use if you haven't created your own custom
+script. Exporting creates three files: NIF, KF, and KFM. The NIF
+file contains your character's geometry and textures, the KF file
+contains the animation data, and the KFM file contains the
+transition information from one sequence to another.</p>
+
+<h4>7. Tweak Sequence Transitions in the Animation Tool</h4>
+
+<p>The Gamebryo Animation Tool is designed to augment the art
+pipeline by providing a feature-rich tool for organizing and
+manipulating the animations of a game character.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="Export_Animation_Options.htm">Export Animation
+    Options</a></li>
+
+    <li><a href=
+    "Character_Animation_Compression_with_Maya.htm">Character
+    Animation Compression with Maya</a></li>
+
+    <li><a href=
+    "../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">
+    Introduction to Animation Tool</a></li>
+
+    <li><a href=
+    "How_To__Create_a_Multi_Maya_File_Character.htm">Creating a
+    Multiple Maya File Character</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

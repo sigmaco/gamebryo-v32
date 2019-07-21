@@ -1,0 +1,334 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPSSimulator</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiPSSimulator</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NiPSSimulator.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/class_ni_p_s_simulator.gif" alt="Inheritance graph for NiPSSimulator"/>
+  <p class="FigureCaption">Inheritance graph for NiPSSimulator</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">The mesh modifier that performs all particle system simulation. </p>
+<p class="NDLNormal">This class is required to be attached to an <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span> object. It uses Floodgate tasks to perform all the simulation of the particle system.</p>
+<p class="NDLNormal">The particle simulation work is done via a set of <span class="NDLSystemFont"><a href="NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span> objects, each of which encapsulates a single Floodgate kernel. Particle forces and colliders are simulated using these steps, along with other particle simulation tasks. See each specific step class for more information about them.</p>
+<p class="NDLNormal">The input and output Floodgate streams for each step are automatically remapped so that output streams from previous steps are used as input streams on subsequent steps if the streams refer to the same data. This is determined by comparing semantics strings. Each step declares a semantic string for each of its input and output streams. The semantics defined in <span class="NDLSystemFont"><a href="NiPSCommonSemantics.htm">NiPSCommonSemantics</a></span> should be used to refer to particle data.</p>
+<p class="NDLNormal">This class ensures that the Floodgate kernel from the final step in the set of simulator steps is always executed in a stage after all other kernels. This is to allow <span class="NDLSystemFont"><a href="NiPSSimulatorFinalStep.htm">NiPSSimulatorFinalStep</a></span> to update the position and age of the particles after all forces, colliders, and other simulation tasks have been computed. As such, the final step attached to this class should always be an instance of the <span class="NDLSystemFont"><a href="NiPSSimulatorFinalStep.htm">NiPSSimulatorFinalStep</a></span> class.</p>
+<p class="NDLNormal">This class directly operates on the particle data exposed by <span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>. That data should not be accessed by any other code while the <span class="NDLSystemFont">NiPSSimulator</span> Floodgate tasks are executing. </p>
+
+<a name="public_static_attributes"></a>
+<p class="NDLRefHead1">Public Static Attributes</p>
+
+
+<a name="class_ni_p_s_simulator_1a35da07267035e6a406457563cf34b7e2"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont">NiUInt32</span>  INVALID_INDEX</p>
+<p class="NDLRefMemberDetailedDescription">Used to indicate a failure from the AddStep function. </p>
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="class_ni_p_s_simulator_1ac7d3f3c83b49edcd5383b9cf2753a55b"></a>
+<p class="NDLRefMemberFunction">NiPSSimulator()</p>
+<p class="NDLRefMemberDescription">Default constructor. </p>
+
+<a name="class_ni_p_s_simulator_1afb485e3f4274f088a4e885905ba098ad"></a>
+<p class="NDLRefMemberFunction">virtual ~NiPSSimulator()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+<a name="base_class_overrides"></a>
+<p class="NDLRefHead1">Base Class Overrides</p>
+
+
+<a name="class_ni_p_s_simulator_1ad546c77f4d5f5c37d06a7ee800164b74"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  Attach(<span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh)</p>
+<p class="NDLRefMemberDescription">Attach is called when a modifier is attached to a mesh or is otherwise required to do any set-up need for updating. </p>
+<p class="NDLRefMemberDetailedDescription">Most commonly, the modifier will add <span class="NDLSystemFont"><a href="../NiFloodgate/NiStreamProcessor.htm">NiStreamProcessor</a></span> (Floodgate) tasks and attach kernels, input streams, output streams, etc. Any of these streams may be associated with a data stream on the mesh.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">AreRequirementsMet should be called prior to this method. This allows Attach to be leaner in implementation. This behavior is enforced by <span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>. </p></p>
+
+<a name="class_ni_p_s_simulator_1a3d6ac220f7abc4855128e39abdfe7246"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  Detach(<span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh)</p>
+<p class="NDLRefMemberDescription">Performs any work needed to remove the modifier from a mesh. </p>
+<p class="NDLRefMemberDetailedDescription">The calling function is responsible for ensuring that all outstanding Floodgate tasks are completed. All tasks should be deleted, streams released, etc. Code in this function can assume that CompleteTasks has been performed for all sync points. </p>
+
+<a name="class_ni_p_s_simulator_1ae91a64c90d98722368b616f818d5046a"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  SubmitTasks(<br/><span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh, <br/><span class="NDLSystemFont"><a href="../NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>* pkArgs, <br/><span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span>* pkWFManager)</p>
+<p class="NDLRefMemberDescription">This function is the entry point for an update, when a parallel processing modifier will submit its Floodgate tasks to the given workflow manager. </p>
+<p class="NDLRefMemberDetailedDescription">Mesh modifiers that do not do any parallel work may choose to use this function as the primary work function. It will be called whenever a specific supported start sync point is hit.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">NiMeshModifier-derived classes must construct a Task Group ID for use with the <span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager</a></span> class using the <span class="NDLSystemFont"><a href="../NiMain/NiSyncArgs.htm">NiSyncArgs::GetTaskGroupID(SyncPoint, SyncPoint)</a></span> function. </p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkMesh</span></td>
+    <td>The mesh to which the modifier is attached. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkArgs</span></td>
+    <td>Information about the sync point to submit for. If the submit point is specific, then the pkArgs is guaranteed to be of a matching type. When the submit point is SYNC_UPDATE or SYNC_POST_UPDATE, pkArgs is of type <span class="NDLSystemFont"><a href="../NiMain/NiUpdateSyncArgs.htm">NiUpdateSyncArgs</a></span>. When the submit point is SYNC_VISIBLE, pkArgs is of type <span class="NDLSystemFont"><a href="../NiMain/NiCullingSyncArgs.htm">NiCullingSyncArgs</a></span>. No specific type is guaranteed at other times. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkWFManager</span></td>
+    <td>The workflow manager object that is to be used for Floodgate tasks. Tasks should be submitted using the functions provided by the workflow manager, and a <span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span> object will typically be provided in return. Mesh modifiers must hold on to the returned workflow in a smart pointer, as it is the only handle they have for completing the tasks and cleaning up.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The function should return true if any tasks are submitted to the workflow manager.</td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1a86b7ecb1727cc87c913351713dfa516f"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  CompleteTasks(<br/><span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh, <br/><span class="NDLSystemFont"><a href="../NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>* pkArgs)</p>
+<p class="NDLRefMemberDescription">This function is used to force tasks to complete. </p>
+<p class="NDLRefMemberDetailedDescription">Tasks with the given start and end sync points must be forced to complete. The value NiAVObject::SYNC_ANY may be given for either the start or end sync point, in which case all the tasks starting or ending at that point should be completed. After completing all the tasks for a particular <span class="NDLSystemFont"><a href="../NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span> object, any smart pointers to that workflow should be released.</p>
+<p class="NDLRefMemberDetailedDescription">Mesh modifiers should, in this function, also do any other work required to complete an update step, such as computations that depend on the output of the Floodgate tasks.</p>
+<p class="NDLRefMemberDetailedDescription">Mesh modifiers that do not use Floodgate could use this function to perform any work associated with the given pair of sync points.</p>
+<p class="NDLRefMemberDetailedDescription">This function will only be called with SYNC_ANY or sync points that have been specified as starting or ending. There is no guarantee that the pkArgs variable is of any specific type.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The function should return true if tasks were successfully completed. False indicates an error condition. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1acdad90b61e509cc08150c282fd938e0b"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  IsComplete(<br/><span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh, <br/><span class="NDLSystemFont"><a href="../NiMain/NiSyncArgs.htm">NiSyncArgs</a></span>* pkArgs)</p>
+<p class="NDLRefMemberDescription">Returns true if the mesh modifier has completed all required work for the provided sync points. </p>
+
+<a name="class_ni_p_s_simulator_1a2bc0486806991b6a15465588bee9a298"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  AreRequirementsMet(<br/><span class="NDLSystemFont"><a href="../NiMesh/NiMesh.htm">NiMesh</a></span>* pkMesh, <br/>NiSystemDesc::RendererID ePlatform) const</p>
+<p class="NDLRefMemberDescription">Validates the data stream requirements against the mesh. </p>
+<p class="NDLRefMemberDetailedDescription">A caller may choose to remove the mesh modifier if the mesh does not satisfy the requirements.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">In some cases, NiSystemDesc::RENDERER_GENERIC is passed into this method. In those scenarios, it should be treated as if any renderer is being passed in. If certain requirements are renderer specific allow RENDERER_GENERIC satisfy those requirements. </p></p>
+<a name="simulator_step_management_functions"></a>
+<p class="NDLRefHead1">Simulator Step Management Functions</p>
+
+<p class="NDLRefMemberDescription">Simulator steps can only be added or removed prior to Attach being called on the simulator.</p>
+<p class="NDLRefMemberDescription">Once Attach has been called, all functions that add or remove steps will fail and return an error code. </p>
+
+<a name="class_ni_p_s_simulator_1a90a73cd7dae83ebd7c46948f760719fa"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetStepCount() const</p>
+<p class="NDLRefMemberDescription">Returns the number of steps owned by the simulator. </p>
+
+<a name="class_ni_p_s_simulator_1acb51a7c146d1856fb8edd5fc1ccaae0a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>*  GetStepAt(<span class="NDLSystemFont">NiUInt32</span> uiIndex) const</p>
+<p class="NDLRefMemberDescription">Returns the step at the specified index, which must be less than the value returned by GetStepCount. </p>
+<p class="NDLRefMemberDetailedDescription">Simulator steps can also be retrieved by type using the <span class="NDLSystemFont">NiGetSimulatorStep(classname, pkSimulator)</span> macro. </p>
+
+<a name="class_ni_p_s_simulator_1a0222661b6a6c58175990e23691240680"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  AddStep(<span class="NDLSystemFont"><a href="NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>* pkStep)</p>
+<p class="NDLRefMemberDescription">Adds the specified step to the array of steps for the simulator. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">If Attach has already been called on the simulator, this function will fail and return INVALID_INDEX.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkStep</span></td>
+    <td>The step to add. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The index at which the step was added. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1a50e7f141ab74504ad3a48a187535e84b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">NiPSSimulatorStepPtr</a></span>  SetStepAt(<br/><span class="NDLSystemFont">NiUInt32</span> uiIndex, <br/><span class="NDLSystemFont"><a href="NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>* pkStep)</p>
+<p class="NDLRefMemberDescription">Sets the specified step at the specified index, replacing any step already at that index. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">If Attach has already been called on the simulator, this function will fail and return NULL.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiIndex</span></td>
+    <td>The index at which to replace the step. This must be less than the value returned by GetStepCount. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkStep</span></td>
+    <td>The step to set. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>A smart pointer to the step replaced by this function, if there was already a step at that index. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1aab88c98a35ba10aeefda69e2db9f4edd"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  RemoveStep(<span class="NDLSystemFont"><a href="NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>* pkStep)</p>
+<p class="NDLRefMemberDescription">Removes the specified step from the simulator. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">If Attach has already been called on the simulator, this function will fail and return false.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkStep</span></td>
+    <td>The step to remove. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Whether or not the step was successfully removed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1a4104a57257b69bb91c3ea1d8507db0c5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">NiPSSimulatorStepPtr</a></span>  RemoveStepAt(<span class="NDLSystemFont">NiUInt32</span> uiIndex)</p>
+<p class="NDLRefMemberDescription">Removes the step at the specified index. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">If Attach has already been called on the simulator, this function will fail and return NULL.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiIndex</span></td>
+    <td>The index at which the simulator should be removed. This must be less than the value returned by GetStepCount. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>A smart pointer to the step that was removed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_1afa7a695d286e1ad2824b4b49216fb183"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  RemoveAllSteps()</p>
+<p class="NDLRefMemberDescription">Removes all steps from the simulator. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">If Attach has already been called on the simulator, this function will fail and return false.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Whether or not the steps were successfully removed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

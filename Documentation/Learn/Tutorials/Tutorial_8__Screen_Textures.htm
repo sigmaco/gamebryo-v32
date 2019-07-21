@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 8: Screen Textures</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 8: Screen Textures</h1>
+
+<p>This tutorial illustrates how to add simple screen textures.</p>
+
+<h2>The Demo</h2>
+
+<p>The only difference between this demo and <a href="Tutorial_7__User_Input.htm">Core Runtime
+Tutorial 7: User Input</a> is that we display a small logo as a screen space texture in the upper
+right corner of the screen.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a cityscape, helicopter, and a nifty logo in the upper right
+corner. The following screen capture was taken from the <span class="NDLSystemFont">Win32</span>
+platform.<br>
+<br></p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial8.jpg" width="515" height="400" alt="Adding screen textures (53K)">
+
+    <p class="NDLFigureCaption">Adding screen textures</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>What we would like to do is add a logo to the upper right corner of our application, which we
+will do by means of a screen texture. During the <span class="NDLSystemFont">CreateScene()</span>
+call, we call a new function, <span class="NDLSystemFont">CreateScreenTexture()</span>, which is
+listed below:</p>
+<pre>
+void ScreenTexture::CreateScreenTexture()
+{
+</pre>
+
+<p>First, an <a href="../../Reference/NiMain/NiSourceTexture.htm"><span class=
+"NDLSystemFont">NiSourceTexture</span></a> is created using a .tga file found on disk.</p>
+<pre>
+    NiSourceTexture* pkTexture = NiSourceTexture::Create(
+        NiApplication::ConvertMediaFilename("emergentlogo.TGA"));
+</pre>
+
+<p>We would like the screen texture to appear 32 pixels from the upper-right corner of the screen.
+However, the MeshScreenElements class needs Normalized Device Coordinates (NDC) which uses
+floating-point coordinates to address the screen from 0 to 1 in each direction, regardless of
+resolution. An easy way to do this conversion, since we are drawing the texture to the screen, is
+to call NiRenderer::ConvertFromPixelsToNDC().</p>
+<pre>
+    float fX, fY;
+    m_spRenderer-&gt;ConvertFromPixelsToNDC(32 + pkTexture-&gt;GetWidth(),
+        32, fX, fY);
+</pre>
+
+<p>Next, we create our <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> using a factory
+method designed to help in this situation. Notice how we tell the factory method to position based
+on the upper right corner of the screen.</p>
+<pre>
+    NiMeshScreenElements *pkScreenTexture = NiMeshScreenElements::Create(
+        m_spRenderer, fX, fY, pkTexture-&gt;GetWidth(), pkTexture-&gt;GetHeight(),
+        NiRenderer::CORNER_TOP_RIGHT);
+</pre>
+
+<p>Following that, we set several rendering properties to set the texture to the image loaded
+earlier, and to ensure that the screen texture appears as we want.</p>
+<pre>
+    NiTexturingProperty *pkTexProp = NiNew NiTexturingProperty;
+    pkTexProp-&gt;SetBaseTexture(pkTexture);
+    pkTexProp-&gt;SetBaseFilterMode(NiTexturingProperty::FILTER_NEAREST);
+    pkTexProp-&gt;SetApplyMode(NiTexturingProperty::APPLY_REPLACE);
+    pkTexProp-&gt;SetBaseClampMode(NiTexturingProperty::CLAMP_S_CLAMP_T);
+    NiAlphaProperty *pkAlphaProp = NiNew NiAlphaProperty;
+    pkAlphaProp-&gt;SetAlphaBlending(true);
+    NiZBufferProperty *pkZBufProp = NiNew NiZBufferProperty;
+    pkZBufProp-&gt;SetZBufferTest(false);
+    pkZBufProp-&gt;SetZBufferWrite(true);
+    pkScreenTexture-&gt;AttachProperty(pkTexProp);
+    pkScreenTexture-&gt;AttachProperty(pkAlphaProp);
+    pkScreenTexture-&gt;AttachProperty(pkZBufProp);
+    pkScreenTexture-&gt;UpdateProperties();
+</pre>
+
+<p>Finally, <span class="NDLSystemFont">NiApplication</span> needs to know about our screen
+texture. This is done by appending this screen texture to a list of screen-space elements in
+<span class="NDLSystemFont">NiApplication</span>:</p>
+<pre>
+    GetScreenElements().AddTail(pkScreenTexture);
+}
+</pre>
+
+<p><span class="NDLSystemFont">NiApplication</span> will automatically render all of its
+screen-space elements during the rendering call. All the tutorial has to do is to create it and let
+the <span class="NDLSystemFont">NiApplication</span> know about it and the rest is taken care of
+automatically. That's all there is to it!</p>
+
+<h2>Moving on...</h2>
+
+<p>We've covered how to add a screen texture. Next, let's look at creating and displaying rendered
+textures. See <a href="Tutorial_9__Rendered_Textures.htm">Core Runtime Tutorial 9: Rendered
+Textures</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

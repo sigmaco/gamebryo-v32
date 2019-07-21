@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cameras</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Cameras</h1>
+
+<p>Gamebryo employs two types of projection models for cameras: a general
+perspective camera model and an orthogonal projection model.</p>
+
+<h2>General Camera Model</h2>
+
+<p><span class="NDLSystemFont">NiCamera</span> provides a general camera model
+for an application. The mathematical model is described in detail in
+<span class="NDLDocTitle">Computer Graphics: Principles and Practice</span>,
+2nd edition, J. D. Foley, A. van Dam, S. Feiner, and J. F. Hughes,
+Addison-Wesley Publishing Company, Reading, MA, 1992. The region of space
+viewed by the camera is called the view frustum and is part of a pyramid whose
+vertex is the camera location and whose base is a rectangle in the view
+plane.</p>
+
+<p>The following figure illustrates the general camera model.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/PerspectiveCamera.gif" width="479" height="409" alt=
+    "PerspectiveCamera (12K)">
+
+    <p class="NDLFigureCaption">General perspective camera model</p>
+</div>
+
+<p>In practical terms, the view:</p>
+
+<ul>
+    <li>is centered at the camera's model-space origin.</li>
+
+    <li>looks along the direction of the positive X axis of the camera.</li>
+
+    <li>has the camera's positive Y axis as the vertical direction on the
+    screen.</li>
+
+    <li>has the camera's positive Z axis as the right direction on the
+    screen.</li>
+</ul>
+
+<p>The camera location is equal to the model-space origin of the camera. The
+view plane is specified by a <em>view plane reference</em> point L<sub>V</sub>
+and an associated coordinate system whose axes are the <em>view normal
+vector</em> N<sub>V</sub>, the <em>view up vector</em> U<sub>V</sub>, and the
+<em>view right vector</em> R<sub>V</sub>. The view plane reference point
+L<sub>V</sub>= &lt;1,0,0&gt; is in model-space coordinates, as are the view
+plane normal vector N<sub>V</sub>= &lt;-1,0,0&gt;, the view plane up vector
+U<sub>V</sub>= &lt;0,1,0&gt;, and the view plane right vector R<sub>V</sub>=
+&lt;0,0,1&gt;.</p>
+
+<p>A camera is transformed like any other <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>-derived object.
+If it is not part of the scene graph, a camera requires <span class=
+"NDLSystemFont">Update</span> to be called so that the world information is
+properly updated. The location, direction vector, up vector, and right vector
+in world coordinates are readable through <span class=
+"NDLSystemFont">GetWorldLocation</span>, <span class=
+"NDLSystemFont">GetWorldDirection</span>, <span class=
+"NDLSystemFont">GetWorldUpVector</span>, and <span class=
+"NDLSystemFont">GetWorldRightVector</span>, respectively. To retain internal
+consistency, an application is not permitted to set these world quantities;
+they can only be changed by transforming the camera.</p>
+
+<p>The view frustum itself is determined by six values: left <span class=
+"NDLSystemFont">vl</span>, right <span class="NDLSystemFont">vr</span>, top
+<span class="NDLSystemFont">vt</span>, bottom <span class=
+"NDLSystemFont">vb</span>, near <span class="NDLSystemFont">vn</span>, and far
+<span class="NDLSystemFont">vf</span>. All of these values are specified in the
+model space of the camera. Four of these values (<span class=
+"NDLSystemFont">[0,0]</span>. control the field of view of the camera. Together
+they are known as the <em>view rectangle</em>. The four edges of the view
+rectangle (in camera model space) are determined by the vectors <span class=
+"NDLSystemFont">&lt;1,0,vl&gt;</span> (left edge), <span class=
+"NDLSystemFont">&lt;1,0,vr&gt;</span> (right edge), <span class=
+"NDLSystemFont">&lt;1,vb,0&gt;</span> (bottom edge), and <span class=
+"NDLSystemFont">&lt;1,vt,0&gt;</span> (top edge). The final two values
+(<span class="NDLSystemFont">vf</span>,<span class="NDLSystemFont">vn</span>)
+define the near and far distances along the camera's
+model-space x-axis&mdash;these should bound the desired scene. In general,
+<span class="NDLSystemFont">vf</span> should be as small as possible, and
+<span class="NDLSystemFont">vn</span> should be as large as possible, in order
+to minimize the depth that must be fit into the limited resolution of the
+Z-buffer.</p>
+
+<p>The camera model is general in the sense that the view pyramid can be
+skewed. This can be accomplished by creating a view rectangle that is not
+centered at <span class="NDLSystemFont">[0,0]</span>. Regardless of the skew,
+the near and far planes are parallel to the view plane. The view frustum values
+<span class="NDLSystemFont">vl</span>, <span class="NDLSystemFont">vr</span>,
+<span class="NDLSystemFont">vt</span>, <span class="NDLSystemFont">vb</span>,
+<span class="NDLSystemFont">vn</span>, and <span class=
+"NDLSystemFont">vf</span> are set through <span class=
+"NDLSystemFont">SetViewFrustum</span>.</p>
+
+<p>Having defined the 3D configuration of the view frustum, the application can
+also specify the rectangular portion of the rendering backbuffer to which the
+view rectangle is drawn (a purely 2D mapping). These values are called <em>port
+settings</em> and specify the port left <span class="NDLSystemFont">pl</span>,
+right <span class="NDLSystemFont">pr</span>, top <span class=
+"NDLSystemFont">pt</span>, and bottom <span class="NDLSystemFont">pb</span>.
+All port settings must be in the unit interval <span class=
+"NDLSystemFont">[0,1]</span>. The port for the full rendering backbuffer
+corresponds to <span class="NDLSystemFont">pl=0</span>, <span class=
+"NDLSystemFont">pr=1</span>, <span class="NDLSystemFont">pb=0</span>, and
+<span class="NDLSystemFont">pt=1</span>.</p>
+
+<p>The overall projection matrix maps from world space to view space (which
+does not include the mapping from the viewport into the space of the
+framebuffer ). It is the concatenation of two transforms: the rigid
+world-to-model transform for the camera (i.e. the inverse of the camera's world
+transform) and the projection matrix (which is defined purely by the view
+frustum). This is a 4x4 matrix (it is a homogeneous transform), and can be
+retrieved from the function <span class=
+"NDLSystemFont">NiCamera::GetWorldToCameraMatrix()</span>.</p>
+
+<h2>Ortho Projection Camera Model</h2>
+
+<p>The ortho projection camera model differs from that of the general
+perspective camera model, primarily in the construction of the view-to-screen
+projection matrix and the view frustum itself from the frustum values. Ortho
+projection view frustums are created with the same six values that the general
+perspective camera model employs. However, the planes created from these values
+do not pass through a single, shared center of projection. Instead, the left,
+right, top and bottom planes are all perpendicular to the view plane (note that
+this means that oblique parallel projections are not supported). Additionally,
+the pair <span class="NDLSystemFont">vl</span> and <span class=
+"NDLSystemFont">vr</span> specify view planes which are always parallel to each
+other (but reversed from one another), as do the pair <span class=
+"NDLSystemFont">vt</span> and <span class="NDLSystemFont">vb</span>.</p>
+
+<p>Ortho projections (sometimes referred to as parallel projections) are often
+used in modeling tools for displaying side, front, top renderings and other
+situations where perspective rendering is not appropriate.</p>
+
+<p>The following figure illustrates the ortho projection camera model:</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/OrthoCamera.gif" width="469" height="332" alt=
+    "OrthoCamera (11K)">
+
+    <p class="NDLFigureCaption">Orthogonal projection camera model</p>
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

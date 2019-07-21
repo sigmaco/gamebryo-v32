@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Particles Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Particles Demo Code Overview</h1>
+
+<p>This section details the functionality of significant member
+functions in the two classes that form the main application:
+<span class="NDLSystemFont">BubblingParticles</span> (the demo
+itself), <span class="NDLSystemFont">BubblesScene</span> (the
+wrapper for each sub-scene).</p>
+
+<h2>BubblingParticles::Initialize</h2>
+
+<p><span class="NDLSystemFont">Initialize</span> first creates the
+PhysX SDK object via the <span class="NDLSystemFont"><a href=
+"../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">efdPhysX::PhysXSDKManager::Initialize</a></span>
+function. We must create the PhysX SDK before calling
+<span class="NDLSystemFont">NiApplication::Initialize</span>
+because the latter creates PhysX objects via <span class=
+"NDLSystemFont">CreateScene</span>. We also set several SDK
+parameters. The <span class="NDLSystemFont">SKIN_WIDTH</span> is
+set to a small value because the particle actors are small. Note
+that all values specified to the SDK here are not scaled by the
+factor in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object. The resulting debug geometry is scaled, however.</p>
+
+<h2>BubblingParticles::CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> loads the NIF
+files, creating the <span class=
+"NDLSystemFont">BubblesScene</span> objects in the process. It
+checks for hardware before trying to load the hardware scene.</p>
+
+<h2>BubblingParticles::UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> first deals
+with input. The frame time is capped to prevent large physics
+steps. Leaving it unchanged leaves the possibility for time steps
+that cause the bubbles to pass through walls or the objects to
+escape their grate. PhysX sub-stepping would typically prevent
+such problems, but a check like this ensures that sub-stepping
+does not take too many steps.</p>
+
+<p>If the simulation is active, then we make appropriate calls
+into the <span class="NDLSystemFont">BubblesScene</span> class to
+perform the update. The update is split into two steps, driven by
+the need to access the PhysX SDK outside of the
+Simulate/FetchResults pair. When simulating asynchronously, the
+application is only outside of Simulate/FetchResults between the
+<span class="NDLSystemFont">FetchResults</span> call at the start
+of the update (in <span class="NDLSystemFont">PreUpdate</span>)
+and the <span class="NDLSystemFont">Simulate</span> call in
+<span class="NDLSystemFont">PostUpdate</span>. At this time we
+enact any operations that involve the PhysX SDK, in this case
+toggling debug rendering or changing the simulation timing.</p>
+
+<p>Finally, <span class="NDLSystemFont">UpdateFrame</span>
+updates the particle counter.</p>
+
+<h2>BubblingParticles::ToggleDebugRender</h2>
+
+<p><span class="NDLSystemFont">ToggleDebugRender</span> switches
+both the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+flags and the PhysX SDK flag. The former only controls whether
+the debug geometry is rendered, while the latter controls whether
+it is produced. The two flags are independent: you can produce
+geometry but have Gamebryo not render it, or you can try to
+render even if no geometry is produced (in which case you will
+see nothing).</p>
+
+<h2>BubblesScene::BubblesScene</h2>
+
+<p>The constructor takes the file name for the NIF file to load
+and a flag indicating that the scene be prepared for hardware. It
+loads the file and assumes the first top-level object in the
+stream is the scene graph. The particle system node is found in
+the scene graph and the emitter is extracted. We need the emitter
+in order to modify the particle emission rate at runtime.</p>
+
+<p>The constructor then loops through the other top-level objects
+using runtime type information (RTTI) to determine what kind of
+objects are present. If a camera is found (one is expected) then
+that becomes the local camera. If a <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span>
+object is found then this NIF file contains PhysX content. When a
+prop is found we create a <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object and the PhysX <span class="NDLSystemFont">NxScene</span>
+object, using the hardware flag to determine the scene type. We
+also set some flags on the scene to enable updating of sources
+and destinations and to disable debug rendering (for now).</p>
+
+<p>PhysX-based particle systems are streamed from the art tools
+in a distinct <a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSParticleSystemProp.htm">
+NiPhysXPSParticleSystemProp</a> or <a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystemProp.htm">
+NiPhysXPSMeshParticleSystemProp</a> object. In this demo we check
+for props of type <a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSParticleSystemProp.htm">
+NiPhysXPSParticleSystemProp</a>. If found, we know that the
+particle system we have just loaded must be of type <a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSParticleSystem.htm">NiPhysXPSParticleSystem</a>.
+All such systems must contain an actor descriptor holding the
+properties of the PhysX actor that represents the particles.
+Before adding the prop to the scene we modify the actor
+descriptor to turn off gravity on the particles. For this we need
+access to the <span class="NDLSystemFont">NxBodyDesc</span>
+object for the prototypical particle actor. We get the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXBodyDesc.htm">NiPhysXBodyDesc</a></span>
+wrapper for the <span class="NDLSystemFont">NxBodyDesc</span>
+object and then the descriptor itself. We modify the flags on
+this and then save it back into the <span class=
+"NDLSystemFont">NiPhysXBodyDesc</span> object.</p>
+
+<p>All props are added to the scene. If particle actor pools are
+enabled, this would fill the pools. We also check if we have
+hardware, and if so page in the meshes.</p>
+
+<p>The last step in the constructor is to update the scene graph
+and run-up the particle systems. This ensures that the system is
+already populated with bubbles when a user switches to it at
+runtime.</p>
+
+<h2>BubblesScene::RunUpPSys</h2>
+
+<p><span class="NDLSystemFont">RunUpPSys</span> is responsible
+for simulating the particle system for a few seconds in order to
+emit some bubbles and give the rigid shapes a chance to reach a
+reasonable state, free of their initial conditions. The function
+splits the given interval into sub-steps of a reasonable size (60
+frames per second in this case) and then repeatedly steps the
+simulation. The time at the end of the run-up is then returned.
+Calling functions set the local simulation time to be this new
+time.</p>
+
+<h2>BubblesScene::PreUpdate</h2>
+
+<p>The <span class="NDLSystemFont">PreUpdate</span> function
+performs the first part of an asynchronous update, or all of a
+synchronous update. Work is only done if the scene is active, in
+which case the scene graph is always updated after any physics
+that is present. Before doing anything the local time is
+incremented by the given increment.</p>
+
+<p>When doing synchronous updating, this function updates the
+scene graph. This calls all the particle system controllers and
+begins the parallel updating that will set up the velocity change
+request for each particle. We then start simulation (which forces
+particle system update to complete) with the <span class=
+"NDLSystemFont">Simulate</span> call and wait for its results
+with <span class="NDLSystemFont">FetchResults</span>. The last
+step of physics updating is to call <span class=
+"NDLSystemFont">UpdateDestinations</span>, which prepares the
+particle system for scene graph update. And we are done for
+synchronous simulation.</p>
+
+<p>For asynchronous simulation, <span class=
+"NDLSystemFont">PreUpdate</span> is responsible for fetching the
+results from the simulation that was started in the previous
+frame. It then updates the destinations before updating the scene
+graph, which runs all the particle modifiers to set up state
+ready for the next simulate call. It is essential that the scene
+graph update happen after <span class=
+"NDLSystemFont">UpdateDestinations</span> when doing asynchronous
+simulation, so that the scene graph update is working with the
+most recent physics data.</p>
+
+<h2>BubblesScene::PostUpdate</h2>
+
+<p>The <span class="NDLSystemFont">PreUpdate</span> function only
+acts of we are active and doing asynchronous simulation. It
+updates the sources and starts the next simulation loop, which
+will run while Gamebryo is rendering this frame. Note that we are
+passing a future time to this simulate call. It is an estimate of
+the next frame time, when the results will be required and when
+they will be pushed into the scene graph.</p>
+
+<h2>BubblesScene::SimulateStart</h2>
+
+<p>Before beginning simulation, the <span class=
+"NDLSystemFont">NiPhysXScene</span> needs to know what the time
+is, which is done through a call to <span class=
+"NDLSystemFont">SetFetchTime</span>. We also clear any debug
+geometry that might be left over from a previous simulation step.
+Before starting the simulation, we update the destinations with
+the force flag set (the second argument). This makes certain that
+the correct time is pushed into all the sources and destinations,
+even if it time has moved backwards. This should always be done
+when a reset happens or when the updating of sources and
+destinations has been paused for a while. Finally, we start
+simulation.</p>
+
+<h2>BubblesScene::SimulateStop</h2>
+
+<p>After stopping the simulation the final state is pushed into
+the scene graph.</p>
+
+<h2>BubblesScene::SetSynchronous</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object must be informed when the simulation changes from
+synchronous to asynchronous and vice versa. The scene uses this
+information to correctly set the synchronization points for
+<a href=
+"../../Programmer/NiMesh/Introduction_to_Mesh_Modifiers.htm">mesh
+modifiers</a>.</p>
+
+<h2>BubblesScene::Reset</h2>
+
+<p>The <span class="NDLSystemFont">Reset</span> function stops
+the simulation (if running), resets it, and restarts if
+necessary. Note the use of <span class=
+"NDLSystemFont">NiPhysXScene::GetInSimFetch</span> to determine
+if simulation is underway.</p>
+
+<p>The reset itself first resets the Gamebryo particle system. It
+then restores the PhysX scene from snapshot 0, which is
+guaranteed to exist in a scene loaded from a NIF, and represents
+the initial conditions with which the PhysX actors were created.
+Only the positions and velocities of the actors are restored,
+which is all we require here. We then run-up the system again and
+restart simulation, if necessary. Note that the run-up implicitly
+forces the scene graph to update in response to the reset.</p>
+
+<h2>BubblesScene::PageMeshes</h2>
+
+<p>This function is designed to page all the meshes for a
+hardware simulation. If working with a small scene, this may be
+appropriate. For larger scenes it might be necessary to be
+selective about which pages are mapped and update the paging at
+runtime. The function loops over all the actors in the PhysX
+scene, loops over each actor's shape, and if it is a triangle
+mesh, loops over its pages.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

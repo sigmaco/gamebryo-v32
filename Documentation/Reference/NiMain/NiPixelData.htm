@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPixelData</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<p class="NDLRefHeadClassTitle">NiPixelData</p>
+
+<p class="NDLRefParentage">: public <a href="NiObject.htm"><span>NiObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiPixelData.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiPixelData</span> 
+ objects represent one or more two-dimensional arrays of pixel values or 
+ &quot;faces&quot;, as well as pyramids of multiple mipmap levels, each 
+ of two-dimensional arrays of pixel values. The object also contains information 
+ representing the format of the pixels in the data arrays, as well as the 
+ dimensions of the arrays. <span class="NDLSystemFont">NiPixelData</span> 
+ objects can represent full mipmap pyramids, a wide range of pixel formats 
+ and revision IDs. <span class="NDLSystemFont">NiPixelData</span> 
+ objects may also refer to <span class="NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span> objects, and can even share 
+ them. All &quot;faces&quot; of the <span class="NDLSystemFont">NiPixelData</span> 
+ are laid out so that each face's full mipmap pyramid is contiguous in 
+ memory.</p>
+
+<p><span class="NDLSystemFont">NiPixelData</span> 
+ objects are the main form of texture data representation in Gamebryo. 
+ Image file format readers return objects of this type, and <span class="NDLSystemFont"><a href="NiSourceTexture.htm">NiSourceTexture</a></span> 
+ texture objects may be created from <span class="NDLSystemFont">NiPixelData</span> 
+ objects.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiPixelData(unsigned int uiWidth, unsigned 
+ int uiHeight, const <a href="NiPixelFormat.htm">NiPixelFormat</a>&amp; 
+ kDesc, unsigned int uiMipmapLevels = 1, unsigned int uiFaces = 1)</p>
+
+<p class="NDLRefMemberDescription">Constructs an <span class="NDLSystemFont">NiPixelData</span> 
+ object of the given dimensions, number of faces, pixel format and mipmap 
+ levels. The image data arrays are allocated, but are left uninitialized 
+ for performance reasons. The given width and height values should be non-zero 
+ in all cases. The kDesc parameter should be a valid pixel descriptor. 
+ Finally, the number of mipmap levels should be less than or equal to the 
+ number of mipmap levels in a full pyramid based on the image dimensions. 
+ If <span class="NDLSystemFont">1</span> is passed in, 
+ a &quot;flat&quot; (non-mipmapped) array is created. If <span class="NDLSystemFont">0</span> is passed in, the number 
+ of levels in a full pyramid is automatically calculated, and the full 
+ pyramid is allocated. See below under notes for a description of how mipmap 
+ pyramids are formed. The <span class="NDLSystemFont">NiPixelData</span> 
+ object may represent a partial mipmap pyramid (i.e. one that does not 
+ go all the way down to 1x1).</p>
+
+<p class="NDLRefMemberFunction">NiPixelData(const NiPixelData&amp; kSrc)</p>
+
+<p class="NDLRefMemberDescription">Copies all data from one <span class="NDLSystemFont">NiPixelData</span> object to 
+ another. Image storage (including mipmap levels) is copied, not shared. 
+ The destination object's revision ID is set to <span class="NDLSystemFont">1</span>.</p>
+
+<p class="NDLRefHead1">Operators</p>
+
+<p class="NDLRefMemberFunction">const unsigned char* operator()(unsigned 
+ int uiX, unsigned&nbsp;int&nbsp;uiY, unsigned int uiMipmapLevel = 0, unsigned 
+ int uiFace = 0) const</p>
+
+<p class="NDLRefMemberFunction">unsigned char* operator()(unsigned int uiX, 
+ unsigned int uiY, unsigned int uiMipmapLevel = 0, unsigned int uiFace 
+ = 0)</p>
+
+<p class="NDLRefMemberDescription">These operators return the address of 
+ the desired pixel if the pixel format is not compressed. Otherwise, the 
+ function returns <span class="NDLSystemFont">NULL</span>. 
+ Note that the mipmap level, face index, x and y values are not checked, 
+ and are assumed to be valid (for speed).</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static unsigned int ComputeMipmapLevels(unsigned 
+ int uiWidth, unsigned int uiHeight)</p>
+
+<p class="NDLRefMemberDescription">A static helper function that returns 
+ the number of levels in a full pyramid, given the width and height specified. 
+ If the image dimensions are invalid (i.e., 0), then the function will 
+ return zero.</p>
+
+<p class="NDLRefMemberDescription">Note that in the case of a non-square 
+ image, the number of mipmap levels will be based on the larger dimension, 
+ as Gamebryo assumes that a full pyramid for a non-square image continues 
+ until both dimensions are 1 (e.g., 16x4, 8x2, 4x1, 2x1, 1x1).</p>
+
+<p class="NDLRefMemberDescription">Also, although mipmaps are not generated 
+ automatically for non-power-of-two dimensions, you can have a mipmap with 
+ non-power-of-two dimensions if it is supplied with the texture. In such 
+ cases, mipmaps for non-power-of-two textures adopt the convention of &quot;rounding 
+ up&quot; as you go from an odd dimension to the corresponding &quot;halved&quot; 
+ dimension for the next smaller mipmap level (e.g., 14x6, 7x3, 3x1, 1x1).</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumMipmapLevels() const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of mipmap levels in 
+ the <span class="NDLSystemFont">NiPixelData</span> object. 
+ If either of the dimensions are 0, then this function will return 0.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetWidth(unsigned int uiMipmapLevel 
+ = 0, unsigned int uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the width of the face's mipmap 
+ level at the given index, where level 0 is the finest (largest) mipmap 
+ level, and level (<span class="NDLSystemFont">GetNumMipmapLevels()-1</span>) 
+ is the coarsest (smallest) mipmap level.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetHeight(unsigned int uiMipmapLevel 
+ = 0, unsigned int uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the height of the face's mipmap 
+ level at the given index, where level 0 is the finest (largest) mipmap 
+ level, and level (<span class="NDLSystemFont">GetNumMipmapLevels()-1</span>) 
+ is the coarsest (smallest) mipmap level.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetPixelStride() const</p>
+
+<p class="NDLRefMemberDescription">Returns the stride (in bytes) from the 
+ start of one pixel to the start of the next. If the pixel format is a 
+ compressed format, this value will be zero, as pixel stride is not constant 
+ in a compressed image (compressed images are block-based).</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSizeInBytes(unsigned int 
+ uiMipmapLevel = 0, unsigned int uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of the face's 
+ mipmap level at the given index, where level 0 is the finest (largest) 
+ mipmap level, and level (<span class="NDLSystemFont">GetNumMipmapLevels()-1</span>) 
+ is the coarsest (smallest) mipmap level. This value is valid for all pixel 
+ formats.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetTotalSizeInBytes() const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of all faces 
+ and their entire mipmap pyramids. This value is valid for all pixel formats.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetFaceSizeInBytes() const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of one face 
+ and its entire mipmap pyramid. This value is valid for all pixel formats.</p>
+
+<p class="NDLRefMemberFunction">const <a href="NiPixelFormat.htm">NiPixelFormat</a>&amp; 
+ GetPixelFormat() const</p>
+
+<p class="NDLRefMemberDescription">Returns the pixel format of the data in 
+ the object.</p>
+
+<p class="NDLRefMemberFunction">void SetPalette(<a href="NiPalette.htm">NiPalette</a>* 
+ pkPal)</p>
+
+<p class="NDLRefMemberDescription">Attaches an <span class="NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span> to the object  the <span class="NDLSystemFont">NiPixelData</span> object should 
+ have a palettized format if this value is non-<span class="NDLSystemFont">NULL</span>. 
+ If the object already had a palette, the existing palette will have its 
+ reference count decremented.</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span>* GetPalette()</p>
+
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span>* GetPalette() const</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the object's <span 
+ class="NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span>. 
+ This pointer should be <span class="NDLSystemFont">NULL</span> 
+ if and only if the format is not palettized. </p>
+
+<p class="NDLRefMemberFunction">unsigned char* GetPixels(unsigned int uiMipmapLevel 
+ = 0, unsigned int uiFace = 0))</p>
+
+<p class="NDLRefMemberFunction">const unsigned char* GetPixels(unsigned int 
+ uiMipmapLevel = 0, unsigned int uiFace = 0)) const</p>
+
+<p class="NDLRefMemberDescription">These functions return a pointer to the 
+ first pixel of the mipmap level at the given index and specified face, 
+ where level 0 is the finest (largest) mipmap level, and level (<span class="NDLSystemFont">GetNumMipmapLevels()-1</span>) 
+ is the coarsest (smallest) mipmap level.</p>
+
+<p class="NDLRefMemberFunction">void MarkAsChanged()</p>
+
+<p class="NDLRefMemberDescription">This function must be called prior to 
+ the next time that the <span class="NDLSystemFont">NiPixelData</span> 
+ (or any <span class="NDLSystemFont"><a href="NiTexture.htm">NiTexture</a></span> 
+ associated with it) is rendered if the pixel data is changed in any way. 
+ See the notes section below on changing pixel data values.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetRevisionID() const</p>
+
+<p class="NDLRefMemberDescription">Returns the current revision ID of the 
+ <span class="NDLSystemFont">NiPixelData</span> 
+ object.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name=Mipmap_Level_Pixel_Storage></a><p class="NDLRefHead2">Mipmap Level Pixel 
+ Storage</p>
+
+<p>Currently, <span class="NDLSystemFont">NiPixelData</span> 
+ objects store the pixel values for each mipmap level consecutively, packed 
+ one right after another. Each mipmap level is not individually aligned. 
+ As a result, the data may be copied using a single <span class="NDLSystemFont">memcpy</span> operation by 
+ retrieving the base address of mipmap level 0 and copying the number of 
+ bytes returned by <span class="NDLSystemFont">NiPixelData::GetTotalSizeInBytes</span>.</p>
+
+<a name=Mipmap_Pyramid_Generation></a><p class="NDLRefHead2">Mipmap Pyramid Generation</p>
+
+<p>Gamebryo supports partial mipmap pyramids. For example, 
+ while the full pyramid for a 16x16 image would be the following set of 
+ mipmap levels:&nbsp; 16x16, 8x8, 4x4, 2x2, 1x1, <span class="NDLSystemFont">NiPixelData</span> 
+ may also be used to store the following partial mipmap pyramid:&nbsp; 
+ 16x16, 8x8. However, intermediate mipmap levels cannot be skipped  each 
+ mipmap level must be half the dimension of the one above it in the chain. 
+ </p>
+
+<p>Note that Gamebryo considers a full pyramid with a non-square 
+ image to be the one whose coarsest mipmap level is 1x1, e.g., 16x4, 8x2, 
+ 4x1, 2x1, 1x1.</p>
+
+<p>Also, although mipmaps are not generated automatically 
+ for non-power-of-two dimensions, a mipmap with non-power-of-two dimensions 
+ may be used if it is supplied with the texture. In such cases, mipmaps 
+ for non-power-of-two textures adopt the convention of &quot;rounding down&quot; 
+ as you go from an odd dimension to the corresponding &quot;halved&quot; 
+ dimension for the next smaller mipmap level e.g., 14x6, 7x3, 3x1, 1x1).</p>
+
+<a name=Changing_NiPixelData_Pixel_Values></a><p class="NDLRefHead2">Changing 
+ NiPixelData Pixel Values</p>
+
+<p>If an application changes pixel values in an <span class="NDLSystemFont">NiPixelData</span> object after 
+ creation, it must call <span class="NDLSystemFont">NiPixelData::MarkAsChanged</span> 
+ prior to using the data (or any related <span class="NDLSystemFont"><a href="NiTexture.htm">NiTexture</a></span> object) for a rendering operation. 
+ However, note that it is safe to create an <span class="NDLSystemFont">NiPixelData</span> 
+ object, immediately change its pixel data, and then pass the <span class="NDLSystemFont">NiPixelData</span> object to a 
+ texture related function or object constructor. The need to call <span 
+ class="NDLSystemFont">MarkAsChanged</span> applies only 
+ to <span class="NDLSystemFont">NiPixelData</span> objects 
+ that are used with rendering objects such as <span class="NDLSystemFont"><a href="NiSourceTexture.htm">NiSourceTexture</a>s</span>.</p>
+
+<p>Note that changing pixel values in one level of a mipmap 
+ pyramid will not automatically change the pixels in other mipmap levels. 
+ An application modifying pixel data on the fly must handle the filtering 
+ of mipmap levels itself.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

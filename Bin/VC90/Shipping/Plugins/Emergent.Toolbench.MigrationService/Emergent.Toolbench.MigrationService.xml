@@ -1,0 +1,282 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Emergent.Toolbench.MigrationService</name>
+    </assembly>
+    <members>
+        <member name="T:Emergent.Toolbench.MigrationService.MigrationChain">
+            <summary>
+            Represent an ordered list of <see cref="T:Emergent.Toolbench.MigrationService.MigrationStep"/> through which a
+            <see cref="T:Emergent.Toolbench.MigrationService.MigrationDocument"/> will go when a migration occurs.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationChain.#ctor(System.Collections.Generic.IEnumerable{Emergent.Toolbench.MigrationService.MigrationStep})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Emergent.Toolbench.MigrationService.MigrationChain"/> class.
+            </summary>
+            <param name="steps">The migration steps.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationChain.NeedMigration(Emergent.Toolbench.MigrationService.MigrationDocument)">
+            <summary>
+            Get if the specified <see cref="T:Emergent.Toolbench.MigrationService.MigrationDocument"/> needs a migration.
+            </summary>
+            <param name="document">The document.</param>
+            <returns>True if a migration is required, false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationChain.Migrate(Emergent.Toolbench.MigrationService.MigrationDocument)">
+            <summary>
+            Migrates the specified document.
+            </summary>
+            <param name="document">The document.</param>
+            <remarks>This method also saves the document when the migration is finished.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationChain.GatherSubDocuments(Emergent.Toolbench.MigrationService.MigrationJob)">
+            <summary>
+            Gathers the sub documents to be part of the <see cref="T:Emergent.Toolbench.MigrationService.MigrationJob"/>.
+            </summary>
+            <param name="job">The migration job with the main document to migrate.</param>
+            <remarks>See <see cref="M:Emergent.Toolbench.MigrationService.MigrationStep.GatherSubDocuments(Emergent.Toolbench.MigrationService.MigrationJob)"/> for more details.
+            The method queries the <see cref="T:Emergent.Toolbench.MigrationService.MigrationStep"/> with the version
+            corresponding to the current version of the main document. This allows
+            to gather the sub documents even though the main document doesn't need
+            migration (is at the latest version).</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationChain.Steps">
+            <summary>
+            Gets the ordered list of migration steps.
+            </summary>
+            <value>The migration steps.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationChain.TargetVersion">
+            <summary>
+            Gets the target version of the migration chain, which is the target version of 
+            the last migration step.
+            </summary>
+            <value>The target version.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.MigrationDocument">
+            <summary>
+            Wrap a document that may need to be migrated.
+            The class also improves memory usage by not creating the XML object tree if it
+            is not required.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationDocument.#ctor(System.Uri,Emergent.Toolbench.MigrationService.MigrationDocument)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Emergent.Toolbench.MigrationService.MigrationDocument"/> class.
+            </summary>
+            <param name="documentPath">The document path.</param>
+            <param name="parentDocument">The parent document.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationDocument.Save">
+            <summary>
+            Saves the XML object tree back to the original file.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationDocument.ParentDocument">
+            <summary>
+            Gets the parent document.
+            </summary>
+            <value>The parent document.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationDocument.Version">
+            <summary>
+            Gets the version of the document by querying the version attribute of the XML
+            element at the root of the document.
+            </summary>
+            <value>The version.</value>
+            <remarks>The implementation uses a memory efficient XmlReader to 
+            get the version if no XML object tree has been needed yet.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationDocument.FilePath">
+            <summary>
+            Gets the file path.
+            </summary>
+            <value>The file path.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationDocument.Root">
+            <summary>
+            Gets the XML root as an XElement.
+            </summary>
+            <value>The root.</value>
+            <remarks>Calling this property forces the XML object tree to be created.
+            If only the version is required on the document, use the <see cref="P:Emergent.Toolbench.MigrationService.MigrationDocument.Version"/>
+            property instead.</remarks>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.MigrationJob">
+            <summary>
+            An instance of this class represents a migration task, or job.
+            An MigrationJob instance should only be created by calling the 
+            <see cref="M:Emergent.Toolbench.MigrationService.IMigrationService.CreateMigrationJob(System.String,System.Uri)"/> method, because the chain ID must
+            have a matching registered <see cref="T:Emergent.Toolbench.MigrationService.MigrationChain"/>.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationJob.AddSubDocument(System.String,System.Uri)">
+            <summary>
+            Adds a sub document to be migrated as part of this migration job.
+            Every sub document added are considered as a whole with the main document
+            when it comes to deciding if a migration is needed. Every sub document is
+            migrated on its own, however, with the specified migration chain.
+            </summary>
+            <param name="migrationChainID">The migration chain ID for the sub document.</param>
+            <param name="filePath">The file path of the sub document.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationJob.NeedMigration">
+            <summary>
+            Check if this job, that is, the main document or any of the sub documents,
+            requires a migration.
+            </summary>
+            <returns>True if a migration is required on this job, false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationJob.CanPerformMigration">
+            <summary>
+            Determines whether this instance can perform a migration.
+            The method calls the CanPerformMigrationHandler set on the migration, if any.
+            If no delegate are set, the migration cannot be performed.
+            </summary>
+            <returns>
+                <c>true</c> if this instance can perform a migration; otherwise, <c>false</c>.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationJob.Migrate">
+            <summary>
+            Perform the migration.
+            The main document is migrated first, then every sub document. Every document
+            is migrated with the matching migration chain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationJob.MainDocument">
+            <summary>
+            Gets the main document of this migration job.
+            </summary>
+            <value>The main document.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.Properties.Resources.ErrorScanningForFilesToMigrate">
+            <summary>
+              Looks up a localized string similar to Error scanning for files to migrate. {0}.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.Properties.Resources.FileNotFound">
+            <summary>
+              Looks up a localized string similar to File Not Found.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.Properties.Resources.NoMatchingVersionFound">
+            <summary>
+              Looks up a localized string similar to An error occured while migrating the document &apos;{0}&apos;.  The version &apos;{1}&apos; is not recognized by this version of Toolbench..
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.MigrationStep">
+            <summary>
+            Base abstract class for every migration step.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationStep.GatherSubDocuments(Emergent.Toolbench.MigrationService.MigrationJob)">
+            <summary>
+            Gathers the sub documents that need to be migrated along with the main document
+            specified in the <see cref="T:Emergent.Toolbench.MigrationService.MigrationJob"/>.
+            </summary>
+            <param name="job">The migration job.</param>
+            <remarks>This method should add the sub documents to the <see cref="T:Emergent.Toolbench.MigrationService.MigrationJob"/>
+            by calling the <see cref="M:Emergent.Toolbench.MigrationService.MigrationJob.AddSubDocument(System.String,System.Uri)"/>method.
+            The sub documents added must be ones known by the target version, not the source
+            version. For example, if this step brings the version from 9 to 10, the
+            sub documents added must be the ones known by the version 10 of the schema.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.MigrationStep.Migrate(Emergent.Toolbench.MigrationService.MigrationDocument)">
+            <summary>
+            Migrates the specified document.
+            </summary>
+            <param name="document">The document.</param>
+            <remarks>Override this method to do XML manipulation required by this step.
+            Call this base implementation to automatically increment the version number.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.MigrationStep.TargetVersion">
+            <summary>
+            Gets the target version this step will bring the document to.
+            </summary>
+            <value>The target version.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.DefaultMigrationStep">
+            <summary>
+            The <see cref="T:Emergent.Toolbench.MigrationService.DefaultMigrationStep"/> can be used to just increment the version number to the
+            next number.  Which potentially you may want to do just to cause other triggers in other plugins
+            to go off because of a migration.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.IMigrationService">
+            <summary>
+            Entry point interface for the migration service.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.IMigrationService.CreateMigrationJob(System.String,System.Uri)">
+            <summary>
+            Creates a migration job.
+            </summary>
+            <param name="chainID">The chain ID to use to migrate the main document
+            of this migration job.</param>
+            <param name="filePath">The file path of the main document.</param>
+            <returns>A migration job if the chain ID exists, null otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.IMigrationService.RegisterMigrationChain(System.String,System.Collections.Generic.IEnumerable{Emergent.Toolbench.MigrationService.MigrationStep})">
+            <summary>
+            Registers a migration chain.
+            </summary>
+            <param name="chainID">The chain ID. The ID must be unique. The content type
+            ID or the full name of the class is often a good ID.</param>
+            <param name="steps">The migration steps from the first version to the 
+            current one. The list is sorted by target version inside the method.</param>
+            <remarks>An exception is thrown if the chain ID already exists.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.IMigrationService.FindMigrationChain(System.String)">
+            <summary>
+            Finds a migration chain.
+            </summary>
+            <param name="chainID">The chain ID.</param>
+            <returns>The migration chain if found, null otherwise.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.MigrationService.IMigrationService.CanPerformMigrationHandler">
+            <summary>
+            Gets or sets the delegate called when a migration needs to be performed.
+            The return value of the delegate dictates if the migration should occur or not.
+            If no handler are set and a migration is required, no migration occurs.
+            </summary>
+            <value>A delegate of type <see cref="P:Emergent.Toolbench.MigrationService.IMigrationService.CanPerformMigrationHandler"/>.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.Plugin">
+            <summary>
+            Migration service plug-in entry point. The plug-in initializes and adds 
+            the migration service to the platform.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.MigrationService.Plugin.Start">
+            <summary>
+            When the plug-in is loaded, the migration service is added
+            to the platform.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.MigrationService.CanPerformMigrationHandler">
+            <summary>
+            The return value of the delegate dictates if the migration should occur or not.
+            A GUI implementation can prompt the user permission for migration. A non-GUI
+            implementation could look for some values set on the command line.
+            </summary>
+        </member>
+    </members>
+</doc>

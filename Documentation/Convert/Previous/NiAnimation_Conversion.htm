@@ -1,0 +1,1239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiAnimation Conversion</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiAnimation Conversion</h1>
+
+<p>Sequence-based animation in the NiAnimation library has been refactored for
+Gamebryo 2.6. Refer to the <a href=
+"../../Reference/NiAnimation/Introduction_to_Animation.htm">Introduction to
+Animation</a> for an overview of the revised Gamebryo animation system
+including typical usage patterns for sequence-based animation. The animation
+enhancements focus on six main areas:</p>
+
+<p>1. The separation of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>
+into two classes to reduce the memory footprint when sequences are shared by
+multiple characters. This division of labor affects a number of supported
+functions with the majority of these previously residing in <span class=
+"NDLSystemFont">NiControllerSequence</span>, <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">NiControllerManager</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span>.
+<a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Sequence_Recycling">Sequence
+recycling</a> is enabled by default to improve runtime performance and minimize
+memory fragmentation.</p>
+
+<p>2. Improving the runtime performance of sequence-based animation. Sequence
+animation now utilizes <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiEvaluator.htm">NiEvaluator</a></span> objects
+instead of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpolator.htm">NiInterpolator</a></span>
+objects to compute the animated data for a given time. Each active sequence
+(i.e. <span class="NDLSystemFont">NiControllerSequence</span>) owns an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiScratchPad.htm">NiScratchPad</a></span> which
+stores any instance-based data required by the evaluators to play the sequence
+on the character. Many evaluators cache their current animation curve segment
+in the scratch pad which allows them to reuse this localized data across
+successive update times thereby increasing runtime performance.</p>
+
+<p>3. The consolidation of the interpolator/controller network that transmits
+data from active animation sequences to associated scene graph targets. The new
+pose buffer system replaces this large network of narrow data pipes with a
+smaller system of wide data pipes with the prospect of improved parallel
+computation down the road.</p>
+
+<p>4. Increasing the role of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_updating">NiControllerManager::Update</a></span>
+such that it now propagates the character's latest animation state to the scene
+graph. Previously, this operation was delayed until a future scene graph
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#UpdateFunctions">Update</a></span> call.
+This modification alters the timing as to when scene graph attributes,
+including local transform values, are updated by the sequence animation system.
+Centralizing this responsibility in the controller manager provides greater
+opportunity for parallel computation in the future.</p>
+
+<p>5. Extensions to the animation callback systems to support the separation of
+<span class="NDLSystemFont">NiControllerSequence</span> into two classes. This
+topic is given special treatment here as it involves a new event type and usage
+pattern when applications hold onto active sequences.</p>
+
+<p>6. Improving the robustness and usability of the accumulation root and
+<a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Transformation_Accumulation">
+accumulation transform</a>.</p>
+
+<p>The following sections provide more details about what has changed in the
+NiAnimation library and how to convert existing Gamebryo 2.5 applications to
+work with Gamebryo 2.6. The <a href="../../Reference/NiAnimation/NiAnimation_Rel_Notes.htm">Release Notes for
+the NiAnimation library</a> should also be consulted as it contains a number of
+secondary improvements not listed below.</p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Separation_of_NiControllerSequence_into_two_classes">
+Separation of NiControllerSequence into two classes</a></p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Improving_runtime_performance_via_sequence_evaluators">
+Improving runtime performance via sequence evaluators</a></p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Consolidation_of_the_interpolator_controller_network">
+Consolidation of the interpolator/controller network</a></p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Increasing_the_role_of_NiControllerManager__Update">
+Increasing the role of NiControllerManager::Update</a></p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Extensions_to_the_animation_callback_systems">Extensions
+to the animation callback systems</a></p>
+
+<p><a href=
+"NiAnimation_Conversion.htm#Improvements_in_transformation_accumulation">Improvements
+in transformation accumulation</a></p><a name=
+"Separation_of_NiControllerSequence_into_two_classes" id=
+"Separation_of_NiControllerSequence_into_two_classes"></a>
+
+<h2>Separation of NiControllerSequence into two classes</h2>
+
+<p>The storage and playback of sequence animation has been refactored in
+Gamebryo 2.6 to reduce the memory footprint when sequences are shared by
+multiple characters. Gamebryo 2.6 utilizes two classes to represent animated
+sequences: <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm">NiSequenceData</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>.
+<span class="NDLSystemFont">NiSequenceData</span> objects contain the
+shareable, heavyweight data of exported animation sequences saved in KF files.
+<span class="NDLSystemFont">NiControllerSequence</span> objects are temporary
+runtime entities created upon sequence activation. These lighter weight objects
+maintain instance-based state to play back the animated sequence on a
+particular character, and are destroyed or recycled shortly after the active
+sequence runs to completion. <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Sequence_Recycling">Sequence
+recycling</a> is enabled by default to improve runtime performance and minimize
+memory fragmentation.</p>
+
+<p>Older versions of Gamebryo utilized a single class, also named <span class=
+"NDLSystemFont">NiControllerSequence</span>, which performed the composite
+duties of the new <span class="NDLSystemFont">NiSequenceData</span> and
+<span class="NDLSystemFont">NiControllerSequence</span> classes. <span class=
+"NDLSystemFont">NiControllerSequence</span> objects stored in KF files from
+Gamebryo 1.2 to 2.5 are automatically converted by Gamebryo 2.6 to the new
+<span class="NDLSystemFont">NiSequenceData</span> format during the loading
+process.</p>
+
+<p>The following items describe changes to supported functions in <span class=
+"NDLSystemFont">NiControllerSequence</span>, <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">NiControllerManager</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span> to
+account for the fact that sequences are now stored in <span class=
+"NDLSystemFont">NiSequenceData</span> objects as opposed to <span class=
+"NDLSystemFont">NiControllerSequence</span> objects. To convert your
+application to Gamebryo 2.6 modify your code to work with the new <span class=
+"NDLSystemFont">NiSequenceData</span> and <span class=
+"NDLSystemFont">NiControllerSequence</span> classes based on the context in
+which each sequence object is used.</p>
+
+<h3>NiControllerSequence functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerSequence</span> interface.</p>
+
+<p>- Renamed the <span class="NDLSystemFont">AnimState</span> enumeration to
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#NiAnimState">NiAnimState</a></span>
+and moved it to a separate include file, NiAnimState.h, to reduce circular
+include dependencies.</p>
+
+<p>- Renamed the static <span class=
+"NDLSystemFont">CreateSequenceFromFile</span> and <span class=
+"NDLSystemFont">CreateAllSequencesFromFile</span> functions to <span class=
+"NDLSystemFont">CreateSequenceDataFromFile</span> and <span class=
+"NDLSystemFont">CreateAllSequenceDatasFromFile</span>. Moved these functions to
+<span class="NDLSystemFont">NiSequenceData</span>. Data types of communicated
+values were changed from <span class=
+"NDLSystemFont">NiControllerSequence</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Moved the supported constructor to <span class=
+"NDLSystemFont">NiSequenceData</span> so a shareable animation sequence can be
+built programmatically. Eliminated support for a constructor in the new
+<span class="NDLSystemFont">NiControllerSequence</span> class. <span class=
+"NDLSystemFont">NiControllerSequence</span> objects are temporary runtime
+objects representing active sequences. These should always be created via
+supported functions, such as <span class=
+"NDLSystemFont">ActivateSequence</span> in <span class=
+"NDLSystemFont">NiControllerManager</span> and <span class=
+"NDLSystemFont">NiActorManager</span>.</p>
+
+<p>- Moved <span class="NDLSystemFont">GetName</span> and <span class=
+"NDLSystemFont">SetName</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>. <span class=
+"NDLSystemFont">NiControllerSequence::GetName</span> returns the name of its
+source <span class="NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Moved <span class="NDLSystemFont">SetTextKeys</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>. <span class=
+"NDLSystemFont">NiControllerSequence</span> objects reference the text key list
+of their source <span class="NDLSystemFont">NiSequenceData</span> upon
+activation. Both <span class="NDLSystemFont">NiSequenceData</span> and
+<span class="NDLSystemFont">NiControllerSequence</span> support <span class=
+"NDLSystemFont">GetTextKeys</span>.</p>
+
+<p>- Maintained <span class="NDLSystemFont">GetKeyTimeAt</span> in <span class=
+"NDLSystemFont">NiSequenceData</span> as well as <span class=
+"NDLSystemFont">NiControllerSequence</span>. These return identical values
+since they operate on the same text key list.</p>
+
+<p>- Deprecated and removed the underutilized <span class=
+"NDLSystemFont">GetKeyTimeAtDivFreq</span> convenience function. This can be
+replaced by <span class="NDLSystemFont">GetKeyTimeAt</span> and <span class=
+"NDLSystemFont">TimeDivFreq</span>.</p>
+
+<p>- Maintained <span class="NDLSystemFont">GetCycleType</span> and
+<span class="NDLSystemFont">SetCycleType</span> in <span class=
+"NDLSystemFont">NiSequenceData</span> as well as <span class=
+"NDLSystemFont">NiControllerSequence</span>. The <span class=
+"NDLSystemFont">NiSequenceData</span> cycle type acts as the default cycle type
+upon sequence activation. However, <span class=
+"NDLSystemFont">NiControllerSequence::SetCycleType</span> can be used to
+override this default value on an instance by instance basis.</p>
+
+<p>- Moved <span class="NDLSystemFont">SetFrequency</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>. The <span class=
+"NDLSystemFont">NiSequenceData</span> frequency acts as the default frequency
+upon sequence activation. However, most sequence activation and transition
+functions have a frequency parameter which allows this default frequency to be
+overridden on an instance by instance basis.</p>
+
+<p>- Maintained <span class="NDLSystemFont">GetFrequency</span> in <span class=
+"NDLSystemFont">NiSequenceData</span> as well as <span class=
+"NDLSystemFont">NiControllerSequence</span>. <span class=
+"NDLSystemFont">NiSequenceData::GetFrequency</span> returns the default
+frequency at which the sequence will be activated in the future. <span class=
+"NDLSystemFont">NiControllerSequence::GetFrequency</span> returns the actual
+frequency of the active sequence.</p>
+
+<p>- Maintained <span class="NDLSystemFont">TimeDivFreq</span> and <span class=
+"NDLSystemFont">TimeMultFreq</span> in <span class=
+"NDLSystemFont">NiSequenceData</span> as well as <span class=
+"NDLSystemFont">NiControllerSequence</span>. These operate using the frequency
+of the respective object.</p>
+
+<p>- Deprecated and removed <span class="NDLSystemFont">GetBeginKeyTime</span>,
+<span class="NDLSystemFont">SetBeginKeyTime</span>, <span class=
+"NDLSystemFont">GetBeginKeyTimeDivFreq</span>, <span class=
+"NDLSystemFont">GetEndKeyTime</span>, <span class=
+"NDLSystemFont">SetEndKeyTime</span>, <span class=
+"NDLSystemFont">GetEndKeyTimeDivFreq</span>, and <span class=
+"NDLSystemFont">GetLength</span>. The local timeline of <span class=
+"NDLSystemFont">NiSequenceData</span> and <span class=
+"NDLSystemFont">NiControllerSequence</span> has been redefined such that it
+always begins at time 0.0 and ends at time <span class=
+"NDLSystemFont">GetDuration</span>. <span class=
+"NDLSystemFont">GetDuration</span> is equivalent to the deprecated <span class=
+"NDLSystemFont">GetLength</span> as it returns the duration of the animation in
+seconds. Both <span class="NDLSystemFont">NiSequenceData</span> and
+<span class="NDLSystemFont">NiControllerSequence</span> support <span class=
+"NDLSystemFont">GetDuration</span> and <span class=
+"NDLSystemFont">GetDurationDivFreq</span>. <span class=
+"NDLSystemFont">NiSequenceData</span> supports <span class=
+"NDLSystemFont">SetDuration</span> for use by tools and other code which
+programmatically generate <span class="NDLSystemFont">NiSequenceData</span>
+objects. <span class="NDLSystemFont">SetDuration</span> should not be used to
+adjust the timing of sequences during runtime playback. Code utilizing
+<span class="NDLSystemFont">SetDuration</span> must ensure the times of
+evaluator keys range from 0.0 to <span class=
+"NDLSystemFont">GetDuration</span>.</p>
+
+<p>- Deprecated and removed <span class="NDLSystemFont">GetControllerAt</span>,
+<span class="NDLSystemFont">GetTargetAt</span>, <span class=
+"NDLSystemFont">GetBlendInterpolatorAt</span>, and <span class=
+"NDLSystemFont">GetBlendIdxAt</span>. These functions became obsolete with the
+new pose buffer system which <a href=
+"NiAnimation_Conversion.htm#Consolidation_of_the_interpolator_controller_network">
+consolidates the interpolator/controller network</a>.</p>
+
+<p>- Kept the following functions in <span class=
+"NDLSystemFont">NiControllerSequence</span> since these deal with runtime
+playback concepts: <span class="NDLSystemFont">ResetSequence</span>,
+<span class="NDLSystemFont">GetState</span>, <span class=
+"NDLSystemFont">GetOffset</span>, <span class="NDLSystemFont">SetOffset</span>,
+<span class="NDLSystemFont">GetTimeAt</span>, <span class=
+"NDLSystemFont">GetLastTime</span>, and <span class=
+"NDLSystemFont">GetLastScaledTime</span>.</p>
+
+<p>- Renamed <span class="NDLSystemFont">GetSequenceWeight</span> and
+<span class="NDLSystemFont">SetSequenceWeight</span> to <span class=
+"NDLSystemFont">GetWeight</span> and <span class=
+"NDLSystemFont">SetWeight</span>. These runtime playback functions were kept in
+<span class="NDLSystemFont">NiControllerSequence</span>. Most sequence
+activation and transition functions have weight parameters which assign a
+maximum <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Weights">weight</a> to
+active sequences. <span class="NDLSystemFont">SetWeight</span> may be used at a
+later time to adjust this initial setting.</p>
+
+<p>- Added <span class="NDLSystemFont">GetPriority</span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> to obtain the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Priorities">priority</a>
+of the active sequence. Priority is always set via the sequence activation and
+transition functions.</p>
+
+<p>- Added <span class="NDLSystemFont">GetActivationID</span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> to differentiate between different
+instances of a recycled sequence. Successive activations of the same sequence
+will have different IDs, even when sequence recycling is enabled.</p>
+
+<p>- Added <span class="NDLSystemFont">GetSequenceData</span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> to access the source <span class=
+"NDLSystemFont">NiSequenceData</span> from which the <span class=
+"NDLSystemFont">NiControllerSequence</span> was activated.</p>
+
+<p>- Added <span class="NDLSystemFont">GetTimeSyncSequence</span> to
+<span class="NDLSystemFont">NiControllerSequence</span> to access the
+associated time sync sequence, if present.</p>
+
+<p>- Added <span class="NDLSystemFont">GetPoseBuffer</span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> to access the associated
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBuffer.htm">NiPoseBuffer</a></span>. Each
+<span class="NDLSystemFont">NiControllerSequence</span> owns an <span class=
+"NDLSystemFont">NiPoseBuffer</span> to which the <span class=
+"NDLSystemFont">NiControllerSequence</span> writes its animated data during
+each <span class="NDLSystemFont">Update</span> call. Effectively, this pose
+buffer contains a time-based snapshot (or pose) of the animated sequence.</p>
+
+<p>- Sequences now rely upon evaluators instead of interpolators to compute
+animated data at a given time. See this <a href=
+"NiAnimation_Conversion.htm#Improving_runtime_performance_via_sequence_evaluators">
+section</a> for information on how this transition affects the supported
+interface.</p>
+
+<h3>NiControllerManager functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerManager</span> interface.</p>
+
+<p>- Renamed <span class="NDLSystemFont">AddSequenceFromFile</span>,
+<span class="NDLSystemFont">AddAllSequencesFromFile</span>, and <span class=
+"NDLSystemFont">AddSequence</span> to <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_adding_sequences">
+AddSequenceDataFromFile</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_adding_sequences">
+AddAllSequenceDatasFromFile</a></span>, and <span class=
+"NDLSystemFont"><a href="../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_adding_sequences">
+AddSequenceData</a></span> respectively. Data types of communicated values were
+changed from <span class="NDLSystemFont">NiControllerSequence</span> to
+<span class="NDLSystemFont">NiSequenceData</span>. The optional <span class=
+"NDLSystemFont">kName</span> parameter was dropped from these methods. If the
+sequence name requires modification, applications should use <span class=
+"NDLSystemFont">NiSequenceData::SetName</span> to rename the sequence before
+adding it to a controller manager.</p>
+
+<p>- Renamed <span class="NDLSystemFont">RemoveSequence</span> to <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_removing_sequences">
+RemoveSequenceData</a></span>. Data types of communicated values were changed
+from <span class="NDLSystemFont">NiControllerSequence</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_removing_sequences">
+RemoveAllSequenceDatas</a></span> which removes all the <span class=
+"NDLSystemFont">NiSequenceData</span> objects from a character.</p>
+
+<p>- Modified the behavior of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_removing_actively_playing_sequences">
+RemoveAllSequences</a></span> such that it now operates exclusively on
+temporary <span class="NDLSystemFont">NiControllerSequence</span> objects (i.e.
+active sequences). Depending on the context of how your application used this
+function, you might need to rename it to <span class=
+"NDLSystemFont">RemoveAllSequenceDatas</span>.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_removing_actively_playing_sequences">
+RemoveAllInactiveSequences</a></span> which removes temporary <span class=
+"NDLSystemFont">NiControllerSequence</span> objects that have run to
+completion.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_sequences">
+GetSequenceDataCount</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_sequences">
+GetSequenceDataByName</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_sequences">
+GetSequenceDataAt</a></span> which operate on <span class=
+"NDLSystemFont">NiSequenceData</span> objects.</p>
+
+<p>- Modified the behavior of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_actively_playing_sequences">
+GetSequenceCount</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_actively_playing_sequences">
+GetSequenceByName</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_actively_playing_sequences">
+GetSequenceAt</a></span> such that these now operate exclusively on temporary
+<span class="NDLSystemFont">NiControllerSequence</span> objects (i.e. active
+sequences). Depending on the context of how your application used these
+functions, you might need to rename these to match the new <span class=
+"NDLSystemFont">NiSequenceData</span> related functions of <span class=
+"NDLSystemFont">GetSequenceDataCount</span>, <span class=
+"NDLSystemFont">GetSequenceDataByName</span>, and <span class=
+"NDLSystemFont">GetSequenceDataAt</span>.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_retrieving_actively_playing_sequences">
+GetSequenceBySequenceData</a></span> which returns an <span class=
+"NDLSystemFont">NiControllerSequence</span> based on a specified source
+<span class="NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Modified <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_activating_sequences">
+ActivateSequence</a></span> to deal with <span class=
+"NDLSystemFont">NiSequenceData</span> parameters instead of <span class=
+"NDLSystemFont">NiControllerSequence</span>. Parameters were added to set the
+frequency (i.e. playback speed) as well as the starting frame. Note the default
+frequency for a sequence can be set via <span class=
+"NDLSystemFont">NiSequenceData::SetFrequency</span>. The <span class=
+"NDLSystemFont">bStartOver</span> parameter has been removed since <span class=
+"NDLSystemFont">ActivateSequence</span> always creates a new <span class=
+"NDLSystemFont">NiControllerSequence</span> object representing the newly
+activated sequence. If your application relied upon <span class=
+"NDLSystemFont">bStartOver</span> to restart a previously active sequence from
+the beginning, you'll need to call <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_deactivating_sequences">
+DeactivateSequence</a></span> on the active <span class=
+"NDLSystemFont">NiControllerSequence</span> before calling <span class=
+"NDLSystemFont">ActivateSequence</span>. Here's some sample code:</p><a name=
+"Sample_code_for_bStartOver" id="Sample_code_for_bStartOver"></a>
+<pre>
+// Deactivate an active sequence in preparation for restarting it from the beginning.
+NiControllerSequence* pkActiveSequence = pkManager-&gt;GetSequenceBySequenceData(pkSeqData);
+if (pkActiveSequence)
+{
+    pkManager-&gt;DeactivateSequence(pkActiveSequence);
+}
+NiControllerSequencePtr spNewActiveSequence = pkManager-&gt;ActivateSequence(pkSeqData);
+</pre>
+
+<p>Upon success, <span class="NDLSystemFont">ActivateSequence</span> returns a
+pointer to the newly created <span class=
+"NDLSystemFont">NiControllerSequence</span> which represents the newly
+activated sequence. If your application needs to hang onto this <span class=
+"NDLSystemFont">NiControllerSequence</span>, refer to the <a href=
+"NiAnimation_Conversion.htm#Extensions_to_the_animation_callback_systems">Animation
+Callback section</a> in this Conversion Guide for the recommended usage
+pattern.</p>
+
+<p>- Modified the parameters in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_cross_fading_two_sequences">
+CrossFade</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_blend_transitions">
+BlendFromSequence</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_morph_transitions">
+Morph</a></span> transition functions to reflect the fact the source is always
+an active <span class="NDLSystemFont">NiControllerSequence</span> and the
+destination an <span class="NDLSystemFont">NiSequenceData</span>. A parameter
+was added to specify the frequency (i.e. playback speed) of the destination
+sequence. The <span class="NDLSystemFont">bStartOver</span> parameter has been
+removed from <span class="NDLSystemFont">CrossFade</span> since a new
+<span class="NDLSystemFont">NiControllerSequence</span> is created to represent
+the newly activated destination sequence. See <span class=
+"NDLSystemFont">ActivateSequence</span> above for <a href=
+"NiAnimation_Conversion.htm#Sample_code_for_bStartOver">sample code</a> which
+mimics the prior <span class="NDLSystemFont">bStartOver</span> behavior. Upon
+success, these transition functions return a pointer to the newly created
+<span class="NDLSystemFont">NiControllerSequence</span> which represents the
+newly activated destination sequence. See the <a href=
+"NiAnimation_Conversion.htm#Extensions_to_the_animation_callback_systems">Animation
+Callback section</a> in this Conversion Guide for the recommended usage pattern
+if your application needs to hang onto this <span class=
+"NDLSystemFont">NiControllerSequence</span> object.</p>
+
+<p>- Added support for the previously deprecated <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Alternate_functions_for_blend_transitions">
+BlendFromPose</a></span>. This modified version operates on <span class=
+"NDLSystemFont">NiSequenceData</span> objects and initiates a blend transition
+from the character's current scene graph state to a destination <span class=
+"NDLSystemFont">NiSequenceData</span>. The <span class=
+"NDLSystemFont">pkSeqDataToSynchronize</span> parameter is now required as it
+dictates which scene graph attributes are captured in the new pose sequence.
+The newly created <span class="NDLSystemFont">NiControllerSequence</span>
+objects for the pose sequence and destination sequence are returned via the
+last two parameters. See the <a href=
+"NiAnimation_Conversion.htm#Extensions_to_the_animation_callback_systems">Animation
+Callback section</a> in this Conversion Guide for the recommended usage pattern
+if your application needs to hang onto these <span class=
+"NDLSystemFont">NiControllerSequence</span> objects. <span class=
+"NDLSystemFont">BlendFromPose</span> is less efficient than <span class=
+"NDLSystemFont">BlendFromSequence</span>. Consequently, it is recommended that
+<span class="NDLSystemFont">BlendFromPose</span> be used only when <span class=
+"NDLSystemFont">BlendFromSequence</span> is not applicable.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_adding_sequences">
+AddPoseSequenceData</a></span> primarily as a helper function for <span class=
+"NDLSystemFont">BlendFromPose</span>; however, this may prove useful in other
+contexts.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_recycling_sequences">
+GetNumRecycledSequences</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_recycling_sequences">
+GetMaxRecycledSequences</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_recycling_sequences">
+SetMaxRecycledSequences</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_recycling_sequences">
+RemoveAllRecycledSequences</a></span> to control <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Sequence_Recycling">sequence
+recycling</a> on the character.</p>
+
+<p>- Removed the previously deprecated <span class="NDLSystemFont">Sum</span>
+function. Applications using <span class="NDLSystemFont">Sum</span> should call
+<span class="NDLSystemFont">ActivateSequence</span> on both sequences using
+appropriate weight values.</p>
+
+<p>- Removed the previously deprecated <span class=
+"NDLSystemFont">SetSumWeight</span> function. Applications using <span class=
+"NDLSystemFont">SetSumWeight</span> should call <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_setting_sequence_weight">
+SetSequenceWeight</a></span> on both sequences using appropriate weight
+values.</p>
+
+<p>- Removed the previously deprecated <span class=
+"NDLSystemFont">StopSum</span> function. Applications using <span class=
+"NDLSystemFont">StopSum</span> should call <span class=
+"NDLSystemFont">DeactivateSequence</span> on both sequences.</p>
+
+<p>- Removed the previously deprecated <span class=
+"NDLSystemFont">StopBlendFromPose</span> function. Applications using
+<span class="NDLSystemFont">StopBlendFromPose</span> should switch to
+<span class="NDLSystemFont">StopBlendFromSequence</span>.</p>
+
+<h3>NiActorManager functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiActorManager</span> interface.</p>
+
+<p>- Modified the behavior of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Constructors">Create</a></span>
+such that it adds <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm">NiSequenceData</a></span>
+objects instead of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>
+objects to the underlying <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">NiControllerManager</a></span>.</p>
+
+<p>- Renamed <span class="NDLSystemFont">LoadSequence</span>, <span class=
+"NDLSystemFont">LoadSequences</span>, <span class=
+"NDLSystemFont">ChangeSequence</span>, and <span class=
+"NDLSystemFont">UnloadSequence</span> to <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_load_sequences">LoadSequenceData</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_load_sequences">LoadAllSequenceData</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_load_sequences">ChangeSequenceData</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_unload_sequences">UnloadSequenceData</a></span>
+respectively. Data types of parameters were changed from <span class=
+"NDLSystemFont">NiControllerSequence</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Renamed <span class="NDLSystemFont">GetSequence</span> to <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_retrieve_sequences">
+GetSequenceData</a></span>. This function now returns an <span class=
+"NDLSystemFont">NiSequenceData</span> instead of an <span class=
+"NDLSystemFont">NiControllerSequence</span>.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_retrieve_sequences">
+GetActiveSequence</a></span> which returns the first active <span class=
+"NDLSystemFont">NiControllerSequence</span> assigned to a specific sequence
+ID.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_retrieve_sequences">
+GetSequenceID</a></span> as a helper function to obtain the sequence ID of a
+specified <span class="NDLSystemFont">NiControllerSequence</span>.</p>
+
+<p>- Modified <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_activate_sequences">
+ActivateSequence</a></span> so it operates on <span class=
+"NDLSystemFont">NiSequenceData</span> objects behind the scenes. Parameters
+were added to set the frequency (i.e. playback speed) as well as the starting
+frame. The <span class="NDLSystemFont">bStartOver</span> parameter has been
+removed since <span class="NDLSystemFont">ActivateSequence</span> always
+creates a new <span class="NDLSystemFont">NiControllerSequence</span> object
+representing the newly activated sequence. If your application relied upon
+<span class="NDLSystemFont">bStartOver</span> to restart a previously active
+sequence from the beginning, you'll need to call <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Functions_to_deactivate_sequences">
+DeactivateSequence</a></span> before calling <span class=
+"NDLSystemFont">ActivateSequence</span>. Upon success, <span class=
+"NDLSystemFont">ActivateSequence</span> returns a pointer to the newly created
+<span class="NDLSystemFont">NiControllerSequence</span> which represents the
+newly activated sequence. If your application needs to hang onto this
+<span class="NDLSystemFont">NiControllerSequence</span>, refer to the <a href=
+"NiAnimation_Conversion.htm#Extensions_to_the_animation_callback_systems">Animation
+Callback section</a> in this Conversion Guide for the recommended usage
+pattern.</p><a name="Improving_runtime_performance_via_sequence_evaluators" id=
+"Improving_runtime_performance_via_sequence_evaluators"></a>
+
+<h2>Improving runtime performance via sequence evaluators</h2>
+
+<p>The runtime performance of sequence-based animation has been improved
+through the use of an evaluator/scratch pad design. Sequence animation now
+utilizes <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiEvaluator.htm">NiEvaluator</a></span> objects
+instead of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpolator.htm">NiInterpolator</a></span>
+objects to compute the animated data for a given time. Unlike interpolators,
+evaluators are completely shareable as they contain no instance-based state for
+playing animations on a specific character. Each active sequence (i.e.
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>)
+owns an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiScratchPad.htm">NiScratchPad</a></span> which
+stores any instance-based data required by the evaluators to play the sequence
+on the character. Many evaluators cache their current animation curve segment
+in the scratch pad which allows them to reuse this localized data across
+successive update times thereby increasing runtime performance. <span class=
+"NDLSystemFont">NiInterpolator</span> and its derived classes are still
+available for non-sequence based animation.</p>
+
+<p>Refer to the <a href=
+"../../Reference/NiAnimation/Animation_Sequences.htm">Animation Sequences</a>
+section in the Introduction to Animation for an overview of the revised
+sequence animation system.</p>
+
+<h3>NiControllerSequence functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerSequence</span> interface.</p>
+
+<p>- Moved virtually all of the interpolator related functions to <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm">NiSequenceData</a></span> so a
+shareable animation sequence can be built programmatically. These methods now
+act upon <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiEvaluator.htm">NiEvaluator</a></span> objects,
+and include <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_adding_and_removing_evaluators">
+AddEvaluator</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_adding_and_removing_evaluators">
+RemoveEvaluator</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_adding_and_removing_evaluators">
+GetMaxEvaluators</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_adding_and_removing_evaluators">
+SetMaxEvaluators</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_retrieving_evaluators">
+GetNumEvaluators</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_retrieving_evaluators">
+GetEvaluatorAt</a></span>. Since evaluators do not contain any instance data
+the evaluator list in <span class="NDLSystemFont">NiSequenceData</span> is
+shared directly by the <span class="NDLSystemFont">NiControllerSequence</span>
+upon sequence activation. <span class=
+"NDLSystemFont">NiControllerSequence</span> supports <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_dealing_with_evaluators">
+GetNumEvaluators</a></span> and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_dealing_with_evaluators">
+GetEvaluatorAt</a></span> for accessing the evaluator list.</p>
+
+<p>- The <span class="NDLSystemFont">NiSequenceData</span> constructor now
+specifies the initial size for the evaluator list in lieu of the interpolator
+list. The evaluator list is kept packed so the first <span class=
+"NDLSystemFont">GetNumEvaluators</span> evaluators in this list will always be
+valid (i.e. not <span class="NDLSystemFont">NULL</span>).</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_sorting_evaluators">
+SortEvaluatorsByLOD</a></span> and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_for_sorting_evaluators">
+SortEvaluatorsByPBChannelType</a></span> to <span class=
+"NDLSystemFont">NiSequenceData</span>. These functions may be used by animation
+tools, such as the <a href=
+"../../Reference/Tool_Plug_ins/Controller_Extractor.htm">Controller Extractor
+export plug-in</a>, to sort the evaluators within a sequence.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_dealing_with_evaluators">
+DisableEvaluatorAt</a></span> and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_dealing_with_evaluators">
+DisableEvaluatorChannelAt</a></span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> so evaluator channels in an active
+sequence may be disabled. Once disabled the evaluator no longer outputs data
+from the disabled channels to the associated pose buffer.</p>
+
+<p>- Added <span class="NDLSystemFont">GetScratchPad</span> to <span class=
+"NDLSystemFont">NiControllerSequence</span> to access the associated
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiScratchPad.htm">NiScratchPad</a></span>. Each
+<span class="NDLSystemFont">NiControllerSequence</span> owns an <span class=
+"NDLSystemFont">NiScratchPad</span> which stores any instance-based state
+required by the evaluators to play the animation on the character. In general,
+applications can ignore the scratch pad as it is used internally by the
+animation system.</p>
+
+<p>- Removed the previously deprecated functions of <span class=
+"NDLSystemFont">GetObjectNameAt</span>, <span class=
+"NDLSystemFont">AddNameControllerPair</span>, and <span class=
+"NDLSystemFont">RemoveNameControllerPair</span>. New code should use
+<span class="NDLSystemFont">NiSequenceData::AddEvaluator</span> and
+<span class="NDLSystemFont">RemoveEvaluator</span> instead.</p>
+
+<p>- <span class="NDLSystemFont">NiEvaluator</span> directly stores its
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiEvaluator.htm#IDTag">IDTag</a></span> which
+specifies the corresponding animated scene graph attribute. Previously,
+interpolator tags were externalized and held by <span class=
+"NDLSystemFont">NiControllerSequence</span>. The <span class=
+"NDLSystemFont">NiEvaluator</span> interface provides access to its tag
+information.</p>
+
+<h3>Interpolator and controller functionality</h3>
+
+<p>The following modifications affect the internals of the Gamebryo sequence
+animation system and do not impact the high level interface of sequence
+animation. No conversion is necessary for these changes unless your application
+implemented custom interpolators and interp controllers for sequence-based
+animation.</p>
+
+<p>- The new <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiEvaluator.htm">NiEvaluator</a></span> class
+hierarchy mirrors the <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpolator.htm">NiInterpolator</a></span>
+hierarchy to a large degree with the exception of blend evaluators which are
+not required due to the use of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBlender.htm">NiPoseBlender</a></span>.
+Additionally, several const evaluators have been added to reduce the size of
+sequences.</p>
+
+<p>- Added <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpolatorConverter.htm">NiInterpolatorConverter</a></span>
+which converts a specified <span class="NDLSystemFont">NiInterpolator</span> to
+an equivalent <span class="NDLSystemFont">NiEvaluator</span>. Equivalency is
+determined by the contents of the animation channel and not necessarily the
+<a href=
+"../../Programmer/Object_Systems/Run_Time_Type_Information.htm">RTTI</a> of the
+specified interpolator. For instance, an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiFloatInterpolator.htm">NiFloatInterpolator</a></span>
+containing posed animation data will be converted to an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiConstFloatEvaluator.htm">NiConstFloatEvaluator</a></span>.
+<span class="NDLSystemFont">NiInterpolatorConverter</span> is utilized by the
+streaming system to convert sequences from older versions of Gamebryo to the
+new format. Additionally, <span class="NDLSystemFont"><a href=
+"../../Reference/NiControllerExtractor/NiControllerExtractor.htm">NiControllerExtractor</a></span>
+relies upon <span class="NDLSystemFont">NiInterpolatorConverter</span> to
+generate evaluators for <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm">NiSequenceData</a></span>
+objects.</p>
+
+<p>- Added a suite of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpController.htm#UpdateValue">UpdateValue</a></span>
+functions to <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpController.htm">NiInterpController</a></span>
+and its derived classes. These methods force the controller to push the
+specified value into the associated scene graph attribute. This particular
+interface is utilized by the sequence-based animation system.</p><a name=
+"Consolidation_of_the_interpolator_controller_network" id=
+"Consolidation_of_the_interpolator_controller_network"></a>
+
+<h2>Consolidation of the interpolator/controller network</h2>
+
+<p>The network of interpolators, blend interpolators, and interp controllers
+which transmits data from active animation sequences to associated scene graph
+targets has been consolidated in Gamebryo 2.6. This large network of narrow
+data pipes has been replaced by a smaller system of wide data pipes. The new
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBuffer.htm">NiPoseBuffer</a></span> class
+acts as a "wide" data container that transports a snapshot of animated data for
+the entire character from an active sequence to its scene graph targets. New
+classes and enumerations which support this change include <span class=
+"NDLSystemFont">NiPoseBuffer</span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBinding.htm">NiPoseBinding</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBlender.htm">NiPoseBlender</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBufferHandle.htm">NiPoseBufferHandle</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBuffer.htm#NiPoseBufferChannelType">NiPoseBufferChannelType</a></span>.
+This consolidation is primarily internal to the Gamebryo sequence animation
+system and has minimal impact on applications using the high level interface of
+sequence animation. As described below, a small number of supported functions
+were affected by this change.</p>
+
+<p>Read the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">Overview of
+NiControllerManager</a> for a synopsis of the new pose buffer system.</p>
+
+<h3>NiControllerManager and NiActorManager functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerManager</span> and <span class=
+"NDLSystemFont">NiActorManager</span> interface.</p>
+
+<p>- Added an optional <span class="NDLSystemFont">NiPoseBinding</span>
+parameter to the <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Constructors">NiControllerManager
+constructor</a></span> as well as <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Constructors">NiActorManager::Create</a></span>,
+<span class="NDLSystemFont">ReloadNIFFile</span>, and <span class=
+"NDLSystemFont">ChangeNIFRoot</span>. A new <span class=
+"NDLSystemFont">NiPoseBinding</span> is created for the character when this
+parameter is <span class="NDLSystemFont">NULL</span>. There must be a unique
+<span class="NDLSystemFont">NiPoseBinding</span> for each unique character
+template in an application. However, characters utilizing identical 3D models
+and associated sets of animation sequences may share a single <span class=
+"NDLSystemFont">NiPoseBinding</span> as a memory and performance optimization.
+This new parameter allows characters to share a given <span class=
+"NDLSystemFont">NiPoseBinding</span>. See the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">Overview of
+NiControllerManager</a> for a summary of the new pose buffer system including
+the role of <span class="NDLSystemFont">NiPoseBinding</span>.</p>
+
+<p>- Extended <span class="NDLSystemFont">NiControllerManager::Clone</span> and
+<span class="NDLSystemFont">NiActorManager::Clone</span> such that the cloned
+character automatically shares the <span class=
+"NDLSystemFont">NiPoseBinding</span> of the source character.</p>
+
+<p>- Added <span class=
+"NDLSystemFont">NiControllerManager::GetPoseBinding</span>, <span class=
+"NDLSystemFont">GetPoseBlender</span>, and <span class=
+"NDLSystemFont">GetMultiTargetPoseHandler</span> to access the manager's helper
+objects. Refer to the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">Overview of
+NiControllerManager</a> for the roles played by these objects in the new pose
+buffer system.</p>
+
+<h3>Interpolator and controller functionality</h3>
+
+<p>The following modifications affect the internals of the Gamebryo sequence
+animation system and do not impact the high level interface of sequence
+animation. No conversion is necessary for these changes unless your application
+implemented custom interpolators and interp controllers for sequence-based
+animation.</p>
+
+<p>- Replaced the role of <a href=
+"../../Reference/NiAnimation/NiBlendInterpolator.htm">blend interpolators</a>
+with <span class="NDLSystemFont">NiPoseBlender</span> which has the ability to
+blend data from multiple pose buffers. Blend interpolators are no longer
+utilized for sequence-based animation; however, your application is still free
+to use blend interpolators for non-sequence based animation.</p>
+
+<p>- Deprecated and removed <span class=
+"NDLSystemFont">NiBlendAccumTransformInterpolator</span>. This class became
+obsolete with the introduction of the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> class. <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> is now responsible for handling
+and maintaining the accumulation transform on animated characters.</p>
+
+<p>- Replaced the role of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiTransformController.htm">NiTransformController</a></span>
+objects with <span class="NDLSystemFont">NiMultiTargetPoseHandler</span> for
+sequence-based animation. Since the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> propagates data directly to
+scene graph transform nodes any <span class=
+"NDLSystemFont">NiTransformController</span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiMultiTargetTransformController.htm">NiMultiTargetTransformController</a></span>
+objects in the associated scene graph are superfluous. As such, these
+controllers are now removed from the scene graph during export by the <a href=
+"../../Reference/Tool_Plug_ins/Controller_Extractor.htm">Controller Extractor
+export plug-in</a>. Your application is still free to use <span class=
+"NDLSystemFont">NiTransformController</span> objects for non-sequence-based
+animation.</p>
+
+<p>- Deprecated <span class=
+"NDLSystemFont">NiMultiTargetTransformController</span>. This class became
+obsolete with the introduction of the <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> class. <span class=
+"NDLSystemFont">NiMultiTargetPoseHandler</span> is now responsible for
+propagating transform values from animated sequences to the appropriate scene
+graph nodes. The class still maintains a few functions, primarily to stream
+<span class="NDLSystemFont">NiMultiTargetTransformController</span> objects
+that reside in older NIF files. <span class=
+"NDLSystemFont">NiMultiTargetTransformController</span> objects which exist in
+older NIF files are removed from the scene graph as the file is loaded.</p>
+
+<p>- Added a suite of <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpController.htm#UpdateValue">UpdateValue</a></span>
+functions to <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiInterpController.htm">NiInterpController</a></span>
+and its derived classes. These methods force the controller to push the
+specified value into the associated scene graph attribute. This particular
+interface is utilized by the sequence-based animation system.</p><a name=
+"Increasing_the_role_of_NiControllerManager__Update" id=
+"Increasing_the_role_of_NiControllerManager__Update"></a>
+
+<h2>Increasing the role of NiControllerManager::Update</h2>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">NiControllerManager</a></span>
+now plays a larger role in handling sequence animation. In particular,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_updating">NiControllerManager::Update</a></span>
+now forces the evaluators within each active sequence to compute their latest
+values, blends this data from multiple active sequences, propagates the
+composite result to the appropriate scene graph targets, and shuts down any
+active sequences which have now completed. <span class=
+"NDLSystemFont">NiControllerManager</span> maintains several helper objects to
+assist with this task including an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBinding.htm">NiPoseBinding</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiPoseBlender.htm">NiPoseBlender</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSkinningLODController.htm">NiSkinningLODController</a></span>.
+Refer to the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">Overview of
+NiControllerManager</a> for a summary of the controller manager, its helper
+classes, and a typical usage pattern. Although these changes are largely behind
+the scenes and internal to the animation system they produce a timing
+side-effect that might affect your application.</p>
+
+<p>This modification alters the timing as to when scene graph attributes,
+including local transform values, are updated by the sequence animation system.
+Previously, animated attributes were not computed and written to the scene
+graph during the call to <span class=
+"NDLSystemFont">NiControllerManager::Update</span>. Instead, these operations
+were delayed until the scene graph <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm#UpdateFunctions">Update</a></span>
+traversal visited the scene graph object containing the animated attribute.
+This traversal operation proceeded from the scene graph root node to the leaf
+nodes. This ordering guaranteed the attributes in ancestor nodes, including
+world transforms, were up-to-date when a given node was visited. This property
+no longer holds true now that <span class=
+"NDLSystemFont">NiControllerManager::Update</span> computes the animated values
+for the entire character and distributes these to its scene graph branch.</p>
+
+<p>This change in behavior affects evaluators which rely upon external entities
+when computing their animated value. For example, <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiLookAtEvaluator.htm">NiLookAtEvaluator</a></span>
+calculates a transform value such that its "driven" object always faces an
+external "look at" object. If an <span class=
+"NDLSystemFont">NiLookAtEvaluator</span> is contained within an animated
+sequence, this computation will occur in Gamebryo 2.6 when the scene graph
+<span class="NDLSystemFont">Update</span> traversal reaches the node associated
+with the <span class="NDLSystemFont">NiControllerManager</span>. Since the
+descendant nodes have yet to be visited by the traversal their local and world
+space transforms will correspond to values from the previous update frame. As a
+result, the driven transform computed by <span class=
+"NDLSystemFont">NiLookAtEvaluator</span> will always lag one frame behind. This
+new behavior has minimal visual impact when frame rates are sufficiently
+high.</p><a name="Extensions_to_the_animation_callback_systems" id=
+"Extensions_to_the_animation_callback_systems"></a>
+
+<h2>Extensions to the animation callback systems</h2>
+
+<p>As discussed <a href=
+"NiAnimation_Conversion.htm#Separation_of_NiControllerSequence_into_two_classes">
+above</a> in this Conversion Guide, Gamebryo 2.6 utilizes two classes to
+represent animated sequences: <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm">NiSequenceData</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>.
+<span class="NDLSystemFont">NiSequenceData</span> objects contain the
+shareable, heavyweight data of exported animation sequences saved in KF files.
+<span class="NDLSystemFont">NiControllerSequence</span> objects are temporary
+runtime entities created upon sequence activation. These lighter weight objects
+maintain instance-based state to play back the animated sequence on a
+particular character, and are destroyed or <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Sequence_Recycling">recycled</a>
+shortly after the active sequence runs to completion. As described below, the
+animation callback systems within <span class=
+"NDLSystemFont">NiControllerSequence</span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span> have
+been enhanced to support this fundamental change.</p>
+
+<h3>NiControllerSequence functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerSequence</span> interface.</p>
+
+<p>- Renamed <span class="NDLSystemFont">CallbackObject</span> to <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Callback_Objects">ActivationCallback</a></span>
+to avoid confusion with the identically named <span class=
+"NDLSystemFont">NiActorManager::CallbackObject</span> class. Moved <span class=
+"NDLSystemFont">ActivationCallback</span> to <span class=
+"NDLSystemFont">NiSequenceData</span>.</p>
+
+<p>- Refactored the functions which handle and maintain callback objects. Now,
+<span class="NDLSystemFont">NiSequenceData</span> works with default callbacks
+which are copied to <span class="NDLSystemFont">NiControllerSequence</span>
+objects upon sequence activation. After activation, the callback list within a
+given <span class="NDLSystemFont">NiControllerSequence</span> can be adjusted
+via the <span class="NDLSystemFont">NiControllerSequence</span> interface
+without affecting the default callbacks within its source <span class=
+"NDLSystemFont">NiSequenceData</span>. These new functions now operate on
+<span class="NDLSystemFont">NiSequenceData::ActivationCallback</span> objects,
+and are renamed based on their new roles:</p>
+
+<p><!--kadov_tag{{<spaces>}}-->  <span class="NDLSystemFont">
+<!--kadov_tag{{</spaces>}}-->AddActivationCallbackObject</span> has become
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_related_to_callback_objects">
+NiSequenceData::AddDefaultActivationCallback</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_related_to_callback_objects">
+NiControllerSequence::AddActivationCallback</a></span>.</p>
+
+<p><!--kadov_tag{{<spaces>}}-->  <span class="NDLSystemFont">
+<!--kadov_tag{{</spaces>}}-->RemoveActivationCallbackObject</span> has become
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_related_to_callback_objects">
+NiSequenceData::RemoveDefaultActivationCallback</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_related_to_callback_objects">
+NiControllerSequence::RemoveActivationCallback</a></span>.</p>
+
+<p><!--kadov_tag{{<spaces>}}-->  <span class="NDLSystemFont">
+<!--kadov_tag{{</spaces>}}-->GetActivationCallbackCount</span> has become
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_related_to_callback_objects">
+NiSequenceData::GetDefaultActivationCallbackCount</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_related_to_callback_objects">
+NiControllerSequence::GetActivationCallbackCount</a></span>.</p>
+
+<p><!--kadov_tag{{<spaces>}}-->  <span class="NDLSystemFont">
+<!--kadov_tag{{</spaces>}}-->GetActivationCallbackObjectAt</span> has become
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Functions_related_to_callback_objects">
+NiSequenceData::GetDefaultActivationCallbackA</a>t</span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#Functions_related_to_callback_objects">
+NiControllerSequence::GetActivationCallbackAt</a></span>.</p>
+
+<h3>NiControllerManager and NiActorManager functionality</h3>
+
+<p>The following are modifications to the previously supported <span class=
+"NDLSystemFont">NiControllerManager</span> and <span class=
+"NDLSystemFont">NiActorManager</span> interface.</p>
+
+<p>- Introduced a new usage pattern for handling active sequences. As described
+in an earlier <a href=
+"NiAnimation_Conversion.htm#Separation_of_NiControllerSequence_into_two_classes">
+section</a> of this Conversion Guide, sequence activation and transition
+functions now return pointers to newly created <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>
+objects representing the newly activated sequences. The animation system holds
+references on these <span class="NDLSystemFont">NiControllerSequence</span>
+objects until the associated animation runs to completion, at which point these
+references are released (or <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Sequence_Recycling">recycled</a>).</p>
+
+<p>If your application needs to hang onto these <span class=
+"NDLSystemFont">NiControllerSequence</span> objects, say, to programmatically
+adjust the sequence weight during animation playback, smart pointers or similar
+reference counting mechanisms should be utilized to prevent stale pointers once
+the animations run to completion. Depending on your implementation, you should
+use one of the following techniques to determine when to release these held
+pointers.</p>
+
+<p>Applications which directly utilize <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm">NiControllerManager</a></span>
+to handle sequence animation should add an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Callback_Objects">NiSequenceData::ActivationCallback</a></span>
+to held <span class="NDLSystemFont">NiControllerSequence</span> objects. The
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSequenceData.htm#Callback_Objects">ActivationChanged</a></span>
+method of this callback will be executed whenever the active sequence enters a
+new animation state. A held <span class=
+"NDLSystemFont">NiControllerSequence</span> should be released when its
+callback signals the active sequence has entered the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm#NiAnimState">INACTIVE</a></span>
+animation state. The <span class="NDLSystemFont">NiControllerSequence</span>
+will be destroyed or recycled automatically after its last reference is
+released.</p>
+
+<p>If your application relies upon <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span>
+instead of <span class="NDLSystemFont">NiControllerManager</span> to play
+animations, your application should set a <a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Callback_Objects">callback
+object</a> on the <span class="NDLSystemFont">NiActorManager</span> and
+register the sequence for the new <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Event_Types">ANIM_COMPLETED</a></span>
+event type. The new <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm#Callback_Objects">CallbackObject::AnimCompleted</a></span>
+function will be executed when the specified sequence runs to completion. Upon
+receiving this event, the held <span class=
+"NDLSystemFont">NiControllerSequence</span> should be released. The
+<span class="NDLSystemFont">NiControllerSequence</span> will be destroyed or
+recycled automatically when its last reference is released.</p>
+
+<p>- Extended <span class="NDLSystemFont">NiActorManager</span> to inherit from
+<span class="NDLSystemFont">NiSequenceData::ActivationCallback</span> so it can
+receive notification when an active sequence has completed. <span class=
+"NDLSystemFont">NiActorManager</span> uses this information to support its new
+<span class="NDLSystemFont">ANIM_COMPLETED</span> event type.</p>
+
+<p>- Streamlined the behavior of activation callbacks during transitions
+between sequences. Previously, functions which initiate sequence transitions
+such as <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_cross_fading_two_sequences">
+NiControllerManager::CrossFade</a></span>, <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_blend_transitions">
+BlendFromSequence</a></span>, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_for_morph_transitions">
+Morph</a></span> triggered two or more callback events on the active source
+sequence. Now, the activation callback is executed just once on the source and
+destination sequences during these types of transitions, and the communicated
+state is the final state of each sequence.</p><a name=
+"Improvements_in_transformation_accumulation" id=
+"Improvements_in_transformation_accumulation"></a>
+
+<h2>Improvements in transformation accumulation</h2>
+
+<p><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Transformation_Accumulation">
+Transformation accumulation</a> has been refactored in Gamebryo 2.6 to improve
+robustness and usability. Its implementation in previous Gamebryo releases
+exhibited a number of quirky behaviors including:</p>
+
+<p>- The inability to access the accumulation root node until at least one
+sequence was loaded by the <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm"><span class=
+"NDLSystemFont">NiControllerManager</span></a>.</p>
+
+<p>- The possibility of invalid data for the scale, translation, and/or
+rotation components of the accumulation transform. An invalid rotation was
+particularly troublesome because valid translations behaved incorrectly due to
+the dependency of translation on the rotation value.</p>
+
+<p>- Lack of support to get or set the value of the accumulation transform
+until a sequence containing an accumulation transform channel was played on the
+character.</p>
+
+<p>- Setting the accumulation transform via <span class=
+"NDLSystemFont"><a href="../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+NiControllerManager::SetAccumulatedTransform</a></span> did not affect the
+values in the accumulation root node until the next sequence containing an
+accumulation transform channel was played on the character.</p>
+
+<p>- Dropping one frame of motion at the start or end of a transition depending
+on the circumstances.</p>
+
+<p>Gamebryo 2.6 resolves these issues through the following changes in behavior
+when transformation accumulation is enabled on a character:</p>
+
+<p>- The <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Constructors">NiControllerManager
+constructor</a></span> now searches the character's scene graph branch for the
+accumulation root node. A pointer to this node is cached so the accumulation
+root is immediately accessible via <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+NiControllerManager::GetAccumRoot</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a>::GetAccumRoot</span>.
+Transformation accumulation is disabled on the character if the accumulation
+root node cannot be located. The constructor relies upon a new static function
+named <span class="NDLSystemFont">FindAccumRoot</span> to locate the
+accumulation node. This function assumes the accumulation root is the first
+node having a child node of similar name that's augmented with a " <span class=
+"NDLSystemFont">NonAccum</span>" suffix.</p>
+
+<p class="NDLRefMemberDetailedDescription">Note: The scene graph pattern of
+parent and child nodes having similar names whereby the child's name equals the
+parent's name concatenated with " NonAccum" is reserved for use by Emergent.
+Artists should avoid this naming convention when creating models in 3ds max and
+Maya to ensure correct operation of <span class=
+"NDLSystemFont">FindAccumRoot</span>. For example, a node named "elbow" should
+not have a child node named "elbow NonAccum".</p>
+
+<p>- Upon finding the accumulation root node the <span class=
+"NDLSystemFont">NiControllerManager</span> constructor pushes the transform on
+the root to its non-accum child node. This adjustment ensures the initial
+transform on the accumulation root is identity, as if no accum flags had been
+set on the accum root node during export. Pushing this transform to the
+non-accum child node has no visible effect on the 3D model, but makes its
+transform values compatible with sequences containing accumulation transform
+channels. The accumulation transform associated with the <span class=
+"NDLSystemFont">NiControllerManager</span> is initialized with the final
+transform on the accumulation root node. In general, this is the identity
+transform. This change in behavior ensures the manager's accumulation transform
+is valid, and it matches the value of the accumulation root node. <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+NiControllerManager::GetAccumulatedTransform</a></span> may be called
+immediately after construction to obtain the value of the character's
+accumulation transform. Similarly, <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+<span class="NDLSystemFont">SetAccumulatedTransform</span></a> may be called
+immediately after construction to modify the value of the character's
+accumulation transform.</p>
+
+<p>- <span class=
+"NDLSystemFont">NiControllerManager::SetAccumulatedTransform</span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+ClearCumulativeAnimations</a></span> have been modified to immediately
+propagate any changes in the accumulation transform to the local transform of
+the accumulation root node. This change in behavior increases the consistency
+between the character's accumulation transform and the transform of the
+accumulation root node.</p>
+
+<p>- A bug in the transformation accumulation code was fixed that caused one
+frame of motion to be dropped from a sequence at the start or end of a
+transition depending on the circumstances.</p>
+
+<p>- The new <a href=
+"../../Reference/NiAnimation/NiControllerManager.htm#Functions_relating_to_transformation_accumulation">
+<span class="NDLSystemFont">NiControllerManager::GetAccumRootName</span></a>
+function may be used to obtain the name of the accumulation root node.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

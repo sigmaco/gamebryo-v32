@@ -1,0 +1,708 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Adding new entity property types</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Adding new entity property types</h1>
+
+<p>This section describes the process of adding new supported property types to
+your game.</p>
+
+<h2>Using your own data types as entity properties</h2>
+
+<p>If you want use your own data type as Entity properties, you must complete
+several steps to define a property type for your custom data type. This section
+describes how to create a property type from your custom data type.</p>
+
+<p>See
+<em>%EMERGENT_PATH%</em>\Samples\GameFrameworkTechDemos\CustomTypeExample2 for
+a full source example of this.</p>
+
+<p>See <a href="../Builtins/builtin_adding_datatypes.htm">Adding new data
+types</a> for an explanation on how to add support for new data types to
+scripting languages.</p>
+
+<ol>
+    <li>Create a class ID for your data type.
+
+        <p class="indent1">All properties must have a class ID associated with
+        it. The Class ID identifies the type of your property so the Game
+        Framework can resolve it at runtime. You can define these directly but
+        a better approach is to use data driven enumerations (DDE) to
+        automatically generate the enumeration values for you.</p>
+        <pre>
+    // define this in a CustomTypeClassIDs.enum file
+    &lt;?xml version="1.0" encoding="utf-8"?&gt;
+    &lt;enum start="0xE00A0000" end="0xE00AFFFF"&gt;
+        &lt;header useNamespace="efd" useExistingTypedef="ClassID" prefix="kCLASSID_"/&gt;
+        &lt;item name="CustomType"/&gt;
+    &lt;/enum&gt;
+</pre>
+        <pre>
+    // add the file to your project and define the following custom build rule for it:
+    // Note: all of the following must be on one line in the custom build rule command line.
+    %EMERGENT_PATH%\Source\Tools\DDEHeaderGen\bin\DDEHeaderGenRelease.exe 
+    output=%EMERGENT_PATH%\Samples\GameFrameworkTechDemos\CustomTypeExample2\CustomTypeClassIDs.h 
+    enum=.%EMERGENT_PATH%\Samples\GameFrameworkTechDemos\CustomTypeExample2\CustomTypeClassIDs.enum
+    
+    // set the following as the Outputs for the custom build rule:
+    %EMERGENT_PATH%\Samples\GameFrameworkTechDemos\CustomTypeExample2\CustomTypeClassIDs.h
+</pre>
+    </li>
+
+    <li>Update your data type to declare a CLASS_ID.
+
+        <p class="indent1">Using the EE_DECLARE_CLASS macro found in
+        efd::ClassInfo.h, declare your class. This macro abstract several
+        member variables that are common to all efd::IBase derived classes.
+        This is requirement for all properties. Wrap these declarations in
+        guard blocks to prevent SWIG from trying to convert them. Alternatively
+        you can create a separate .h file for SWIG processing.</p>
+        <pre>
+    #if !defined(SWIG)
+    EE_DECLARE_CLASS(CustomType, efd::kCLASSID_CustomType);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+    #endif
+</pre>
+    </li>
+
+    <li>Ensure your type provides a default constructor.
+
+        <p class="indent1">The property factory methods assumes your type
+        provides a no-argument constructor. Ensure you do not violate this
+        assumption.</p>
+        <pre>
+    public:
+        CustomType() : m_delta(0), m_name("Unknown") { }
+    
+</pre>
+    </li>
+
+    <li>Add IMPLEMENT* macros to your .cpp file to complete the implementation
+    your class.
+
+        <p class="indent1">The EE_IMPLEMENT_* macros provide concrete
+        implementations of methods declared in the EE_DECLARE_CLASS macro.</p>
+        <pre>
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(CustomType);
+</pre>
+    </li>
+
+    <li>Implement methods required to be a egf::TProperty: FromString,
+    ToString, Operator==.
+
+        <p class="indent1">All typed properties need to implement the
+        FromString, ToString, and operator== methods. From and ToString methods
+        are used to parse your property from flat model files. Operator== is
+        used at runtime to detect differences between entity properties. You
+        can exclude these from SWIG processing too.</p>
+        <pre>
+    #if !defined(SWIG)
+        // methods required by all typed properties.
+        bool operator==(const CustomType&amp; other) const;
+        virtual bool FromString(const efd::utf8string&amp; stringValue);
+        virtual efd::utf8string ToString() const;
+    #endif
+</pre>
+    </li>
+
+    <li>Implement these methods in your .cpp file
+        <pre>
+    //------------------------------------------------------------------------------------------------
+    inline bool CustomType::operator==(const CustomType&amp; other) const
+    {
+        if (this == &amp;other) return true;
+        return other.m_delta == m_delta &amp;&amp;
+               other.m_name == m_name;
+    }
+
+    //------------------------------------------------------------------------------------------------
+    bool CustomType::FromString(const efd::utf8string&amp; stringValue)
+    {
+        efd::Char* stringAsChar = efd::Strdup(stringValue.c_str());
+        efd::Char* context = NULL;
+        const efd::Char* separators = ";";
+
+        efd::Char* token = efd::Strtok(stringAsChar, separators, &amp;context);
+        if (!token)
+        {
+            EE_FREE(stringAsChar);
+            return false;
+        }
+        efd::utf8string newName(token);
+
+        token = efd::Strtok(NULL, separators, &amp;context);
+        if (!token)
+        {
+            EE_FREE(stringAsChar);
+            return false;
+        }
+
+        efd::utf8string sStr(token);
+        efd::Float32 newDelta;
+        if (!efd::ParseHelper&lt;efd::Float32&gt;::FromString(sStr, newDelta))
+        {
+            EE_FREE(stringAsChar);
+            return false;
+        }
+
+        m_name = newName;
+        m_delta = newDelta;
+
+        EE_FREE(stringAsChar);
+
+        return true;
+    }
+
+    //-------------------------------------------------------------------------------------------------
+    efd::utf8string CustomType::ToString() const
+    {
+        efd::utf8string sStr;
+        efd::ParseHelper&lt;efd::Float32&gt;::ToString(m_delta, sStr);
+        efd::utf8string str(efd::Formatted, "%s;%s",
+            m_name.c_str(), sStr.c_str());
+
+        return str;
+    }
+</pre>
+    </li>
+
+    <li>Extend the efd::DataStream by adding insertion, extraction, and skip
+    operations for your type.
+
+        <p class="indent1">The DataStream class is used to pass arguments to
+        behaviors and to marshal properties to remote processes. Without these
+        methods your data type could not be passed to behaviors nor would they
+        be updated during rapid iteration.</p>
+
+        <p class="indent1">Declare these outside your class definition in your
+        .h file and implement them in your .cpp file. Because these are not
+        member functions, you'll need to add additional set methods, make your
+        member variables public, or declare efd::DataStream a friend of your
+        class. For this example, assume we've added appropriate set
+        methods.</p>
+        <pre>
+    // in your .h file after your class definition.
+    namespace efd
+    {
+        efd::DataStream&amp; operator&lt;&lt;(efd::DataStream&amp; stream, const CustomType&amp; data);
+        const efd::DataStream&amp; operator&gt;&gt;(const efd::DataStream&amp; stream, CustomType&amp; data);
+        void DataStreamSkip(const efd::DataStream&amp; stream, const CustomType&amp; val);
+    }
+</pre>
+        <pre>
+    //In your .cpp file, implement these methods.
+    //------------------------------------------------------------------------------------------------
+    efd::DataStream&amp; efd::operator&lt;&lt;(efd::DataStream&amp; stream, const CustomType&amp; data)
+    {
+        stream &lt;&lt; data.GetName();
+        stream &lt;&lt; data.GetDelta();
+        return stream;
+    }
+
+    //------------------------------------------------------------------------------------------------
+    const efd::DataStream&amp; efd::operator&gt;&gt;(const efd::DataStream&amp; stream, CustomType&amp; data)
+    {   
+        efd::utf8string str;
+        stream &gt;&gt; str;
+        data.SetName(str);
+        efd::Float32 delta;
+        stream &gt;&gt; delta;
+        data.SetDelta(delta);
+
+        return stream;
+    }
+
+    //------------------------------------------------------------------------------------------------
+    void efd::DataStreamSkip(const efd::DataStream&amp; stream, const CustomType&amp; val)
+    {
+        stream.Skip(val.GetName());
+        stream.Skip(val.GetDelta());
+    }
+</pre>
+    </li>
+
+    <li>Create a new efd::ParseHelper for your data type by defining it in your
+    .h file outside your class declaration. Implement these methods in your
+    .cpp file.
+
+        <p class="indent1">The ParseHelper template is used to parse data from
+        model and world files generated by Toolbench. Without this, the Game
+        Framework will not be able to load properties of your type from model
+        or world files.</p>
+        <pre>
+    // in your .h file after your class declaration.
+    namespace efd
+    {
+        template&lt;&gt;
+        struct ParseHelper&lt;CustomType&gt;
+        {
+            static bool FromString(const utf8string&amp; value, CustomType&amp; result);
+            static bool ToString(const CustomType&amp; value, utf8string&amp; result);
+            static const char* GetNameOfType();
+        };
+    }
+</pre>
+        <pre>
+    // In your .cpp file
+    //------------------------------------------------------------------------------------------------
+    bool efd::ParseHelper&lt;CustomType&gt;::FromString(const efd::utf8string&amp; value, CustomType&amp; result)
+    {
+        return result.FromString(value);
+    }
+
+    //------------------------------------------------------------------------------------------------
+    bool efd::ParseHelper&lt;CustomType&gt;::ToString(const CustomType&amp; value, efd::utf8string&amp; result)
+    {
+        result = value.ToString();
+        return !result.empty();
+    }
+
+    //------------------------------------------------------------------------------------------------
+    const char* efd::ParseHelper&lt;CustomType&gt;::GetNameOfType()
+    {
+        return "CustomType";
+    }    
+    
+</pre>
+    </li>
+
+    <li>Each property must have a unique identifier. This is a property ID and
+    is distinct from the Class ID. Create or append to a property enum file for
+    your project. Add custom build rules to convert this file into a .h file.
+
+        <p class="indent1">See above section on ClassIDs for an example how to
+        set this up as a custom build rule.</p>
+        <pre>
+    // CustomTypePropertIDs.enum file
+    &lt;?xml version="1.0" encoding="utf-8"?&gt;
+
+    &lt;enum type="Normal" storage="efd::UInt32" invalid=""
+          start="0xF0000300" end="0xF00003FF"&gt;
+        &lt;header useNamespace="efd" useExistingTypedef="ClassID" prefix="kPropID_" includes="efd/ClassInfo.h" /&gt;
+
+        &lt;!-- Scalar Property Identifiers --&gt;
+        &lt;item name="CustomType"/&gt;
+
+        &lt;!-- Associative Array Property Identifiers --&gt;
+        &lt;item name="CustomTypeAssocArray"/&gt;
+    &lt;/enum&gt;
+</pre>
+    </li>
+
+    <li>Use EE_DECLARE_PRIMATIVE_*_PROPERTY macros in your .h to declare your
+    new property type.
+
+        <p class="indent1">This macro declares a scalar property for your type
+        and a factory method to create new instances of this type.</p>
+        <pre>
+    /// Macro to create CustomType scalar property
+    EE_DECLARE_PRIMITIVE_SCALAR_PROPERTY(CustomType, CustomType, efd::kPropID_CustomType);
+    
+    /// Macro to create CustomType associative array property
+    EE_DECLARE_PRIMITIVE_ASSOCIATIVE_ARRAY_PROPERTY( 
+        CustomType,CustomType, efd::kPropID_CustomTypeAssocArray);
+</pre>
+    </li>
+
+    <li>Use the EE_IMPLEMENT_PRIMATIVE_*_Property macros in your .cpp file to
+    implement your property.
+
+        <p class="indent1">This macro provides a default implementation for the
+        scalar property factory.</p>
+        <pre>
+    EE_IMPLEMENT_PRIMITIVE_SCALAR_PROPERTY(CustomType);
+    EE_IMPLEMENT_PRIMITIVE_ASSOCIATIVE_ARRAY_PROPERTY(CustomType);
+</pre>
+    </li>
+
+    <li>Add support for accessing your type through the ParameterList class.
+        <p class="indent1">The efd::ParameterList class is used to pass arguments to and from
+        behaviors. This class can be used from C++ or scripted behaviors. In order to store your
+        class in a parameter list there are two reuirements, your class must be associated with a
+        unique ClassID that is used to perform type safety and your class must be able to serialize
+        into an efd::Archive. In step #2 above we already assigned the unique ClassID, so now we
+        simply need to add serialization support.</p>
+<pre>
+    // In your .h file add the following method to the CustomType class.
+    // Implementing Serialize is the easiest way for this type to work with the Serializer system
+    // and thus with ParameterList and ILuaPropertyHandler.
+    void Serialize(efd::Archive& io_ar);
+</pre>
+<pre>
+// In your .cpp file implement Serialize. Typically this simply involves calling serialize
+// methods on your various members.
+//------------------------------------------------------------------------------------------------
+void CustomType::Serialize(efd::Archive&amp; io_ar)
+{
+    efd::Serializer::SerializeObject(m_delta, io_ar);
+    efd::Serializer::SerializeObject(m_name, io_ar);
+}
+</pre>
+    </li>
+
+    <li>Add support for accessing your type through GetProperty and SetProperty built-in API methods
+        in Lua scripts.
+
+        <p class="indent1">The BehaviorAPI GetProperty and SetProperty methods already know about
+        all Emergent property types but these can be extended to support your custom type. To
+        support your type with these methods you need to provide an implementation of the
+        egf::ILuaPropertyHandler interface. This interface also allows Lua to read your type out of
+        parameters lists. If your type is bound into script using SWIG you can use the
+        egf::SwigPropHandler template class to implement ILuaPropertyHandler.</p>
+<pre>
+// In your SWIG .i file add the following:
+// Define a function which will use the SWIG generated types, methods and data to implement a
+// property handler. Calling this function during initialization allows BehaviorAPI.GetProperty and
+// BehaviorAPI.SetProperty to work with our custom type.
+%{
+
+#include &lt;egfLua/SwigPropHandler.h&gt;
+#include &lt;egfLua/SchedulerLua.h&gt;
+
+bool RegisterSwigPropertyHandlerForCustomType(egf::SchedulerLua* pSchedulerLua)
+{
+    return pSchedulerLua-&gt;RegisterPropertyHandler(
+        efd::kCLASSID_CustomType,
+        EE_NEW egf::SwigPropHandler&lt;CustomType, swig_type_info&gt;(SWIGTYPE_p_CustomType));
+}
+
+%}
+</pre>
+    <p class="indent1">This code will generate a function that can be called to register your
+    property handler. Call this function during initialization.</p>
+
+<pre>
+//-------------------------------------------------------------------------------------------------
+efd::AsyncResult CustomTypeExampleService::OnInit()
+{
+    ...
+
+    // Support BehaviorAPI.GetProperty and BehaviorAPI.SetProperty for our Swig-bound custom type:
+    Scheduler* pSim = m_pServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+    ISchedulerScripting* pss = pSim-&gt;GetScriptingRuntime("Lua");
+    SchedulerLua* psl = EE_DYNAMIC_CAST(SchedulerLua, pss);
+    EE_ASSERT(psl);
+
+    extern bool RegisterSwigPropertyHandlerForCustomType(egf::SchedulerLua* pSchedulerLua);
+    RegisterSwigPropertyHandlerForCustomType(psl);
+
+    ...
+&lt;/pre>
+
+        <p class="indent1">Now simply use the normal property access methods just as you would for
+        the standard Emergent types.</p>
+
+        <p class="indent1">For example, to get and set CustomType properties in
+        Lua you'll write code like this.</p>
+        <pre>
+    local d = self.m_customType
+    self.m_customType = myNewValue
+    local lastPropResult = Emergent.PropertyResult
+
+    -- associative array property
+    local a = { CustomType.CustomType(76.6, "ArrayValue1"), CustomType.CustomType(123.9, "ArrayValue2") }
+    for i,v in ipairs(a) do
+        self.m_customTypeList[i] = v
+        lastPropResult = Emergent.PropertyResult
+    end
+
+    local key = BehaviorAPI.GetNextPropertyKey(self, "m_customTypeList", nil)
+    while key ~= "" do
+        local value = self.m_customTypeList[key]
+        print("m_customTypeList[" .. key .. "] = " .. value)
+        key = BehaviorAPI.GetNextPropertyKey(self, "m_customTypeList", nil)
+    end
+</pre>
+    </li>
+
+    <li>Register your new type with the Flat Model Manager.
+
+        <p class="indent1">The flat model manager is responsible for parsing
+        .flat model files exported from EMT. You need to register your type
+        with the flat model manager using the property ID and your factory
+        method. The property name passed to this function must match the name
+        defined in your Toolbench plugin for your type.</p>
+        <pre>
+    // In your application service, register the type with the flat model manager.
+    FlatModelManager* pFMM = m_pServiceManager-&amp;GetSystemServiceAs&lt;FlatModelManager&gt;();
+    pFMM-&gt;RegisterPropertyFactory(
+        "CustomType",
+        efd::kPropID_CustomType,
+        CustomTypeScalarPropertyFactory);
+
+    pFMM-&gt;RegisterPropertyFactory(
+        "AssocCustomType",
+        efd::kPropID_CustomTypeAssocArray,
+        CustomTypeAssocPropertyFactory);
+</pre>
+
+        <table class="NDLNoteContainer" width="100%">
+            <tr align="left">
+                <td class="NDLNoteContainerTD">
+                    <p class="NDLHeadingNoteContainer">Note</p>
+
+                    <div class="NDLNote">
+                        The name of your scalar property when registered with
+                        the Flat Model Manager is the same as your type name.
+                        The name of your associative array property is the same
+                        as the scalar property but prefixed with 'Assoc'. This
+                        matches the name generated by EMT when exporting the
+                        model flat file.
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </li>
+</ol>
+
+<h2>Adding a custom type to Toolbench and the Entity Modeling Tool</h2>
+
+<p>Once a custom data type is setup for use as a property type in your game,
+you will likely want to add the type to Toolbench for use in the Entity
+Modeling Tool. This can be accomplished by creating a new Toolbench plug-in or
+adding to an existing plug-in.</p>
+
+<p>See
+<em>%EMERGENT_PATH%</em>\Samples\GameFrameworkTechDemos\Emergent.Toolbench.CustomType
+for a full source example of this.</p>
+
+<ol>
+    <li>Prepare an empty Toolbench C# plug-in.
+
+        <p class="indent1">Create a new Visual Studio 2008 C# Class Library
+        project as the starting point for a new Toolbench plug-in. The project
+        can build directly into a new sub folder under the Plugins folder of
+        the Toolbench installation, or may be copied there for testing.</p>
+
+        <p class="indent1">The plug-in project will need references to two
+        assemblies in the Toolbench installation:</p>
+
+        <ul>
+            <li>Emergent.Toolbench.dll</li>
+
+            <li>
+            Plugins\Emergent.Toolbench.TypeService\Emergent.Toolbench.TypeService.dll</li>
+        </ul>
+
+        <p class="indent1">In the sample implementation, these assemblies are
+        copied to the sample plug-in source folder with a pre-build step to
+        allow the assemblies from the current build configuration to be
+        referenced. Otherwise the project would need to choose a single
+        configuration for references. Set "Copy Local" to false for these
+        references.</p>
+    </li>
+
+    <li>Create a C# class for your data type.
+
+        <p class="indent1">You will need to create a C# class to represent your
+        custom type. This class should inherit from the DataValue class in
+        Emergent.Toolbench.TypeService.Types. In addition to the custom type
+        sample plug-in, the Toolbench core TypeService plug-in is a good place
+        to review existing type definitions. There are some additional types in
+        the Emergent.Toolbench.Assets plug-in.</p>
+
+        <p class="indent1">The C# class will include property getters and
+        setters for each component of the custom type. For the sample, there is
+        a string-based Name property.</p>
+        <pre>
+    public TS.String Name
+    {
+        get
+        {
+            return m_name;
+        }
+        set
+        {
+            SetValueRef(ref m_name, value, "Name");
+        }
+    }
+</pre>
+
+        <p>There is also a numerical Delta property.</p>
+        <pre>
+    public TS.Float32 Delta
+    {
+        get
+        {
+            return m_delta;
+        }
+        set
+        {
+            SetValueRef(ref m_delta, value, "Delta");
+        }
+    }
+</pre>
+
+        <p class="indent1">The C# type class will also need a StringValue
+        property with a getter to encode values into a string format. This is
+        used by the sting-based property editor in the Entity Model Editor.</p>
+        <pre>
+    get 
+    {
+        string stringValue = string.Empty;
+
+        // Compose a semicolon delimited string
+        if (!string.IsNullOrEmpty(m_name.StringValue) ||
+            !string.IsNullOrEmpty(m_delta.StringValue))
+        {
+            stringValue = string.Format("{0};{1}", m_name.StringValue, m_delta.StringValue);
+        }
+
+        return stringValue;
+    }
+</pre>
+
+        <p class="indent1">And a matching setter for parsing a string back into
+        the custom type must be provided.</p>
+        <pre>
+    set
+    {
+        // Parse the string into components
+        string[] matches = value.Split(";".ToCharArray(),
+            StringSplitOptions.RemoveEmptyEntries);
+        if (matches.Length != 2)
+        {
+            throw new FormatException(
+                "This data type requires 2 semicolon delimited values.");
+        }
+
+        Name.Value = matches[0];
+        Delta.StringValue = matches[1];
+
+        RaisePropertyChanged("StringValue");
+    }
+</pre>
+
+        <p class="indent1">See the CustomType.cs sample for the additional code
+        to fill out your type class. Note that by using existing TypeService
+        types to compose your new type, existing code can be reused, including
+        any compatible editors.</p>
+    </li>
+
+    <li>Define a WPF-based editor for the custom type.
+
+        <p class="indent1">XAML can be used to define an editor for the
+        property type. It should inherit from DataTypeEditor in the Toolbench
+        TypeService plug-in. This is the XAML from the sample type, which
+        includes text boxes for the two values that compose the type.</p>
+        <pre>
+    &lt;TypeService:DataTypeEditor x:Class="Emergent.Toolbench.CustomType.Editors.CustomTypeEditor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Emergent.Toolbench.CustomType.Editors"
+        xmlns:TypeService="clr-namespace:Emergent.Toolbench.TypeService.Editors;assembly=Emergent.Toolbench.TypeService"
+        x:Name="Root"&gt;
+        &lt;StackPanel Orientation="{Binding Path=Orientation, ElementName=Root}"&gt;
+
+            &lt;StackPanel Orientation="Horizontal"&gt;
+                &lt;TextBlock Text="Name:" Margin="3,0,0,0" MinWidth="70"/&gt;
+                &lt;TypeService:TextBoxEditor MinWidth="100" 
+                                           DataContext="{Binding Path=Name}"
+                                           Restriction="{Binding Path=Restriction, ElementName=Root}"/&gt;
+            &lt;/StackPanel&gt;
+
+            &lt;StackPanel Orientation="Horizontal"&gt;
+                &lt;TextBlock Text="Delta:" Margin="3,0,0,0" MinWidth="70"/&gt;
+                &lt;TypeService:TextBoxEditor MinWidth="35" 
+                                           DataContext="{Binding Path=Delta}"
+                                           Restriction="{Binding Path=Restriction, ElementName=Root}"/&gt;
+            &lt;/StackPanel&gt;
+
+        &lt;/StackPanel&gt;
+    &lt;/TypeService:DataTypeEditor&gt;
+</pre>
+
+        <p class="indent1">A small amount of backing code will also be
+        necessary. See CustomTypeEditor.xaml.cs for the sample case.</p>
+    </li>
+
+    <li>Register the new type and editor through the Toolbench extension
+    system.
+
+        <p class="indent1">Add a plugin.xml file to your new plug-in to
+        advertise its capabilities to Toolbench. The properties for this file
+        should have "Build Action" set to "None" and "Copy to Output" set to
+        "Copy if Newer". The plugin.xml manifest contains general information
+        about the plug-in and, in this case, extensions to the TypeService
+        extension points.</p>
+
+        <p class="indent1">First, register the type using the DataType
+        extension point.</p>
+        <pre>
+    &lt;!-- Register new type CustomType --&gt;
+    &lt;extension point="Emergent.Toolbench.TypeService.DataType"&gt;
+        &lt;datatype name="CustomType" type="Emergent.Toolbench.CustomType.Types.CustomType"
+                  editor="Emergent.Toolbench.CustomType.Editors.CustomTypeEditor"&gt;
+            &lt;restriction/&gt;
+        &lt;/datatype&gt;
+    &lt;/extension&gt;
+</pre>
+
+        <p class="indent1">Then register the editor using the DataTypeEditor
+        extension point.</p>
+        <pre>
+    &lt;!-- Register editor for CustomType --&gt;
+    &lt;extension point="Emergent.Toolbench.TypeService.DataTypeEditor"&gt;
+        &lt;editor id="Emergent.Toolbench.CustomType.Editors.CustomTypeEditor"
+                group="TypeService"
+                class="Emergent.Toolbench.CustomType.Editors.CustomTypeEditor"&gt;
+        &lt;/editor&gt;
+    &lt;/extension&gt;
+</pre>
+
+        <p class="indent1">Build the new plug-in and, if necessary, move it
+        into the Plugins folder of the Toolbench installation. Run Toolbench
+        and verify that the Plugin Browser lists the new plug-in. The new type
+        should appear in the drop list when editing property types in the
+        Entity Modeling Tool.</p>
+    </li>
+</ol>
+
+<p class="indent1">You can now use your new data type in calls to built-ins and
+as Entity properties in the Entity Modeling Tool and your game.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_property_using.htm">Using entity properties</a></li>
+
+    <li><a href="entity_property_debugging.htm">Debugging entity
+    properties</a></li>
+
+    <li><a href="../Builtins/builtin_adding_datatypes.htm">Adding new data
+    types</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

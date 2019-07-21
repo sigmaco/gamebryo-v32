@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Stream Out in the NiD3D10Renderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Stream Out in the NiD3D10Renderer</h1>
+
+<p>Stream Output is a feature of the D3D10 API supported by
+Gamebryo. It is a convenient way of processing vertex data and
+saving it for later re-use.</p>
+
+<p>For example, if you a very complex skinning or morphing facial
+animation running in a vertex shader, the GPU would ordinarily
+have to recompute this work every time it drew the mesh, which
+can be many times per frame: in multiple shadow passes, in
+perhaps a full-scene depth-only pass (to reduce overdraw), and
+then in the final color pass. A better approach would be to do
+this work only once per frame, and stream the results out to a
+temporary ("stream output") buffer. All of your remaining passes
+could then use that data, without having to recompute the vertex
+locations every time you draw the mesh.</p>
+
+<p>Stream Output does not require the use of geometry shaders;
+however, when used with a geometry shader, the dynamic output of
+the geometry shader opens up many interesting possibilities.</p>
+
+<h2>D3D10 Constraints on output streams</h2>
+
+<p>Output streams in D3D10 aren't quite as flexible as standard
+input vertex streams. There are some limitations that D3D10
+imposes on the output streams:</p>
+
+<ul>
+    <li>Only 32-bit data types are supported (float, int,
+    uint).</li>
+
+    <li>There are two ways of organize the streams:
+
+        <ul>
+            <li>Thin streams (struct-of-arrays) - a set of
+            non-interleaved streams, with one stream for each
+            output element
+
+                <ul>
+                    <li>Max 64 elements per vertex</li>
+
+                    <li>Note that you can't use the HLSL command
+                    Load to read a float3 stream, though you can
+                    use Load on float1, float2, or float4
+                    streams.</li>
+                </ul>
+            </li>
+
+            <li>Fat or compound streams (array-of-structs) -
+            streams consisting of a set of interleaved
+            elements
+                <ul>
+                    <li>Max of 4 streams; one "element"
+                    (&lt;=float4) each. (D3D10)</li>
+
+                    <li>Note that you can't use the HLSL command
+                    Load on these at all.</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+
+    <li>The input to the Stream Out stage can be points, lines,
+    or triangles, either in list or strip form; however, the
+    output can only be lists. When you write an HLSL geometry
+    shader, the instructions (Append() and RestartStrip()) make
+    it seem like you are writing strips, but in reality, the
+    strips are saved as lists.</li>
+</ul>
+
+<h2>Using Stream Output in Gamebryo</h2>
+
+<h3>Step 1: Write a shader that uses Stream Output</h3>
+
+<h4>NSF Shader</h4>
+
+<p>The two things an NSF shader needs to enable stream output is
+a declaration of the output streams, using a <a href=
+"../../Programmer/NiShader/Stream_Output_Buffers.htm">StreamOutBuffer</a>
+section in the NSFShader block, and a <a href=
+"../../Programmer/NiShader/Stream_Output.htm">StreamOutput</a>
+section in the Pass object that contains the vertex or geometry
+shader that will be performing the stream output.</p>
+
+<p>If you would like to only perform stream output operations
+without doing any rasterization (color and/or depth operations),
+this is simple. To disable pixel shading, remove the PSProgram {
+} and PS_Constantmap { } blocks. To additionally disable
+Z-buffering (including, often importantly, Z-write), set the
+appropriate render states as well.</p>
+
+<h4>Programmatic Shader</h4>
+
+<p>If you are writing a shader from scratch, the overall
+structure will be very similar. In order to declare your buffer
+objects, you will need to create and populate an <a href=
+"../../Reference/NiMain/NiOutputStreamDescriptor.htm"><span class="NDLSystemFont">
+NiOutputStreamDescriptor</span></a> object and place it on your
+<a href="../../Reference/NiMain/NiShader.htm"><span class=
+"NDLSystemFont">NiShader</span></a>. Then, to link the buffers
+with the shader programs that will use them, create and populate
+an <a href=
+"../../Reference/NiMain/NiStreamOutSettings.htm"><span class=
+"NDLSystemFont">NiStreamOutSettings</span></a> object and place
+it on the appropriate <a href="NiD3D10Pass.htm"><span class=
+"NDLSystemFont">NiD3D10Pass</span></a>.</p>
+
+<h3>Step 2: Write the vertex or geometry shader that will export
+the data</h3>
+
+<p>You can use stream output with an ordinary vertex shader,
+without modifications to the vertex shader itself. However,
+stream output is much more powerful when used with a geometry
+shader, which allows dynamic output (vertices can be culled or
+"invented").</p>
+
+<p>If you use an HLSL geometry shader, it must specify the stream
+output. For example, in the example HLSL
+geometry shader below, all triangles are passed through,
+unchanged. However, you can modify the data
+and/or output any number of triangles here, as long as the number
+of vertices you write does not exceed .maxvertexcount'.</p>
+
+<pre>
+struct GS_OUTPUT
+{
+   float4 Pos     : SV_POSITION;
+   float3 normal  : TEXCOORD0;
+   float3 viewVec : TEXCOORD1;
+};
+ 
+[maxvertexcount (3)]
+void StreamOutGS(
+    inout TriangleStream&lt;GS_OUTPUT&gt; Stream,
+    triangle VS_OUTPUT input[3])
+{
+    Stream.Append( SomeFunction(input[0]) );
+    Stream.Append( SomeFunction(input[1]) );
+    Stream.Append( SomeFunction(input[2]) );
+    Stream.RestartStrip();
+}
+</pre>
+
+<h3>Step 3: Render the resulting buffer</h3>
+
+<p>You will usually want to write a second shader that will
+render the results of your stream output to the screen.</p>
+
+<p>This step is no different from writing an ordinary shader just
+make sure the SemanticAdapterTable (which specifies the layout of
+the shader's expected input streams) matches what you designed in
+the stream output shader. Often, your application will
+programmatically create an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> that this
+material will be used on.</p>
+
+<h3>Step 4: Add supporting code to the application</h3>
+
+<p>First, identify the mesh (often in your scenegraph) that you
+would like to use as the input to your Stream Output
+operation.</p>
+
+<pre>
+NiAVObject* pkObject = m_spScene-&gt;GetObjectByName("Teapot01");
+if (!(pkObject &amp;&amp; NiIsKindOf(NiMesh, pkObject)))
+    return false;
+NiMesh* pkSourceMesh = (NiMesh*)pkObject;
+</pre>
+
+<p>Next, if necessary, assign the Stream Output shader to it:</p>
+
+<pre>
+pkSourceMesh-&gt;ApplyAndSetActiveMaterial("MyStreamOutShader");
+</pre>
+
+<p>Next, create the "draw" mesh&mdash;it's just a proxy mesh,
+used only to draw the results of our Stream Output operation. Its
+input data streams will be mapped to the output data streams of
+the source mesh.</p>
+
+<pre>
+// note: m_spStreamOutDrawMesh is of type NiMeshPtr.
+m_spStreamOutDrawMesh = NiNew NiMesh();
+m_spScene-&gt;AttachChild(m_spStreamOutDrawMesh);
+</pre>
+
+<p>And finally, we need to do the stream-binding between the two
+meshes:</p>
+
+<pre>
+m_spStreamOutDrawMesh-&gt;BindToStreamOutputOf( pkSourceMesh );
+</pre>
+
+<p>The only remaining step is to clean up our code-created mesh,
+upon exit:</p>
+
+<pre>
+// release smart pointer:
+m_spStreamOutDrawMesh = NULL;
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Important Project Settings</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Important Project Settings</h1>
+
+<p>Guidelines for project settings for any Gamebryo application for both Visual
+Studio 2005 (VC80) and Visual Studio 2008 (VC90) are detailed in <a href=
+"../../GetStart/PC/Introduction.htm">Getting Started with Gamebryo for PC</a>.
+Those settings should be set along with the new settings required by the
+<span class="NDLSystemFont">NiPluginToolkit</span> which are summarized below,
+grouped by the associated project configuration options heading. These options
+are the same for both VC80 and VC90. The only difference is that if you are
+developing for VC90, then instructions that use the VC80 directory should
+always instead use the VC90 directory, such as in the library path or the
+post-build step.</p>
+
+<h2>C/C++</h2>
+
+<ul>
+    <li>Under the "Preprocessor" category, the following preprocessor
+    definition should be included: <span class=
+    "NDLSystemFont">NIPLUGINDLL_EXPORT</span>. You will also need import
+    definitions for any Gamebryo DLLs you will be using (e.g., if you are using
+    the <span class="NDLSystemFont">NiAnimation</span> DLL, you will need to
+    specify <span class="NDLSystemFont">NIANIMATION_IMPORT</span>). Also,
+    "Additional include directories" should include the path to the
+    <span class="NDLSystemFont">$(EMERGENT_PATH)\sdk\Win32\Include</span>
+    directory on your hard disk.</li>
+</ul>
+
+<h2>Linker</h2>
+
+<ul>
+    <li>Under the "General" category, "Output File" should have an extension of
+    "<span class="NDLSystemFont">.dld</span>" for debug builds and
+    "<span class="NDLSystemFont">.dll</span>" for release builds.</li>
+
+    <li>Under the "Input" category, "Additional Library Path" should include
+    the path to the <span class=
+    "NDLSystemFont">$(EMERGENT_PATH)\sdk\Win32\Lib\VC80\DebugDLL</span>
+    directory for debug builds and the <span class=
+    "NDLSystemFont">$(EMERGENT_PATH)\sdk\Win32\Lib\VC80\ReleaseDLL</span>
+    directory for release builds.</li>
+
+    <li>You must minimally link with the <span class=
+    "NDLSystemFont">NiPluginToolkit</span> library file (the name will be the
+    same as the <span class="NDLSystemFont">NiPluginToolkit*.dll</span> except
+    with a ".<span class="NDLSystemFont">lib</span>" extension). If you are
+    using any of the shared data objects in the <span class=
+    "NDLSystemFont">NiStandardSharedData*.dll</span>, you must include that
+    corresponding *.lib file, as well.</li>
+
+    <li>If you are using Gamebryo DLLs at all in your plug-in, you must include
+    their corresponding *.lib files. At the least, you should include the
+    NiMain.lib and NiSystem.lib files.</li>
+</ul>
+
+<h2>Post-build Step</h2>
+
+<ul>
+    <li>
+        <p>The final plug-in DLL must reside in the default location:</p>
+
+        <p><span class=
+        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\SDK\Win32\DLL\ToolPlugins\VC#</span></p>
+
+        <p>...where "<span class="NDLSystemFont">VC#</span>" is "<span class=
+        "NDLSystemFont">VC80</span>"for libraries built under Visual Studio
+        2005.</p>
+
+        <p>It is a good idea to set up a post-build step to copy the built
+        plug-in DLL to this directory. A sample post-build step to accomplish
+        this step is listed below:</p>
+
+        <ul>
+            <li>For debug builds in Visual Studio 2005:
+
+                <ul>
+                    <li>copy "$(OutDir)\*.dld"
+                    "%EMERGENT_PATH%\SDK\Win32\DLL\ToolPlugins\VC80"</li>
+                </ul>
+            </li>
+
+            <li>For release builds in Visual Studio 2005:
+
+                <ul>
+                    <li>copy "$(OutDir)\*.dll"
+                    "%EMERGENT_PATH%\SDK\Win32\DLL\ToolPlugins\VC80"</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<h2>Feeding Your Plug-in from 3ds Max</h2>
+
+<p>There are two methods for getting data entered by artists in 3ds max: custom
+attributes and the user-defined property buffer. Please see the Adding Custom
+Content section of the Programmer's Guide for more information.</p>
+
+<h2>Feeding Your Plug-in from Maya</h2>
+
+<p>Maya uses a powerful "Extra Attribute" system that the artist can use to
+embed information into the scene. This system enables you to export integers,
+floats, Booleans, strings, enums, and a host of other data types. This
+technique is the same one used by the Gamebryo Maya Plug-in to embed
+information into the scene graph that is later removed before export. This
+approach is used when creating <span class=
+"NDLSystemFont">NiSwitchNode</span>s, billboards, alternate bounding volumes,
+and much more. You can further simplify the process by automatically creating
+your "Extra Attributes" using one of Maya's shelf icons, as the Gamebryo Maya
+Plug-in does. Simply click the icon, and it is all accomplished through Maya's
+MEL script.</p>
+
+<h3>Creating shelf buttons in Maya</h3>
+
+<p>If you look at "MyImmerseShelf.mel" you can see where the Gamebryo Maya
+Plug-in creates all of its shelf buttons. The "shelfButton" command does all of
+the work and runs a MEL script when you click the icon.</p>
+
+<h3>An example of MEL script adding attributes in Maya</h3>
+
+<p>If you look at "MyImmerseCreateAnimationLoopingControls.mel" you will see a
+script that adds attributes to all of the objects you have selected.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

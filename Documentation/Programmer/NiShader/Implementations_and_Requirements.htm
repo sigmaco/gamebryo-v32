@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Implementations and Requirements</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Implementations and Requirements</h1>
+
+<p>The NSF format allows multiple implementations of a shader in
+a single file. Each implementation can be named and have a set of
+requirements all its own. Our sample shader only has one
+implementation, but it will suffice for discussion.</p>
+
+<pre>
+Implementation VS11_PS14
+{
+    "This implementation requires hardware that supports
+    vertex shader v1.1 and pixel shader v1.4"
+
+    Requirements
+    {
+        VSVersion   = v1.1
+        UserVersion = v0.0
+        PSVersion   = v1.4
+        UsesNIRenderState = true
+        BinormalTangentMethod = NBTMethod_ATI
+    }
+
+    PackingDef  PosNormUV0BinormalTangent
+</pre>
+
+<h2>Descriptions</h2>
+
+<p>Implementations contain brief descriptions regarding the
+specifics of the implementation. These descriptions are visible
+to the artist. Use them to explain the differences between
+implementations. Artists can specify that a file use the best
+shader for the available hardware, but they can also select the
+implementation to use. Because of this flexibility, it is
+imperative that the artists have full information in the
+implementation description of the differences between the
+implementations.</p>
+
+<h2>Requirements</h2>
+
+<p>Within the implementation there is a list of requirements that
+must be met for that implementation. These requirements help the
+shader system determine which implementation to use when the
+artist specifies that the best for the hardware should be used.
+There are a few considerations with requirements.</p>
+
+<p>Make sure that you accurately encode version numbers. If you
+accidentally put ps.1.3 when your pixel shader program is written
+in ps.1.4, you may select an incorrect implementation at runtime.
+It is up to the shader author to ensure that the shader program
+version requirements are accurate. The runtime engine will assume
+that the NSF requirements indicate what version the shader code
+expects. Use v0.0 for shader program versions that rely on the
+fixed function pipeline.</p>
+
+<p>User version is provided to allow applications to define
+additional restrictions beyond shader program version. Its use is
+entirely up to the application developer.</p>
+
+<p>The <span class="NDLSystemFont">BinormalTangentMethod</span>
+requirement serves two purposes. First, it indicates to the tool
+chain that normal, binormal, and tangent vectors (NBTs) need to
+be created. The NBT method dictates which algorithm will be used
+in the art pipeline. Second, in debug builds, this flag is
+checked against the geometry at runtime to ensure that the NBT
+method matches. Note well that this check is not performed in
+release mode.</p>
+
+<p>The <span class="NDLSystemFont">BonesPerPartition</span>
+requirement is not shown above, but it functions much as the
+<span class="NDLSystemFont">BinormalTangentMethod</span>
+requirement. It is checked at runtime and overrides settings in
+the art pipeline as well.</p>
+
+<p><span class="NDLSystemFont">UsesNiRenderState</span> affects
+the way that render states are set. See the note in the <a href=
+"Render_States.htm#UsesNIRenderState">following section</a>.</p>
+
+<p><span class="NDLSystemFont">UsesNiLightState</span> is not
+shown as a requirement above. It functions much like <span class=
+"NDLSystemFont">UsesNiRenderState</span> but affects whether the
+default light manager updates the lights on the hardware.
+Applications that use fixed function vertex processing with
+lighting should set this value to true.</p>
+
+<p>Software vertex processing is enabled using two requirements:
+<span class="NDLSystemFont">SoftwareVPRequired</span> and
+<span class="NDLSystemFont">SoftwareVPFallback</span>.
+<span class="NDLSystemFont">SoftwareVPRequired</span> is used
+when the shader is meant to run only using software vertex
+processing. <span class="NDLSystemFont">SoftareVPFallback</span>
+is used when the shader should be run in hardware whenever
+possible, but that if the hardware cannot handle the shader, it
+is acceptable to run the shader in software. Note that in both
+these instances, the device must have been created to be able to
+process vertices in software - either as a software-only device,
+or as a mixed device capable of switching between software and
+hardware vertex processing.</p>
+
+<h2>Packing Definition</h2>
+
+<p>Each implementation specifies a packing definition to use.
+Because different versions of a shader may require different
+information, you can specify multiple packing definitions and
+select at the implementation level. For example, this packing
+definition uses NBTs in the vertex shader to do normal mapping in
+tangent space. If the normal mapping were done in object space in
+a second implementation we would not need the binormal or tangent
+vectors and hence would not want to pack them in a second packing
+definition for that implementation.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

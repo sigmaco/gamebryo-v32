@@ -1,0 +1,464 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Object Annotations for CGFX Effect Files</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Object Annotations for CGFX Effect Files</h1>
+
+<p>This section details the CGFX annotations needed to support
+referencing objects in the scene graph from a CGFX shader. The
+CGFX format can be considered a peer to the NSF format. Effects
+are usually stored in CGFX files, which are exported as COLLADA
+FX and then converted to NSF files through the COLLADA FX to NSF
+converter. After the NSF file is loaded, parameters defined in
+that file are available programmatically, along with any
+semantics and annotations that were defined for them. Whenever
+possible, Gamebryo uses standard annotations and semantics to
+maintain maximum compatibility with third party shader tools.
+However, some new semantics and annotations are necessary to
+support values not covered by the standard annotations and
+semantics. Some of the sections will reference topics discussed
+in the <a href="NSF_File_Format_Reference.htm">NSF reference</a>,
+so it is recommended that you read those sections before reading
+this one.</p>
+
+<h2>Object Annotations</h2>
+
+<p>The object types defined in the <span class=
+"NDLSystemFont"><a href=
+"Objects_Section_in_NSF_Files.htm">Objects</a></span> top-level
+section in NSF files are represented by the <span class=
+"NDLSystemFont">Object</span> annotation in CGFX files. The
+possible <span class="NDLSystemFont">Object</span> values and
+their NSF equivalents are shown below:</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Object Value</th>
+
+            <th>NSF Equivalent</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">GeneralLight</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_GeneralLight</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PointLight</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_PointLight</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">DirectionalLight</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_DirectionalLight</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">SpotLight</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_SpotLight</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">EnvironmentMap</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_EnvironmentMap</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ProjectedShadowMap</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_ProjectedShadowMap</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ProjectedLightMap</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_ProjectedLightMap</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">FogMap</span></td>
+
+            <td><span class=
+            "NDLSystemFont">Effect_FogMap</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Example CGFX parameters with <span class=
+"NDLSystemFont">Object</span> annotations are shown below:</p>
+<pre>
+// Light1: General Light with Object Index 0
+string Light1
+&lt;
+    UIWidget="None";
+    VarType="Object";
+    string ObjectIndex="0";
+    string Object="GeneralLight";
+&gt; = "Light1";
+ 
+// Light2: General Light with Object Index 1
+string Light2
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectIndex="1";
+    string Object="GeneralLight";
+&gt; = "Light2";
+ 
+// Light1Direction: WorldDirection Property of Light1
+float3 Light1Direction
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light1";
+    string ObjectProperty="WorldDirection";
+&gt;
+// Light2Direction: WorldDirection Property of Light2
+float3 Light2Direction
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light2";
+    string ObjectProperty="WorldDirection";
+&gt;
+ 
+// Light1Color: Diffuse Property of Light1
+float3 Light1Color
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light1";
+    string ObjectProperty="Diffuse";
+&gt;
+ 
+// Light1Color: Diffuse Property of Light2
+float3 Light2Color
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light2";
+    string ObjectProperty="Diffuse";
+&gt;
+</pre>
+
+<p>The <span class="NDLSystemFont">ObjectIndex</span> annotation
+indicates which object to use from the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffectState.htm">NiDynamicEffectState</a></span>.
+This annotation is required for proper mapping of each parameter
+to the property of the object it references.</p>
+
+<h2>Constant Map Parameter Mappings</h2>
+
+<p>The parameters that are used with NSF <span class=
+"NDLSystemFont"><a href=
+"Shader_Constant_Maps.htm#Object_Entry">CM_Object</a></span>
+constant map entries directly map to a combination annotations.
+The following table details each <span class=
+"NDLSystemFont">CM_Object</span> parameter and lists its CGFX
+Annotation equivalent. The <span class=
+"NDLSystemFont">ObjectProperty</span> annotation is specified
+with a line similar to this:</p>
+
+<p><span class="NDLSystemFont">string ObjectProperty="&lt;CGFX
+Annotation&gt;";</span></p>
+
+<p>Additional annotations depending on the object property are
+listed with the standard <span class="NDLSystemFont">Type
+AnnotationName = Value;</span> format. Some parameters only
+require the <span class="NDLSystemFont">ObjectProperty</span>
+annotation, while others require additional and annotations.
+Non-standard annotations are prefixed with a "*" in the
+table.</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>NSF Constant Map Parameter</th>
+
+            <th>Type</th>
+
+            <th>CGFX Annotation Equivalent</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">Dimmer</span></td>
+
+            <td>float</td>
+
+            <td><span class="NDLSystemFont">* Dimmer</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">UndimmedAmbient</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Ambient<br>
+            string Usage = "Undimmed";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">UndimmedDiffuse</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Diffuse<br>
+            string Usage = "Undimmed";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">UndimmedSpecular</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Specular<br>
+            string Usage = "Undimmed";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Ambient</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Ambient</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Diffuse</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Diffuse</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Specular</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Specular</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldPosition</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Position</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelPosition</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Position<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldDirection</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Direction</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelDirection</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Direction<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldTransform</span></td>
+
+            <td>float4x4</td>
+
+            <td><span class="NDLSystemFont">World</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelTransform</span></td>
+
+            <td>float4x4</td>
+
+            <td><span class="NDLSystemFont">World<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">SpotAttenuation</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">SpotAttenuation</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Attenuation</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">Attenuation</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldProjectionMatrix</span></td>
+
+            <td>float3x3</td>
+
+            <td><span class="NDLSystemFont">Projection</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelProjectionMatrix</span></td>
+
+            <td>float3x3</td>
+
+            <td><span class="NDLSystemFont">Projection<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldProjectionTranslation</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">* ProjectionTranslation</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelProjectionTranslation</span></td>
+
+            <td>float3</td>
+
+            <td><span class="NDLSystemFont">* ProjectionTranslation<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WorldClippingPlane</span></td>
+
+            <td>float4</td>
+
+            <td><span class="NDLSystemFont">* ClippingPlane</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ModelClippingPlane</span></td>
+
+            <td>float4</td>
+
+            <td><span class="NDLSystemFont">* ClippingPlane<br>
+            string Space = "Model";</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TexCoordGen</span></td>
+
+            <td>float</td>
+
+            <td><span class="NDLSystemFont">* TexCoordGen</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Ambient Light Combination</h2>
+
+<p>A combined value of all <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAmbientLight.htm">NiAmbientLight</a></span>
+objects active in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffectState.htm">NiDynamicEffectState</a></span>
+can be retrieved with the <span class=
+"NDLSystemFont">AmbientLight</span> <span class=
+"NDLSystemFont">ObjectProperty</span> annotation like so:</p>
+<pre>
+float3 vAmbientLightAmbientLight
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectProperty="AmbientLight";
+&gt;
+</pre>
+
+<p>This value corresponds to the <span class=
+"NDLSystemFont">AmbientLight</span> NSF <span class=
+"NDLSystemFont"><a href=
+"Shader_Constant_Maps.htm#Defined_Entry">CM_Defined</a></span>
+parameter. The <span class="NDLSystemFont">Object</span>
+annotation should not be used for this parameter.</p>
+
+<h2>Sampler State Values</h2>
+
+<p>Due to the way in which CG and CGFX files are processed, it is
+not possible to duplicate the <span class=
+"NDLSystemFont">UseMapValue</span> property of <a href=
+"Sampler_Sections.htm">NSF sampler sections</a> at this time. Not
+enough information is available at the time Gamebryo accesses the
+effect data to properly link samplers with the textures they
+reference.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>The Image Conversion Process</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>The Image Conversion Process</h1>
+
+<p>The image conversion process can include any of the 
+ following steps depending on the incoming texture data and the application's 
+ preferences.</p>
+
+<h2>Expansion of Compressed Textures</h2>
+
+<p>If the incoming format is a compressed formats and the 
+ destination format is not a compressed format (if the incoming and destination 
+ formats are different compressed formats, the conversion will fail), then 
+ the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDevImageConverter.htm">NiDevImageConverter</a></span> 
+ class will expand the data into the <span class="NDLSystemFont">NiPixelFormat::RGBA32</span> 
+ format before continuing. If the incoming and destination formats are 
+ equal compressed formats, then this step will pass the incoming data along.</p>
+
+<h2>Mipmap Pyramid Generation</h2>
+
+<p>As mentioned previously, the <span class="NDLSystemFont">NiDevImageConverter</span> 
+ class can be used to automatically generate mipmap pyramids. If the pyramid 
+ was not generated at export time, the development converter can do this 
+ when the texture is first loaded. However, it is recommended that textures 
+ be saved with mipmap pyramids to avoid the overhead of runtime pyramid 
+ generation. Note that the mipmap pyramid generation code in the <span class="NDLSystemFont">NiDevImageConverter</span> class 
+ can only filter standard formats such as <span class="NDLSystemFont">NiPixelFormat::RGB24</span>, 
+ <span class="NDLSystemFont">RGBA32</span>, <span class="NDLSystemFont">PAL8</span> and <span class="NDLSystemFont">PALA8</span>. Since incoming unprocessed 
+ bump maps come in as <span class="NDLSystemFont">RGB24</span> 
+ or <span class="NDLSystemFont">RGBA32</span>, mipmap pyramids 
+ can be generated for these as well (this is useful to avoid aliasing in 
+ the bump maps).</p>
+
+<h2>Bump Map Conversion</h2>
+
+<p>If the incoming format is RGB24 or RGBA32 and the destination 
+ format is a Bump map, then the converter must convert the RGB(A) "height 
+ map" to a gradient-based bump map. It does this by determining the 
+ "slope" of the incoming height map, treating the red channel 
+ of the map as a height field&mdash;the brighter the red component at a pixel, 
+ the higher the bump. As a result, any constant color represents a flat 
+ surface. Only differences in surface slope matter. The alpha channel, 
+ if supplied, is copied directly into the luminance channel of the destination 
+ (if it exists), and will serve as the glossiness of the surface. For an 
+ example of a bump map and the resulting behavior, see the section on <a 
+ href="Using_Bump_Maps.htm">bump 
+ maps and static multitexturing</a>.</p>
+
+<h2>Format Conversion</h2>
+
+<p>The format conversion for a specific platform, whether 
+ it is done at export time or at runtime via the <span class="NDLSystemFont">NiDevImageConverter</span>, 
+ is accomplished by comparing an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span> 
+ object's requested format preferences with the incoming pixel data and 
+ the capabilities of the renderer. The format preferences are passed to 
+ the <span class="NDLSystemFont">NiSourceTexture::Create</span> 
+ function. They are defined in the
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexture__FormatPrefs.htm">
+ NiTexture::FormatPrefs</a></span> 
+ class and consist of one flag each for pixel layout, alpha channel, and 
+ mipmapping. The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexture.htm">NiTexture</a></span> 
+ documentation gives details on the meaning of the flag values.</p>
+
+<p>The matching process of determining an appropriate destination 
+ pixel format for the conversion process is unique to each renderer. In 
+ all cases though, the renderers do a best fit match using the following 
+ guidelines: pixel layout requests are of higher precedence than alpha 
+ format requests and mipmapping must occur prior to conversion to a renderer 
+ specific format that makes mipmap pyramid generation impossible. Basically 
+ this means that requesting alpha from an incoming texture format that 
+ does not include an alpha channel will not cause an alpha channel to be 
+ magically created. It also means that incoming data must be in a standard 
+ format (or be able to be converted to a standard format) if a mipmap pyramid 
+ is to be generated.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

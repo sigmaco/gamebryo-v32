@@ -1,0 +1,591 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiDataStream</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiDataStream</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NiDataStream.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/class_ni_data_stream.gif" alt="Inheritance graph for NiDataStream"/>
+  <p class="FigureCaption">Inheritance graph for NiDataStream</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Thread safe abstraction for any data needed by an <span class="NDLSystemFont"><a href="../NiMain/NiRenderObject.htm">NiRenderObject</a></span>. </p>
+<p class="NDLNormal">Each NiRenderer-derived class will implement its own renderer-specific versions of this class. Objects of this class may also be registered with a NiFloodgate task as an input or output and will be locked and unlocked as appropriate during the course of the task's execution. </p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+<a name="class_ni_data_stream_1a9dfad576a9c5a78bd73a8e8e2d8dd52e"></a>
+<p class=NDLRefHead2>NiDataStream::Access</p>
+
+
+<p class="NDLRefMemberDescription">Enumerates how a data stream may be locked during its lifetime. </p>
+
+<p class="NDLRefMemberDetailedDescription">Locking calls are passed LockType enumeration values that are checked against these Access flags that were set at data stream construction.</p>
+<p class="NDLRefMemberDetailedDescription">There are three types of write settings: Static, Mutable, and Volatile.</p>
+<p class="NDLRefMemberDetailedDescription">These have significant impact on the performance and memory overheads of data streams. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_CPU_READ</span></td>
+    <td>Access for reading by CPU. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_CPU_WRITE_STATIC</span></td>
+    <td>Access for writing once by CPU. Subsequent write locks will fail. Reading from the data stream is thus inherently thread-safe with no enforcement needed because the contents will not change after the initial write. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_CPU_WRITE_MUTABLE</span></td>
+    <td>Access for multiple writes by CPU infrequently. 
+<ul>
+<li>Contents are preserved from lock to lock.</li>
+<li>Contents may be written sparsely/incompletely. </li></ul></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_CPU_WRITE_VOLATILE</span></td>
+    <td>Access for multiple writes by CPU frequently, such as writing every frame or every second. 
+<ul>
+<li>Data is not preserved from lock to lock.</li>
+<li>Entire contents must written upon locking.</li>
+<li>Incompatible with ACCESS_CPU_READ. </li></ul></td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_GPU_READ</span></td>
+    <td>Access for reading by GPU, such as vertex buffers, index buffers, etc for GPU consumption. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_GPU_WRITE</span></td>
+    <td>Access for writing by GPU, such as vertex buffers, index buffers, etc for GPU output. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">ACCESS_CPU_WRITE_ANY</span></td>
+    <td>Mask used to see if access flags allow any form of CPU writing. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d"></a>
+<p class=NDLRefHead2>NiDataStream::Usage</p>
+
+
+<p class="NDLRefMemberDescription">Enumerates the contents of this data stream. </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">USAGE_VERTEX_INDEX</span></td>
+    <td>Index buffer. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USAGE_VERTEX</span></td>
+    <td>Vertex buffer. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USAGE_SHADERCONSTANT</span></td>
+    <td>Emergent internal use only. Array of shader constants. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USAGE_USER</span></td>
+    <td>Arbitrary user-defined data. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USAGE_DISPLAYLIST</span></td>
+    <td>Display list buffer. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">USAGE_MAX_TYPES</span></td>
+    <td>Maximum number of Usage types. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="class_ni_data_stream_1abc4b62a87d68da7491b406f7f4889da2"></a>
+<p class=NDLRefHead2>NiDataStream::LockType</p>
+
+
+<p class="NDLRefMemberDescription">Used by Lock/Unlock methods to indicate how data will be accessed. </p>
+
+<p class="NDLRefMemberDetailedDescription">The enumerations can be OR'ed together. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">LOCK_READ</span></td>
+    <td>Lock the data for CPU read. ACCESS_CPU_READ must have been specified for this to succeed. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">LOCK_WRITE</span></td>
+    <td>Lock the data for CPU write. ACCESS_CPU_WRITE must have been specified for this to succeed. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">LOCK_TOOL_READ</span></td>
+    <td>Lock the data for CPU read regardless of Access flags. This is a "back door" internal use only path only meant for use in the tools. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">LOCK_TOOL_WRITE</span></td>
+    <td>Lock the data for CPU write regardless of Access flags. This is a "back door" internal use only path only meant for use in the tools. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="class_ni_data_stream_1ac9cf5fc0980bb79e1cc23fd53c1eeb57"></a>
+<p class="NDLRefMemberFunction">virtual ~NiDataStream()</p>
+<p class="NDLRefMemberDescription">Default virtual destructor. </p>
+<p class="NDLRefMemberDetailedDescription">The data stream must be unlocked before destruction. </p>
+
+<a name="class_ni_data_stream_1adfed0d91d77c38308cf0d222f7fcd3d7"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">NiUInt32</span>  GetStride() const</p>
+<p class="NDLRefMemberDescription">Get the stride of the data buffer. </p>
+
+<a name="class_ni_data_stream_1a50938c43cc9cb497f88f4c9c9367b993"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetSize() const</p>
+<p class="NDLRefMemberDescription">Get the size of the buffer in bytes. </p>
+
+<a name="class_ni_data_stream_1abb40835553cfe206ea9d62fdf20158e6"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetTotalCount() const</p>
+<p class="NDLRefMemberDescription">Gets the total number of items in the stream. </p>
+
+<a name="class_ni_data_stream_1a28ee471875584bd0213842c4a3b1f80b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetCount(<span class="NDLSystemFont">NiUInt32</span> uiRegionIdx) const</p>
+<p class="NDLRefMemberDescription">Gets the number of items in the given region. </p>
+
+<a name="class_ni_data_stream_1a3b38c312419ba3d4757e510151c8f53e"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt8</span>  GetAccessMask() const</p>
+<p class="NDLRefMemberDescription">Get the access rights on the stream. </p>
+
+<a name="class_ni_data_stream_1add885c484e3da1fbea8cb03f33f855d0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span>  GetUsage() const</p>
+<p class="NDLRefMemberDescription">Gets the usage of the stream (index, vertex, constant). </p>
+
+<a name="class_ni_data_stream_1a9b272dcc1f2b0786e5e2437d612e4c0b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetLocked() const</p>
+<p class="NDLRefMemberDescription">Determine whether or not the buffer is locked by the CPU. </p>
+
+<a name="class_ni_data_stream_1a95d5fb15154ab9e8371130792b51f936"></a>
+<p class="NDLRefMemberFunction">virtual void  Resize(<span class="NDLSystemFont">NiUInt32</span> uiSize) = 0</p>
+<p class="NDLRefMemberDescription">Adjusts the size of the stream, specified in bytes. </p>
+<p class="NDLRefMemberDetailedDescription">Contents of stream are undefined afterwards. </p>
+
+<a name="class_ni_data_stream_1a425cfd1065292cc488b91a16ddaab4ff"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetRegionCount() const</p>
+<p class="NDLRefMemberDescription">Gets the number of Regions in the stream. </p>
+
+<a name="class_ni_data_stream_1aae2aff624d5be57460356afc9ec8444f"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span>&  GetRegion(<span class="NDLSystemFont">NiUInt32</span> uiRegion) const</p>
+<p class="NDLRefMemberDescription">Gets the <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span> at the index specified (const-safe). </p>
+
+<a name="class_ni_data_stream_1a8a3f78af4e191101053bd6c7daa53bdf"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span>&  GetRegion(<span class="NDLSystemFont">NiUInt32</span> uiRegion)</p>
+<p class="NDLRefMemberDescription">Gets the <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span> at the index specified. </p>
+
+<a name="class_ni_data_stream_1a5e472670929593b70ed06a5dcc005724"></a>
+<p class="NDLRefMemberFunction">void  SetRegion(<br/>const <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span>& kRegion, <br/><span class="NDLSystemFont">NiUInt32</span> uiRegion)</p>
+<p class="NDLRefMemberDescription">Sets the <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span> at the index specified. </p>
+
+<a name="class_ni_data_stream_1a3b0e82fa526775ab31e0673589c00d88"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  AddRegion(const <span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span>& kRegion)</p>
+<p class="NDLRefMemberDescription">Add a region to this datastream. </p>
+<p class="NDLRefMemberDetailedDescription">Returns the index at which the region was added. </p>
+
+<a name="class_ni_data_stream_1a7c6b989189f499cda7dd872f05e39291"></a>
+<p class="NDLRefMemberFunction">void  RemoveRegion(<span class="NDLSystemFont">NiUInt32</span> uiIndex)</p>
+<p class="NDLRefMemberDescription">Remove a region from this data stream. </p>
+
+<a name="class_ni_data_stream_1afc3788b3baec8d625fe117a2f3e24e4c"></a>
+<p class="NDLRefMemberFunction">void  RemoveAllRegions()</p>
+<p class="NDLRefMemberDescription">Remove all regions from this data stream. </p>
+
+<a name="class_ni_data_stream_1aedc6c4780d00ee41a17b852270c47ae9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiUInt32</span>  GetElementDescCount() const</p>
+<p class="NDLRefMemberDescription">Gets the number of elements in the element set. </p>
+
+<a name="class_ni_data_stream_1ae3fdf2dbce83bb5d45d6ba4c53684b80"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="NiDataStreamElement.htm">NiDataStreamElement</a></span>&  GetElementDescAt(<span class="NDLSystemFont">NiUInt32</span> uiDescIdx) const</p>
+<p class="NDLRefMemberDescription">Get the element desc at the specified index. </p>
+
+<a name="class_ni_data_stream_1a6fe59f8e53d5934fc0d8c555aba48987"></a>
+<p class="NDLRefMemberFunction">void  SetCloningBehavior(<span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject::CloningBehavior</a></span> eCloningBehavior)</p>
+<p class="NDLRefMemberDescription">Sets the cloning method. </p>
+
+<a name="class_ni_data_stream_1a4f5478a2f57794a0daa2dbcb1f8e19de"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject::CloningBehavior</a></span>  GetCloningBehavior() const</p>
+<p class="NDLRefMemberDescription">Gets the cloning method. </p>
+
+<a name="class_ni_data_stream_1a3ef3577dcc42d3fa6ecc1c62b8a4b331"></a>
+<p class="NDLRefMemberFunction">void  SetDefaultCloningBehavior()</p>
+<p class="NDLRefMemberDescription">Sets the cloning method to the default value. </p>
+<p class="NDLRefMemberDetailedDescription">If access is ACCESS_CPU_WRITE_MUTABLE, CLONE_COPY is set. If access is ACCESS_CPU_WRITE_VOLATILE, CLONE_BLANK_COPY is set. Otherwise, the cloning method is set to CLONE_SHARE. </p>
+
+<a name="class_ni_data_stream_1a91c8e1cb59c1c9ecdbb87fd783386d74"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  IsLockRequestValid(<span class="NDLSystemFont">NiUInt8</span> uiLockMask) const</p>
+<p class="NDLRefMemberDescription">Determines if the locking request is valid with respect to the access mask on the stream. </p>
+
+<a name="class_ni_data_stream_1a4d21795bcfab6e89f3529458f799a1e2"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetStreamable() const</p>
+<p class="NDLRefMemberDescription">Whether or not the data stream should be saved to disk when streamed. </p>
+
+<a name="class_ni_data_stream_1a21e2e70ccad1e1a69a74632015e613cb"></a>
+<p class="NDLRefMemberFunction">void  SetStreamable(<span class="NDLSystemFont">bool</span> bStreamable)</p>
+<p class="NDLRefMemberDescription">Specify whether or not the data stream should be saved to disk when streamed. </p>
+
+<a name="class_ni_data_stream_1af9dcfb2f0b1d99fe33649d1c70989340"></a>
+<p class="NDLRefMemberFunction">void  SetGPUConstantSingleEntry(<span class="NDLSystemFont">bool</span> bSingleEntry)</p>
+<p class="NDLRefMemberDescription">Set whether the vertex buffer contains only a single entry intended. </p>
+
+<a name="class_ni_data_stream_1a568756a2581ea389b78a07b65f12d62e"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetGPUConstantSingleEntry() const</p>
+<p class="NDLRefMemberFunction"></p>
+<a name="public_static_methods"></a>
+<p class="NDLRefHead1">Public Static Methods</p>
+
+
+<a name="class_ni_data_stream_1a1610e29f195a9e84bd95b907c63581e5"></a>
+<p class="NDLRefMemberFunction">static void  SetFactory(<span class="NDLSystemFont"><a href="NiDataStreamFactory.htm">NiDataStreamFactory</a></span>* pkFactory)</p>
+<p class="NDLRefMemberDescription">Set the <span class="NDLSystemFont"><a href="NiDataStreamFactory.htm">NiDataStreamFactory</a></span> used by CreateDataStream. </p>
+
+<a name="class_ni_data_stream_1a3a8e5c7c2ed5ab22bb36a8953d43155e"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont"><a href="NiDataStreamFactory.htm">NiDataStreamFactory</a></span>*  GetFactory()</p>
+<p class="NDLRefMemberDescription">Get the <span class="NDLSystemFont"><a href="NiDataStreamFactory.htm">NiDataStreamFactory</a></span> used by CreateDataStream. </p>
+
+<a name="class_ni_data_stream_1aa9a6a109ef513af13ab6e2f59a1e9ce8"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont">bool</span>  IsAccessRequestValid(<br/><span class="NDLSystemFont">NiUInt8</span> uiAccessMask, <br/><span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span> eUsage)</p>
+<p class="NDLRefMemberDescription">Determines if the access request is valid for the given usage type. </p>
+
+<a name="class_ni_data_stream_1affef78f18fd8e7f7e5e73d5ad01c619b"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont"><a href="../NiMain/NiString.htm">NiString</a></span>  AccessFlagsToString(<span class="NDLSystemFont">NiUInt8</span> uiFlags)</p>
+<p class="NDLRefMemberDescription">Converts the given Access flags to a string. </p>
+<p class="NDLRefMemberDetailedDescription">Uses <span class="NDLSystemFont"><a href="../NiMain/NiString.htm">NiString</a></span> to enforce ownership of the concatenated string. </p>
+
+<a name="class_ni_data_stream_1a0411cf2167c074f4fe3fd0fa4192a892"></a>
+<p class="NDLRefMemberFunction">static const char*  UsageToString(<span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span> eUsage)</p>
+<p class="NDLRefMemberDescription">Converts the given Usage to a string. </p>
+<a name="floodgate_methods_(from_nispdatastream)"></a>
+<p class="NDLRefHead1">Floodgate Methods (from NiSPDataStream)</p>
+
+<p class="NDLRefMemberDescription">Methods to hook up <span class="NDLSystemFont">NiDataStream</span> objects to NiFloodgate task inputs/outputs.</p>
+<p class="NDLRefMemberDescription">The GetStride member function is also used by Floodgate. </p>
+
+<a name="class_ni_data_stream_1a33ff9eeff2c87d5a60b81eb0ef8d48ec"></a>
+<p class="NDLRefMemberFunction">virtual const void*  LockSource(<span class="NDLSystemFont">NiUInt32</span> uiRegionIdx)</p>
+<p class="NDLRefMemberDescription">Locks a Floodgate data source. </p>
+
+<a name="class_ni_data_stream_1aaae12a0571a58a602e040d1682431ace"></a>
+<p class="NDLRefMemberFunction">virtual void  UnlockSource()</p>
+<p class="NDLRefMemberDescription">Unlocks a Floodgate data source. </p>
+
+<a name="class_ni_data_stream_1a273eea7e47e856b5e504f4a9113ad591"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">NiUInt32</span>  GetBlockCount(<span class="NDLSystemFont">NiUInt32</span> uiRegionIdx) const</p>
+<p class="NDLRefMemberDescription">Determine the Floodgate block count for this stream. </p>
+
+<a name="class_ni_data_stream_1ab3adf022dc14f0d71a62c006c0d7ed6d"></a>
+<p class="NDLRefMemberFunction">virtual void  EnableWriteFlag()</p>
+<p class="NDLRefMemberDescription">Cache that this stream should be locked for writing. </p>
+
+<a name="class_ni_data_stream_1a3dea96cf876299e598c8fc6d5852db4e"></a>
+<p class="NDLRefMemberFunction">virtual void  EnableReadFlag()</p>
+<p class="NDLRefMemberDescription">Cache that this stream should be locked for reading. </p>
+
+<a name="class_ni_data_stream_1a6371dc2a2d79607928b59e956f7a53bc"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">NiUInt32</span>  GetLockFlags() const</p>
+<p class="NDLRefMemberDescription">Return the cached lock flags. </p>
+
+<a name="class_ni_data_stream_1ac30c5e7212dadcca470cdf38c6d0e47c"></a>
+<p class="NDLRefMemberFunction">virtual void  ClearLockFlags()</p>
+<p class="NDLRefMemberDescription">Clear the cached lock flags. </p>
+<a name="lock/unlock_methods"></a>
+<p class="NDLRefHead1">Lock/Unlock Methods</p>
+
+<p class="NDLRefMemberDescription">Methods to lock and unlock an <span class="NDLSystemFont">NiDataStream</span> object's data. </p>
+
+<a name="class_ni_data_stream_1a47597657259be58522bea13beac7d742"></a>
+<p class="NDLRefMemberFunction">void*  Lock(<span class="NDLSystemFont">NiUInt8</span> uiLockMask)</p>
+<p class="NDLRefMemberDescription">Locks the stream for manipulating the underlying buffer. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Only one lock is permitted until Unlock is called.</p>
+<p class="NDLRefMemberDetailedDescription">After a failed call to <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a47597657259be58522bea13beac7d742">Lock()</a></span>, <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a9b272dcc1f2b0786e5e2437d612e4c0b">GetLocked()</a></span> will return false.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiLockMask</span></td>
+    <td>Bitwise combination of <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1abc4b62a87d68da7491b406f7f4889da2">NiDataStream::LockType</a></span>. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Pointer to the data to read/write. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_data_stream_1a2f886f6ca9f3f579bfb0eaf1ae6b22bf"></a>
+<p class="NDLRefMemberFunction">void*  LockRegion(<br/><span class="NDLSystemFont">NiUInt32</span> uiRegion, <br/><span class="NDLSystemFont">NiUInt8</span> uiLockMask)</p>
+<p class="NDLRefMemberDescription">Locks the stream for manipulating the underlying buffer. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Only one lock is permitted until Unlock is called.</p>
+<p class="NDLRefMemberDetailedDescription">After a failed call to <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a2f886f6ca9f3f579bfb0eaf1ae6b22bf">LockRegion()</a></span>, <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a9b272dcc1f2b0786e5e2437d612e4c0b">GetLocked()</a></span> will return false.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiRegion</span></td>
+    <td><span class="NDLSystemFont"><a href="NiDataStream__Region.htm">Region</a></span> of the buffer to lock. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiLockMask</span></td>
+    <td>Bitwise combination of <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1abc4b62a87d68da7491b406f7f4889da2">NiDataStream::LockType</a></span> flags. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Pointer to the data to read/write. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_data_stream_1a3e821100cc38453188dfe15bfff3f9a3"></a>
+<p class="NDLRefMemberFunction">const void*  LockRead() const</p>
+<p class="NDLRefMemberDescription">Const-safe helper method to lock the data stream for read. </p>
+
+<a name="class_ni_data_stream_1a7b3267e732fe121b318750cd422efe2e"></a>
+<p class="NDLRefMemberFunction">void*  LockWrite()</p>
+<p class="NDLRefMemberDescription">Helper method to lock the data stream for write. </p>
+
+<a name="class_ni_data_stream_1aea39cf1aecf778e4a841bb78c3a65b9b"></a>
+<p class="NDLRefMemberFunction">void  Unlock(<span class="NDLSystemFont">NiUInt8</span> uiLockMask)</p>
+<p class="NDLRefMemberDescription">Releases a locked stream. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Safe to call after <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a47597657259be58522bea13beac7d742">Lock()</a></span>, even if <span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1a47597657259be58522bea13beac7d742">Lock()</a></span> fails.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">uiLockMask</span></td>
+    <td>Mask used when Locking the stream. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_data_stream_1a7568d91bda8d13228afa9fe1a2daa45c"></a>
+<p class="NDLRefMemberFunction">void  UnlockRead() const</p>
+<p class="NDLRefMemberDescription">Const-safe helper method to unlock for read. </p>
+
+<a name="class_ni_data_stream_1a7d7c41b4cd66d5307583e4294d6a398a"></a>
+<p class="NDLRefMemberFunction">void  UnlockWrite()</p>
+<p class="NDLRefMemberDescription">Helper method to unlock for write. </p>
+<a name="static_creation_methods"></a>
+<p class="NDLRefHead1">Static Creation Methods</p>
+
+<p class="NDLRefMemberDescription">Methods to assist in creating an <span class="NDLSystemFont">NiDataStream</span>. </p>
+
+<a name="class_ni_data_stream_1a9d61bb66a1d2169735273d602ae8f030"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont">NiDataStream</span>*  CreateSingleElementDataStream(<br/><span class="NDLSystemFont"><a href="NiDataStreamElement.htm#class_ni_data_stream_element_1a4a4822c6a137f25713f304012b600d20">NiDataStreamElement::Format</a></span> eFormat, <br/><span class="NDLSystemFont">NiUInt32</span> uiCount, <br/><span class="NDLSystemFont">NiUInt8</span> uiAccessMask, <br/><span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span> eUsage, <br/>const void* pvSource = NULL, <br/><span class="NDLSystemFont">bool</span> bCreateRegion0 = true, <br/><span class="NDLSystemFont">bool</span> bForceCreateToolDS = false)</p>
+<p class="NDLRefMemberDescription">Helper function to create a data stream with only one element. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">eFormat</span></td>
+    <td>Format of the single element. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiCount</span></td>
+    <td>Number of instances of the element. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiAccessMask</span></td>
+    <td>Access flag for this stream. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUsage</span></td>
+    <td>Intended Usage for this stream. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pvSource</span></td>
+    <td>Optional buffer to read initial state from. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bCreateRegion0</span></td>
+    <td>Should a region be created containing the initial count of elements? </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bForceCreateToolDS</span></td>
+    <td>Should this data stream be instantiated as a tool data stream even if a renderer is present? </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Instantiated data stream. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_data_stream_1a47b4e87beb95223f615d83847d886ed7"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont">NiDataStream</span>*  CreateDataStream(<br/>const <span class="NDLSystemFont"><a href="NiDataStreamElementSet.htm">NiDataStreamElementSet</a></span>& kElements, <br/><span class="NDLSystemFont">NiUInt32</span> uiCount, <br/><span class="NDLSystemFont">NiUInt8</span> uiAccessMask, <br/><span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span> eUsage, <br/><span class="NDLSystemFont">bool</span> bForceCreateToolDS = false)</p>
+<p class="NDLRefMemberDescription">Create a data stream containing a set of elements. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">kElements</span></td>
+    <td>Array of elements contained within the stream. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiCount</span></td>
+    <td>Number of instances of the element set. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">uiAccessMask</span></td>
+    <td>Access flag for this stream. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eUsage</span></td>
+    <td>Intended Usage for this stream. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">bForceCreateToolDS</span></td>
+    <td>Should this data stream be instantiated as a tool data stream even if a renderer is present? </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Instantiated data stream or NULL if unable to create the instance. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_data_stream_1aabc571c7b50dcbd0fd213227345dc11a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiDataStream</span>*  CreateFullCopy()</p>
+<p class="NDLRefMemberDescription">Create an exact duplicate of the <span class="NDLSystemFont">NiDataStream</span> object, ignoring any cloning flags and forcing an explicit duplication of all members. </p>
+
+<a name="class_ni_data_stream_1aff7de06fa7808ccbb8dcb90471db1bf0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">NiDataStream</span>*  CreateFullCopyEx(<br/><span class="NDLSystemFont">NiUInt8</span> uiAccessMask, <br/><span class="NDLSystemFont"><a href="NiDataStream.htm#class_ni_data_stream_1ad6c208b3047b3100e5da9ea08dabea0d">Usage</a></span> eUsage, <br/><span class="NDLSystemFont">bool</span> bCopyRegions, <br/><span class="NDLSystemFont">bool</span> bCopyBuffer)</p>
+<p class="NDLRefMemberDescription">Create a duplicate of the <span class="NDLSystemFont">NiDataStream</span> object, but override the initial creation parameters. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

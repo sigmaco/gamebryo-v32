@@ -1,0 +1,1116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Scene Viewer D3D</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">Scene Viewer D3D</p>
+
+<p class="NDLRefParentage">Type: VIEWER</p>
+
+<p class="NDLRefParentage">Version: 2.0</p>
+
+<p class="NDLRefHeaderFile">&lt;SceneViewerD3D.dll&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This viewer plug-in enables you to view the scene graph
+without saving out a file.  This viewer plug-in uses the scene
+graph as-is in the <span class=
+"NDLSystemFont">SceneGraphSharedData</span>.</p>
+
+<p class="NDLRefHead1">Options</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/SceneViewerOptions.jpg" width="285" height=
+    "290" alt="SceneViewerOptions (28K)">
+
+    <p class="NDLFigureCaption">Scene Viewer D3D: Options</p>
+</div>
+
+<p class="NDLRefHead2">User Interface Settings</p>
+
+<p>This drop-down list shows the files that contain
+pre-configured user interface settings for the scene viewer. 
+Please see the <a href="#DefaultUserInterfaces">Default User
+Interfaces</a> section of this document for more details.</p>
+
+<p><b>View Settings:</b> This
+button brings up the user interface configuration dialog on the
+currently selected user interface. Please see the <a href=
+"#ConfigurableUIMapEditor">ConfigurableUIMapEditor</a> section of
+this documentation for more details.</p>
+
+<p><b>Create New Map:</b> This
+button brings up the user interface configuration dialog with a
+blank user interface. Please see the <a href=
+"#ConfigurableUIMapEditor">ConfigurableUIMapEditor</a> section of
+this documentation for more details.</p>
+
+<p class="NDLRefHead2">Additional Options</p>
+
+<p><b>Show Scene Graph Tree
+View:</b> This option will optionally display a tree view with
+contents of the scene graph when this viewer is run.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image009.jpg" width="576" height="449" alt=
+    "image009 (10K)">
+
+    <p class="NDLFigureCaption">Scene Viewer D3D: Sample
+    screenshot</p>
+</div>
+
+<p class="NDLRefHead1">Editing the User Interface for the Plug-in
+Viewer</p>
+
+<p>In the Gamebryo 1.0 release, the Gamebryo 3ds max Plug-in and
+the Gamebryo Maya Plug-in viewers were completely rewritten from
+previous releases.</p>
+
+<p>The two plug-in viewers now share a common interface with
+greatly extended capabilities. Of course, with greater
+functionality comes greater complexity. This section details the
+new features of the editable user interface and how to create and
+edit user interfaces. Note that some default interface
+configurations ship with the plug-ins for users who choose not to
+define their own interface.</p>
+
+<h3>Terminology:</h3>
+
+<p>This document will use specific terms to describe parts of the
+user interface system.</p>
+
+<p><b>Command:</b> An action that is applied in some way to the
+scene graph or to a specific object in the scene graph.</p>
+
+<p><b>Mapping:</b>A pairing between a keyboard button, mouse
+button, gamepad button, or analog stick and a command to be
+executed. Pressing the associated button or stick triggers the
+command.</p>
+
+<p><b>Primary Input:</b> The main button or stick that is used to
+trigger a mapping. Examples of a primary input are the left mouse
+button, keyboard button A, or the first analog stick.</p>
+
+<p><b>Modifier Input:</b> The modifier button or buttons that are
+used in mapping a command. Examples of these kinds of buttons
+might be the keyboard button Control or the gamepad Start
+button.</p>
+
+<p><b>Parameters:</b> The set of options that adjust how a
+command is executed. An example of a parameter would be the angle
+in degrees that the user wishes to rotate.</p>
+
+<p><b>Priority:</b>A value that determines when one command is
+executed over than another command. This value is used when two
+commands have the same primary input in their mapping. The
+command with the highest priority will be executed and the other
+command is ignored. If commands share the same priority value and
+primary input, both commands are executed. In this way, the
+system can support multiple commands with one button press. In
+practice, it is a good rule of thumb to have the priority be
+equal to the number of modifiers applied to the primary input.
+For instance, Control + Alt + Shift + Left Mouse Button would
+have a priority of 3, while Left Mouse Button would have a
+priority of 0.</p>
+
+<p><b>Event Type:</b> This term describes when and how often a
+command is executed when its mapping is triggered. There are five
+primary event types: NOT_PRESSED, SINGLE, CONTINUOUS, RELEASED,
+and DOUBLE-CLICK.</p>
+
+<ul>
+    <li>NOT_PRESSED will execute a command as long as the input
+    sequence is not being pressed. In practice, this option
+    should be rarely used.</li>
+
+    <li>SINGLE will execute a command the first time a sequence
+    is pressed and can only be triggered again once the input
+    sequence has been released. This event type is useful for
+    commands that only need to be generated once, like toggling
+    the wireframe mode or animation mode.</li>
+
+    <li>CONTINUOUS will execute a command continuously as long as
+    the sequence is pressed. This event type is useful for
+    command that require constant user input like translating,
+    tumbling, or rotating the camera.</li>
+
+    <li>RELEASED will execute a command once when the input
+    sequence is released and can only be triggered by pressing
+    and releasing the input sequence again. This event type can
+    be used in any case where SINGLE is used.</li>
+
+    <li>DOUBLE-CLICK will execute a command once each time the
+    input sequence is pressed twice within a specific time
+    threshold. This event type can be used in any case where
+    SINGLE is used.</li>
+</ul>
+
+<p class="NDLRefHead1">Plug-in Viewer Commands</p>
+
+<p>The commands used by the system can be divided into three
+categories: Camera Manipulation, Scene Manipulation, and User
+Interface Manipulation.</p>
+
+<p class="NDLRefHead2">Camera Manipulation Commands</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>CAMERA_ROTATE</td>
+
+            <td>This command rotates the camera about its
+            model-space origin using the parameters pitch, roll,
+            and yaw in degrees</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_TRANSLATE</td>
+
+            <td>This command moves the camera about its
+            model-space axes using the parameters
+            forward/backward, left/right, and up/down.</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_TUMBLE</td>
+
+            <td>This command orbits the camera about an offset
+            from the scene-graph origin. The parameters for this
+            function are the pitch, roll, and yaw of the camera
+            relative to the offset and the offset itself. Note
+            that tumbling only works for cameras located at the
+            root of the scene graph. Typically, this requirement
+            means that user-defined cameras in Max cannot be
+            tumbled.</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_RESET</td>
+
+            <td>This command resets the camera to its original
+            rotation and translation. It also resets the time in
+            the world.</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_CUT_TO</td>
+
+            <td>This command jumps to the camera to the camera at
+            the specified index in the camera array. The camera
+            array is built through a depth-first traversal of the
+            scene graph.</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_SWITCH</td>
+
+            <td>This command jumps to the camera at the specified
+            offset from the current camera in the camera array.
+            The camera array is built through a depth-first
+            traversal of the scene graph.</td>
+        </tr>
+
+        <tr>
+            <td>CAMERA_ZOOM_EXTENTS</td>
+
+            <td>This command moves the camera to distance that
+            will allow the entire scene graph to be in view.</td>
+        </tr>
+
+        <tr>
+            <td>ADJUST_FRUSTUM</td>
+
+            <td>This command adjusts the near and far planes of
+            the camera.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">Scene Manipulation Commands</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>WIREFRAME</td>
+
+            <td>This command toggles wireframe mode on and
+            off.</td>
+        </tr>
+
+        <tr>
+            <td>OVERDRAW</td>
+
+            <td>
+                This command toggles the overdraw indicator on
+                and off. The overdraw indicator uses the stencil
+                buffer and screen-space geometric elements to
+                show the depth complexity of the scene. There
+                are four such screen-space elements corresponding
+                to the colors red, yellow, green, and blue:
+
+                <ul>
+                    <li>Blue indicates a screen pixel that has
+                    had only one 3d polygon draw operation
+                    performed.</li>
+
+                    <li>Green indicates two polygon draws.</li>
+
+                    <li>Yellow indicates three polygon
+                    draws.</li>
+
+                    <li>Red indicates four or more polygon
+                    draws.</li>
+                </ul>This command may be used to determine how
+                complicated the scene is from particular vantage
+                points.
+            </td>
+        </tr>
+
+        <tr>
+            <td>ANIMATION_FREEZE</td>
+
+            <td>This command toggles the animations in the scene
+            on and off.</td>
+        </tr>
+
+        <tr>
+            <td>ANIMATION_LOOP</td>
+
+            <td>The viewer restarts time after the duration of
+            the time slider in 3ds Max expires. This command will
+            toggle this behavior on and off. It does not affect
+            animation controllers set to loop mode.</td>
+        </tr>
+
+        <tr>
+            <td>SCALE_TIME</td>
+
+            <td>This command scales the time in the scene. In
+            practice, this command should be used rarely as
+            simulation-based systems like particles do not
+            properly simulate if the time step is too large.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">User Interface Manipulation Commands</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>SCREEN_CONSOLE</td>
+
+            <td>This command toggles the screen console on and
+            off. This command will enable or disable the current
+            camera name.</td>
+        </tr>
+
+        <tr>
+            <td>SCALE_DEVICE_DELTA</td>
+
+            <td>This command scales the input received from the
+            user. This command allows the user to speed up
+            orbiting, rotating, and translating.</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="DefaultUserInterfaces" id="DefaultUserInterfaces"></a><p class="NDLRefHead1">The Plug-in Viewer Default User
+Interfaces</p>
+
+<p>The Gamebryo Maya Plug-in and the Gamebryo 3ds max Plug-in
+ship with two different user interfaces: Gamebryo Defaults and
+First-Person Shooter. For 3ds max, these user interfaces and any
+other user interfaces are stored in UIM files in the
+plugins\MaxImmerse folder of the users 3ds max installation. For
+Maya, these user interfaces are stored in UIM files in the
+bin\plugins folder of the users Maya installation.</p>
+
+<p>For 3ds max, user interfaces can be changed in the Viewer
+Selection rollout when you view the Gamebryo Max Plug-in utility
+from the Utilities tab of the Max Command Panel.</p>
+
+<p>For Maya, the user interface must be named InputMap.uim. To
+edit the user interface settings, make a backup of InputMap.uim,
+and then edit the file with the ConfigurableUIMapEditor
+program.</p>
+
+<p class="NDLRefHead2">Gamebryo Defaults User Interface</p>
+
+<p>This user interface was designed to focus on the arrow keys
+and number pad. The Control key is used consistently as the
+modifier key to keep the right hand focused on the number pad,
+arrow keys, or mouse. ESC closes the window.</p>
+
+<h4>Keyboard Input</h4>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Keystroke</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>UP</td>
+
+            <td>Translate camera forward</td>
+        </tr>
+
+        <tr>
+            <td>DOWN</td>
+
+            <td>Translate camera back</td>
+        </tr>
+
+        <tr>
+            <td>LEFT</td>
+
+            <td>Translate camera left</td>
+        </tr>
+
+        <tr>
+            <td>RIGHT</td>
+
+            <td>Translate camera right</td>
+        </tr>
+
+        <tr>
+            <td>PAGE UP</td>
+
+            <td>Translate camera up</td>
+        </tr>
+
+        <tr>
+            <td>PAGE DOWN</td>
+
+            <td>Translate camera down</td>
+        </tr>
+
+        <tr>
+            <td>Control + UP</td>
+
+            <td>Orbit camera forward</td>
+        </tr>
+
+        <tr>
+            <td>Control + DOWN</td>
+
+            <td>Orbit camera back</td>
+        </tr>
+
+        <tr>
+            <td>Control + LEFT</td>
+
+            <td>Orbit camera left</td>
+        </tr>
+
+        <tr>
+            <td>Control + RIGHT</td>
+
+            <td>Orbit camera right</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-8</td>
+
+            <td>Look up</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-2</td>
+
+            <td>Look down</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-4</td>
+
+            <td>Turn left</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-6</td>
+
+            <td>Turn right</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-7</td>
+
+            <td>Translate left</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-9</td>
+
+            <td>Translate right</td>
+        </tr>
+
+        <tr>
+            <td>NUMPAD-5</td>
+
+            <td>Translate forward</td>
+        </tr>
+
+        <tr>
+            <td>Control + NUMPAD-5</td>
+
+            <td>Translate backward</td>
+        </tr>
+
+        <tr>
+            <td>INSERT</td>
+
+            <td>Roll counter-clockwise</td>
+        </tr>
+
+        <tr>
+            <td>DELETE</td>
+
+            <td>Roll clockwise</td>
+        </tr>
+
+        <tr>
+            <td>C</td>
+
+            <td>Change to next camera</td>
+        </tr>
+
+        <tr>
+            <td>Control + C</td>
+
+            <td>Change to previous camera</td>
+        </tr>
+
+        <tr>
+            <td>1 - 0</td>
+
+            <td>Change to camera (0 9 respectively)</td>
+        </tr>
+
+        <tr>
+            <td>P</td>
+
+            <td>Toggle animation on/off</td>
+        </tr>
+
+        <tr>
+            <td>R</td>
+
+            <td>Reset camera to original position and
+            rotation</td>
+        </tr>
+
+        <tr>
+            <td>F1</td>
+
+            <td>Toggle screen text output</td>
+        </tr>
+
+        <tr>
+            <td>+</td>
+
+            <td>Increase input speed</td>
+        </tr>
+
+        <tr>
+            <td>-</td>
+
+            <td>Decrease input speed</td>
+        </tr>
+
+        <tr>
+            <td>W</td>
+
+            <td>Toggle wireframe mode</td>
+        </tr>
+
+        <tr>
+            <td>O</td>
+
+            <td>Toggle overdraw mode</td>
+        </tr>
+
+        <tr>
+            <td>F</td>
+
+            <td>Increase far plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>V</td>
+
+            <td>Decrease far plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>G</td>
+
+            <td>Increase near plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>B</td>
+
+            <td>Decrease near plane 10.0</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>Mouse Input</h4>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Mouse Buttons and Modifiers (Event Type)</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Left Button (Movement)</td>
+
+            <td>Translate camera forward/backward &amp;
+            left/right</td>
+        </tr>
+
+        <tr>
+            <td>Right Button (Movement)</td>
+
+            <td>Mouse-look</td>
+        </tr>
+
+        <tr>
+            <td>Wheel (Movement)</td>
+
+            <td>Mouse translate up/down</td>
+        </tr>
+
+        <tr>
+            <td>Control + Right Button (Press)</td>
+
+            <td>Mouse orbit</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>Game Pad Input</h4>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>GamePad Event</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Analog Stick 1</td>
+
+            <td>Translate camera up/down &amp; left/right</td>
+        </tr>
+
+        <tr>
+            <td>Analog Stick 2</td>
+
+            <td>Mouse-look</td>
+        </tr>
+
+        <tr>
+            <td>Analog Stick 2 + R1</td>
+
+            <td>Mouse orbit</td>
+        </tr>
+
+        <tr>
+            <td>LUP</td>
+
+            <td>Translate camera forward</td>
+        </tr>
+
+        <tr>
+            <td>LDOWN</td>
+
+            <td>Translate camera backward</td>
+        </tr>
+
+        <tr>
+            <td>LLEFT</td>
+
+            <td>Translate camera left</td>
+        </tr>
+
+        <tr>
+            <td>LRIGHT</td>
+
+            <td>Translate camera right</td>
+        </tr>
+
+        <tr>
+            <td>RUP</td>
+
+            <td>Look up</td>
+        </tr>
+
+        <tr>
+            <td>RDOWN</td>
+
+            <td>Look down</td>
+        </tr>
+
+        <tr>
+            <td>RLEFT</td>
+
+            <td>Turn left</td>
+        </tr>
+
+        <tr>
+            <td>RRIGHT</td>
+
+            <td>Turn right</td>
+        </tr>
+
+        <tr>
+            <td>START</td>
+
+            <td>Wireframe</td>
+        </tr>
+
+        <tr>
+            <td>SELECT</td>
+
+            <td>Reset camera to original position and
+            rotation</td>
+        </tr>
+
+        <tr>
+            <td>L1</td>
+
+            <td>Speed up input</td>
+        </tr>
+
+        <tr>
+            <td>L2</td>
+
+            <td>Slow down input</td>
+        </tr>
+
+        <tr>
+            <td>R2</td>
+
+            <td>Switch camera</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">First-Person Shooter User Interface</p>
+
+<p>This command scheme was designed to mimic standard first
+person shooter controls. The left hand is centered on the WASD
+keys, with most options surrounding those keys. ESC closes the
+window.</p>
+
+<h4>Keyboard Input</h4>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Keystroke</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>W</td>
+
+            <td>Move forward</td>
+        </tr>
+
+        <tr>
+            <td>A</td>
+
+            <td>Move left</td>
+        </tr>
+
+        <tr>
+            <td>S</td>
+
+            <td>Move backward</td>
+        </tr>
+
+        <tr>
+            <td>D</td>
+
+            <td>Move right</td>
+        </tr>
+
+        <tr>
+            <td>Q</td>
+
+            <td>Turn left</td>
+        </tr>
+
+        <tr>
+            <td>E</td>
+
+            <td>Turn right</td>
+        </tr>
+
+        <tr>
+            <td>R</td>
+
+            <td>Reset camera</td>
+        </tr>
+
+        <tr>
+            <td>SPACE</td>
+
+            <td>Next Camera</td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td>Toggle wireframe mode</td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+
+            <td>Toggle overdraw mode</td>
+        </tr>
+
+        <tr>
+            <td>F1 F12</td>
+
+            <td>Cut to camera (0 11 respectively)</td>
+        </tr>
+
+        <tr>
+            <td>`</td>
+
+            <td>Toggle Screen Console</td>
+        </tr>
+
+        <tr>
+            <td>TAB</td>
+
+            <td>Toggle frame rate</td>
+        </tr>
+
+        <tr>
+            <td>F</td>
+
+            <td>Increase Far Plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>V</td>
+
+            <td>Decrease Far Plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>G</td>
+
+            <td>Increase Near Plane 10.0</td>
+        </tr>
+
+        <tr>
+            <td>B</td>
+
+            <td>Decrease Near Plane 10.0</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>Mouse Input</h4>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Mouse Buttons and Modifiers (Event Type)</th>
+
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>None (Movement)</td>
+
+            <td>Mouse-look</td>
+        </tr>
+
+        <tr>
+            <td>Wheel (Movement)</td>
+
+            <td>Translate camera forward/backward</td>
+        </tr>
+
+        <tr>
+            <td>Right Button (Movement)</td>
+
+            <td>Mouse-orbit</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="ConfigurableUIMapEditor" id="ConfigurableUIMapEditor"></a><p class="NDLRefHead1">The Configurable UI Map Editor</p>
+
+<p>The Configurable UI Map Editor dialog is designed to allow
+users to create an interface that best fits their needs.</p>
+
+<p>The dialog consists of two text fields and a tabbed panel. 
+The text field entitled Current displays the path to the UIM file
+that is currently being edited. The User Defined UI Map text
+field displays the descriptive name of the user interface.</p>
+
+<p>The tabbed panel has two tabs: Mouse and Keyboard. The
+Keyboard tab is selected in the image below. Each row represents
+a different command mapping for the keyboard. Each command
+mapping is sorted by its priority. See the introduction, Editing
+the User Interface for the Viewer, for a description of
+priority. The left column of the table is the User-Defined
+Command Name. The second column represents the input sequence
+necessary to trigger that mapping.</p>
+
+<p>New commands can be added through the Simple Add or Advanced
+Add buttons. Simple Add uses a set of predefined user commands
+that handle commonly used situations. Advanced Add provides
+users with a greater level of control over their interface.</p>
+
+<p>Existing commands can be edited by either pressing the Record
+button or Edit button. The Record button will bring up the
+appropriate devices record dialog. The Edit button brings up the
+Advanced Add dialog with all of the values filled out according
+to the command that is to be edited.</p>
+
+<p>Individual commands can be removed by pressing Remove. All
+commands for the given device can be removed through the Remove
+All button.</p>
+
+<p>Saving the user-interface can be performed through the File
+menu or upon pressing OK. Make sure that the UIM is saved in the
+plugins\MaxImmerse folder of the users 3ds max installation. For
+Maya, the active UIM must be named InputMap.uim and saved in the
+bin/plugins folder of the users Maya installation.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image010.gif" width="595" height="573" alt=
+    "image010 (20K)">
+
+    <p class="NDLFigureCaption">Configurable UI Map Editor</p>
+</div>
+
+<p class="NDLRefHead2">The Configurable UI Map Editor: Record
+Dialog</p>
+
+<p>The record dialog is different for each input device. The
+image below displays the Mouse Input Capture dialog and lists the
+most complicated combination of buttons and keystrokes that can
+be created for the mouse. Each button is cumulative, so combos
+do not need to be performed simultaneously. Reset clears the
+input sequence. Accept will store the input sequence in the
+command mapping.</p>
+
+<p>Each dialog will show the appropriate modifiers and primary
+inputs for the current device.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image011.gif" width="283" height="212" alt=
+    "image011 (4K)">
+
+    <p class="NDLFigureCaption">Configurable UI Map Editor:
+    Record dialog box</p>
+</div>
+
+<p class="NDLRefHead2">The Configurable UI Map Editor: Simple Add
+Dialog</p>
+
+<p>The Simple Add Dialog contains a list of predefined commands
+and the ability to record their mapping.</p>
+
+<p>Select a command and press RECORD to bring up the record
+dialog for the current device. Once this step has been completed,
+the command is automatically added to the list of command
+mappings for the current device.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image012.gif" width="562" height="339" alt=
+    "image012 (12K)">
+
+    <p class="NDLFigureCaption">Configurable UI Map Editor:
+    Simple Add dialog box</p>
+</div>
+
+<p class="NDLRefHead2">The Configurable UI Map Editor: Advanced
+Add &amp; Edit Dialogs</p>
+
+<p>This dialog, which appears below, contains all information
+necessary to create and edit a command mapping for the new user
+interface system. It is divided into five groupings: Command
+Settings, Input Device Settings, Priority Settings, Event Type
+Settings, and Parameters that describe particular aspects of the
+command mapping.</p>
+
+<p>The OK button will not be enabled until the user has
+completely filled out all of the settings for the dialog box.</p>
+
+<p>Note: The Advanced Add and Edit dialogs are exactly the same,
+except the Edit dialog contains all of the previously defined
+information about the command.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image013.gif" width="457" height="514" alt=
+    "image013 (15K)">
+
+    <p class="NDLFigureCaption">The Configurable UI Map Editor:
+    Advanced Add and Edit dialog boxes</p>
+</div>
+
+<p><b>Command Settings:</b> This grouping describes the command
+type from the Commands list and the descriptive user name of this
+command mapping. The User Name determines what name the mapping
+will appear under in the root dialog. Once a command type is
+selected, the parameter panel is populated with all of the
+parameters for that command type.</p>
+
+<p><b>Input Device Settings:</b> This grouping describes the
+input sequence necessary to trigger the creation of this command.
+The appropriate record dialog for the current input device is
+created when the user presses the Record button.</p>
+
+<p><b>Priority Settings:</b> This grouping describes the priority
+value of the current command mapping. A priority is a value that
+determines when one command is executed over than another
+command. This value is used when two commands have the same
+primary input in their mapping. The command with the highest
+priority will be executed and the other command is ignored. If
+commands share the same priority value and primary input, both
+commands are executed. In this way, the system can support
+multiple commands with one button press. In practice, it is a
+good rule of thumb to have the priority be equal to the number of
+modifiers applied to the primary input. For instance, Control +
+Alt + Shift + Left Mouse Button would have a priority of 3, while
+Left Mouse Button would have a priority of 0.</p>
+
+<p><b>Event Type Settings:</b> This grouping describes when and
+how often a command mapping is executed. There are five primary
+event types:</p>
+
+<ul>
+    <li>NOT_PRESSED will execute a command as long as the input
+    sequence is not being pressed. In practice, this option
+    should be rarely used.</li>
+
+    <li>SINGLE will execute a command the first time a sequence
+    is pressed and can only be triggered again once the input
+    sequence has been released. This event type is useful for
+    commands that only need to be generated once, like toggling
+    the wireframe mode or animation mode.</li>
+
+    <li>CONTINUOUS will execute a command continuously as long as
+    the sequence is pressed. This event type is useful for
+    command that require constant user input like translating,
+    tumbling, or rotating the camera.</li>
+
+    <li>RELEASED will execute a command once when the input
+    sequence is released and can only be triggered by pressing
+    and releasing the input sequence again. This event type can
+    be used in any case where SINGLE is used.</li>
+
+    <li>DOUBLE-CLICK will execute a command once each time the
+    input sequence is pressed twice within a specific time
+    threshold. This event type can be used in any case where
+    SINGLE is used.</li>
+</ul>
+
+<p><b>Parameters:</b> This grouping describes the set of options
+that adjust how a command is executed. Each parameter is listed
+in the list box. The first column describes the purpose of the
+parameter. The second column describes the value of the
+parameter. The third column describes what user interface
+component affects the value of the parameter. For instance,
+movement of the mouse forwards and backwards could be attached to
+the Look Up\Down parameter. The values for the Value and Attached
+to can be edited by selecting the parameter and pressing the Edit
+button. This step will bring up the Edit Parameter dialog that
+will enable the user to have full editing capability over the
+parameter.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

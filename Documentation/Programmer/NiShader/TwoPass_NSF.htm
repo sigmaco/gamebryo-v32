@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>TwoPass.NSF</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>TwoPass.NSF</h1>
+
+<p>The next example is a slightly more advanced shader 
+ file. The shader still uses an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiColorExtraData.htm">NiColorExtraData</a></span> 
+ instance with the key string "SelectedColor" attached to the 
+ object being rendered to shade a textured object, but it adds an additional 
+ pass to the mix.</p>
+
+<p>The NSF file contents are shown below:</p>
+
+<pre>
+NSFShader TwoPass
+{
+    "This shader is a simple example of a two-pass shader. "
+    "It applies the base map modulated by SelectedColor, and then "
+    "alpha-blends the TestMap onto the result in the second pass."
+    // Attribute list
+    Attributes
+    {
+        Attrib_Color
+            SelectedColor
+            Artist
+            1.0,0.0,0.0,0.5
+            [(0.0,0.0,0.0,0.0)  (1.0,1.0,1.0,1.0)]
+            
+        Attrib_Texture      TestMap     Artist      0
+    }
+    // Packing Definition
+    PackingDef PosNormUV0
+    {
+        PD_Stream   0
+            PDP_Position    0   PDT_Float3
+            PDP_Normal      3   PDT_Float3
+            PDP_TexCoord0   7   PDT_Float2
+    }
+    
+    // Implementation
+    Implementation VS11
+    {
+        "This implementation is intended for hardware "
+        "that supports Vertex Shader v1.1."
+        
+        // Requirements for this implementation
+        Requirements
+        {
+            Platform            = DX9
+            VSVersion           = v1.1
+            UserVersion         = v0.0
+            PSVersion           = v0.0
+            UsesNiRenderState   = true
+        }
+        
+        // Packing Definition it uses
+        PackingDef  PosNormUV0
+        // First pass
+        Pass Pass0
+        {
+            // Vertex shader program
+            VSProgram   "TwoPass.vsh"
+            // Vertex Shader constant map
+            VS_Constantmap
+            {
+                CM_Defined      WorldViewProjTranspose  0   0
+                CM_Attribute    SelectedColor           4   1   0
+            }
+            
+            // Texture stage 0
+            Stage 0 Stage0
+            {
+                TSS_TexCoordIndex   = 0
+                TSS_ColorOp     = TOP_Modulate
+                TSS_ColorArg1   = TA_Texture
+                TSS_ColorArg2   = TA_Diffuse
+                TSS_AlphaOp     = TOP_Disable
+                TSS_Texture     = NTM_Base
+            }
+            
+            // Sampler stage 0
+            Sampler 0   Sampler0
+            {
+                TSAMP_AddressU  = TADDR_Wrap
+                TSAMP_AddressV  = TADDR_Wrap
+                TSAMP_AddressW  = TADDR_Wrap
+                TSAMP_MagFilter = TEXF_Linear
+                TSAMP_MinFilter = TEXF_Linear
+                TSAMP_MipFilter = TEXF_None
+            }
+        }
+        // Second pass
+        Pass Pass1
+        {
+            RenderStates
+            {
+                AlphaBlendEnable    = true
+                SrcBlend            = SrcAlpha
+                DestBlend           = InvSrcAlpha
+            }
+            
+            // Vertex shader program
+            VSProgram   "TwoPass.vsh"
+            // Vertex Shader constant map
+            VS_Constantmap
+            {
+                CM_Defined      WorldViewProjTranspose  0   0
+                CM_Attribute    SelectedColor           4   1   0
+            }
+            // Texture stage 0
+            Stage 0 Stage0
+            {
+                TSS_ColorOp     = TOP_Modulate
+                TSS_ColorArg1   = TA_Texture
+                TSS_ColorArg2   = TA_Current
+                TSS_AlphaOp     = TOP_Modulate
+                TSS_AlphaArg1   = TA_Texture
+                TSS_AlphaArg2   = TA_Current
+                TSS_Texture     = &lt;TestMap&gt;
+                TSS_TexCoordIndex   = 0
+            }
+            
+            // Sampler stage 0
+            Sampler 0   Sampler0
+            {
+                TSAMP_AddressU  = TADDR_Wrap
+                TSAMP_AddressV  = TADDR_Wrap
+                TSAMP_AddressW  = TADDR_Wrap
+                TSAMP_MagFilter = TEXF_Linear
+                TSAMP_MinFilter = TEXF_Linear
+                TSAMP_MipFilter = TEXF_None
+            }
+        }
+    }
+    
+    // Implementation
+    Implementation VS11_PS11
+    {
+        "This implementation is intended for hardware that does not support "
+        "a fixed-function pixel pipeline."
+        
+        // Requirements for this implementation
+        Requirements
+        {
+            Platform            = DX9|XENON
+            VSVersion           = v1.1
+            UserVersion         = v0.0
+            PSVersion           = v1.1
+            UsesNiRenderState   = true
+        }
+        
+        // Packing Definition it uses
+        PackingDef  PosNormUV0
+        // First pass
+        Pass Pass0
+        {
+            // Vertex shader program
+            VSProgram   "TwoPass.vsh"
+            // Vertex Shader constant map
+            VS_Constantmap
+            {
+                CM_Defined      WorldViewProjTranspose  0   0
+                CM_Attribute    SelectedColor           4   1   0
+            }
+            
+            // Sampler stage 0
+            Sampler 0   Sampler0
+            {
+                TSS_Texture     = NTM_Base
+                TSAMP_AddressU  = TADDR_Wrap
+                TSAMP_AddressV  = TADDR_Wrap
+                TSAMP_AddressW  = TADDR_Wrap
+                TSAMP_MagFilter = TEXF_Linear
+                TSAMP_MinFilter = TEXF_Linear
+                TSAMP_MipFilter = TEXF_None
+            }
+            
+            PSProgram "TwoPassOne.psh"
+        }
+        // Second pass
+        Pass Pass1
+        {
+            RenderStates
+            {
+                AlphaBlendEnable    = true
+                SrcBlend            = SrcAlpha
+                DestBlend           = InvSrcAlpha
+            }
+            
+            // Vertex shader program
+            VSProgram   "TwoPass.vsh"
+            // Vertex Shader constant map
+            VS_Constantmap
+            {
+                CM_Defined      WorldViewProjTranspose  0   0
+                CM_Attribute    SelectedColor           4   1   0
+            }
+            
+            // Sampler stage 0
+            Sampler 0   Sampler0
+            {
+                TSS_Texture     = NTM_Base
+                TSAMP_AddressU  = TADDR_Wrap
+                TSAMP_AddressV  = TADDR_Wrap
+                TSAMP_AddressW  = TADDR_Wrap
+                TSAMP_MagFilter = TEXF_Linear
+                TSAMP_MinFilter = TEXF_Linear
+                TSAMP_MipFilter = TEXF_None
+            }
+            
+            PSProgram "TwoPassTwo.psh"
+        }
+    }
+}
+</pre>
+
+
+
+<p>The vertex shader program used in both passes, <span class="NDLSystemFont">TwoPass.vsh</span> is similar to the 
+ one that was used in the previous example, <span class="NDLSystemFont">Colorize.vsh</span>. 
+ Note that the shader program file does not have to be named the same as 
+ the shader itself. And just as the previous example, separate implementations 
+ are provided for hardware that can use pixel shaders and for hardware 
+ which does not.</p>
+
+<p>That's all there is to the second example, which expanded 
+ on the first by adding a second pass. For the first pass, the shader transforms 
+ the vertex, passing the color and texture coordinates directly through 
+ to the rasterizer. Remember in the <span class="NDLSystemFont">VS_ConstantMap</span> 
+ section, we mapped the object's "SelectedColor" extra data to 
+ c4 of the shader constant registers. This color is the color that is passed 
+ to the rasterizer, and utilized in the texture modulation of the Stage, 
+ completing the desired effect.</p>
+
+<p>The second pass uses the alpha channel of the texture 
+ used in it to blend the texture onto the texture used in the first pass.</p>
+
+<p>When the <span class="NDLSystemFont">NSFParserLib</span> 
+ processes this shader file, it will generate a corresponding TwoPass.NSB 
+ file which contains the binary version of the shader.</p>
+
+<p>A screenshot of this effect, with the SelectedColor 
+ set to red, is shown below:</p>
+
+
+<div class="FigureContainer">
+    <img src="./images/image004.jpg" width="215" height="171" />
+    <p class="FigureCaption">The TwoPass shader applied to a cube</p>
+</div>
+
+
+<p>Again, not the most exciting effect in the world, but 
+ slightly more interesting than the first!</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

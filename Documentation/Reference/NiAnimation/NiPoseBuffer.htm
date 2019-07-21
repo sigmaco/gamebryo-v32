@@ -1,0 +1,651 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPoseBuffer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiPoseBuffer</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiPoseBuffer.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>An <span class="NDLSystemFont">NiPoseBuffer</span> stores
+sequence animation data for a given instant of time. Supported
+data types are defined by <span class="NDLSystemFont"><a href=
+"NiPoseBuffer.htm#NiPoseBufferChannelType">NiPoseBufferChannelType</a></span>
+and include color, boolean, float, point3, quaternion, and
+referenced evaluator. Data of similar type is grouped together
+within each pose buffer. An <span class="NDLSystemFont"><a href=
+"NiPoseBinding.htm">NiPoseBinding</a></span> is associated with
+an <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> to
+assist with mapping (i.e. binding) evaluator channels to data
+items held by <span class="NDLSystemFont">NiPoseBuffer</span>
+objects. An <span class="NDLSystemFont"><a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a></span> is used to
+specify the location of bound data. In essence, a handle dictates
+the index of a particular data item within the block of data of
+the desired type. For example, an evaluator channel that drives
+the rotation of an elbow joint might be bound to the fifth
+quaternion in the pose buffer. Each data item within a pose
+buffer is associated with a set of flags and a finalized weight
+for use with blending. Some flags dictate the validity of each
+data item to accommodate "partial body" animations which do not
+animate all attributes on a character.</p>
+
+<p>Each <span class="NDLSystemFont"><a href=
+"NiControllerSequence.htm">NiControllerSequence</a></span> (i.e.
+actively playing sequence) owns an <span class=
+"NDLSystemFont">NiPoseBuffer</span> to which the <span class=
+"NDLSystemFont">NiControllerSequence</span> writes its animated
+data for a given instant of time. Effectively, this pose buffer
+contains a time-based snapshot (or pose) of the animated
+sequence. Data locations in the pose buffer which don't match any
+of the sequence's evaluator channels are marked as invalid. If
+more than one sequence is simultaneously active on a controller
+manager, data from multiple pose buffers is blended via an
+<span class="NDLSystemFont"><a href=
+"NiPoseBlender.htm">NiPoseBlender</a></span> to form the
+composite animation state. Lastly, the controller manager makes
+use of an <span class="NDLSystemFont"><a href=
+"NiMultiTargetPoseHandler.htm">NiMultiTargetPoseHandler</a></span>
+to propagate data within the final pose buffer to their
+respective scene graph targets.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiPoseBuffer(<a href=
+"NiPoseBinding.htm">NiPoseBinding</a>* pkPoseBinding)</p>
+
+<p class="NDLRefMemberDescription">This constructor creates a
+pose buffer based on the mappings of evaluator channels to pose
+buffer locations defined by <span class=
+"NDLSystemFont">pkPoseBinding</span>. This association with
+<span class="NDLSystemFont">pkPoseBinding</span> cannot be
+changed after construction; however, the mappings held by
+<span class="NDLSystemFont">pkPoseBinding</span> may be augmented
+at a later time. Most applications never explicitly call this
+constructor since the animation system automatically creates any
+required pose buffers as sequences are activated.</p>
+
+<p class="NDLRefHead1">Supported Static Member Functions</p>
+
+<p>The following static functions operate on the weight and flags
+of individual data items. Most applications can ignore these
+functions as this same information is readily available through
+supported member functions.</p>
+
+<p class="NDLRefMemberFunction">static bool IsItemValid(unsigned
+int uiWeightAndFlags)</p>
+
+<p class="NDLRefMemberDescription">Returns true if the data item
+corresponding to <span class=
+"NDLSystemFont">uiWeightAndFlags</span> is valid. false is
+returned when the corresponding item is invalid.</p>
+
+<p class="NDLRefMemberFunction">static bool
+IsItemValidAndNotCulled(unsigned int uiWeightAndFlags)</p>
+
+<p class="NDLRefMemberDescription">Returns true if the data item
+corresponding to <span class=
+"NDLSystemFont">uiWeightAndFlags</span> is valid and has not been
+marked as culled. Valid items can be culled during blending if
+they don't contribute to the final result based on sequence
+priorities and weights. false is returned when the corresponding
+item is invalid or culled.</p>
+
+<p class="NDLRefMemberFunction">static float
+GetItemFinalizedWeight(unsigned int uiWeightAndFlags)</p>
+
+<p class="NDLRefMemberFunction">static void
+SetItemFinalizedWeight(float fFinalizedWeight, unsigned int&amp;
+uiWeightAndFlags)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set a
+data item's finalized weight. <span class=
+"NDLSystemFont">fFinalizedWeight</span> ranges from 0.0 to 1.0
+inclusive.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefHead2">Function to get the associated pose
+binding</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiPoseBinding.htm">NiPoseBinding</a>* GetPoseBinding() const</p>
+
+<p class="NDLRefMemberDescription">Returns the associated pose
+binding.</p>
+
+<p class="NDLRefHead2">Functions returning high level state
+information</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumTotalItems()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the total number of
+data items within the pose buffer. Note some of these items may
+be invalid.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumValidItems()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of valid
+items in the pose buffer.</p>
+
+<a name="GetNonAccumStartIndex"
+id="GetNonAccumStartIndex"></a><p class="NDLRefMemberFunction">unsigned int
+GetNonAccumStartIndex() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+index of the first non-accumulation item. Index 2 is returned
+when accumulation is active, and 0 otherwise. If accumulation is
+active, indices 0 and 1 of the float, point3, and quaternion data
+sections are reserved for accumulation data. Index 0 holds the
+absolute transform, and index 1 stores the delta with respect to
+the accumulation transform at the previous Update time.</p>
+
+<p class="NDLRefMemberFunction">bool IsFullBodyPose() const</p>
+
+<p class="NDLRefMemberDescription">This function returns true
+when the pose buffer contains a "full body" snapshot. This occurs
+when the number of valid items equals the total number of items
+in the associated pose binding. false is returned when the pose
+buffer contains a "partial body" snapshot whereby a least one
+item with respect to the associated pose binding is
+invalid.</p>
+
+<a name="Functions_dealing_with_color_data" id="Functions_dealing_with_color_data"></a><p class="NDLRefHead2">Functions Dealing with Color Data</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumColors()
+const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+number of color items in the pose buffer.</p>
+
+<p class="NDLRefMemberFunction">bool GetColor(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href="../../Reference/NiMain/NiColorA.htm">NiColorA</a>&amp;
+kColor) const</p>
+
+<p class="NDLRefMemberDescription">This function returns true
+when the color item located at <span class=
+"NDLSystemFont">kPBHandle</span> in the pose buffer is marked as
+valid. false is returned when the item is flagged as invalid.
+Valid data is returned via <span class=
+"NDLSystemFont">kColor</span>.</p>
+
+<p class="NDLRefMemberFunction">bool GetColorIfNotCulled(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href="../../Reference/NiMain/NiColorA.htm">NiColorA</a>&amp;
+kColor) const</p>
+
+<p class="NDLRefMemberDescription">This function returns true
+when the color item located at <span class=
+"NDLSystemFont">kPBHandle</span> in the pose buffer is marked as
+valid and not culled. false is returned when the item is flagged
+as invalid or culled. Valid data that has not been culled is
+returned via <span class="NDLSystemFont">kColor</span>.</p>
+
+<p class="NDLRefMemberFunction">bool IsColorValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberDescription">This function returns true
+when the color item located at <span class=
+"NDLSystemFont">kPBHandle</span> in the pose buffer is marked as
+valid. false is returned when the item is flagged as invalid.</p>
+
+<p class="NDLRefMemberFunction">void SetColor(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, const
+<a href="../../Reference/NiMain/NiColorA.htm">NiColorA</a>&amp;
+kColor)</p>
+
+<p class="NDLRefMemberDescription">This function sets the color
+item located at <span class="NDLSystemFont">kPBHandle</span> in
+the pose buffer to the value of <span class=
+"NDLSystemFont">kColor</span>.</p>
+
+<p class="NDLRefMemberFunction">void SetColorValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">When <span class=
+"NDLSystemFont">bValid</span> is true this function marks the
+color item located at <span class=
+"NDLSystemFont">kPBHandle</span> in the pose buffer as valid.
+When <span class="NDLSystemFont">bValid</span> is false the item
+is flagged as invalid.</p>
+
+<p class="NDLRefHead2">Functions dealing with boolean data</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumBools()
+const</p>
+
+<p class="NDLRefMemberFunction">bool GetBool(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+float&amp; fBool) const</p>
+
+<p class="NDLRefMemberFunction">bool GetBoolIfNotCulled(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+float&amp; fBool) const</p>
+
+<p class="NDLRefMemberFunction">bool IsBoolValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberFunction">void SetBool(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, float
+fBool)</p>
+
+<p class="NDLRefMemberFunction">void SetBoolValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">These functions operate on the
+boolean data items within the pose buffer. See the analogous
+<a href=
+"NiPoseBuffer.htm#Functions_dealing_with_color_data">color-based
+functions</a> above for more details regarding function usage. To
+improve blending performance boolean data is stored as floating
+point values within the pose buffer where 0.0 corresponds to
+false and 1.0 to true. Blended values less than 0.5 are mapped to
+false, while values greater than or equal to 0.5 are mapped to
+true.</p>
+
+<p class="NDLRefHead2">Functions dealing with float data</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumFloats()
+const</p>
+
+<p class="NDLRefMemberFunction">bool GetFloat(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+float&amp; fValue) const</p>
+
+<p class="NDLRefMemberFunction">bool GetFloatIfNotCulled(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+float&amp; fValue) const</p>
+
+<p class="NDLRefMemberFunction">bool IsFloatValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberFunction">void SetFloat(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, float
+fValue)</p>
+
+<p class="NDLRefMemberFunction">void SetFloatValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">These functions operate on the
+float data items within the pose buffer. This data includes the
+scale component of transform evaluators. See the analogous
+<a href=
+"NiPoseBuffer.htm#Functions_dealing_with_color_data">color-based
+functions</a> above for more details regarding function
+usage.</p>
+
+<p class="NDLRefHead2">Functions dealing with point3 data</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumPoint3s()
+const</p>
+
+<p class="NDLRefMemberFunction">bool GetPoint3(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href="../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kPoint3) const</p>
+
+<p class="NDLRefMemberFunction">bool
+GetPoint3IfNotCulled(<a href="NiPoseBufferHandle.htm">NiPoseBufferHandle</a>
+kPBHandle, <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp; kPoint3)
+const</p>
+
+<p class="NDLRefMemberFunction">bool IsPoint3Valid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberFunction">void SetPoint3(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, const
+<a href="../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>&amp;
+kPoint3)</p>
+
+<p class="NDLRefMemberFunction">void SetPoint3Valid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">These functions operate on the
+point3 data items within the pose buffer. This data includes the
+translation component of transform evaluators. See the analogous
+<a href=
+"NiPoseBuffer.htm#Functions_dealing_with_color_data">color-based
+functions</a> above for more details regarding function
+usage.</p>
+
+<p class="NDLRefHead2">Functions dealing with rotation data</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumRots()
+const</p>
+
+<p class="NDLRefMemberFunction">bool GetRot(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href=
+"../../Reference/NiMain/NiQuaternion.htm">NiQuaternion</a>&amp;
+kRot) const</p>
+
+<p class="NDLRefMemberFunction">bool GetRotIfNotCulled(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href=
+"../../Reference/NiMain/NiQuaternion.htm">NiQuaternion</a>&amp;
+kRot) const</p>
+
+<p class="NDLRefMemberFunction">bool IsRotValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberFunction">void SetRot(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, const
+<a href=
+"../../Reference/NiMain/NiQuaternion.htm">NiQuaternion</a>&amp;
+kRot)</p>
+
+<p class="NDLRefMemberFunction">void SetRotValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">These functions operate on the
+quaternion data items within the pose buffer. This data includes
+the rotation component of transform evaluators. See the analogous
+<a href=
+"NiPoseBuffer.htm#Functions_dealing_with_color_data">color-based
+functions</a> above for more details regarding function
+usage.</p>
+
+<p class="NDLRefHead2">Functions dealing with referenced
+evaluator data items</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+GetNumReferencedItems() const</p>
+
+<p class="NDLRefMemberFunction">bool GetReferencedItem(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href="NiPoseBuffer.htm#ReferencedItem">ReferencedItem</a>&amp;
+kItem) const</p>
+
+<p class="NDLRefMemberFunction">bool
+GetReferencedItemIfNotCulled(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle,
+<a href="NiPoseBuffer.htm#ReferencedItem">ReferencedItem</a>&amp;
+kItem) const</p>
+
+<p class="NDLRefMemberFunction">bool
+IsReferencedItemValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberFunction">void SetReferencedItem(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, const
+<a href="NiPoseBuffer.htm#ReferencedItem">ReferencedItem</a>&amp;
+kItem)</p>
+
+<p class="NDLRefMemberFunction">void
+SetReferencedItemValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">These functions operate on the
+referenced evaluator data items within the pose buffer. These
+data items correspond to the <span class=
+"NDLSystemFont">PBREFERENCEDCHANNEL</span> <span class=
+"NDLSystemFont"><a href=
+"NiPoseBuffer.htm#NiPoseBufferChannelType">NiPoseBufferChannelType</a></span>.
+See the analogous <a href=
+"NiPoseBuffer.htm#Functions_dealing_with_color_data">color-based
+functions</a> above for more details regarding function
+usage.</p>
+
+<a name="ReferencedItem" id="ReferencedItem"></a><p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">ReferencedItem</span> struct contains pointers to
+the referenced evaluator, its scratch pad data entries, and its
+associated controller sequence.</p>
+
+<pre class="indent1">
+struct ReferencedItem
+{
+    <a href=
+"NiControllerSequence.htm">NiControllerSequence</a>* m_pkControllerSequence;
+    <a href=
+"NiEvaluator.htm">NiEvaluator</a>* m_pkReferencedEvaluator;
+    <a href=
+"NiEvaluatorSPData.htm">NiEvaluatorSPData</a>* m_apkEvalSPData[<a href="NiEvaluator.htm#EvalChannelIndex">NiEvaluator::EVALMAXCHANNELS</a>];
+ 
+};
+</pre>
+
+<p class="NDLRefMemberDescription">Referenced evaluators provide
+a mechanism by which sequence evaluators may be passed to scene
+graph controllers for further processing. For example,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">NiPSEmitParticlesCtlr</a></span>
+programmatically processes channel data in the Birth Rate and
+Emitter Active referenced evaluators to drive its associated
+particle system.</p>
+
+<p class="NDLRefHead2">Functions to get and set the validity of a
+data item</p>
+
+<p class="NDLRefMemberFunction">bool IsValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle)
+const</p>
+
+<p class="NDLRefMemberDescription">This function returns true
+when the item located at <span class=
+"NDLSystemFont">kPBHandle</span> in the pose buffer is marked as
+valid. false is returned when the item is flagged as invalid.</p>
+
+<p class="NDLRefMemberFunction">void SetValid(<a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a> kPBHandle, bool
+bValid)</p>
+
+<p class="NDLRefMemberDescription">When <span class=
+"NDLSystemFont">bValid</span> is true this function marks the
+data item located at <span class="NDLSystemFont">kPBHandle</span>
+in the pose buffer as valid. When <span class=
+"NDLSystemFont">bValid</span> is false the item is flagged as
+invalid.</p>
+
+<p class="NDLRefHead2">Functions to get the pose buffer location
+of a specified evaluator channel</p>
+
+<p class="NDLRefMemberFunction">bool GetHandleAndLOD(const
+<a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kAVObjectName, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kPropertyType, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kCtlrType, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kCtlrID, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kEvaluatorID, <a href=
+"NiPoseBuffer.htm#NiPoseBufferChannelType">NiPoseBufferChannelType</a>
+ePBChannelType, <a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a>&amp; kPBHandle,
+short&amp; sLOD) const</p>
+
+<p class="NDLRefMemberFunction">bool GetHandleAndLOD(const
+<a href="NiEvaluator.htm#IDTag">NiEvaluator::IDTag</a>&amp;
+kIDTag, <a href=
+"NiPoseBuffer.htm#NiPoseBufferChannelType">NiPoseBufferChannelType</a>
+ePBChannelType, <a href=
+"NiPoseBufferHandle.htm">NiPoseBufferHandle</a>&amp; kPBHandle,
+short&amp; sLOD) const</p>
+
+<p class="NDLRefMemberDescription">These functions return the
+pose buffer handle and level of detail associated with the
+specified evaluator channel. See the documentation for
+<span class="NDLSystemFont"><a href=
+"NiEvaluator.htm#IDTag">NiEvaluator::IDTag</a></span> for a
+description of each string and what it represents. <span class=
+"NDLSystemFont">ePBChannelType</span> must be specified since
+some evaluators support multiple channels. For instance, an
+<span class="NDLSystemFont"><a href=
+"NiTransformEvaluator.htm">NiTransformEvaluator</a></span> may
+have up to three channels (and three corresponding pose buffer
+entries) for its position, rotation, and scale data. These
+functions return true when the specified channel is bound by the
+associated pose binding to a pose buffer location. Upon success,
+the functions return the pose buffer location via <span class=
+"NDLSystemFont">kPBHandle</span> and the associated level of
+detail via <span class="NDLSystemFont">sLOD</span>. The functions
+return false when the specified channel is not bound by the
+associated pose binding to a pose buffer location. In this case,
+<span class="NDLSystemFont">kPBHandle</span> will be invalidated
+and <span class="NDLSystemFont">sLOD</span> will remain
+unchanged. Refer to the <a href=
+"NiPoseBinding.htm#LevelOfDetail">notes</a> in <span class=
+"NDLSystemFont">NiPoseBinding</span> for more information
+regarding pose buffer level of detail values.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="NiPoseBufferChannelType" id="NiPoseBufferChannelType"></a><p class="NDLRefHead2">NiPoseBufferChannelType</p>
+
+<p class="NDLRefHeaderFile">&lt;NiPoseBufferChannelType.h&gt;</p>
+
+<p>The <span class="NDLSystemFont">NiPoseBufferChannelType</span>
+enumeration represents the set of channel types supported by the
+pose buffer system. These consists of five base data types and
+one special type for referenced evaluators. <span class=
+"NDLSystemFont">PBINVALIDCHANNEL</span> is used to indicate a
+given channel is invalid.</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>NiPoseBufferChannelType</th>
+
+            <th>Description (and underlying data type)</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBCOLORCHANNEL</span></td>
+
+            <td>The channel contains color data (<span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiColorA.htm">NiColorA</a></span>).</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBBOOLCHANNEL</span></td>
+
+            <td>The channel contains boolean data (<span class=
+            "NDLSystemFont">float</span> where 0.0 is false and
+            1.0 is true). When multiple boolean values are
+            blended the result is mapped to false when less than
+            0.5, and true otherwise.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBFLOATCHANNEL</span></td>
+
+            <td>The channel contains float data (<span class=
+            "NDLSystemFont">float</span>).</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBPOINT3CHANNEL</span></td>
+
+            <td>The channel contains point3 data (<span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiPoint3.htm">NiPoint3</a></span>).</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBROTCHANNEL</span></td>
+
+            <td>The channel contains rotation data (<span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiQuaternion.htm">NiQuaternion</a></span>).</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBREFERENCEDCHANNEL</span></td>
+
+            <td>The channel contains a referenced evaluator
+            (<span class="NDLSystemFont"><a href=
+            "NiEvaluator.htm">NiEvaluator</a></span>,
+            <span class="NDLSystemFont"><a href=
+            "NiEvaluatorSPData.htm">NiEvaluatorSPData</a></span>,
+            and associated <span class="NDLSystemFont"><a href=
+            "NiControllerSequence.htm">NiControllerSequence</a></span>).
+            This referenced information gets passed along to the
+            associated target controller when the <a href=
+            "NiControllerManager.htm">controller manager</a> is
+            updated.<br>
+            <br>
+            The Birth Rate and Emitter Active evaluators which
+            control particle systems are examples of referenced
+            evaluators. The <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">
+            NiPSEmitParticlesCtlr</a></span> controller
+            programmatically processes the data in these
+            referenced evaluators to drive its associated
+            particle system.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PBINVALIDCHANNEL</span></td>
+
+            <td>The channel is invalid or not found.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

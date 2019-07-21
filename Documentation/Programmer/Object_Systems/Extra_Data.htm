@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Extra Data</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Extra Data</h1>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ class provides the ability to attach application-specific extra data to 
+ an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ object. In Gamebryo, extra data capabilities have been greatly enhanced 
+ to support a wide diversity of custom attributes and user-defined data, 
+ with fast retrieval times.</p>
+
+<p>The relevant member functions of <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ are:</p>
+ 
+<ul>
+  <li><span class="NDLSystemFont">unsigned short GetExtraDataSize();</span></li>
+  <li><span class="NDLSystemFont">bool SetExtraDataSize(unsigned short usSize);</span></li>
+  <li><span class="NDLSystemFont">bool AddExtraData(NiFixedString&amp; pcKey, NiExtraData* pkExtra);</span></li>
+  <li><span class="NDLSystemFont">bool AddExtraData(NiExtraData* pkExtra);</span></li>
+  <li><span class="NDLSystemFont">NiExtraData* GetExtraData(NiFixedString&amp; kKey);</span></li>
+  <li><span class="NDLSystemFont">NiExtraData* GetExtraDataAt(unsigned short usExtraDataIndex);</span></li>
+  <li><span class="NDLSystemFont">bool RemoveExtraData(NiFixedString&amp; kKey);</span></li>
+  <li><span class="NDLSystemFont">bool RemoveExtraDataAt(unsigned short usExtraDataIndex);</span></li>
+  <li><span class="NDLSystemFont">void RemoveAllExtraData();</span></li>
+</ul>
+ 
+<p>Each <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ maintains a sorted array of named items, each item from a class derived 
+ from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>. 
+ <span class="NDLSystemFont">GetExtraDataSize</span> returns 
+ the current number of items in the array, whereas <span class="NDLSystemFont">SetExtraDataSize</span> 
+ is used to preallocate the array to a particular size, when its size is 
+ known in advance. The two overloaded functions <span class="NDLSystemFont">AddExtraData</span> 
+ add an item to the array; if a name (key) is not provided, a unique name 
+ will be created, for sorting in this particular array. <span class="NDLSystemFont">AddExtraData</span> returns true if the addition was a success, and false if the key was already present.
+
+<p><span class="NDLSystemFont">GetExtraData</span> 
+ returns a pointer to the item corresponding to the key. <span class="NDLSystemFont">GetExtraDataAt</span> 
+ returns a pointer to the item corresponding to a particular array index; 
+ it is primarily used to iterate over all extra data items (in conjunction 
+ with <span class="NDLSystemFont">GetExtraDataSize</span>) 
+ for a given <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ object. Indices are likely to change any time extra data is added, since 
+ sort order is maintained for all extra data items, so applications should 
+ not rely on these indices! The same applies to <span class="NDLSystemFont">RemoveExtraDataAt</span>.</p>
+
+<p><span class="NDLSystemFont">RemoveExtraData</span> 
+ searches the array for an item specified by a key and removes it (if present) 
+ from the array. <span class="NDLSystemFont">RemoveExtraDataAt</span> 
+ removes an item corresponding to a particular array index; it is primarily 
+ used to iterate over all extra data items, in conjunction with <span class="NDLSystemFont">GetExtraDataSize</span>. 
+ As with <span class="NDLSystemFont">GetExtraDataAt</span>, 
+ applications should not rely on these indices, due to the sorting requirements. 
+ <span class="NDLSystemFont">RemoveAllExtraData</span> clears 
+ out the array and resets the size to zero.</p>
+
+<p>For fast extra data access, applications should use 
+ short names. Most retrieval methods use a binary search on the name, since 
+ implementation of the extra data array in an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> 
+ object biases toward fast retrieval time at the expense of insertion time 
+ performance. The binary search has an average of 3.3 string comparisons 
+ for 15 entries, for example.</p>
+
+<p>Since an application might want to attach a heterogeneous 
+ list of extra data, the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ class also has support for <span class="NDLSystemFont">RTTI</span>. 
+ Thus, an application has the ability to traverse the array of items looking 
+ for an extra data object of a particular type (using calls to <span class="NDLSystemFont">NiIsKindOf</span> 
+ or <span class="NDLSystemFont">NiIsExactKindOf</span>). 
+ An application may also stream extra data to disk.</p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ objects are reference counted, even though they are maintained as an array 
+ of dumb pointers. (This approach was taken for fast retrieval by name, 
+ without having to dereference a smart pointer each time an extra data 
+ item is retrieved.) Care must be taken therefore, when detaching <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ objects from an <span class="NDLSystemFont">NiObjectNET</span>. 
+ Because of the reference counting, the detachment will amount to removal 
+ of a smart pointer reference to the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ object, and will therefore delete the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a> 
+ </span>object if there are no other smart pointer references to it.</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiBinaryExtraData.htm">NiBinaryExtraData</a></span>, for a user-defined &quot;blob&quot; or chunk of data, of user-specified size</li>
+	
+	<li><a href="../../Reference/NiMain/NiBooleanExtraData.htm"><span 
+ class="NDLSystemFont">NiBooleanExtraData</span></a>, for a Boolean value of user-defined purpose</li>
+
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiColorExtraData.htm">NiColorExtraData</a></span>, for a NiColorA value (red, green, blue, alpha) of user-defined purpose.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiFloatExtraData.htm">NiFloatExtraData</a></span>, for a floating point value of user-defined purpose</li>
+
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiFloatsExtraData.htm">NiFloatsExtraData</a></span>, for an array of arbitrary size of floating point values for a user-defined 
+ purpose.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiIntegerExtraData.htm">NiIntegerExtraData</a></span>, for an integer value of user-defined purpose</li>
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiIntegersExtraData.htm">NiIntegersExtraData</a></span>, for an array of arbitrary size of integer values for a user-defined purpose.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStringExtraData.htm">NiStringExtraData</a></span>, for a string value of user-defined purpose</li>
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStringsExtraData.htm">NiStringsExtraData</a></span>, for an array of arbitrary size of string values for a user-defined purpose.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiSwitchStringExtraData.htm">NiSwitchStringExtraData</a></span>, for an array of arbitrary size of string values for a user-defined purpose, but only one of the strings is "active" at any given time</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiAnimation/NiTextKeyExtraData.htm">NiTextKeyExtraData</a></span>, to manage an arbitrary number of <span class="NDLSystemFont">NiTextKey</span> values, for user-defined animation purposes.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiVectorExtraData.htm">NiVectorExtraData</a></span>, 
+ for a vector value (x, y, z, w) of user-defined purpose.</li>
+
+ </ul>
+ 
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">The <span class="NDLSystemFont">NiVectorExtraData</span> class has been marked as deprecated and should no longer be used by applications. <span class="NDLSystemFont">NiFloatsExtraData</span> is a more general class with the same functionality that is fully supported in the shader system.)
+              </div>
+          </td>
+      </tr>
+  </table>
+ 
+<p>Each of these Gamebryo classes illustrates how to derive 
+ a class from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>. 
+ Each one implements RTTI, cloning, streaming, and viewer strings, and 
+ are simple examples of how to add onto the functionality of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span>.</p>
+
+<p>Animation time controllers exist for some of these extra 
+ data classes, in support of custom shader attributes, for example. Specifically, 
+ extra data controllers exist for
+<span class="NDLSystemFont">NiColorExtraData, NiFloatExtraData,</span> 
+ and <span class="NDLSystemFont">NiFloatsExtraData</span>. Consult 
+ the animation sections for more details. <span class="NDLSystemFont">NiVertWeightsExtraData</span> 
+ is a deprecated class, preserved only for streaming of legacy <span class="NDLSystemFont">NIF</span> 
+ files.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

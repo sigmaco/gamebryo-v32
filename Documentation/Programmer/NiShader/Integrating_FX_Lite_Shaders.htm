@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Integrating FX Lite Shaders</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Integrating FX Lite Shaders</h1>
+
+<p>FX Lite shaders integrate with Gamebryo much like D3DX Effects
+shaders. Because of differences in FX Lite as opposed to D3DX
+Effects, shaders must be authored slightly differently. This
+document outlines the major differences between the two
+libraries. For a full reference of values that can be used for
+annotations, please refer to <a href=
+"Integrating_D3D_Effect_Files.htm">Integrating D3D Effect
+Files</a>.</p>
+
+<h2>Semantic Values Are Not Available</h2>
+
+<p>In FX Lite, a variable is has a name or a semantic, but not
+both. By default, the compiler replaces any variable name with
+the semantic if specified. In the Gamebryo library, this behavior
+is overridden by passing the
+D3DXSHADER_FXLPARAMETERS_AS_VARIABLE_NAMES flag into the
+compilation of the effect. Because of this, there is no semantic
+information provided to the system. Since the default D3DX
+Effects integration uses semantic values for many bindings,
+extensions have been made to the system to allow FX Lite shaders
+to specify similar information.</p>
+
+<h3>VarType</h3>
+
+<p>For FX Lite, variables should be typed by the VarType
+annotation as noted below.</p>
+<pre>
+float4 Velocity
+&lt;
+    string VarType = "Global";
+&gt;;
+</pre>
+
+<p>Possible values for VarType are:</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>VarType Annotation</th>
+
+            <th>Gamebryo Variable Type</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Attribute</td>
+
+            <td>A per-object attribute applied to the object via
+            NiExtraData. This annotation functions the same as
+            the ": ATTRIBUTE" semantic.</td>
+        </tr>
+
+        <tr>
+            <td>Global</td>
+
+            <td>A global attribute that applies to all objects in
+            the scene. This annotation functions the same as the
+            ": GLOBAL" semantic.</td>
+        </tr>
+
+        <tr>
+            <td>Predefined</td>
+
+            <td>A predefined constant such as the projection
+            matrix or specular material color. These values were
+            accessed via individual semantics such as ":
+            PROJECTION" under D3DX Effects. In FX Lite, you
+            should use the VarType annotation in conjunction with
+            the DefinedMapping annotation.</td>
+        </tr>
+
+        <tr>
+            <td>Object</td>
+
+            <td>A property from an object from the dynamic effect
+            state such as a light or projected texture. These
+            values were accessed via individual semantics such as
+            ":POSITION" under D3DX Effects. In FX Lite, you
+            should use the VarType annotation in conjunction with
+            the ObjectProperty annotation.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>DefinedMapping</h3>
+
+<p>Since semantic values can no longer be used to indicate
+predefined constants, this annotation is used instead. For
+example, the following code indicated the combined world, view,
+and projection matrices under D3DX Effects.</p>
+
+<p><span class="NDLSystemFont">float4x4 WorldViewProj :
+WORLDVIEWPROJECTION;</span></p>
+
+<p>To get the same matrix in FX Lite, use the following code.</p>
+<pre>
+float4x4 WorldViewProj
+&lt;
+    string VarType = "Predefined";
+    string DefinedMapping = "WORLDVIEWPROJECTION";
+&gt;
+</pre>
+
+<p>A full listing of the possible <span class=
+"NDLSystemFont">DefinedMapping</span> strings can be found
+<a href=
+"Integrating_D3D_Effect_Files.htm#PredefinedShaderConstantEntries">
+here</a>.</p>
+
+<h3>ObjectProperty</h3>
+
+<p>Since semantic values can no longer be used to indicate object
+properties, this annotation is used instead. For example, the
+following code indicated the position from the first light on an
+object under D3DX Effects.</p>
+<pre>
+float4 LightPos : Position
+&lt;
+    string Object = "GeneralLight";
+    int ObjectIndex = 0;
+&gt;;
+</pre>
+
+<p>To get the same value in FX Lite, use the following code.</p>
+<pre>
+float4 LightPos
+&lt;
+    string VarType = "Object";
+    string ObjectProperty = "Position";
+    string Object = "GeneralLight";
+    int ObjectIndex = 0;
+&gt;;
+</pre>
+
+<h2>Texture Objects Are Not Available</h2>
+
+<p>In FX Lite, there are no texture objects. All annotations that
+users would previously have applied to texture objects should now
+be applied to the sampler.</p>
+
+<h2>Semantic Adapter Tables</h2>
+
+<p>A <a href=
+"../../Reference/NiMain/NiSemanticAdapterTable.htm">semantic
+adapter table</a> is the mechanism used to wire data streams on a
+mesh to varying parameters required by a shader.  There is a
+default mechanism that will wire 'standard' named data streams to
+corresponding FXL semantics, but a custom semantic adapter table
+can also be specified per technique via a special annotation. 
+For more information, see the corresponding <a href=
+"Specifying_Semantic_Adapter_Tables_in_FX_Shaders.htm">page</a>
+for FX shaders, as the syntax is identical.</p>
+
+<h2>Creating Cross-Platform FXL Files</h2>
+
+<p>Because all the annotation extensions needed for using FX Lite
+shaders exist in the D3DX Effects shader lib as well, it is
+possible to write cross-platform .FXL files for use with
+different shader libraries on different platforms. The following
+guidelines should be adhered to for compatibility and
+performance.</p>
+
+<h3>Annotate Textures and Samplers Identically</h3>
+
+<p>Since texture objects do not exist in FX Lite, you must
+annotate both textures and samplers. <span class=
+"NDLSystemFont">NiFXLShaderLib</span> will read the annotations
+from textures while <span class=
+"NDLSystemFont">NiD3DXEffectShaderLib</span> will read the
+annotations from textures. The following code will work for a
+base map under both libraries.</p>
+<pre>
+texture BaseMap
+&lt;
+    string NTM = "base";
+&gt;;
+sampler BaseSampler
+&lt;
+    string NTM = "base";
+&gt; = sampler _state {
+    texture = (BaseMap);
+};
+</pre>
+
+<h3>Define Out Unused Techniques</h3>
+
+<p>FX Lite is designed to be a high-performance run time targeted
+to the known capabilities of the Xbox 360. Therefore, it makes no
+sense to have fallback techniques. When creating cross-platform
+techniques, however, it may be desirable to have fallback
+techniques for PC platforms. Gamebryo defines the macro
+GAMEBRYO_USE_D3DX_FALLBACKS when compiling for PC. Users may
+comment out unused techniques with the preprocessor to avoid the
+overhead of creating them when they are unneeded. For example,
+the following code comments out the shader version 2.0 technique
+on Xbox 360 because it is known that the 3.0 compilation will
+succeed. On PC, the two techniques would both be created.</p>
+<pre>
+technique BasicShader
+&lt;
+    int implementation = 0;
+&gt;
+{
+    pass P0
+    {
+        VertexShader = compile vs_3_0 VSMain();
+        PixelShader = compile ps_3_0 PSMain();
+    }
+}
+#if defined(GAMEBRYO_USE_D3DX_FALLBACKS)
+technique BasicShaderLowerVersion
+&lt;
+    string shadername = "BasicShader";
+    int implementation = 1;
+&gt;
+{
+    pass P0
+    {
+        VertexShader = compile vs_2_0 VSMain();
+        PixelShader = compile ps_2_0 PSMain();
+    }
+}
+#endif
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>SemanticAdapterTable</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>SemanticAdapterTable</h1>
+
+<p>Within the scope of an implementation, a <a href="../../Reference/NiMain/NiSemanticAdapterTable.htm">semantic 
+ adapter table</a> should be declared. The semantic adapter table defines 
+ the mapping from mesh data to varying shader parameters. &nbsp;If 
+ there are both a SemanticAdapterTable and a PackingDef declaration in 
+ a given implementation, then the SemanticAdapterTable will override the 
+ PackingDef and a warning will be issued. &nbsp;For 
+ legacy shaders containing only a PackingDef, the packing definition has 
+ no effect on actual data packing and is internally converted to a SemanticAdapterTable.</p>
+
+<p>There should be no more than one semantic adapter table 
+ in an implementation. It is specified like this:</p>
+
+<pre>
+SemanticAdapterTable
+{
+    [Semantic adapter table entry]
+    ...
+}
+</pre> 
+
+
+<p>Each semantic adapter table entry must be in the following 
+ format:</p>
+
+<pre>
+&lt;ComponentCount&gt; "GenericSemantic" : &lt;GenericSemanticIndex&gt; "RendererSemantic" : &lt;RendererSemanticIndex&gt;  @ &lt;SharedRendererSemanticPosition&gt; ;"
+</pre> 
+
+<p>Where:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">&lt;ComponentCount&gt;</span> 
+ is an integer representing the number of components in the parameter (e.g. 
+ 3 for a float3 parameter).</li>
+	
+	<li><span class="NDLSystemFont">"GenericSemantic"</span> 
+ is a string naming the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamElement.htm">NiDataStreamElement</a></span> 
+ data (e.g. "FURLENGTH").</li>
+	
+	<li><span class="NDLSystemFont">&lt;GenericSemanticIndex&gt;</span> 
+ is an integer representing the index of the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiDataStreamElement.htm">NiDataStreamElement</a></span> 
+ data (e.g. 0 for FURLENGTH0).</li>
+	
+	<li><span class="NDLSystemFont">"RendererSemantic"</span> 
+ is a string naming the shader varying parameter (e.g. "TEXCOORD").</li>
+	
+	<li><span class="NDLSystemFont">&lt;RendererSemanticIndex&gt;</span> 
+ is an integer representing the index of the shader varying parameter slot 
+ (e.g. 0 for TEXCOORD0).</li>
+	
+	<li><span class="NDLSystemFont">&lt;SharedRendererSemanticPosition&gt;</span> 
+ &nbsp;is an integer 
+ that defines the packing order when multiple NiDataStreamElement are mapped 
+ to the same renderer semantic and index (e.g. when packing two 2-component 
+ parameters into TEXCOORD0, the parameter at position 0 will be packed 
+ into the "xy" components, and the parameter at position 1 will 
+ be in the "zw" components).</li>
+	
+	<li>:, @, and ; are the 
+ actual literals <b>:</b>
+, <b>@</b>
+, 
+ and <b>;</b>
+</li>
+</ul>
+
+<p>This syntax is very similar to the syntax 
+ used by <a href="../../Reference/NiMain/NiSemanticAdapterTableParser.htm"><span 
+ class="NDLSystemFont">NiSemanticAdapterTableParser</span></a> (used to parse 
+ Semantic Adapter Table annotations in FX/FXL shaders), except that no 
+ portions of the syntax are currently optional.</p>
+
+<h2>SemanticAdapterTable Example</h2>
+
+<p>The following NSF snippet defines a semantic adapter 
+ table for an implementation:</p>
+
+<pre>
+SemanticAdapterTable
+{
+    3 "POSITION" : 0 "POSITION" : 0 @ 0 ;
+    3 "COLOR"    : 0 "NORMAL"   : 0 @ 0 ;
+    3 "NORMAL"   : 0 "COLOR"    : 0 @ 0 ;
+    2 "TEXCOORD" : 0 "TEXCOORD" : 0 @ 0 ;
+    2 "TEXCOORD" : 1 "TEXCOORD" : 0 @ 1 ;
+    2 "TEXCOORD" : 2 "TEXCOORD" : 1 @ 0 ;
+}
+</pre>
+ 
+<p>This table maps:</p>
+
+<ul>
+	
+	<li>3-component POSITION0 
+ to the varying parameter POSITION0.</li>
+	
+	<li>3-component COLOR0 
+ to the varying parameter NORMAL0.</li>
+	
+	<li>3-component NORMAL0 
+ to the varying parameter COLOR0.</li>
+	
+	<li>2-component TEXCOORD0 
+ to the varying parameter TEXCOORD0.xy.</li>
+	
+	<li>2-component TEXCOORD1 
+ to the varying parameter TEXCOORD0.zw.</li>
+	
+	<li>2-component TEXCOORD2 
+ to the varying parameter TEXCOORD1.</li>
+</ul>
+
+<p>The <a href="../../Learn/Demos/DolphinTweenEffect.htm">ShaderSample</a> 
+ demo also demonstrates the renaming aspects of a semantic adapter table 
+ using a NSF in its DolphinTween effect.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

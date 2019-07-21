@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Image Converters</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Image Converters</h1>
+
+<p>Gamebryo ships with two distinct image converters: the base class
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span> and
+the development time <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDevImageConverter.htm">NiDevImageConverter</a></span>. The purposes of these two converters are distinct.</p>
+
+<p>The <span class="NDLSystemFont">NiImageConverter</span> is only able to load
+textures that have been stored in NIF format. It also does not include code for
+mipmap generation. This converter is intended for runtime release code usage on
+fixed-format platforms. Specifically, the hope is that console-based
+applications will use the development image converter only during their
+development process and will eventually save out preformatted texture data. In
+this case, at application release time, only the <span class=
+"NDLSystemFont">NiImageConverter</span> would be required to read the
+preformatted NIF data. Unlike the development image converter the <span class=
+"NDLSystemFont">NiImageConverter</span> does not require code for loading any
+format other than NIF and can thereby reduce application size. Note that
+because <span class="NDLSystemFont">NiImageConverter</span> is designed for
+non-development systems, it will fail any task it cannot handle. Specifically,
+because it cannot load BMP (or other traditional format) images, it would fail
+a request to create a texture from BMP data. However, because some platforms
+such as Win32 D3D do not have a fixed set of texture formats that are always
+supported, the <span class="NDLSystemFont">NiImageConverter</span> is not
+suitable for these platforms.</p>
+
+<p>Conversely, the <span class="NDLSystemFont">NiDevImageConverter</span> is
+able to load many traditional image formats including TGA, BMP and SGI, as well
+as NIF. It also contains code for doing automatic mipmap generation.
+Additionally, it includes code for doing platform specific texture conversion
+to many Gamebryo supported platforms. The <span class=
+"NDLSystemFont">NiDevImageConverter</span> is intended to be used by
+non-console platforms or console platforms during the application development
+process for console apps&mdash;not with shipping console products.</p>
+
+<p><span class="NDLSystemFont">NiImageConverter</span> can easily be derived
+from to allow applications to support custom texture formats.</p>
+
+<h2>Platform-Specific Image Saving</h2>
+
+<p>As mentioned, images can be saved to platform specific formats. To
+facilitate this, the texturing system supports an optional "platform specific
+subdirectory" during texture saving and loading. This directory is accessed
+with the static <span class="NDLSystemFont">NiImageConverter</span> member
+functions <span class="NDLSystemFont">SetPlatformSpecificSubdirectory</span>
+and <span class="NDLSystemFont">GetPlatformSpecificSubdirectory</span>. When
+set, the image loaders of the image converter system will first look in
+"base-directory/platform-specific-directory" for an image filename. If a
+texture is not found in the platform specific subdirectory, the traditional
+search paths are used. As an example, Xbox 360 specific images might be saved
+by first calling <span class=
+"NDLSystemFont">SetPlatformSpecificSubdirectory</span> with a value of
+"Xbox360".</p>
+
+<p>The platform specific directory can also be used in both the Gamebryo 3ds
+max Plug-in and the Gamebryo Maya Plug-in. At export time, the artist is given
+the option of choosing platform-specific export. They must then specify a
+subdirectory to use for saving the textures. In the case of Xbox 360, the
+default is "Xbox360". At run-time, an application using the NIF files exported
+in this manner would then need to call <span class=
+"NDLSystemFont">SetPlatformSpecificSubdirectory</span> prior to loading the
+data using an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a></span> object. This would
+cause the image loaders to look in the appropriate subdirectory when searching
+for images during the loading process. Note that the platform specific
+subdirectory is not saved into the main NIF file. This allows the same base NIF
+file containing geometry to use textures saved for different platforms. This
+would be accomplished simply by exporting the data multiple times, once for
+each platform that is needed, and then calling <span class=
+"NDLSystemFont">SetPlatformSpecificSubdirectory</span> appropriately.</p>
+
+<p>Platform specific images can also be saved internally to NIF files, although
+this is not recommended. The disadvantages of internally saved images remain
+the same as previous versions of Gamebryo (i.e. inability to share texture data
+across multiple NIF files) with one additional issue: by saving platform
+specific images internally, the base NIF itself (the one containing geometry,
+animations, etc.) thereby becomes platform specific. This can be an obvious
+problem in a cross-platform situation.</p>
+
+<h2>Mipmap Pre-Filtering</h2>
+
+<p>The <span class="NDLSystemFont">NiDevImageConverter</span> can be used to
+generate mipmap pyramids automatically for many incoming texture formats. The
+function to do this is <span class=
+"NDLSystemFont">NiDevImageConverter::GenerateMipmapLevels</span>. The Gamebryo
+3ds max Plug-in and the Gamebryo Maya Plug-in use this function to export
+textures with complete mipmap pyramids as they are needed by the content. In
+other words, it an artist sets up an object to use trilinear (pyramidal in 3ds
+max) texture filtering, the texture, if saved to either external or internal
+NIF format, will contain a full mipmap pyramid.</p>
+
+<p>Automatic pyramid generation is not possible from palettized image formats.
+Instead, the path for using palettized mipmap pyramids is to use external files
+and the <span class="NDLSystemFont">GenerateMipmapPyramidFromFiles</span>
+function. This function also gives an application the flexibility to explicitly
+set an entire mipmap pyramid from custom generated images whether or not they
+are palettized. In the case of generating a pyramid of palettized images, we
+recommend Equilibrium's Debabelizer Pro 4.5 for generating the source files due
+to its support for sharing a palette among a sequence of images.</p>
+
+<p>Note the <span class="NDLSystemFont">NiImageConverter</span> base class
+cannot generate mipmap pyramids.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

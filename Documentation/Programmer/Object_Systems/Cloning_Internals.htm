@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cloning Internals</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Cloning Internals</h1>
+
+<p>Cloning is the system by which objects can copy themselves and associated
+objects. For example, cloning a node causes it to clone all of its children. As
+a result, cloning policy within an object can be complex (for example, objects
+can decide internally whether to clone their referenced objects or share them).
+The following sections describe how cloning is implemented internally, to
+assist applications in adding cloning behavior to their own classes.</p>
+
+<p><span class="NDLSystemFont">NiObject::Clone</span> calls two virtual
+functions that are implemented appropriately in derived classes:</p>
+<pre>
+virtual NiObject* CreateClone(NiCloningProcess&amp; kCloning);
+virtual void ProcessClone(NiCloningProcess&amp; kCloning);
+</pre>
+
+<p>The implementation of <span class="NDLSystemFont">CreateClone</span> is
+similar for all classes. For example, <span class=
+"NDLSystemFont">NiGenericObject::CreateClone</span> is implemented as
+follows:</p>
+<pre>
+NiObject* NiGenericObject::CreateClone(NiCloningProcess&amp; kCloning)
+{
+    NiGenericObject* pkClone = NiNew NiGenericObject;
+    CopyMembers(pkClone , kCloning);
+    return pkClone;
+}
+</pre>
+
+<p>Because this code is so common, a macro exists called <span class=
+"NDLSystemFont">NiImplementCreateClone</span>. The above code snippet would be
+represented with the code below using the macro.</p>
+
+<p><span class=
+"NDLSystemFont">NiImplementCreateClone(NiGenericObject);</span></p>
+
+<p><span class="NDLSystemFont">CopyMembers</span> is a non-virtual function
+defined by each class. It copies the appropriate data from the master object
+("<span class="NDLSystemFont">this</span>") to the cloned object (pointed to by
+the first argument). All implementations of <span class=
+"NDLSystemFont">CopyMembers</span> should start by calling their base class's
+implementation of <span class="NDLSystemFont">CopyMembers</span>. <span class=
+"NDLSystemFont">NiPointLight::CopyMembers</span>, for example, calls
+<span class="NDLSystemFont">NiLight::CopyMembers</span> before copying data
+members from "<span class="NDLSystemFont">this</span>" to the cloned object
+specified by the first argument to <span class=
+"NDLSystemFont">CopyMembers</span>.</p>
+
+<p>When <span class="NDLSystemFont">CreateClone</span> is called, an object
+that is cloning itself does not have access to other cloned objects. For
+example, when an <span class="NDLSystemFont">NiNode</span> is cloned, it is
+impossible to determine at the time that <span class=
+"NDLSystemFont">CreateClone</span> is called whether the lights that illuminate
+the node have been or will be cloned. But an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span>
+object has some work to do to clone itself that depends on whether the lights
+are cloned. <span class="NDLSystemFont">ProcessClone</span> exists to address
+this problem. The function is called upon the root of the original scene after
+the entire tree has completed the <span class=
+"NDLSystemFont">CreateClone</span> pass. Thus, <span class=
+"NDLSystemFont">ProcessClone</span> forms a post-processing phase that can link
+the existing objects as needed. By the time <span class=
+"NDLSystemFont">ProcessClone</span> is called, all objects that will be cloned
+have been cloned. The cloned object that corresponds to an original object can
+be accessed through a hash table that is a member of the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiCloningProcess.htm">NiCloningProcess</a></span>
+object passed into the function. The hash table is declared in NiCloningProcess
+as follows:</p>
+
+<p><span class="NDLSystemFont">public: NiTPointerMap&lt;NiObject*,
+NiObject*&gt;* m_pkCloneMap;</span></p>
+
+<p>The class implementing the <span class="NDLSystemFont">ProcessClone</span>
+function can access the cloned version of itself as shown below. In a similar
+fashion, member variables of the original class can be retrieved from the clone
+map to determine whether or not they have been cloned.</p>
+<pre>
+void NiGenericObject::ProcessClone(NiCloningProcess&amp; kCloning)
+{
+    // Call parent class ProcessClone function.
+    NiParentObject::ProcessClone(kCloning);
+ 
+    // Get a pointer to the cloned version of this object. This should always exist.
+    NiObject* pkClone;
+    bool bCloned = kCloning.m_pkCloneMap-&gt;GetAt(this, pkClone);
+    assert(bCloned);
+    NiGenericObject* pkDest = (NiGenericObject*) pkClone;
+ 
+    // Get a pointer to the cloned version of the NiLight* member variable
+    // for this class. That member may or may not have been cloned.
+    bCloned = kCloning.m_pkCloneMap-&gt;GetAt(m_pkLight, pkClone);
+    if (bCloned)
+    {
+        pkDest-&gt;m_pkLight = (NiLight*) pkClone;
+        // pkDest-&gt;m_pkLight points to the cloned version of m_pkLight.
+    }
+    else
+    {
+        // m_pkLight was not cloned.
+        pkDest-&gt;m_pkLight = m_pkLight;
+    }
+</pre>
+
+<p>A parallel to the code in the above <span class=
+"NDLSystemFont">ProcessClone</span> function call also occurs in the
+<span class="NDLSystemFont">CopyMembers</span> function for <a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>. The original
+<span class="NDLSystemFont">NiAVObject</span> object cannot know whether or not
+its properties have already been cloned, because they may be potentially shared
+amongst many objects. The property needs to be cloned as part of the cloning
+process, but it should only be cloned once. Therefore, <span class=
+"NDLSystemFont">CopyMembers</span> needs to check whether the property has
+previously been cloned through the clone map before creating another one.
+<a href="../../Reference/NiMain/NiObject.htm">NiObject</a> provides a
+convenience function for the case of objects which may have already been
+potentially cloned: <span class=
+"NDLSystemFont">NiObject::CreateSharedClone()</span>. This function will safely
+create a clone of a potentially shared object in the scene graph.</p>
+
+<p>Objects that are shared rather than cloned do not implement any cloning
+functions. They should inherit (or replicate) the behavior of <span class=
+"NDLSystemFont">NiObject::CreateClone</span>, which just returns "<span class=
+"NDLSystemFont">this</span>" rather than allocating a new object, and
+<span class="NDLSystemFont">NiObject::ProcessClone</span>, which does
+nothing.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

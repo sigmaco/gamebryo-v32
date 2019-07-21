@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>StreamOutTestEffect</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>StreamOutTestEffect</h1>
+
+<p>This effect demonstrates the use of the D3D10/D3D11 stream out
+capability in shaders. This is the only effect that makes use of
+a number of sub-effects to show various stream-out
+configurations.</p>
+
+<p>The scene is the same as the one used in the <a href=
+"GlassEffect.htm">GlassEffect</a> effect, but with a different
+shader on the teapot. Actually, two shaders are used to render
+the teapot: the first shader renders the teapot and uses stream
+out to save the results to a vertex buffer in video memory and
+the second shader uses that vertex buffer to actually rasterize
+the teapot to the screen.</p>
+
+<p>There are a total of seven sub-effects. They show off a number
+of different combinations of different ways you can make use of
+the output stream. Some use a series of "thin" output streams,
+which means that a series of non-interleaved vertex buffers are
+used for the vertex positions, color, and normals, while other
+use a "fat" output stream, which stores all that data in a single
+interleaved vertex buffer. Some of the sub-effects clear the
+stream-out buffers before they write more data, and some append
+the data to the end of the existing data in the buffer. Some
+effects write out from the geometry shader, and others skip the
+geometry shader and write out directly from the vertex shader.
+Some effects will perform rasterization as part of the stream-out
+render pass, while other effects will skip the pixel shader when
+writing to the output data streams.</p>
+
+<ol>
+    <li>The teapot is streamed out to 3 non-interleaved vertex
+    buffers, which are cleared before receiving data. The
+    primitives are written from the geometry shader as
+    triangles.</li>
+
+    <li>The teapot is streamed out to 1 interleaved vertex
+    buffer, which is cleared before receiving data. The
+    primitives are written from the geometry shader as
+    lines.</li>
+
+    <li>The teapot is streamed out to 3 non-interleaved vertex
+    buffers, which are cleared before receiving data. The
+    primitives are written from the vertex shader as points.</li>
+
+    <li>The teapot is streamed out to 1 interleaved vertex
+    buffer, which is cleared before receiving data. The
+    primitives are written from the vertex shader as
+    triangles.</li>
+
+    <li>The teapot is streamed out to 3 non-interleaved vertex
+    buffers, which are cleared before receiving data. The
+    primitives are written from the geometry shader as triangles.
+    The stream-out pass performs rasterization, so two triangles
+    should be present.</li>
+
+    <li>The teapot is streamed out to 1 interleaved vertex
+    buffer, which is cleared before receiving data. The
+    primitives are written from the geometry shader as triangles.
+    The stream-out pass performs rasterization, so two triangles
+    should be present.</li>
+
+    <li>The teapot is streamed out, one triangle at a time, to 3
+    non-interleaved vertex buffers which are cleared not before
+    receiving data. The triangles are emitted in projection
+    space, so rotating the camera will cause the new triangles to
+    show up in a new location, but will not affect triangles that
+    had been added in previous frames.</li>
+</ol>
+
+<h2>Init</h2>
+
+<p>During initialization, the first thing to happen is the
+<span class="NDLSystemFont">ShaderEffect::Init</span> function
+gets called, so the <span class=
+"NDLSystemFont">RegisterShaderLibrary</span> will get a chance to
+load the shader library. Then, the NIF containing the entire
+scene is loaded, and the scene graph and camera are extracted
+from it. The camera is detached from the scene graph so it can
+move independently. Then, the teapot mesh is located so it can
+have the stream-out shader applied to it, and a new mesh is
+created to allow Gamebryo to render the contents of the
+streamed-out vertex buffer. Finally, the scene and the camera are
+each updated.</p>
+
+<p>The <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render click</a> created by this function simply holds an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span>
+with the main scene and camera. This render click is added to the
+<a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">
+render step</a> created by <span class="NDLSystemFont"><a href=
+"ShaderEffect.htm">ShaderEffect</a>::Init</span>.</p>
+
+<h2>NextSubeffect</h2>
+
+<p>This function is responsible for applying the sub-effect's
+shaders to the two meshes. Then it ensures that the mesh that
+draws the contents of the streamed-out vertex buffer is hooked up
+with the correct vertex buffers, which it does by calling
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a>::BindToStreamOutputOf</span>.</p>
+
+<h2>Shutdown</h2>
+
+<p>The programmatically-created mesh that draws the result of the
+stream-out operation is released, and then the default shutdown
+function <span class=
+"NDLSystemFont">ShaderEffect::Shutdown</span> is called.</p>
+
+<h2>UpdateScene</h2>
+
+<p>First, the global shader constant FrameNumber is updated with
+the frame number of the current sub-effect. When that frame
+number exceeds the primitive count in the final sub-effect, the
+stream-out buffers are manually cleared (because that sub-effect
+appends subsequent writes to the output buffer rather than
+clearing on each render).</p>
+
+<p>Finally, this function simply calls <span class=
+"NDLSystemFont">Update</span> on the scene.</p>
+
+<h2>GetDescription</h2>
+
+<p>Returns a description appropriate for the current
+sub-effect.</p>
+
+<p>Refer to <a href=
+"ShaderSample_Platform_Considerations.htm">Platform
+Considerations</a> for additional details on platform-specific
+issues.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

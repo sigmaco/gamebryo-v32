@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Specifying Tasks</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Specifying Tasks</h1>
+
+<p>A Task is a single step performed as part of a larger 
+ process. A Task contains a set of inputs and outputs of fixed or streaming 
+ data. Additionally, a Task has a Kernel that specifies the operations 
+ to perform on the Tasks's data.</p>
+
+
+<div class="FigureContainer">
+    <img src="./images/Task.jpg" width="416" height="134"
+/>
+    <p class="FigureCaption">Task with one fixed input, two input streams, and one output stream</p>
+</div>
+
+<p>Tasks reference each other via their Streams. Specifically, 
+ an output Stream of one Task may be the input Stream of another Task, 
+ forming a dependency. Tasks are combined to create Workflows.</p>
+
+<p>See <a href="../../ee_goto.htm#Programmer/NiFloodgate/Features_and_Limitations_of_Floodgate_PS3.htm">Features and Limitations of Floodgate PS3</a> for more details about task submission on PS3.</p>
+
+<h2>Source Code</h2>
+
+<p>In the following code, we obtain and initialize the 
+ <a href="../../Reference/NiFloodgate/NiSPTask.htm"><span 
+ class="NDLSystemFont">NiSPTask</span></a> objects that will be added to 
+ our <a href="../../Reference/NiFloodgate/NiSPWorkflow.htm"><span 
+ class="NDLSystemFont">NiSPWorkflow</span></a>. Note that we do not explicitly 
+ create <span class="NDLSystemFont">NiSPTask</span> objects. Instead, we 
+ obtain a new &nbsp;<span class="NDLSystemFont">NiSPTask</span> 
+ object from the <span class="NDLSystemFont">NiSPWorkflow</span> object, 
+ which allocates the task from the pool held by the <span class="NDLSystemFont">NiSPTask</span> 
+ class and adds it to the workflow. This helps optimize memory usage. It 
+ is also acceptable to obtain the object directly from the <span class="NDLSystemFont">NiSPTask</span> 
+ class, using <span class="NDLSystemFont">NiSPTask::GetNewTask()</span>, 
+ and then add it to the workflow using <span class="NDLSystemFont">NiSPWorkflow::Add</span>.</p>
+
+<p><span class="NDLSystemFont">NiSPTask</span> objects should 
+ always be stored in smart pointers to prevent them from being prematurely 
+ returned to the free task pool.</p>
+
+<p>For each task, we add the inputs and outputs mentioned 
+ earlier. </p>
+
+<pre>
+//---------------------------------------------------------------------------
+bool MyApplication::UpdateFrame()
+{
+    // Update base class
+    NiApplication::UpdateFrame();
+ 
+    // Initialize data buffers
+    for (NiUInt32 i = 0; i &lt; 256; i++)
+    {
+        auiInputBuffer1[i] = i;
+        auiInputBuffer2[i] = i;
+    }
+    memset(auiOutputBuffer1, 0, sizeof(auiOutputBuffer1));
+    memset(auiOutputBuffer2, 0, sizeof(auiOutputBuffer2));
+ 
+    // Initialize streams
+    NiTSPStream&lt;NiUInt32&gt; kStream0(auiInputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream1(auiInputBuffer2, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream2(auiOutputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream3(auiOutputBuffer2, 256);
+ 
+    // Initialize fixed input
+    NiTSPFixedInput&lt;NiUInt32&gt; kFixedInput(&amp;uiFixedInput, 1);
+ 
+    // Obtain NiSPWorkflow from NiStreamProcessor
+    NiSPWorkflowPtr spWorkflow = NiStreamProcessor::Get()-&gt;GetFreeWorkflow();
+ 
+<span class="CodeHighLight">    // Setup tasks
+    // Task1 - kStream2 = kStream0 + kStream1
+    NiSPTaskPtr spTask1 = spWorkflow-&gt;AddNewTask();
+    spTask1-&gt;SetKernel(&amp;m_kSum2Kernel);
+    spTask1-&gt;AddInput(&amp;kStream0);
+    spTask1-&gt;AddInput(&amp;kStream1);
+    spTask1-&gt;AddOutput(&amp;kStream2);
+    
+    // Task2 - Stream3 = FixedInput * Stream2
+    NiSPTaskPtr spTask2 = spWorkflow-&gt;AddNewTask();
+    spTask2-&gt;SetKernel(&amp;m_kScaleKernel);
+    spTask2-&gt;AddInput(&amp;kFixedInput);
+    spTask2-&gt;AddInput(&amp;kStream2);
+    spTask2-&gt;AddOutput(&amp;kStream3);
+ 
+    ...</span>
+}
+//---------------------------------------------------------------------------
+</pre>
+
+
+<p>The next step is to <a href="Floodgate_Workflow_Submission.htm">submit 
+ the workflow</a> for execution.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

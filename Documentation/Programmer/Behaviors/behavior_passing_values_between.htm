@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Passing values between scripted behaviors</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Passing values between scripted behaviors</h1>
+
+<p>All scripted behaviors have the same signature, of the form "<span
+    class="NDLSystemFont">function(self, params)</span>". The first
+    argument is a proxy object representing the executing entity. The second argument is an optional
+    ParameterList instance that contains all parameters passed to the behavior. To pass values
+    between different behaviors you encode these values in a ParameterList instance and pass this
+    instance to the appropriate BehaviorAPI call.</p>
+
+<p>The <a href="../../Reference/efd/efd__ParameterList.htm">efd::ParameterList</a> class knows how
+    to encode and decode all of the Game Framework primitive data types. In addition it can be
+    extended to support other types by specializing the <span class="NDLSystemFont">
+    efd::GetClassIDFromType</span> method and the <span class="NDLSystemFont">
+    efd::Serializer::SerializeObject</span> method. It defines methods to add and retrieve
+    parameters from the list. Parameters can be optionally named and retreived by that name. Type
+    safety is also provided and automatic type conversions can be added. See the documentation for
+    ParameterList for a full list of supported data types.</p>
+
+<p>Here is an example of passing values from one behavior to another in Lua.</p>
+<pre>
+function SendNote(self, params)
+    local destinationEntity = params:Get("TargetEntity")
+    local msg = params:Get("Message")
+    
+    local myName = self.name  -- Read the "name" property
+    local note = "A note from " .. myName .. "\n" .. msg
+
+    local outParams = ParameterList.ParameterList()
+    
+    -- entityID of the sender
+    outParams:PutEntityID(self)
+    outParams:PutString("NoteText", note)
+
+    -- Send the note to the destination entity by calling a behavior.
+    BehaviorAPI.SendEvent(destinationEntity, "ReceiveNote", outParams)
+end
+</pre>
+
+<h2>Returning values from Behaviors</h2>
+
+<p>Sometimes you'll need a reply to a behavior invocation. There are blocking and non-blocking
+    facilities in the BehaviorAPI for this. They are similar because they both expect a reply and
+    will receive a ParameterList sent from the called Behavior.</p>
+
+<p>The non-blocking approach to receiving a reply is the optional "callback" parameter on the
+    SendEvent method. This parameter contains the name of a Behavior to invoke when a reply arrives
+    from SendReply. Any parameters passed in the reply are encoded in a ParameterList instance. For
+    example, this code snippet enhances SendNote from the previous example, and specifies the
+    callback method to invoke when the receiver acknowledges the note.</p>
+<pre>
+        -- Send the note to the destination entity by calling a behavior.
+        -- We provide a callback so we can receive a receipt acknowledgement.
+        BehaviorAPI.SendEvent(destinationEntity, "ReceiveNote", outParams, "NoteReceived")
+    end
+</pre>
+<pre>
+-- Called when ReceiveNote finishes and sends a reply
+function NoteReceived(self, params)
+    local replyText = params:Get("ReplyText")
+    -- ... do something with the reply text here...
+end
+</pre>
+
+<p>If you need to block on a response before continuing your behavior, the BehaviorAPI exposes the
+    SendAndWaitForReply method. It too invokes a behavior on an entity, but differs from SendEvent
+    because SendAndWaitForReply is a blocking call. A call to SendAndWaitForReply will not return
+    until SendReply is called by the receiver. The calling entity is put in a suspended queue
+    awaiting a response. Once the receiver calls SendReply, execution continues on the line
+    immediately after the SendAndWaitForReply call. The ParameterList returned from
+    SendAndWaitForReply is the same ParameterList handed to SendReply by the receiver. For example,
+    the following snippet extends the SendNote behavior by waiting for a reply.</p>
+<pre>
+        -- Send the note and wait for a reply
+        local replyParams = BehaviorAPI.SendAndWaitForReply(
+            destinationEntity,
+            "ReceiveNote",
+            outstrm)
+
+        -- Once SendReply is called we'll continue execution here
+        local replyText = replyParams:Get("ReplyText"")
+
+        -- Do something with the reply status code...
+</pre>
+
+<p>For both blocking and non-blocking cases the receiver should call SendReply to notify the
+    invoking entity. If the receiver fails to do this, an empty parameter list is automatically
+    created and handed back to the caller. In this way, the caller is guaranteed to unblock, or get
+    the callback it asked for. If SendReply is called in a Behavior that was invoked by SendEvent
+    without a callback, the given ParameterList is silently dropped.</p>
+
+<p> Here is what the ReceiveNote behavior might look like.</p>
+<pre>
+function ReceiveNote(self, params)
+    -- extract the note
+    local note = params:Get("NoteText")
+    -- ...do something with the note text here...
+
+    -- prepare our reply
+    local replyParams = ParameterList.ParameterList()
+    replyParams:PutString("ReplyText", "Thanks for the note!")
+
+    -- We don't have to specify who we're replying to. The Game Framework
+    -- already knows who is expecting the reply.
+    BehaviorAPI.SendReply(replyParams)
+end
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="behavior_creating.htm">Creating behaviors</a></li>
+
+    <li><a href="behavior_invoking.htm">Invoking behaviors</a></li>
+
+    <li><a href="behavior_modifying.htm">Modifying behaviors</a></li>
+
+    <li><a href="behavior_removing.htm">Removing behaviors</a></li>
+
+    <li><a href="behavior_debug_lua.htm">Debugging Lua behaviors in real-time</a></li>
+
+    <!-- DT26752 -->
+
+    <li><a href="behavior_removing_from_simulator.htm">Removing scripted behavior entities from the
+    simulator</a></li>
+
+    <li><a href="behavior_using_traits.htm">Using behavior traits</a></li>
+
+    <li><a href="behavior_invoke_order.htm">Behavior invocation order</a></li>
+
+    <li><a href="../../Reference/efd/efd__ParameterList.htm">ParameterList class reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTNodeTraversal</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiTNodeTraversal</p>
+
+<p class="NDLRefHeaderFile">&lt;NiTNodeTraversal.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>Templated static member functions are
+provided to facilitate writing code that traverses a scene graph
+consisting of <a href="NiNode.htm">NiNode</a> objects.</p>
+
+<p class="NDLRefHead1">Note</p>
+
+<p>For all traversal types, the pointer passed
+to the functor is never NULL.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">template &lt;class
+Functor&gt;</p>
+
+<p class="NDLRefMemberFunction">static void
+DepthFirst_AllObjects(NiAVObject* pkAVObj, Functor
+&amp;kFunctor);</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">DepthFirst_AllObjects</span> traverses an
+<a href="NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a> scene graph rooted at
+<span class="NDLSystemFont">pkAVObj</span>.<br>
+The traversal is depth first, with storage on the
+stack.<span class="NDLSystemFont"><br>
+kFunctor</span> is called on every object.</p>
+
+<p class="NDLRefMemberDescription">An example functor is:</p>
+
+<pre class="indent1">
+struct RemoveMaterialNeedsUpdateFlag
+{
+    void operator () (NiAVObject* pkAVObject)
+    {
+        pkAVObject-&gt;SetDefaultMaterialNeedsUpdateFlag(false);
+    }
+};
+</pre>
+
+<p class="NDLRefMemberDescription">Example Usage:</p>
+<pre class="indent1">
+RemoveMaterialNeedsUpdateFlag kFunctor;
+NiTNodeTraversal::DepthFirst_AllObjects(m_spScene, kFunctor);
+</pre>
+
+<p class="NDLRefMemberFunction">template &lt;class
+Functor&gt;</p>
+
+<p class="NDLRefMemberFunction">static void
+DepthFirst_FirstStop(NiAVObject* pkAVObj, Functor
+&amp;kFunctor);</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">DepthFirst_FirstStop</span> traverses an <a href=
+"NiNode.htm"><span class="NDLSystemFont">NiNode</span></a> scene
+graph rooted at <span class="NDLSystemFont">pkAVObj</span>.<br>
+The traversal is depth first, with storage on the
+stack.<span class="NDLSystemFont"><br>
+kFunctor</span> is called prior to recursion on the children.<br>
+If <span class="NDLSystemFont">kFunctor</span> returns false,
+traversal stops.</p>
+
+<p class="NDLRefMemberDescription">An example functor is:</p>
+
+<pre class="indent1">
+struct FindFirstCameraFunctor
+{
+    NiCamera* m_pkCamera;
+    FindFirstCameraFunctor() : m_pkCamera(NULL) {}
+    bool operator() (NiAVObject* pkObject)
+    {
+        m_pkCamera = NiDynamicCast(NiCamera, pkObject);
+        return m_pkCamera == NULL; // if no camera, continue traversal
+    }
+};
+</pre>
+
+<p class="NDLRefMemberDescription">Example Usage:</p>
+
+<pre class="indent1">
+FindFirstCameraFunctor kFunctor;
+NiTNodeTraversal::DepthFirst_FirstStop(m_spScene, kFunctor);
+</pre>
+
+<p class="NDLRefMemberFunction">template &lt;class
+Functor&gt;</p>
+
+<p class="NDLRefMemberFunction">static void
+DepthFirst_PreRecurse(NiAVObject* pkAVObj, Functor
+&amp;kFunctor);</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">DepthFirst_PreRecurse</span> traverses an
+<a href="NiNode.htm"><span class=
+"NDLSystemFont">NiNode</span></a> scene graph rooted at
+<span class="NDLSystemFont">pkAVObj</span>.<br>
+The traversal is depth first, with storage on the
+stack.<span class="NDLSystemFont"><br>
+kFunctor</span> is called prior to recursion on the children.<br>
+If <span class="NDLSystemFont">kFunctor</span> returns false,
+children not recursed, traversal continues.</p>
+
+<p class="NDLRefMemberDescription">An example functor is:</p>
+
+<pre class="indent1">
+{
+        // If this is a switch node, stop recursion.
+        if (NiIsExactKindOf(NiSwitchNode, pkAVObject))
+            return false;
+ 
+        pkAVObject-&gt;SetDefaultMaterialNeedsUpdateFlag(false);
+        return true;
+    }
+};
+</pre>
+
+<p class="NDLRefMemberDescription">Example Usage:</p>
+<pre class="indent1">
+RemoveMaterialNeedsUpdateFlag_ExceptUnderSwitchNodes kFunctor;
+NiTNodeTraversal::DepthFirst_PreRecurse(m_spScene, kFunctor);
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

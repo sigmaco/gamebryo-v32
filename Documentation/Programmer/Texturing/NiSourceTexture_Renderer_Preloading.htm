@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiSourceTexture Renderer Preloading</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiSourceTexture Renderer Preloading</h1>
+
+<p>For <span class="NDLSystemFont">NiSourceTexture</span> and <span class="NDLSystemFont">NiSourceCubeMap</span> data, the renderer will load the persistent source texture renderer data directly into a renderer-specific resource, bypassing the application-level <span class=
+"NDLSystemFont">NiPixelData</span> object and all <span class="NDLSystemFont">NiImageConverter</span>-based texture conversion at load time entirely. Thus, "preloading" is built in for that case.</p>
+
+<p>Otherwise, by default, an active Gamebryo renderer will load
+the data associated with an <span class=
+"NDLSystemFont">NiSourceTexture</span> from disk or <span class=
+"NDLSystemFont">NiPixelData</span> and reformat it into a
+renderer-compatible pixel format and data type immediately when
+the <span class="NDLSystemFont">NiSourceTexture</span> is
+created. Almost all applications can benefit from this feature,
+which is called preloading. Preloading loads images from disk or
+<span class="NDLSystemFont">NiPixelData</span> into a system
+memory representation that is fully compatible with the given
+renderer. Once preloading is done, actual loading of the
+<span class="NDLSystemFont">NiSourceTexture</span> for rendering
+consists (on most platforms) of nothing more than a direct
+transfer to device memory (VRAM).</p>
+
+<p>Preloading may be done through one of two methods. The
+simplest is via automatic preloading, which will occur by default
+if the destination renderer (or renderers) exists at the time of
+<span class="NDLSystemFont">&gt;NiSourceTexture</span> creation.
+If a renderer is created after a given <span class=
+"NDLSystemFont">NiSourceTexture</span> is created, then the
+preloading will occur the first time that the image is used in a
+rendered frame. The sequence of events in each case is listed
+below as an example:</p>
+
+<h2>With Preloading</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Game stage</th>
+
+            <th>Action/s</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Setup</td>
+
+            <td>Create <span class="NDLSystemFont">NiRenderer</span></td>
+        </tr>
+
+        <tr>
+            <td>&nbsp;</td>
+
+            <td>Create <span class="NDLSystemFont">NiSourceTexture</span>&mdash;disk read occurs at this point</td>
+        </tr>
+
+        <tr>
+            <td>Play</td>
+
+            <td>Start rendering loop / game-play</td>
+        </tr>
+
+        <tr>
+            <td>&nbsp;</td>
+
+            <td><span class="NDLSystemFont">NiSourceTexture</span>is used as a texture during frame rendering&mdash;only load from system memory to VRAM required</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Without Preloading</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Game stage</th>
+
+            <th>Action/s</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Setup</td>
+
+            <td>Create <span class="NDLSystemFont">NiSourceTexture</span>&mdash;no disk read</td>
+        </tr>
+
+        <tr>
+            <td>&nbsp;</td>
+
+            <td>Create <span class="NDLSystemFont">NiRenderer</span></td>
+        </tr>
+
+        <tr>
+            <td>Play</td>
+
+            <td>Start rendering loop / gameplay</td>
+        </tr>
+
+        <tr>
+            <td>&nbsp;</td>
+
+            <td><span class="NDLSystemFont">NiSourceTexture</span> is used as a texture during frame rendering&mdash;disk read occurs at this point</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Alternatively, specific <span class=
+"NDLSystemFont">NiSourceTexture</span>s may be preloaded from
+disk/<span class="NDLSystemFont">NiPixelData</span> for a
+specific <span class="NDLSystemFont">NiRenderer</span> using the
+non-static member function <span class=
+"NDLSystemFont">CreateSourceTextureRendererData</span>. This call
+simply loads the calling texture to the given renderer.</p>
+
+<p>To disable <span class="NDLSystemFont">NiSourceTexture</span>
+preloading entirely (even if active <span class=
+"NDLSystemFont">NiRenderer</span>s exist), call the function
+<span class=
+"NDLSystemFont">NiSourceTexture::SetUsePreloading(false)</span>.</p>
+
+<p>As with any such optimization, there are tradeoffs. In this
+case, the tradeoff is the use of extra system memory at the start
+of the application. With automatic preloading, all <span class=
+"NDLSystemFont">NiSourceTexture</span>s will be loaded to system
+memory as soon as they are created, even if they are not used.
+For a game, this may be a very useful tradeoff. For a 3D world
+browser that is running on a very memory-limited machine, it may
+not be. However, for most applications, the use of preloading is
+recommended.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+  <li><a href="../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></li>
+  <li><a href="../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></li>
+  <li><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></li>
+  <li><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

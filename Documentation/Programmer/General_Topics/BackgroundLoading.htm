@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Background Loading</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Thread Safety with Background Loading</h1>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+            <div class="NDLNote">When working with the Game Framework, the background
+            loading services provided by the
+            <a href="../AssetRuntimeService/asset_load_svcs_overview.htm">Asset Loading Services</a>
+            should be used. Almost all asset types are background loaded by default in the
+            Game Framework. The following discussion applies only to applications built
+            on the Core Runtime alone, using <span class="NDLSystemFont">NiStream</span>
+            objects for loading NIF files.
+            </div>
+        </td>
+    </tr>
+</table> 
+
+
+
+<p>The background loading system is designed to transparently 
+ provide safe, threaded loading to the user. It is important, however, 
+ to understand some of the performance implications of this system as the 
+ background threads can cause <a href="PerformanceImpacts.htm#Priority_Inversion">priority 
+ inversion</a> if used incorrectly.</p>
+
+<h2>Restrictions on Background Loading</h2>
+
+<p>The Gamebryo background loading system is designed to 
+ take care of most thread safety issues for you, but there are some restrictions 
+ that should be obeyed by the user to guarantee optimal behavior. For more 
+ information on using background loading you can refer to the <a href="../Object_Systems/Streaming.htm#Background_Loading">object 
+ system documentation</a>.</p>
+
+<ul>
+	
+	<li>Only one NIF file should 
+ be loading at any given time. This insures access to static stream resources 
+ is moderated. Additionally, there is little performance benefit for having 
+ multiple NIFs loading concurrently since they will generally all block 
+ on the same disk. In internal tests, there were negligible performance 
+ benefits to having multiple streams running on a hard drive based system.</li>
+	
+	<li>After the NIF file 
+ is loaded, make sure that the appropriate update calls are made to update 
+ the scene graph, properties, and effects. </li>
+	
+	<li>Since the background 
+ threads are created with lowered priority, the main thread should call 
+ <span class="NDLSystemFont"><a href="../../Reference/NiSystem/Platform_Independent_Wrappers_For_System_Routines.htm">NiSleep(unsigned 
+ int)</a></span> to yield time to the background thread, except on multiprocessor 
+ machines.</li>
+	
+	<li>The texture palette 
+ for the background thread should not have <a href="../../Reference/NiMain/NiDefaultTexturePalette.htm">global 
+ sharing</a> via the texture list enabled as this could cause the system 
+ to reference an uninitialized pointer in some rare cases.</li>
+	
+	<li>Although the use of 
+ multiple background streams is not recommended, supported, or guaranteed 
+ to be thread-safe, if an application chooses to use multiple background 
+ streams, it should not share an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ object between the streams. Doing so could cause improper deletion of 
+ texture resources.</li>
+</ul>
+
+<h2>Cancelling</h2>
+
+<p>Cancelling a stream with <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm#BackgroundLoad">NiStream::BackgroundLoadCancel</a></span> 
+ ceases the background load at the next available opportunity and frees 
+ any resources used in loading. If the stream is loading objects, this 
+ will cause a cancellation after the current object is loaded. Once a stream 
+ is linking, however, cancellation cannot occur until all linking has occurred. 
+ This necessity occurs because between <span class="NDLSystemFont">NiStream::LinkObject</span> 
+ and <span class="NDLSystemFont">NiObject::PostLinkObject</span> there exist 
+ intermediate states where it is not safe to delete objects. Since <span 
+ class="NDLSystemFont">NiObject::PostLinkObject</span> must occur after <span 
+ class="NDLSystemFont">NiObject::LinkObject</span> is called on every object, 
+ cancellation must wait on this occurrence as well.</p>
+
+<p>This dependency means that it will actually take longer 
+ to cancel a stream that has reached the linking phase rather than finishing 
+ the load since not only will the streaming procedure largely finish, but 
+ you will pay to delete the objects. The benefit to cancellation is that 
+ you are guaranteed that the stream will cease disk activities shortly 
+ after calling <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm#BackgroundLoad">NiStream::BackgroundLoadCancel</a></span>. 
+ Deletion of stream resources will occur in the background thread and will 
+ not touch the disk allowing you to start another background load at your 
+ discretion without fear of competition for disk resources by the cancelled 
+ stream.</p>
+
+<h2>Pausing</h2>
+
+<p>Pausing can be useful to a developer who wants to load 
+ another stream in the background but does not want any contention for 
+ the disk. Background loading streams can be paused at any time between 
+ operations on an object. The stream will pause after the current call 
+ to <span class="NDLSystemFont">NiObject::LoadObject</span>, <span class="NDLSystemFont">NiObject::LinkObject</span>, 
+ or <span class="NDLSystemFont">NiObject::PostLinkObject</span> finishes.</p>
+
+<h2>NiStream::BackgroundLoadOnExit Callback</h2>
+
+<p>This callback should be used to finalize the objects 
+ loaded by the streaming system in the background. Developers are encouraged 
+ to precache geometry, update the scene graph, or update properties. These 
+ activities should be thread safe in the engine. Developers should also 
+ be aware of other potential places where thread safety could be an issue. 
+ These concerns will be outlined in subsequent sections.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Shader</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+  <h1>
+    NiTerrain Shader</h1>
+  <h2>
+    Introduction
+  </h2>
+  <p>
+    The terrain is rendered through a specific shader pipeline implemented by the 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainMaterial.htm">NiTerrainMaterial</a></span>
+    class. This material is applied to every mesh created by the terrain engine and
+    defines how the terrain will render to the render target, taking into account the
+    debug mode, the stream configurations, the surface configurations and the render
+    mode.</p>
+  <h3>
+    Platform Limitations
+  </h3>
+  <p>
+    The following platforms may experience limited shader effects:</p>
+  <p>
+    Shader model 2.0 renderers:</p>
+  <ul>
+    <li>Normal and parallax mapping are disabled on these platforms. </li>
+  </ul>
+  <h3>
+    Supports Lighting Through the NiFragmentLighting System
+  </h3>
+  <p>
+    The terrain material supports most of the standard dynamic lighting pipeline defined
+    by <span class="NDLSystemFont">NiStandardMaterial</span>, including the use of Directional, Point and Spotlights, though
+    it only supports a total of 8 simultaneous lights at any one time.</p>
+  <h3>
+    Extensions to the Terrain Material
+  </h3>
+  <p>
+    The terrain material is quite flexible, considering its complexity. Though,
+    one may wish to extend its flexibility further to implement new effects. If this
+    is necessary, it is recommended that developers derive from the 
+    <span class="NDLSystemFont">NiTerrainMaterial</span>
+    class, and override the basic <span class="NDLSystemFont">NiMaterial</span> functions involved in generating the descripters
+    and shade trees. One particularly useful technique may be to implement a new render
+    pass in the shader to overlay further effects on the standard terrain shader.</p>
+  <h2>
+    Compilation of Materials
+  </h2>
+  <p>
+    Before the terrain can use a material object, the supplied textures must be 'compiled'
+    together. This step is performed automatically at runtime, but the output of the
+    process is described here:</p>
+  <p>
+    From the six texture slots a material has, the supplied textures are compiled into
+    three, four-channel textures to be sent to the shader. The contents of these textures
+    are illustrated in the following table:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Texture
+        </th>
+        <th>
+          Channel Usage
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="background-color: #eeeeee">
+          <i>Texture A:</i>
+        </td>
+        <td style="text-align: right; background-color: #eeeeee">
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right">
+          Channels: R, G, B
+        </td>
+        <td style="text-align: left">
+          Diffuse texture (R, G, B)
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right">
+          Channels: A
+        </td>
+        <td style="text-align: left">
+          Distribution texture (R)
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color: #eeeeee">
+          <i>Texture B:</i>
+        </td>
+        <td style="background-color: #eeeeee">
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right">
+          Channels: R, G, B
+        </td>
+        <td>
+          Normal texture (R, G, B)
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" >
+          Channels: A
+        </td>
+        <td>
+          Parallax texture (R)
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left; background-color: #eeeeee">
+          <i>Texture C: </i>
+        </td>
+        <td style="background-color: #eeeeee" >
+          <i></i>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" >
+          Channels: R, G, B
+        </td>
+        <td>
+          Specular texture(R, G, B)
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" >
+          Channels: A
+        </td>
+        <td>
+          Detail texture (R)
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    If a texture does not have any relevant texture slots, then that texture is not
+    generated.</p>
+  <h2>
+    Blend Mask Textures
+  </h2>
+  <p>
+    Blend mask textures are reasonably straightforward. Each blend mask is divided up
+    into regions, each region represents the blend masks for a particular leaf making
+    a texture 'atlas' of blend textures for each leaf on the sector. Each channel within
+    the blend mask represents the mask value of a particular surface to be used in blending
+    calculations in the shader. Pixels on the edge of each region are duplicated with
+    the neighbouring region to allow neighbouring leafs to define the surface in a different
+    channel of the texture, but avoid seams between cells that may be caused due to
+    filtering techniques applied to the masks.</p>
+  <p>
+    When in toolmode, every cell has its own blend mask texture instead of a region
+    in an atlas texture to improve the performance of painting operations.</p>
+  <h2>
+    Low Detail Textures
+  </h2>
+  <p>
+    In addition to the high detail blending performed on leaf meshes, low detail terrain
+    meshes use two low resolution textures to display diffuse color and normal map values.
+    Both are baked into the sector's .dof file. In Toolbench, these textures are automatically
+    updated/rendered every time the terrain is modified through a painting operation.
+  </p>
+  <p>
+    The data stored in these textures is described in the following table:
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Texture
+        </th>
+        <th>
+          Channel Usage
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="background-color: #eeeeee" width="50%">
+          <i>Low detail diffuse texture</i>
+        </td>
+        <td style="text-align: right; background-color: #eeeeee" width="50%">
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" width="50%">
+          Channels: R, G, B
+        </td>
+        <td style="text-align: left" width="50%">
+          Blended material diffuse color
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" width="50%">
+          Channels: A
+        </td>
+        <td style="text-align: left" width="50%">
+          Low detail specular intensity
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color: #eeeeee" width="50%">
+          <i>Low detail normal texture</i>
+        </td>
+        <td style="background-color: #eeeeee" width="50%">
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" width="50%">
+          Channels: R, G
+        </td>
+        <td width="50%">
+          Object space normal (X,Y) coordinates. Z is calculated in the shader.
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: right" width="50%">
+          Channels: B, A
+        </td>
+        <td width="50%">
+          Unused channels
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The transition between a leaf using blending values and a cell using the low resolution
+    textures is done using the same interpolation values and method that geometry morphing
+    uses.
+  </p>
+  <h2>
+    Debug Settings
+  </h2>
+  <p>
+    The terrain shader supports a number of settings to support debugging of terrain
+    artifacts and scenes. Each of these settings may be applied to the terrain through
+    the following function on <span class="NDLSystemFont">NiTerrain</span>.</p>
+    
+<pre>void NiTerrain:SetDebugMode(NiTerrainCellShaderData::DebugMode eMode, 
+  bool bUpdateLowDetailNow);</pre>
+  <p>
+    Please see the <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">NiTerrain</a></span> class reference for further detail on this function.</p>
+  <p>
+    The debug mode passed to this function can be made up of a single mode, and any
+    number of debug flags. The following tables describe the available modes and flags
+    that may be used. Each of the following modes are defined in the 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainCellShaderData.htm">NiTerrainCellShaderData::DebugMode</a></span> enum.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Terrain debug shader modes
+        </th>
+        <th>
+          Effect
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_OFF
+        </td>
+        <td width="50%">
+          Render the terrain normally.
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_SHOW_NORMALS
+        </td>
+        <td width="50%">
+          Render the normal map on the terrain's surface.
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_SHOW_MORPH_VALUE
+        </td>
+        <td width="50%">
+          Render the morphing values onto the terrain's surface.
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_SHOW_NUM_SURFACES
+        </td>
+        <td width="50%">
+          Render the terrain with a color ranging from green to red according to the number
+          of surfaces applied in that area.<br />
+          <br/>
+          Magenta = No surfaces in the area<br/>
+          Green = 1 surface in the area<br/>
+          Green-&gt;Red = 2 to 3 surfaces in the area<br/>
+          Red = 4 surfaces in the area<br/>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_SHOW_UNPAINTED_AREA
+        </td>
+        <td width="50%">
+          Renders unpainted areas of the terrain red, and other areas gray.
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: left" width="50%">
+          DEBUG_SHOW_GLOSSINESS
+        </td>
+        <td width="50%">
+          Renders the specular intensity onto the terrain's surface.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Terrain debug shader flags
+        </th>
+        <th>
+          Effect
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_NORMAL_MAPS
+        </td>
+        <td width="50%">
+          Disable the use of normal maps on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_PARALLAX_MAPS
+        </td>
+        <td width="50%">
+          Disable the use of parallax maps on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_SPECULAR_MAPS
+        </td>
+        <td width="50%">
+          Disable the use of specular maps on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_DETAIL_MAPS
+        </td>
+        <td width="50%">
+          Disable the use of detail maps on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_DISTRIBUTION_MASKS
+        </td>
+        <td width="50%">
+          Disable the use of distribution masks on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_LIGHTING
+        </td>
+        <td width="50%">
+          Disable the calculation of lighting for the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_HIGH_DETAIL
+        </td>
+        <td width="50%">
+          Disable high detail rendering on the terrain.
+        </td>
+      </tr>
+      <tr>
+        <td width="50%">
+          DEBUG_DISABLE_BASE_NORMAL_MAP
+        </td>
+        <td width="50%">
+          Disable the use of the low detail normal map on the terrain.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+</html>

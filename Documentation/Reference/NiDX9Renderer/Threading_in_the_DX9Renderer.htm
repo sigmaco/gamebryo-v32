@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Threading in the DX9Renderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Threading in the DX9Renderer</h1>
+
+<h2>Restricted Thread Behavior</h2>
+
+<p>Functions that operate under restricted thread behavior in the
+<span class="NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span> must only be called
+from the thread that was used to create the <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span>, unless the
+<span class="NDLSystemFont">USE_MULTITHREADED</span> flag has
+been provided during renderer creation (see <a href=
+"#Multithreaded_Flag">below</a>). If that flag has been provided,
+then functions that operate under restricted thread behavior may
+be called from any thread, though applications would be advised
+to use <span class=
+"NDLSystemFont">NiRenderer::LockRenderer</span> and <span class=
+"NDLSystemFont">UnlockRenderer</span> to prevent unexpected
+results.</p>
+
+<p>In Debug build configurations, Gamebryo will use assertions to
+guarantee that restricted thread behavior is honored by the
+application.</p>
+
+<p>The reference documentation for <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span> and
+<span class="NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span> discusses which
+functions are subject to this restriction and which are not.</p>
+
+<h2>Thread Access to D3D Resources</h2>
+
+<p>Some aspects of Gamebryo, such as <span class=
+"NDLSystemFont"><a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a></span>
+or the <a href=
+"../../Programmer/General_Topics/BackgroundLoading.htm">background
+loading</a> system, need to create or access D3D resources from
+different threads. Gamebryo uses system-memory buffers to allow
+this level of access without requiring the <span class=
+"NDLSystemFont">USE_MULTITHREADED</span> flag to be used all the
+time.</p>
+
+<p>As a result of these system-memory buffers, Gamebryo sometimes
+needs to upload a D3D resource immediately before it will be
+used. This can degrade performance. To help minimize these
+situations, Gamebryo's streaming system automatically calls
+<span class="NDLSystemFont">NiRenderer::PrecacheTexture</span>
+and <span class="NDLSystemFont">NiRenderer::PrecacheMesh</span>
+to schedule static resources for uploading.</p>
+
+<h2>Precaching D3D Resources</h2>
+
+<p>In order to ensure that D3D resources are created only in the
+thread used to create the D3D device, the <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span> does not immediately
+create D3D resources and upload data when <span class=
+"NDLSystemFont">NiRenderer::PrecacheTexture</span> and
+<span class="NDLSystemFont">NiRenderer::PrecacheMesh</span> are
+called. Instead, these functions add the texture or mesh to a
+list. Creating D3D resources for the items on this list is done
+by the <span class=
+"NDLSystemFont">NiRenderer::PerformPrecache</span> function. This
+function is called automatically during the <span class=
+"NDLSystemFont">NiRenderer::BeginFrame</span> function, but
+applications can also call <span class=
+"NDLSystemFont">NiRenderer::PerformPrecache</span> explicitly if
+they want to specify when the precache operation takes place.
+<span class="NDLSystemFont">NiRenderer::PerformPrecache</span>
+must be called from the thread used to create the <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span>, though, or the
+function will fail and the items on the list will remain on the
+list.</p>
+
+<a name="Multithreaded_Flag" id="Multithreaded_Flag"></a><h2>Set the Multithreaded Flag</h2>
+
+<p>If an application must be able to make <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span> calls from multiple
+threads, it can do so as long as it passes the <span class=
+"NDLSystemFont">USE_MULTITHREADED</span> flag to the <span class=
+"NDLSystemFont">NiDX9Renderer::Create</span> function. This will
+create a D3D device that has synchronization primitives around
+all its calls, which can cause a noticeable performance loss.</p>
+
+<p>Applications are still encouraged to make use of <span class=
+"NDLSystemFont">NiRenderer::LockRenderer</span> and <span class=
+"NDLSystemFont">Unlock</span> renderer to help ensure that the
+various threads' use of the renderer do not conflict with each
+other.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

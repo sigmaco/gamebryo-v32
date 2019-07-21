@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Base Game: Adding New Behaviors</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Base Game: Adding New Behaviors</h1>
+
+<p>In this section we'll add some new behaviors to support features in Base
+Game. Specifically, we'll add behaviors to BgDoor that get called when the door
+is opened or closed.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="base_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="base_game_tutorial_transform_hw.htm">Transforming Hello
+    World</a></li>
+
+    <li><a href="base_game_tutorial_models.htm">Creating New Models</a></li>
+
+    <li><b>Adding New Behaviors&nbsp;&nbsp;&lt;&#45;&#45; You are here</b></li>
+
+    <li><a href="base_game_tutorial_world.htm">Populating Your First
+    Level</a></li>
+
+    <li><a href="base_game_tutorial_project.htm">C++ Project Changes</a></li>
+
+    <li><a href="base_game_tutorial_code.htm">C++ Code Changes</a></li>
+
+    <li><a href="base_game_tutorial_loading.htm">Loading Your World and
+    Starting the Application</a></li>
+
+    <li><a href="base_game_tutorial_more_services.htm">Adding More
+    Services</a></li>
+</ol>
+
+<h2>EseBgDoor.lua</h2>
+
+<p>When you created the BgDoor model in the previous section, you also added
+the following behaviors: <span class="NDLSystemFont">OnOpen</span>,
+<span class="NDLSystemFont">OnClose</span>, and <span class=
+"NDLSystemFont">OnOpenClose</span>. Let's define what happens when each of
+these behaviors is called. Full source code for these behaviors is available in
+<a href="base_game_tutorial_code_samples.htm#EseBgDoor_lua">BaseGame Code
+Samples</a>.</p>
+
+<h3>OnOpen</h3>
+
+<p><span class="NDLSystemFont">OnOpen</span> is called when the door is opened.
+It first checks to see if the door is already open. If the door is not open,
+the behavior sets the appropriate animation to show the door opening. It then
+sets the <span class="NDLSystemFont">isOpen</span> property to True.</p>
+<pre>
+function OnOpen(self, params)
+    local isOpen = self.isOpen
+    if not isOpen then
+        egmAnimation.SetTargetAnimationByName(self, "Open")
+        self.isOpen = true
+    end
+end
+</pre>
+
+<h3>OnClose</h3>
+
+<p><span class="NDLSystemFont">OnClose</span> is called when the door is
+closed. It first checks to see if the door can be closed by examining the
+<span class="NDLSystemFont">canClose</span> property. If the door can be closed
+and it is currently open, the behavior sets the appropriate animation and sets
+the <span class="NDLSystemFont">isOpen</span> property to true.</p>
+<pre>
+function OnClose(self, params)
+    local isOpen = self.isOpen
+    local canClose = self.canClose
+    if isOpen and canClose then
+        egmAnimation.SetTargetAnimationByName(self, "Close")
+        self.isOpen = false
+    end
+end
+</pre>
+
+<h3>OnOpenClose</h3>
+
+<p><span class="NDLSystemFont">OnOpenClose</span> is called when the door is
+opened and then closed. It opens the door, waits 10 seconds, and then closes
+the door. It does this by sending two events to itself: <span class=
+"NDLSystemFont">OnOpen</span> followed 10 seconds later by <span class=
+"NDLSystemFont">OnClose</span>.</p>
+<pre>
+function OnOpenClose(self, params)
+    self:SendEvent("OnOpen")
+    -- Cause auto-close after 10 seconds.
+    self:SendEvent("OnClose", nil, "", 10.0)
+end
+</pre>
+
+<h2>EseCollideExecuteRemote.lua</h2>
+
+<p>In the previous section we defined the <span class=
+"NDLSystemFont">CollideExecuteRemote</span> model that is used to invoke
+behaviors on remote entities when something collides with an entity that mixes
+in this model. We used this to create our <span class=
+"NDLSystemFont">TriggerRing</span> model. In <span class=
+"NDLSystemFont">CollideExecuteRemote</span> we defined a single behavior:
+<span class="NDLSystemFont">OnPhysXTrigger</span>. This behavior is called when
+PhysX detects a collision with the entity. Full source code for these behaviors
+is available in <a href=
+"base_game_tutorial_code_samples.htm#EseCollideExecuteRemote_lua">BaseGame Code
+Samples</a>.</p>
+
+<p>First, we get some arguments passed to this function from the provided data
+stream.</p>
+<pre>
+local time = params:GetFloat64("CollisionTime")
+local eventType = params:GetSInt32("CollisionStatus")
+local other = params:GetEntityID("CollidingEntity")
+</pre>
+
+<p>We look up the model name for the current entity and the other entity.</p>
+<pre>
+local mymodel = self:GetModelName()
+local othermodel = BehaviorAPI.GetModelName(otherID)
+</pre>
+
+<p>Next, we look up the remote entity to interact with by getting the
+<span class="NDLSystemFont">RemoteEntity</span> property.</p>
+<pre>
+local targetEntity = self.RemoteEntity
+</pre>
+
+<p>Then, we decide if this is an <span class="NDLSystemFont">OnEnter</span>,
+<span class="NDLSystemFont">OnStay</span>, or <span class=
+"NDLSystemFont">OnLeave</span> event and set the behavior we will invoke
+appropriately based on the model of the entity that has collided.</p>
+<pre>
+local behavior = string.char()
+local behaviorName = &quot;&quot;
+
+if (eventType == 1) then      -- On Enter Collision Shape
+    behaviorName = "OnEnterBehaviors"
+elseif (eventType == 2) then  -- On Stay in Collision Shape
+    behaviorName = "OnStayBehaviors"
+elseif (eventType == 3) then  -- On Leave Collision Shape
+    behaviorName = "OnLeaveBehaviors"
+end
+
+if self:ContainsPropertyWithKey(behaviorName, othermodel) then
+    behavior = self[behaviorName][othermodel]
+else
+    return
+end
+</pre>
+
+<p>Finally, if a behavior is defined, we send an event to the remote entity
+telling it to call the behavior.</p>
+<pre>
+if (behavior ~= nil and behavior ~= string.char()) then
+    -- Pass name of shapes colliding
+    local outstrm = ParameterList.ParameterList()
+    outstrm:PutString(mymodel)
+    outstrm:PutString(othermodel)
+
+    -- Send the event
+    BehaviorAPI.SendEvent(targetEntity.ID, behavior, outstrm)
+end
+</pre>
+
+<p>At this point we have script code in place that reacts when a trigger is
+collided with and we have code that can open and close a door. Be sure that you
+have these script files under the <span class=
+"NDLSystemFont">Media\BaseGameLibrary\Behaviors</span> directory. In this
+tutorial that directory is <span class=
+"NDLSystemFont">C:\Emergent\BaseGameTutorial\Media\BaseGameLibrary\Behaviors</span>.</p>
+
+<h2>Moving on...</h2>
+
+<p>Next, we create our first room and attach a trigger ring to a door. See
+<a href="base_game_tutorial_world.htm">Populating your first level</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href=
+    "../../GetStart/Architecture/architecture_framework_overview.htm">Game
+    Framework overview</a></li>
+
+    <li><a href=
+    "../../Reference/QuickRef_Models/PhysXModelLibrary__PhysXSphereTrigger.htm">
+    PhysXSphereTrigger Model Reference</a></li>
+
+    <li><a href="../../Programmer/Scripting/scripting_intro.htm">Introduction
+    to Game Framework Lua scripting</a></li>
+
+    <li><a href="http://www.lua.org/manual/5.1/manual.html" target="_blank">Lua
+    5.1 Reference Manual</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

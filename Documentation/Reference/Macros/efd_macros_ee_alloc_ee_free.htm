@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>EE_ALLOC and EE_FREE Macros</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+  
+<!--(Body)==========================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">EE_ALLOC and EE_FREE Macros</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                These keywords should be paired in code rather than using the standard new and
+                delete for POD (plain-old-data) types. Examples of POD types are float, int,
+                bool, and char. This lets Gamebryo route the memory
+                requests through its internal allocation subsystem and store the file, line,
+                function information depending on the build target. Using the EE_ALLOC macro on
+                classes will compile, but will cause the class to not be initialized. A placement
+                new operator would then be required to properly allocate the class. Similarly, using EE_FREE
+                on classes will not invoke the destructor. Explicit invocation of the destructor via the ~CLASSNAME
+                function will be required in this case.<br/>
+                <br/>
+                If users wish to allocate memory that does not go through the Emergent allocator, usage of 
+                EE_EXTERNAL_NEW and EE_EXTERNAL_DELETE is recommended.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p class="NDLRefHead2">Allocation Routines</p>
+
+<p class="NDLRefMemberFunction">EE_ALLOC(T, count)</p>
+<p class="NDLRefMemberDescription">Used to allocate memory for POD data types. The T is the type name, such as "unsigned int" and
+"char". The count is the number of instances of that type needed.</p>
+
+<p class="NDLRefMemberFunction">EE_ALIGNED_ALLOC(T, count, alignment)</p>
+<p class="NDLRefMemberDescription">Used to allocate memory for POD data types that have a non-standard alignment restriction. The T is the type name, such as "unsigned int" and
+"char". The count is the number of instances of that type needed. The alignment parameter is the alignment in bytes required.</p>
+
+<p class="NDLRefMemberFunction">EE_MALLOC(size)</p>
+<p class="NDLRefMemberDescription">Used to allocate memory for POD data types. The size is the total size of the allocation
+in bytes. For cleanliness and readability EE_ALLOC is recommended for use instead.</p>
+
+<p class="NDLRefMemberFunction">EE_REALLOC(memblock, size)</p>
+<p class="NDLRefMemberDescription">Used to reallocate memory for POD data types that were previously allocated with EE_MALLOC. 
+The memblock value is the pointer that was previously allocated. The size is the total size of the allocation
+in bytes. If size is 0, the EE_FREE is invoked and memblock is no longer valid.</p>
+
+<p class="NDLRefMemberFunction">EE_ALIGNED_MALLOC(size, alignment)</p>
+<p class="NDLRefMemberDescription">Used to allocate memory for POD data types that have a non-standard alignment restriction.. The size is the total size of the allocation
+in bytes. For cleanliness and readability EE_ALLOC is recommended for use instead. The alignment parameter is the alignment in bytes required.</p>
+
+<p class="NDLRefMemberFunction">EE_ALIGNED_REALLOC(memblock, size, alignment)</p>
+<p class="NDLRefMemberDescription">Used to reallocate memory for POD data types that were previously allocated with EE_ALIGNED_MALLOC. 
+The memblock value is the pointer that was previously allocated. The size is the total size of the allocation
+in bytes. If size is 0, the EE_ALIGNED_FREE is invoked and memblock is no longer valid. The alignment parameter is the alignment in bytes required.</p>
+
+<p class="NDLRefHead2">Allocation with MemHint Routines</p>
+
+<p>There is an alternative versions of all of the above macros with a suffix of 2 (ex. EE_ALLOC2), that supports passing an additional argument, the <a href="../efd/efd__MemHint.htm">MemHint</a>. 
+This can be used to assist in classifying the allocation.</p>
+
+<p class="NDLRefHead2">Deallocation Routines</p>
+
+<p class="NDLRefMemberFunction">EE_FREE(p)</p>
+<p class="NDLRefMemberDescription">Used to deallocate memory for POD data types. The p parameter is the pointer to deallocate. This pointer
+must have been allocated by Gamebryo using the EE_ALLOC, EE_ALLOC2, EE_REALLOC, EE_REALLOC2, EE_MALLOC, or EE_MALLOC2 macros.</p>
+
+<p class="NDLRefMemberFunction">EE_FREE_KNOWN_SIZE(p, sizeInBytes)</p>
+<p class="NDLRefMemberDescription">Used to deallocate memory for POD data types. The p parameter is the pointer to deallocate.
+This pointer must have been allocated by Gamebryo using the EE_ALLOC, EE_ALLOC2, EE_REALLOC, EE_REALLOC2, EE_MALLOC, or EE_MALLOC2 macros.
+The sizeInBytes is a known size for the allocation, which can speed up deletion. It can also save memory if used in conjunction with the
+MemoryHint parameter SIZE_PROVIDED_ON_DEALLOCATE. </p>
+
+<p class="NDLRefMemberFunction">EE_ALIGNED_FREE(p)</p>
+<p class="NDLRefMemberDescription">Used to deallocate memory for POD data types. The p parameter is the pointer to deallocate. This pointer
+must have been allocated by Gamebryo using the EE_ALIGNED_ALLOC, EE_ALIGNED_ALLOC2, EE_ALIGNED_REALLOC, EE_ALIGNED_REALLOC2, EE_ALIGNED_MALLOC, or EE_ALIGNED_MALLOC2 macros.</p>
+
+<p class="NDLRefMemberFunction">EE_ALIGNED_FREE_KNOWN_SIZE(p, sizeInBytes)</p>
+<p class="NDLRefMemberDescription">Used to deallocate memory for POD data types. The p parameter is the pointer to deallocate.
+This pointer must have been allocated by Gamebryo using the EE_ALIGNED_ALLOC, EE_ALIGNED_ALLOC2, EE_ALIGNED_REALLOC, EE_ALIGNED_REALLOC2, EE_ALIGNED_MALLOC, or EE_ALIGNED_MALLOC2 macros.
+The sizeInBytes is a known size for the allocation, which can speed up deletion. It can also save memory if used in conjunction with the
+MemoryHint parameter SIZE_PROVIDED_ON_DEALLOCATE. </p>
+
+
+<p class="NDLRefHead2">External Tracking Routines</p>
+<p class="NDLRefMemberFunction">EE_VERIFY_ADDRESS(x)</p>
+<p class="NDLRefMemberDescription">Used to verify that the memory address is known by the memory tracking system. In 
+shipping builds, this will return false always.</p>
+
+<p class="NDLRefMemberFunction">EE_TRACK_ALLOC(pointer, sizeInBytes)</p>
+<p class="NDLRefMemberDescription">Used to track an allocation that would otherwise be unknown to the memory tracking system.
+In this macro, allocation occurred through some mechanism like EE_EXTERNAL_NEW. Pointer is the address of the
+object to track. SizeInBytes is the size of the allocation.</p>
+
+<p class="NDLRefMemberFunction">EE_TRACK_ALLOC2(pointer, sizeInBytes, hint) </p>
+<p class="NDLRefMemberDescription">Used to track an allocation that would otherwise be unknown to the memory tracking system.
+In this macro, allocation occurred through some mechanism like EE_EXTERNAL_NEW. Pointer is the address of the
+object to track. SizeInBytes is the size of the allocation. Hint is the memory hint associated with the allocation.</p>
+
+<p class="NDLRefMemberFunction">EE_TRACK_FREE(pointer)</p>
+<p class="NDLRefMemberDescription">Used to track the deletion of an object previously noted in EE_TRACK_ALLOC or EE_TRACK_ALLOC2.</p>
+
+<p class="NDLRefMemberFunction">EE_MEM_MARKER(markerType, classifier, string)</p>
+<p class="NDLRefMemberDescription">Used to put a marker in the log for later examination. This can include things like which
+file is being loaded and can be nested recursively. MarkerType can be either EE_MEM_MARKER_BEGIN or EE_MEM_MARKER_END. Classifier
+is any high-level string you wish to use. A common classifier is __FUNCTION__. The final string is meta-data for use
+in later mining, commonly the filename or other data.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

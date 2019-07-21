@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Gamebryo-PhysX Props and Scenes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Gamebryo-PhysX Props and Scenes</h1>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ class is the primary object for managing PhysX simulations in the Gamebryo Core Runtime. 
+ It provides, among other things, management of <a href="PhysX_Sources.htm">sources</a> 
+ and <a href="PhysX_Destinations.htm">destinations</a> and <a href="PhysX_Mesh_Modifiers.htm">mesh 
+ modifiers</a>, simulation management, update control and debug rendering 
+ of PhysX content. For every PhysX <span class="NDLSystemFont">NxScene</span> 
+ driving Gamebryo objects, there must be one <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object.</p>
+
+<p>Each <span class="NDLSystemFont">NiPhysXScene</span> object 
+ is populated by a collection of <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span> 
+ objects representing the physical objects in the scene. Props are designed 
+ to be added to and deleted from scenes, or replicated many times in a 
+ scene. A prop is the smallest unit of PhysX content that Gamebryo manages. 
+ Think of a prop as a physics object: a crate, a rag-doll, a machine, etc. 
+ It is the class that is streamed in NIF files and that supports cloning.</p>
+
+<h2>Compartments</h2>
+
+<p>PhysX 2.6.2 and later supports the creation of compartments, 
+ which are isolated chunks of simulation. The <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ class manages Gamebryo's interface to compartments. You should register 
+ each compartment you create in a <span class="NDLSystemFont">NxScene</span> 
+ object with the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ that controls each. Each registered compartment needs a unique identifier 
+ (an <span class="NDLSystemFont">unsigned int</span>) that is not 0, which 
+ is reserved for the default, primary compartment.</p>
+
+<p>Each <a href="../../Reference/NiPhysX/NiPhysXPropDesc.htm"><span 
+ class="NDLSystemFont">NiPhysXPropDesc</span></a> object includes functions 
+ to specify which compartment the contents of that prop should be instantiated 
+ in. Compartments are specified using the identifier you gave them when 
+ they were registered with the scene that contains the prop. The primary 
+ compartment is identifier 0. You can specify a separate compartment for 
+ rigid bodies, fluid and cloth. The exception is software cloth, which 
+ can be placed in the default compartment. PhysX-based particle systems 
+ also have an option to specify which compartment the particle actors are 
+ spawned in.</p>
+
+<h2>Simulation Control</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ class provides wrappers for the PhysX <span class="NDLSystemFont">NxScene::simulate</span> 
+ and <span class="NDLSystemFont">NxScene::fetchResults</span> calls. The 
+ wrapper functions, <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::Simulate</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::FetchResults</a></span>, 
+ are intended to be called just as their PhysX counterparts are: the first 
+ begins a simulation step and the second attempts to get the results of 
+ the most recently started step. If working with Gamebryo-PhysX you must 
+ use these functions to step the simulation. The same restrictions as <span 
+ class="NDLSystemFont">NxScene::simulate</span> and <span class="NDLSystemFont">NxScene::fetchResults</span> 
+ have on their usage apply to the Gamebryo functions, although Gamebryo 
+ automatically meets many of them. </p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ objects provide some application-level services to simplify simulation: 
+ </p>
+
+<ul>
+	
+	<li>Timestep control is 
+ provided so that an application can easily use different timesteps for 
+ PhysX simulations than those of the rendering frame step length. This 
+ makes for more stable simulations in many situations. The <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ functions also avoid unnecessary time steps. </li>
+	
+	<li>There are many restrictions 
+ on PhysX SDK calls when the SDK is between a call to <span class="NDLSystemFont">NxScene::simulate</span> 
+ and <span class="NDLSystemFont">NxScene::fetchResults</span>. We refer to 
+ this as within a <span class="NDLSystemFont">simulate/fetchResults</span> 
+ block. Using the locking mechanisms provided by
+ <span class="NDLSystemFont"><a href="../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">
+ efdPhysX::PhysXSDKManager</a></span> 
+ and the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::GetInSimFetch</a></span> 
+ function, applications can query and be certain of the simulation state 
+ even in multi-threaded environments. Function calls into the PhysX SDK 
+ are also structured to batch their access to the SDK to reduce unnecessary 
+ locking.</li>
+</ul>
+
+<h2>Update Control</h2>
+
+<p>Stepping a simulation updates the PhysX state, but applications 
+ must explicitly call update functions to transfer state to and from Gamebryo. 
+ These functions are not automatic because there are circumstances in which 
+ an application may want fine grained control. See the <a href="Introduction_to_PhysX_Updating.htm">Updating 
+ Gamebryo PhysX</a> help pages for an in depth discussion of how to control 
+ updates. </p>
+
+<p>Each <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object maintains an array of <a href="PhysX_Sources.htm">sources</a>, 
+ <a href="PhysX_Destinations.htm">destinations</a> and <a href="PhysX_Mesh_Modifiers.htm">mesh 
+ modifiers</a> that are managed by the scene. These are automatically added 
+ and removed as props are added and removed from the scene. Sources, destinations 
+ and modifiers already exist in the props if PhysX content is loaded from 
+ a file created with the Gamebryo-PhysX art tools.</p>
+
+<h2>Creating PhysX Content in Software</h2>
+
+<p>You can create PhysX objects directly using PhysX API. 
+ However, to tie them to the Gamebryo scene graph you will require sources 
+ and destinations to manage state transfer for the actor. These must be 
+ added to an <span class="NDLSystemFont">NiPhysXProp</span> object. The prop 
+ must be contained in the <span class="NDLSystemFont">NiPhysXScene</span> 
+ object that is controlling the <span class="NDLSystemFont">NxScene</span> 
+ object to which you added the content. Similarly, you may need to remove 
+ a source or destination if an actor is destroyed.</p>
+
+<p>You can also use Gamebryo <a href="Introduction_to_PhysX_Streaming_Cloning_and_Snapshots.htm">descriptor 
+ classes and snapshots</a> to specify PhysX content. This has the advantage 
+ of automatically managing adding and removing objects from the scene, 
+ resetting objects, and supporting cloning.</p>
+
+<h2>Additional NiPhysXScene Services</h2>
+
+<p><a href="PhysX_Coordinate_Systems.htm">Coordinate system 
+ management,</a> <a href="PhysX_Debug_Rendering.htm">debug 
+ rendering,</a> <a href="Introduction_to_PhysX_Streaming_Cloning_and_Snapshots.htm">streaming, 
+ cloning and snapshots</a> are all provided through <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ objects. See the linked pages for details. </p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

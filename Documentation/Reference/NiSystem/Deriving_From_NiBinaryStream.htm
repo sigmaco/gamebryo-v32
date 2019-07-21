@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Deriving From NiBinaryStream</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Deriving From NiBinaryStream</h1>
+
+<p>Classes that derive from <span class=
+"NDLSystemFont"><a href=
+"NiBinaryStream.htm">NiBinaryStream</a></span> need to fulfill
+five requirements.</p>
+
+<ul>
+    <li>First, they need to implement both a read and a write
+    function that do not endian swap. The endian swapping will be
+    handled under the hood after the read and before the write.
+    However, the implementation of how a read or a write happens
+    is class-specific and must be implemented. Here is an example
+    of the kind of function signature these functions need, for
+    an arbitrary class <span class=
+    "NDLSystemFont">DerivedClass</span>:</li>
+</ul>
+
+<pre class="indent1">
+unsigned int DerivedClass::SampleReadFunction(void* pBuffer, unsigned int uiBytes)
+    unsigned int DerivedClass::SampleWriteFunction(const void* pBuffer, unsigned int uiBytes)
+</pre>
+
+<ul>
+    <li>Secondly, the class needs to have the macro call
+    <span class=
+    "NDLSystemFont">NiDeclareDerivedBinaryStream()</span> within
+    the class declaration for the derived class. As a side
+    effect, this macro declares functions as protected and so
+    another qualifier should be used after this macro. See
+    <span class="NDLSystemFont">NiFile</span> or <span class=
+    "NDLSystemFont">NiMemStream</span> for a Gamebryo
+    example.</li>
+
+    <li>Thirdly, the class needs to have the macro call
+    <span class=
+    "NDLSystemFont">NiImplementDerivedBinaryStream(classname,
+    readfunc, writefunc)</span> at the top of its .cpp file,
+    where <span class="NDLSystemFont">classname</span> is the
+    name of the class, <span class=
+    "NDLSystemFont">readfunc</span> is the name of the non-static
+    read function, and <span class=
+    "NDLSystemFont">writefunc</span> is the name of the
+    non-static write function. For the above example, the cpp
+    file for <span class="NDLSystemFont">DerivedClass</span>
+    would include this line:</li>
+</ul>
+
+<p class="indent1"><span class="NDLSystemFont">   
+NiImplementDerivedBinaryStream(DerivedClass, SampleReadFunction,
+SampleWriteFunction);</span></p>
+
+<ul>
+    <li>The fourth requirement is that, in the constructor of the
+    derived class, <span class=
+    "NDLSystemFont">SetEndianSwap</span> is called. Generally,
+    <span class="NDLSystemFont">false</span> will be passed as an
+    argument so that the default is to not do endian swapping. If
+    this function is not called, then any calls to <span class=
+    "NDLSystemFont">Read</span> or <span class=
+    "NDLSystemFont">Write</span> will fail by referencing
+    uninitialized pointers that <span class=
+    "NDLSystemFont">SetEndianSwap</span> initializes.</li>
+
+    <li>Finally, the class must implement the pure virtual
+    functions <span class="NDLSystemFont">operator bool()</span>
+    and <span class="NDLSystemFont">Seek(int iNumBytes)</span>.
+    As described in the <span class="NDLSystemFont"><a href=
+    "NiBinaryStream.htm">NiBinaryStream</a></span> documentation,
+    the <span class="NDLSystemFont">operator bool</span> function
+    returns whether or not the current stream is valid for
+    read/write, and the <span class="NDLSystemFont">Seek</span>
+    function moves the current read/write position (stored in the
+    <span class=
+    "NDLSystemFont">NiBinaryStream::m_uiAbsoluteCurrentPos</span>
+    variable).</li>
+</ul>
+
+<p>For further reference, both <a href=
+"NiFile.htm"><span class="NDLSystemFont">NiFile</span></a> and
+<a href="NiMemStream.htm"><span class=
+"NDLSystemFont">NiMemStream</span></a> are examples of classes
+that ship with Gamebryo and derive from <span class=
+"NDLSystemFont">NiBinaryStream</span>.</p>
+
+<h2>Porting Older Classes</h2>
+
+<p>Earlier versions of Gamebryo had virtual
+<span class="NDLSystemFont">Read</span> and <span class=
+"NDLSystemFont">Write</span> functions in <span class=
+"NDLSystemFont"><a href=
+"NiBinaryStream.htm">NiBinaryStream</a></span>. Classes would
+derive their own virtual functions of read and write to implement
+the behavior specific to that derived class. For current versions
+of Gamebryo, these functions should be made non-virtual and will
+become the non-endian swapped IO functions, like <span class=
+"NDLSystemFont">SampleReadFunction</span> and <span class=
+"NDLSystemFont">SampleWriteFunction</span> above.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

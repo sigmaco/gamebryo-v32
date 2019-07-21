@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Peer Game: Extending Entities for Online</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Peer Game: Extending Entities for Online</h1>
+
+<p>Now that you have a basic framework for your assets, it is time to start adding Online
+functionality. This entails only small changes to BaseGame mixins.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="sso_peer_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="sso_peer_game_tutorial_transform_bg.htm">Transforming Base Game</a></li>
+
+    <li><b>Extending Entities for Online&nbsp;&nbsp;&lt;&#45;&#45; You are here</b></li>
+
+    <li><a href="sso_peer_game_tutorial_world.htm">Populating Your World</a></li>
+
+    <li><a href="sso_peer_game_tutorial_code.htm">C++ Code Changes</a></li>
+
+    <li><a href="sso_peer_game_tutorial_loading.htm">Starting the Application</a></li>
+
+    <li><a href="sso_peer_game_tutorial_scripts.htm">Fixing Lua Scripts</a></li>
+</ol>
+
+<h2>Making Online Actor and Mesh models</h2>
+
+<p>In the BaseGame model hierarchy, all of the active Mesh and Actor derived models mixin either
+"BgMesh" or "BgActor". We want these active entities in the game to become online entities. As
+online entities, they are managed by a Host instance of the game, and their state is replicated to
+all the Peer instances.</p>
+
+<p>This can be accomplished simply by mixing in the "OnlineMesh" and "OnlineActor" models to the
+existing BaseGame hierarchy.</p>
+
+<p class="NDLHeadingProcedure">To mix in the OnlineMesh and OnlineActor models</p>
+
+<ol>
+    <li>Open the <span class="NDLGUILabel">BgMesh</span> model in BaseGame.emtproj</li>
+
+    <li>Mixin the <span class="NDLGUILabel">OnlineModelLibrary&gt;OnlineMesh</span> model</li>
+
+    <li>Adjust the mixin priority so that OnlineMesh appears above Mesh
+
+        <div class="FigureContainer">
+            <img src="images/sso_mixin_priority_mesh.png" alt=
+            "sso_mixin_priority_mesh">
+        </div>
+    </li>
+
+    <li>Open the <span class="NDLGUILabel">BgActor</span> model in BaseGame.emtproj</li>
+
+    <li>Mixin the <span class="NDLGUILabel">OnlineModelLibrary&gt;OnlineActor</span> model</li>
+
+    <li>Adjust the mixin priority so that OnlineActor appears above Actor</li>
+
+    <li>Open the <span class="NDLGUILabel">BgAvatar</span> model</li>
+
+    <li>Mixin the <span class=
+    "NDLGUILabel">OnlineModelLibrary&gt;BasicReplication&gt;OnlineConsumer</span> model</li>
+
+    <li><span class="NDLGUILabel">Save All</span> changes</li>
+
+    <li>From the <span class="NDLGUILabel">Entity Modeling</span> menu, choose the option to
+    <span class="NDLGUILabel">Export All Models in Solution</span></li>
+</ol>
+
+<p>When you are done, your models should look like this:</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The mixin with the higher priority appears on the left in the diagram. Priority
+                determines how overridden properties are inherited down the model hierarchy.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="FigureContainer">
+    <img src="images/sso_mixin_online_mesh.png" width="305" height="292" alt=
+    "sso_mixin_online_mesh"> <img src="images/sso_mixin_online_actor.png" width="307" height="343"
+    alt="sso_mixin_online_actor">
+</div>
+
+<div class="FigureContainer">
+    <img src="images/sso_mixin_online_avatar.png" width="670" height="260" alt=
+    "sso_mixin_online_avatar">
+</div>
+
+<h2>Notes on Replication</h2>
+
+<p>With the exception of the player's avatar, all of the dynamic objects are owned by the host
+process and replicate to all connected peers. To get these objects to show up on a peer, we need to
+reflect changes made to certain properties to any replicas. The properties are assigned to a
+replication group; each replication group is assigned a Category to publish into.</p>
+
+<p>You could set the replication group on each relevant property for each individual model, but
+that is tedious and error-prone. It is better to create an interstitial model, set the replication
+groups once, and mix that model into everything that needs it&mdash;and that's what you have done
+here. Replication group is expressed as a trait in Toolbench. Note that the overridden properties
+of OnlineMesh and OnlineActor include the trait "Replication - Global (0)".</p>
+
+<p>You have now told several different types of entities that when certain properties change, they
+should push copies of those changes to a Category associated with replication group 0 (named
+"Replication - Global (0)" by default in Toolbench). Additionally, you have made every instance of
+the BgAvatar a consumer for these replication messages.</p>
+
+<h2>Moving on...</h2>
+
+<p>That's it for entity models. Now you can move on to modify the block file so that our online
+entities will be created only on the Host. See <a href=
+"sso_peer_game_tutorial_world.htm">Populating Your World</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Tools/EntityModelingTool/emt_model_create_add.htm">Creating/Adding Entity
+    Models to a Project</a></li>
+
+    <li><a href="../../Tools/EntityModelingTool/emt_model_props_add_remove.htm">Adding/Removing
+    Properties from an Entity Model</a></li>
+
+    <li><a href="../../Tools/EntityModelingTool/emt_mixin_add.htm">Adding Mix-ins to a Model or
+    Preset</a></li>
+
+    <li><a href=
+    "../../Tools/EntityModelingTool/emt_model_behaviors_add_remove_edit.htm">Adding/Removing/Editing
+    Behaviors from Entity Models</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

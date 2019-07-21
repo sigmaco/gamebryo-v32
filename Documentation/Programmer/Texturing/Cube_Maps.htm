@@ -1,0 +1,336 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cube Maps</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Cube Maps</h1>
+
+<h2>Introduction to Cube Maps</h2>
+
+<p>Cube maps are form of texture map that maps 3D unit vectors into colors.
+They avoid many of the problems that occur with sphere
+maps&mdash;discontinuities, inability to render to them, etc. However, they are
+only supported on some platforms and hardware and are by no means
+universal.</p>
+
+<p>The basic concept of a cube map is a unit cube with six sides, centered at
+the origin. Each face of the cube can be thought of as a 2x2 unit square, lying
+in each of the following planes: X=1, X=1, Y=1, Y=1, Z=1, Z=1. Each cube face
+is a square texture that represents a 90-degree field-of-view image shot from
+the origin, facing out in the given direction. Put together, these six images
+form a one-to-one mapping of directions to texels. The figure below shows how
+the cube faces may be visualized:</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/image030.gif" width="528" height="248"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Because each of the faces is square, flat and represents a 90-degree field
+of view, it is very easy to render to these textures in such a way that the
+cube map can represent an entire scene as viewed from a given point at a given
+time. Because they can be rendered on the fly, Cube Maps can create incredibly
+realistic reflections, including live rendered reflections of dynamic objects
+in the scene.</p>
+
+<p>Although Cube Maps are commonly used as environment maps, this is not a
+fixed limitation. Any projected texture may be a cube map, including projected
+lights. By creating a cube map that represents all of the static lighting in a
+scene, applications can apply a cube map as a projected light and generate
+complex lighting situations with lights coming from all directions with a
+single map.</p>
+
+<p>To use Cube Mapping, applications must make two changes to an existing
+projected effect: The effect texture must be an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span> or
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span>, and
+the texture coordinate generation mode must be either <span class=
+"NDLSystemFont">DIFFUSE_CUBE_MAP</span> or <span class=
+"NDLSystemFont">SPECULAR_CUBE_MAP</span>. The sections below describe how to
+create and use Cube Maps. For an example of how to use Cube Maps, see the
+Gamebryo <span class="NDLSystemFont">CubeMap</span> sample.</p>
+
+<h2>Using Rendered Cube Maps</h2>
+
+<p><span class="NDLSystemFont">NiRenderedCubeMap</span> objects are the most
+commonly used cube-mapping textures, as most applications use Cube Maps to
+represent live rendered reflections. By re-rendering the faces of the cube maps
+frequently (sometimes as often as re-rendering all six cube faces each frame),
+the reflection will always represent the scene as it actually appears,
+including dynamic objects.</p>
+
+<p>Creating an <span class="NDLSystemFont">NiRenderedCubeMap</span> is very
+simple, as there are few options: the cube map size, the renderer, and optional
+format preferences. The size must be a power of two, and is used as the width
+and height (in texels) of each cube face. The renderer must be the renderer
+that is to be used for all operation involving the cube map; updates,
+texturing, etc). The format preferences allow the application to request
+destination alpha and/or color depth. Note that currently, an <span class=
+"NDLSystemFont">NiRenderedCubeMap</span> is never mipmapped. When creating any
+cube map, keep in mind that the size of the cube map will be proportional to
+the size of six normal textures of the same dimensions.</p>
+
+<p>With a rendered cube map, the application generally must select a center for
+the cube map, at which the camera used to render the cube map will be centered.
+Often, this center is the center of the reflective object to which the Cube Map
+is to be applied. Having selected the center of the Cube Map's coordinate
+system, the application must then iterate over as many cube faces as desired,
+aiming the camera for that cube face and rendering the scene into the cube
+face. Here are the camera settings required for rendering a cube face:</p>
+
+<p>The following settings are the same for all cube faces:</p>
+
+<ul>
+    <li>View Frustum Left = 1.0f</li>
+
+    <li>View Frustum Right = 1.0f</li>
+
+    <li>View Frustum Top = 1.0f</li>
+
+    <li>View Frustum Bottom = 1.0f</li>
+
+    <li>View Frustum Near = Application-dependent</li>
+
+    <li>View Frustum Far = Application-dependent</li>
+</ul>
+
+<p>Renderer Left-Right Swap: <span class="NDLSystemFont">TRUE</span></p>
+
+<p>The following settings are different for each cube face (the view direction
+is the first column of the camera rotation matrix, and the up direction is the
+second column. The third column is the cross product of the first and second
+columns):</p>
+
+<ul>
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_POS_X</span>
+
+        <ul>
+            <li>World View Direction: <span class="NDLSystemFont">&lt;1, 0,
+            0&gt;</span></li>
+
+            <li>World Up Direction: <span class="NDLSystemFont">&lt;0, 1,
+            0&gt;</span></li>
+        </ul>
+    </li>
+
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_NEG_X</span>
+
+        <ul>
+            <li><span class="NDLSystemFont">World View Direction: &lt;-1, 0,
+            0&gt;</span></li>
+
+            <li><span class="NDLSystemFont">World Up Direction: &lt;0, 1,
+            0&gt;</span></li>
+        </ul>
+    </li>
+
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_POS_Y</span>
+
+        <ul>
+            <li><span class="NDLSystemFont">World View Direction: &lt;0, 1,
+            0&gt;</span></li>
+
+            <li><span class="NDLSystemFont">World Up Direction: &lt;0, 0,
+            -1&gt;</span></li>
+        </ul>
+    </li>
+
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_NEG_Y</span>
+
+        <ul>
+            <li><span class="NDLSystemFont">World View Direction: &lt;0,
+            -1,0&gt;</span></li>
+
+            <li><span class="NDLSystemFont">World Up Direction: &lt;0, 0,
+            1&gt;</span></li>
+        </ul>
+    </li>
+
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_POS_Z</span>
+
+        <ul>
+            <li><span class="NDLSystemFont">World View Direction: &lt;0, 0,
+            1&gt;</span></li>
+
+            <li><span class="NDLSystemFont">World Up Direction: &lt;0, 1,
+            0&gt;</span></li>
+        </ul>
+    </li>
+
+    <li>
+        <span class="NDLSystemFont">NiRenderedCubeMap::FACE_NEG_Z</span>
+
+        <ul>
+            <li><span class="NDLSystemFont">World View Direction: &lt;0, 0,
+            -1&gt;</span></li>
+
+            <li><span class="NDLSystemFont">World Up Direction: &lt;0, 1,
+            0&gt;</span></li>
+        </ul>
+    </li>
+</ul>
+
+<p>To create the render target groups for a rendered cube map, the preferred
+method is to use the <a href=
+"../../Reference/NiMain/NiRenderTargetGroup__CubeMapSetupHelper.htm">NiRenderTargetGroup::CubeMapSetupHelper</a>
+class:</p>
+<pre>
+// Generate an NiRenderTargetGroup for each face
+NiRenderTargetGroup::CubeMapSetupHelper kCubeMapHelper(m_spCubeMap);
+</pre>
+
+<p>In order to update a rendered cube map, the most common method is as
+follows:</p>
+<pre>
+m_spRenderer-&gt;SetLeftRightSwap(true);
+FOR Each cube face "eFace" to be updated
+    m_spCubeMap-&gt;SetCurrentCubeFace(eFace);
+    m_spRenderer-&gt;BeginUsingRenderTargetGroup(
+        kCubeMapHelper.m_aspRenderTargetGroups[(unsigned int)eFace],
+        NiRenderer::CLEAR_ALL);
+    Set camera settings as given above for the current cube face
+    Render the scene
+    m_spRenderer-&gt;EndUsingRenderTargetGroup();
+END FOR 
+</pre>
+
+<p>Note that NiRenderer::BeginUsingRenderTargetGroup must be called on the
+<a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a> object
+that corresponds to the desired face.</p>
+
+<p>For an example of how to use and update NiRenderedCubeMap objects, see the
+<a href="../../Learn/Demos/Overview_!CubeMap.htm">CubeMap</a> sample.</p>
+
+<h2>Using Source Cube Maps</h2>
+
+<p>Although less common in practice, <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span> maps.
+Source cube map objects are very much like <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span>
+objects, but have six files, or <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> objects, or
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span>
+objects associated with them, one for each face. They also have the notion of a
+"current" face, which is the face for which data can be retrieved or changed
+on-the-fly at a given time. See the reference documentation for <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span></p>
+
+<p>Creation of an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span>
+requires six image filenames, or six <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> objects, or six
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span>
+objects. These objects may not be mixed&mdash;a source cube map must be created
+from six objects of the same type. The other requirements are as follows:</p>
+
+<ul>
+    <li>All six input images (pixel data or filenames) must be square</li>
+
+    <li>All six input images must be the same size</li>
+
+    <li>All six input images must be the same incoming format</li>
+
+    <li>The size of each image must be a power of two</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">NiSourceCubeMap</span> object requires a
+renderer with which it will be associated. If the given renderer cannot support
+cube mapping, the creation function will return NULL.</p>
+
+<p>In terms of artwork for source cube maps, the artist must generate six image
+files that represent the cube map, one file for each face. Creation of these
+cube maps can be tricky, as the matching edges of the six images must match
+pixel-for-pixel, or else seams will be apparent in the cube map. Perhaps the
+best way for an artist to visualize the cube is as the unfolded cross-shape in
+the figure above. In fact, the artist can create the cube map as a single image
+in an image creation program, and simply cut the image into the six faces
+before exporting. An example of such a cube map is shown below.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/image031.gif" width="253" height="193"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Using Cube Maps as Projected Multitextures</h2>
+
+<p>A cube map may be used as the texture image for any projected multitexture
+(<span class="NDLSystemFont">NiTextureEffect</span>). However, if a cube map is
+used for a projected multitexture, that <span class=
+"NDLSystemFont">NiTextureEffect</span> must use one of the two cube-mapping
+texture coordinate generation modes (<span class=
+"NDLSystemFont">DIFFUSE_CUBE_MAP</span> or <span class=
+"NDLSystemFont">SPECULAR_CUBE_MAP</span>), as a cube map always expects 3D
+texture coordinates. The most common uses of cube maps are as follows:</p>
+
+<ol>
+    <li>Specular environment maps (similar to the sphere maps above):
+
+        <ul>
+            <li>Use a dark base texture on the object receiving the map (as the
+            cube map will be added to the base)</li>
+
+            <li>Set the cube map as the texture for an environment map
+            (generally uses a rendered cube map for live effects)</li>
+
+            <li>Use the SPECULAR_CUBE_MAP coordinate generation mode</li>
+        </ul>
+    </li>
+
+    <li>Diffuse omni-directional light maps
+
+        <ul>
+            <li>Use a bright (fully-lit) base texture (as the cube map will
+            darken the base map)</li>
+
+            <li>Set the cube map as the texture for an environment map
+            (generally uses a source cube map with the lighting painted into
+            it)</li>
+
+            <li>Use the DIFFUSE_CUBE_MAP coordinate generation mode</li>
+        </ul>
+    </li>
+</ol>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

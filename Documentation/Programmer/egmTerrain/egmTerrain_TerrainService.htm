@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>TerrainService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+  <h1>
+    TerrainService
+  </h1>
+  <p>
+    The TerrainService class provides the basic functionality required to include 
+    terrain support in an application. Like any other Game Framework service, this 
+    service should be added during the initialization of the application and before 
+    any block files are loaded.
+  </p>
+  <p>
+    The TerrainService implements the following sets of functionality:
+  </p>
+  <ul>
+    <li>Automatic Terrain entity preloading, loading, unloading and management. </li>
+    <li>Material and Material package management. </li>
+    <li>Picking service integration. </li>
+    <li>Rapid iteration of terrain assets. </li>
+  </ul>
+  <p>
+    This service is recommended for applications that require basic terrain support 
+    (most non PhysX game applications).
+  </p>
+  <h3>
+    Dependencies
+  </h3>
+  <p>
+    The use of TerrainService requires the following prerequisites to be met:
+  </p>
+  <ul>
+    <li>MessageService must be available via the service manager </li>
+    <li>SceneGraphService must be available via the service manager </li>
+    <li>EntityManager must be available via the service manager </li>
+    <li>AssetLocatorService must be available via the service manager </li>
+    <li><i>(Optional) </i>ReloadManager is required in order for rapid-iteration 
+      features of the TerrainService to operate. </li>
+    <ul>
+      <li>The ReloadManager must be available before the initialization of the 
+        TerrainService for this functionality to operate. </li>
+    </ul>
+    <li>The <span class="NDLSystemFont">NiTerrain</span> library must be configured to 
+      use a storage system that follows the default filenaming policy. </li>
+    <li>The StandardModelLibrary must be up to date and contain the Terrain model. </li>
+  </ul>
+  <p>
+    When developing applications, please make sure any smart pointers to the Terrain 
+    that the application may maintain are released before the TerrainService is 
+    shutdown. Not following this rule may result in the application experiencing a 
+    deadlock on shutdown. See the troubleshooting documentation on the NiTerrain 
+    library for more information.
+  </p>
+  <h2>
+    Integration to the PickService
+  </h2>
+  <p>
+    The TerrainService provides a customized pick policy for use with Terrain 
+    entities that is not registered by default.
+  </p>
+  <p>
+    To register this pick policy, the following code may be used:
+  </p>
+  <pre>
+PickService* pPickService = pServiceManager-&gt;GetSystemServiceAs&lt;PickService&gt;();
+pPickService-&gt;RegisterPickPolicy(&quot;Terrain&quot;, 
+                  EE_NEW egmTerrain::TerrainService::TerrainPickPolicy(pTerrainService));
+</pre>
+  <h2>
+    Loading/Unloading sectors
+  </h2>
+  <p>
+    The TerrainService overrides the default sector selector object assigned to 
+    <span class="NDLSystemFont">NiTerrain</span>
+    objects such that the service may directly manage what sectors are 
+    loaded/unloaded within the application. The default sector selector is still 
+    maintained as a secondary means of selecting sectors to load/unload, though any 
+    calls to the following interface on the TerrainService will override the 
+    automatic functionality of the selector for these sectors:
+  </p>
+  <pre>
+void TerrainService::LoadSector(NiTerrain* pTerrain, efd::SInt16 sectorX, efd::SInt16 sectorY);
+
+void TerrainService::UnloadSector(NiTerrain* pTerrain, efd::SInt16 sectorX, efd::SInt16 sectorY);
+</pre>
+  <p>
+    A developer wishing to override the sector selector within a Game Framework 
+    application should consider creating their own subclass of TerrainService and 
+    override the 'InitializeTerrain' function. The user may then assign their own 
+    sector selector object to the terrain object such that the TerrainService will 
+    treat it as the default selector and use it in conjunction with the above 
+    interface.
+  </p>
+  <h2>
+    Customization of the Terrain Service
+  </h2>
+  <p>
+    It may be the case that the user wishes to take advantage of some of the 
+    customizable features of the <span class="NDLSystemFont">NiTerrain</span> library. In order to take advantage of 
+    these features from within a Game Framework application, the user may define a 
+    custom TerrainService class and override the 'CreateTerrain' or 'InitializeTerrain' functions. The 'CreateTerrain'
+    function is used to instantiate an NiTerrain object and must return a valid NiTerrain, and the 'InitializeTerrain' function 
+    function is called on each NiTerrain object that has successfully loaded it's configuration from disk and provides a 
+    suitable place to setup any of the customizable features described in the NiTerrain library based on custom properties on
+    the entity that is loading it.
+  </p>
+  <p>
+    When overriding these functions, please be sure to call the base implementation of 
+    the function at the beginning of the new implementation, and to be careful of 
+    any customizations that the base class being derived from may have put in place 
+    (i.e. The custom sector selector object implemented by the base TerrainService, 
+    or the PhysX custom data policy employed by the PhysXTerrainService).
+  </p>
+<span class="NDLHeadingRelatedTopic">Related Topics</span>
+<ul>
+<li><a href="egmTerrain_TerrainService.htm">TerrainService</a></li>
+<li><a href="egmTerrain_PhysXTerrainService.htm">PhysXTerrainService</a></li>
+<li><span class="NDLSystemFont">
+  <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">NiTerrain</a></span></li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::LockFreeQueue</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">efd::LockFreeQueue</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="efd__MemObject.htm">efd::MemObject</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;LockFreeQueue.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classefd_1_1_lock_free_queue.gif" alt="Inheritance graph for efd::LockFreeQueue"/>
+  <p class="FigureCaption">Inheritance graph for efd::LockFreeQueue</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">This is an implementation of a single-reader, single-writer lock-free <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>. </p>
+<p class="NDLNormal">Single-reader: Only one thread (the consumer thread) may be issuing calls to Consume at any given time. Single-writer: Only one thread (the producer thread) may be issuing calls to Produce or ReclaimSpace at any given time.</p>
+<p class="NDLNormal">The producer and consumer threads can/should be different. A single thread may act as both producer and consumer only if there are no other threads producing or consuming at that time (the key is that there should never be multiple producers or multiple consumers).</p>
+<p class="NDLNormal">These requirements are not internally enforced (if ignored, the container will become inconsistent). For example, it is up to the caller to ensure that only one thread is acting as a producer at any given moment.</p>
+<p class="NDLNormal">Requirements on T (the type of values stored in the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>):</p>
+<ul>
+<li>T must have an accessible default constructor (i.e., T value = T(); must be a valid statement).</li>
+<li>T must have an accessible assignment operator (which will be invoked when objects are produced into the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>, or consumed from the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>) These are naturally satisified by pointer and integral types.</li></ul>
+<p class="NDLNormal">The constructor takes an initial size reservation parameter to prevent per-operation memory allocation, and as long as the working size of the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> is below the initial size, no operation on the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> will force a context switch. </p>
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classefd_1_1_lock_free_queue_1a2c5dfc331452ba7e52b79c99f8b6d506"></a>
+<p class="NDLRefMemberFunction">LockFreeQueue(size_t initialSize = 0)</p>
+<p class="NDLRefMemberDescription">Constructs a single-reader, single-writer lock-free <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>. </p>
+<p class="NDLRefMemberDetailedDescription">Since allocations could cause a temporary lock inside of the memory manager, a warning will be emitted by the destructor in debug builds if the initialSize parameter was too small. </p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">initialSize</span></td>
+    <td>The number of nodes to preallocate. If too many items are pushed in the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>, it will grow by dynamically allocating additional nodes, so it is a good idea to conservatively choose a large-enough initialSize. As long as the working size of the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> is below the initial size, no operation on this <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> will force a context switch.</td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_lock_free_queue_1a76f2d1f5175be30f67c6c5730bdc7625"></a>
+<p class="NDLRefMemberFunction">~LockFreeQueue()</p>
+<p class="NDLRefMemberDescription">Destructs a lock-free <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>. </p>
+<p class="NDLRefMemberDetailedDescription">The caller is responsible for ensuring that there are no threads currently producing to or consuming from the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>. </p>
+
+<a name="classefd_1_1_lock_free_queue_1aa24f8df66483bbe0d5c1ebc27b6f0723"></a>
+<p class="NDLRefMemberFunction">void  Produce(const T& value)</p>
+<p class="NDLRefMemberDescription">Produces a value (pushes it into the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> for later use by the consumer thread). </p>
+<p class="NDLRefMemberDetailedDescription">This method also reclaims space used by already consumed nodes.</p>
+<p class="NDLRefMemberDetailedDescription">This method may only be called from the producer thread. </p>
+
+<a name="classefd_1_1_lock_free_queue_1a00bada49df3ae7560fb127d3be8712f2"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  Consume(T& outResult)</p>
+<p class="NDLRefMemberDescription">Consumes a value (removes it from the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>). </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">outResult</span></td>
+    <td>The value removed from the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span>. Only valid if the method returns True </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>bool True if a value was consumed, otherwise false if the <span class="NDLSystemFont"><a href="efd__queue.htm">queue</a></span> was empty. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating custom message types</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating custom message types</h1>
+
+<p>Using subclassing, you can use custom message types to send
+application-specific messages or notifications in a loosely coupled way. You
+can also use custom messages as a generic callback mechanism where callbacks
+can be triggered immediately, delayed one tick (frame), or at a fixed time in
+the future. A custom message type can have a payload, including arbitrary data.
+Messages without payloads are also useful as notification of events or state
+changes.</p>
+
+<p class="NDLHeadingProcedure">To create a custom message type</p>
+
+<ol>
+    <li>Create a message class id using one of the following:
+
+        <ul>
+            <li>data driven enum</li>
+
+            <li>EE_DECLARE_EXTERNAL_CLASSID macro</li>
+        </ul>
+
+        <p class="indent1">Message class ids must be unique within the context
+        of an application. Values for class ids that are declared by
+        EE_DECLARE_EXTERNAL_CLASSID are restricted to the 0x06200000-0x062fffff
+        range.</p>
+    </li>
+
+    <li>Define a message class in one of the following ways:
+
+        <ul>
+            <li>define an application-specific, IMessage-derived class (see
+            <a href="message_app_specific_defining.htm">Defining
+            application-specific messages</a>).</li>
+
+            <li>use the MessageWrapper template with an existing class (such as
+            IMessage or StreamMessage) to change the message class id without
+            extending the contents of the new message class.</li>
+        </ul>
+
+        <p class="indent1">Message classes must derive from IMessage.</p>
+        <pre>
+    // Define the message class id 
+    EE_DECLARE_EXTERNAL_CLASSID(kMSGID_ApplicationSpecificMessage, 0x6200002);
+    
+    // Allocate the message we are about to send, make sure to store immediately in a SmartPointer
+    SmartPointer&lt;IMessage&gt; spMessage = EE_NEW MessageWrapper&lt;IMessage, kMSGID_ApplicationSpecificMessage&gt;;</pre>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Warning</p>
+            <div class="NDLNote">We recommend that you do not typedef the MessageWrapper template because it 
+    can cause some confusion and is not guaranteed to work with some of our macros. Instead, we 
+    recommend treating the message as if it were of the base class type.
+            </div>
+        </td>
+    </tr>
+</table>     
+
+    <li>Declare a message handler. The EE_HANDLER* macros map a handler class
+    and member method to a specific message class id. Any instance of a class
+    that is declared to handle a specific message class id is capable of
+    handling that message. It is not required or even recommended to have a new
+    target class to handle each message type. It is recommended to have a
+    separate handler function per message class id, but the same target class
+    can have multiple handlers and arbitrary other functionality as long as it
+    is IBase derived. For example, a system service may declare a number of
+    message handler methods to consume external messages and drive its
+    functionality.
+        <pre>
+EE_DECLARE_EXTERNAL_CLASSID(kCLASSID_SampleMessageTarget, 0x6200001);
+class SampleMessageTarget : public IBase
+{
+    EE_DECLARE_CLASS1(SampleMessageHandler, kCLASSID_SampleMessageTarget, efd::IBase);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+public:
+    // The method on the target that reacts to this message
+    void HandleApplicationSpecificMessage(
+        const efd::IMessage* pMessage,
+        efd::Category targetChannel)
+        {
+        // We can assume that only the message type of kMSGID_ChannelManagerConnectionAccepted
+        // will be delivered to this handler method since we only have one EE_HANDLER* declaration that
+        // specifies this method.
+        EE_ASSERT(pMessage-&gt;GetClassID() == kMSGID_ChannelManagerConnectionAccepted);
+    
+        // Now do whatever logic is triggered based on receiving this message type.
+    }
+ };
+...
+EE_HANDLER_WRAP(
+    SampleMessageTarget, // The class that will handle the message
+    HandleApplicationSpecificMessage, // The member method that will handle the message
+    efd::IMessage, // The message class and also the parameter to the handler method
+    kMSGID_ApplicationSpecificMessage); //  The message class id to pass to MessageWrapper
+</pre>
+
+        <p class="indent1">The EE_HANDLER* macros also cause a message factory
+        method to be automatically registered. This message factory method
+        creates the instances of the passed in class. Message factory methods
+        are used to create messages that are sent over the network, and in some
+        other special cases. If a message class id is registered with two
+        different classes, the second registration will be ignored. However, if
+        two different classes use the same class id, then it is possible that
+        messages will be of the incorrect type when they are created. This can
+        cause a variety of problems, including failed message delivery, memory
+        corruption, or crashes. When MessageWrapper is used, there are asserts
+        that help ensure that the same message class id is not registered with
+        multiple different classes.</p>
+    </li>
+
+    <li>Subscribe a target to a category. Messages will be delivered to target
+    instances that are subscribed using MessageService::Subscribe. Only
+    messages that are sent on the subscribed to category will be delivered.
+        <pre>
+ServiceManager* pServiceManager;
+...
+MessageService* pMessageService = pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+SmartPointer&lt;SampleMessageTarget&gt; spTarget1 = EE_NEW SampleMessageTarget;
+SmartPointer&lt;SampleMessageTarget&gt; spTarget2 = EE_NEW SampleMessageTarget;
+
+pMessageService-&gt;Subscribe(spTarget1, kCAT_LocalMessage);
+// spTarget1 can now receive messages of type kMSGID_ApplicationSpecificMessage on the 
+// Category of kCAT_LocalMessage while spTarget2 will not
+</pre>
+    </li>
+
+    <li>Allocate and send a message on the desired Category.
+        <pre>
+// Allocate the message we are about to send, make sure to store immediately in a SmartPointer
+SmartPointer&lt;IMessage&gt; spMessage = EE_NEW MessageWrapper&lt;IMessage, kMSGID_ApplicationSpecificMessage&gt;;
+
+// Cause the message handlers to be called immediately (before SendImmediate returns)
+pMessageService-&gt;SendImmediate(spMessage, kCAT_LocalMessage);
+
+// Cause the message to be delivered on the next call of MessageService::OnTick
+ppMessageService-&gt;SendLocal(spMessage, kCAT_LocalMessage);
+</pre>
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="message_custom_modifying.htm">Modifying custom message
+    types</a></li>
+
+    <li><a href="message_custom_deleting.htm">Deleting custom message
+    types</a></li>
+
+    <li><a href="message_app_specific_defining.htm">Defining
+    application-specific messages</a></li>
+
+    <li><a href="message_app_specific_exchanging.htm">Exchanging
+    application-specific messages between applications that are located on
+    separate hosts</a></li>
+
+    <li><a href="message_multithreading.htm">Using the message service for
+    multithreading</a></li>
+
+    <li><a href="message_limitations.htm">Message limitations</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

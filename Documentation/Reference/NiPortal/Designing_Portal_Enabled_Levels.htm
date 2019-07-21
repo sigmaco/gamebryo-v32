@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Designing Portal-Enabled Levels</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Designing Portal-Enabled Levels</h1>
+
+<h2>Room and Wall Strategies</h2>
+
+<p>There are several steps in designing a portal-enabled
+data-set. The first step is to determine how to break the
+overall scene into rooms or cells. Each room must be divided up
+into convex regions with one <a href="NiRoom.htm"><span class=
+"NDLSystemFont">NiRoom</span></a> object associated with each
+region, defined by planar <a href=
+"NiRoom.htm#NiRoom__Wall"><span class=
+"NDLSystemFont">NiRoom::Wall</span></a> objects.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image002_01.gif" width="410" height="162"
+    alt="image002_01 (7K)">
+</div>
+
+<p>The <a href="NiRoom.htm#NiRoom__Wall"><span class=
+"NDLSystemFont">NiRoom::Wall</span></a> objects that determine
+the shape of the room are not visible geometry (i.e. they are
+marked as hidden or invisible geometry in a commercial 3D
+modeler). The walls serve only as infinite planes to bound the
+space around the room - see the illustration above for an
+example. An entire room need not be partitioned into individual
+walls.</p>
+
+<p><a href="NiRoom.htm#NiRoom__Wall"><span class=
+"NDLSystemFont">NiRoom::Wall</span></a> objects are only used to
+determine which room contains the viewer. As a result, only
+enough walls as are needed to uniquely determine the room
+containing a camera are required. An example of this is a
+one-floor house. In this case, the vertical walls uniquely
+determine the room containing a point. As a result, it is not
+necessary to add the floors and ceilings of each room to the set
+of walls for the room. However, note that the "shell" object (the
+level as viewed from the outside) is only drawn if the camera is
+not inside any room as defined by its planes. Levels that require
+the use of the shell (for example a house that the camera is
+allowed to exit and view from the exterior) should ensure that
+all <span class="NDLSystemFont"><a href=
+"NiRoom.htm">NiRoom</a></span> objects in the level are tightly
+bounded by <a href="NiRoom.htm#NiRoom__Wall"><span class=
+"NDLSystemFont">NiRoom::Wall</span></a> objects.</p>
+
+<p>Note that the convex spaces defining <span class=
+"NDLSystemFont"><a href="NiRoom.htm">NiRoom</a></span> objects
+must not overlap each other this may sometimes require rooms to
+be subdivided to a slightly finer grain than one might otherwise
+desire, but this is generally not excessive.</p>
+
+<h2>Portal Strategies</h2>
+
+<p><span class="NDLSystemFont"><a href=
+"NiPortal.htm">NiPortal</a></span> objects sometimes do not
+exactly match the doorways that they represent they are sometimes
+simple bounding polygons for the doorways. This can lead to some
+overdraw (as the portals do not cull to the exact doorway), but
+can increase performance by lowering the number of portal polygon
+vertices that have to be processed during culling. An example of
+a simple portal polygon for a complex doorway is shown below.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image004.gif" width="206" height="197" alt=
+    "image004 (5K)">
+</div>
+
+<h3>Adjacent Rooms Connected by Multiple Doorways</h3>
+
+<p>In a naive system, multiple portals connecting two rooms can
+lead to a performance issue. In particular, if the camera is in
+room A and two portals leading to room B are visible, room B is
+drawn twice, once per portal. Gamebryo eliminates this overdraw
+via its culling process. In Gamebryo, room B is visited through
+each portal, but only for the purposes of determining which
+fixtures in the room are potentially visible. A unique list of
+objects is maintained and each object in the list is drawn once.
+The multiple visits for culling come at some cost, but not as
+much cost as multiple renderings of the room. To avoid even this
+cost, you will want multiple portals into the same room to be
+separated enough so that only one is visible at a time.</p>
+
+<p>The openings through which the viewer can see might be
+separated by only a thin piece of opaque geometry, such a wall
+made up mostly of windows. In such cases it is preferable to use
+a single portal that encloses all of the windows, because the
+small cost of excess overdraw is less than the cost of processing
+several portals.</p>
+
+<h2>Overall Portal Architectures</h2>
+
+<p>As a note, most applications use portals for basic culling
+assistance at a gross scale. As a result, they do not take the
+room/wall/portal paradigm to the extreme. Taken to the logical
+extreme, every physical wall in the data-set would be represented
+by at least one <a href="NiRoom.htm#NiRoom__Wall"><span class=
+"NDLSystemFont">NiRoom::Wall</span></a>, and every window or
+doorway would be represented by an <span class=
+"NDLSystemFont"><a href="NiPortal.htm">NiPortal</a></span> that
+matches it exactly in terms of shape and size.</p>
+
+<p>Real-world portal data-sets do not typically lend themselves
+to this extreme, using portals more or less strictly, depending
+on the particular need for geometry culling. For example, an
+artist may or may not break every room into convex subsections.
+Instead, (possibly non-convex) sections of the data-set are
+bounded by simple, convex polyhedra (often boxes), which form the
+<span class="NDLSystemFont"><a href=
+"NiRoom.htm">NiRoom</a></span>s of the data-set.</p>
+
+<p>An example of a 3ds max file that includes a data-set that is
+tagged for portals is <em>%EMERGENT_PATH%</em>\Samples\Models\Max
+Artist Examples\Portal Rooms.max. When the data-set is viewed or
+exported from 3ds max, the user will be presented with a
+collection of rooms that are portal-enabled using the strategies
+outlined above.</p>
+
+<p>Next: <a href=
+"Portals_and_Avoiding_Backbuffer_Clears.htm">Portals and Avoiding
+Backbuffer Clears</a></p>
+
+<p>Previous: <a href=
+"Overview_of_Portal_Scene_Strategies_and_Tricks.htm">Overview of
+Portal Scene Strategies and Tricks</a></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

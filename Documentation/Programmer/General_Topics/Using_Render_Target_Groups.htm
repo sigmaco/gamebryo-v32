@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Using Render Target Groups</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Using Render Target Groups</h1>
+
+<p>Any rendering call in Gamebryo must draw to a specific
+destination, which is represented in Gamebryo by the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+class. The most important instance of this class is the default
+instance that is created by the renderer during initialization.
+Every application will render something to the default
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+while filling in each frame, since that what will be displayed
+when the frame is complete.</p>
+
+<p>To get access to the renderer's default <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>,
+applications can use the <span class=
+"NDLSystemFont">NiRenderer::GetDefaultRenderTargetGroup</span>
+function. This will return a reference to the default render
+target group for the application to use.</p>
+
+<h2>Opening a Render Target Group for Drawing</h2>
+
+<p>Before an application can draw anything, it must signal to the
+renderer which render target group it wants to render to. It does
+this using the <span class=
+"NDLSystemFont">NiRenderer::BeginUsingRenderTargetGroup</span>
+function. This function takes a pointer to the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+to be used as the new render target, as well as a set of flags
+that indicate which buffers in the render target group, if any,
+should be cleared. These flags are documented <a href=
+"../../Reference/NiMain/NiRenderer.htm#Render_Target_Clear_Flags">
+here</a>. Depending on the specific renderer, opening a render
+target group without clearing it may impact performance - refer
+to the renderer documentation for more details.</p>
+
+<p>As a shortcut, applications can signal that they want do draw
+to the renderer's default render target group using <span class=
+"NDLSystemFont">NiRenderer::BeginUsingDefaultRenderTargetGroup</span>.</p>
+
+<p>Once the render target group has been opened, an application
+may make whatever rendering calls it needs to in order to fill in
+the render target group.</p>
+
+<h2>Finishing a Render Target Group</h2>
+
+<p>When an application is done drawing to a render target group,
+it needs to call <span class=
+"NDLSystemFont">NiRenderer::EndUsingRenderTargetGroup</span>.
+This gives the renderer a chance to make sure it has finished all
+its rendering tasks for the given render target group.</p>
+
+<h2>Advanced Discussion</h2>
+
+<p>An <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+encapsulates all the buffers that can be rendered to
+simultaneously: up to four color buffers, and an optional depth
+buffer that may or may not have a stencil buffer component. By
+keeping all these buffers together and activating them as a unit,
+applications can be sure that only the intended destination
+buffers are active at any time.</p>
+
+<h3>Ni2DBuffer Objects</h3>
+
+<p>Any discussion of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+class requires some familiarity with the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+class, which Gamebryo uses to represent a single buffer. Each of
+the render target buffers that <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+deals with is implemented as an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+instance. The depth/stencil buffer is an instance of the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a></span>
+class, which is derived from <span class=
+"NDLSystemFont">Ni2DBuffer</span>.</p>
+
+<p><span class="NDLSystemFont">Ni2DBuffer</span> objects cannot
+be directly created by an application, but they can be extracted
+from existing objects. Applications can get an <span class=
+"NDLSystemFont">Ni2DBuffer</span> from an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedTexture.htm">NiRenderedTexture</a></span>
+instance that represents the texture's renderable surface, and
+can also obtain the six <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+objects that represent the six faces of an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span>.
+They can also retrieve the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a></span>
+from the renderer's implicit <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+to get the default render target and depth stencil buffer.</p>
+
+<p>Unlike <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+objects, there are functions that an application can call to
+create a new <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a></span>
+object. This can be useful when, for example, an application
+wants to create a single depth stencil buffer to be shared among
+a specific set of render targets. Refer to the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a></span>
+documentation for more details.</p>
+
+<h2>Creating an NiRenderTargetGroup</h2>
+
+<p>When a renderer is created, it will also create an implicit
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+that contains the default back buffer and (if applicable)
+depth/stencil buffer. This <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+can be retrieved from the renderer using the <span class=
+"NDLSystemFont">NiRenderer::GetDefaultRenderTargetGroup</span>
+function.</p>
+
+<p>It is also possible to create an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+that refers to an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedTexture.htm">NiRenderedTexture</a></span>
+object, or a face of an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span>.
+To do this, an application will need to first grab the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+associated with this surface, using <span class=
+"NDLSystemFont">NiRenderedTexture::GetBuffer</span> or
+<span class=
+"NDLSystemFont">NiRenderedCubeMap::GetFaceBuffer</span>. The
+application can then pass that buffer into one of the
+<span class="NDLSystemFont">NiRenderTargetGroup::Create</span>
+functions. There are two versions of the <span class=
+"NDLSystemFont">Create</span> function that take the input
+surface and create an <span class=
+"NDLSystemFont">NiRenderTargetGroup</span> that uses this surface
+as the primary render target. One version of the function also
+takes an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a></span>
+pointer, which will act as the depth/stencil buffer for this
+render target group. Applications can pass in NULL to this
+parameter to create a render target group that has no
+depth/stencil buffer, or they can provide a pointer to a specific
+depth/stencil buffer that they want to use. The other version of
+the function takes a pair of Boolean values, which allow the
+renderer to either share its default depth/stencil buffer with
+the newly created render target group, or create a new
+depth/stencil buffer that is compatible with the color buffer
+that is provided. Both of these <span class=
+"NDLSystemFont">Create</span> functions will create an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+that can describe a single render target buffer.</p>
+
+<p>An alternative method of creating a set of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+objects for all the faces of an <a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm"><span class=
+"NDLSystemFont">NiRenderedCubeMap</span></a> is to use the helper
+object <a href=
+"../../Reference/NiMain/NiRenderTargetGroup__CubeMapSetupHelper.htm">
+<span class=
+"NDLSystemFont">NiRenderTargetGroup::CubeMapSetupHelper</span></a>.
+Simply create a local instance of this class, passing in the
+<a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm"><span class=
+"NDLSystemFont">NiRenderedCubeMap</span></a> to the constructor,
+and the instance will contain a set of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+objects, one for each face of the cube map. The advantage of
+creating the render target groups this way is that the engine can
+perform renderer-specific optimizations, such as how the
+depth/stencil buffer is created and shared.</p>
+
+<p>In order to create an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+capable of holding multiple simultaneous render target buffers, a
+third <span class=
+"NDLSystemFont">NiRenderTargetGroup::Create</span> function must
+be used, which takes the maximum number of destination buffers
+that the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+will use. Then, the destination buffers and depth/stencil buffer
+can be provided to the application using <span class=
+"NDLSystemFont">NiRenderTargetGroup::AttachBuffer</span> and
+<span class=
+"NDLSystemFont">NiRenderTargetGroup::AttachDepthStencilBuffer</span>.</p>
+
+<p>A single <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>
+object can be referenced by multiple <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+objects at the same time. If a single rendered texture gets be
+drawn to on its own on some occasions, but as part of a set of
+simultaneous render targets on other occasions, then a separate
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+object can be created for each such combination of render targets
+that will be used at one time.</p>
+
+<h2>Validating to an NiRenderTargetGroup</h2>
+
+<p>During the construction of an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>,
+Gamebryo will not perform any sort of checks to ensure that the
+render target buffers and depth/stencil buffers in an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+can be used together successfully. This allows an application to
+construct <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+and change around its buffers without needing to worry about
+whether the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+is a valid one after each step along the process. Before the
+application uses the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>,
+it should ensure that the buffers in the group can be legally
+used together at the same time. This is accomplished using
+<span class=
+"NDLSystemFont">NiRenderer::ValidateRenderTargetGroup</span>.
+Note that for performance, Gamebryo will not automatically
+validate render target groups before using them in Release builds
+of the libraries.</p>
+
+<h2>Rendering to an NiRenderTargetGroup</h2>
+
+<p>All rendering to a specific <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+must take place between a call to <span class=
+"NDLSystemFont">NiRenderer::BeginUsingRenderTargetGroup</span>
+(or <span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class=
+"NDLSystemFont">NiRenderer::EndUsingRenderTargetGroup</span>. By
+forcing applications to signal when they are done drawing to a
+render target group, Gamebryo can ensure that the buffers in that
+group are ready to be used, either as textures or as display
+surfaces, as soon as possible. This is especially true on
+platforms that require some extra processing when a buffer is
+done getting filled in.</p>
+
+<p>Gamebryo enforces this by making a number of rendering calls
+illegal when the application is not between a calls to
+<span class="NDLSystemFont">BeginUsingRenderTargetGroup</span>
+and <span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.
+The list of these calls includes:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiRenderer::ClearBuffer</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::SetCameraData</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::SetScreenSpaceCameraData</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderObject::RenderImmediate</span></li>
+</ul>
+
+<p>Similarly, there are some rendering functions that are not
+legal to call between <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.
+These calls include:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">NiRenderer::BeginFrame</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::BeginOffScreenFrame</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::EndFrame</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::EndOffScreenFrame</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::DisplayFrame</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::BeginUsingRenderTargetGroup</span></li>
+
+    <li><span class=
+    "NDLSystemFont">NiRenderer::BeginUsingDefaultRenderTargetGroup</span></li>
+</ul>
+
+<p>Applications can query whether it is between calls to
+<span class="NDLSystemFont">BeginUsingRenderTargetGroup</span>
+and <span class="NDLSystemFont">EndUsingRenderTargetGroup</span>
+using the function <span class=
+"NDLSystemFont">NiRenderer::IsRenderTargetGroupActive</span>.</p>
+
+<h2>Clearing an NiRenderTargetGroup</h2>
+
+<p>Some platforms can optimize the use of a render target group
+if they can be sure that the current contents of the render
+target buffers can be discarded when <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> is called.
+This optimization is enabled by passing in a set of <a href=
+"../../Reference/NiMain/NiRenderer.htm#Render_Target_Clear_Flags">
+Clear flags</a> to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> that indicate
+that the buffers should be cleared. If the contents of the
+buffers must not be discarded, then it is legal for the
+application to disable the clear flags, but this can result in a
+performance penalty on these platforms. Calling <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> immediately
+followed by <span class=
+"NDLSystemFont">NiRenderer::ClearBuffer</span> will not allow
+these platforms to take advantage of discarding the buffers, so
+be sure to use the clear flags whenever possible. Refer to the
+specific renderer documentation to learn whether each platform
+has this requirement.</p>
+
+<p>If for some reason an application must clear some render
+target buffers other than when <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> is called, it
+can call <span class=
+"NDLSystemFont">NiRenderer::ClearBuffer</span> when a render
+target group is active.</p>
+
+<h2>Querying an NiRenderTargetGroup</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+that was created during <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span>
+initialization can be obtained at any time using <span class=
+"NDLSystemFont">NiRenderer::GetDefaultRenderTargetGroup</span>.
+Applications can also get the <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiRenderTargetGroup.htm">
+NiRenderTargetGroup</a></span> that was most recently passed in
+to <span class="NDLSystemFont">BeginUsingRenderTargetGroup</span>
+using <span class=
+"NDLSystemFont">NiRenderer::GetCurrentRenderTargetGroup</span>.
+This function will never return NULL, even if <span class=
+"NDLSystemFont">EndUsingRenderTargetGroup</span> has been called,
+and the render target group can no longer be drawn to. If
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span> was the
+most recent function to open a render target group, then
+<span class="NDLSystemFont">GetCurrentRenderTargetGroup</span>
+will return the default render target group.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Transparency in Gamebryo</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Transparency in Gamebryo </h1>
+
+
+<p>Transparency is a feature required in many situations. The Gamebryo Maya Plug-in provides two ways to accomplish this effect.</p>
+
+<h4>Material Alpha</h4>
+
+<p>The transparency value is set for the entire object uniformly. You set this option in the Material Sub-Panel of a <span class="NDLSystemFont">NiMultiShader</span> node.</p>
+
+<h4>Texture Alpha</h4>
+
+<p>Transparency is contained in the alpha channel of the texture. Note that if the texture you are using has an alpha channel, the Gamebryo Maya Plug-in automatically uses that alpha channel to alpha blend its opacity.</p>
+
+<p>Unfortunately, because of limitations imposed by Maya, standard Maya textures only support alpha blending, or in Gamebryo parlance, the blending uses Source: Source Alpha, and Destination: Inverse Source Alpha. The <span class="NDLSystemFont">NiMultiShader</span> material supports the full range of transparency options.</p>
+
+<h2>Sorting in the Gamebryo Maya Plug-in</h2>
+
+<p>When using alpha blending, you should be aware of sorting. 
+ Sorting is a process that rearranges the draw order such that more distant 
+ objects are drawn before closer objects. Gamebryo only does inter-object 
+ sorting, not intra-object sorting. When two non-opaque objects are drawn, 
+ Gamebryo tries to ensure that the more distant object will be drawn first. 
+ It sorts objects back-to-front by comparing the camera's distance from 
+ the center of each object. </p>
+
+<p>When a single object is being drawn, the individual 
+ triangles that form it are not themselves sorted, posing a possible problem 
+ when rendering transparent objects that have both a back and front, like 
+ a transparent tube. If issues arise, you may want to consider splitting 
+ the object in two-pieces or setting its Z-buffer mode manually.</p>
+
+<h2>The Z-buffer in the Gamebryo Maya Plug-in</h2>
+
+<p>A fast way to render opaque geometry is to use a Zbuffer.&nbsp; 
+ A Zbuffer is an additional channel in the frame buffer that stores the 
+ distance of the drawn object from the camera.&nbsp; In other words, each 
+ pixel written to the frame buffer has an associated view-distance.&nbsp; 
+ When rendering an object, we first check to see if the pixel we are drawing 
+ is closer to the camera than the pixel already in the buffer. Called a 
+ &quot;Test&quot;. If so, then we write the new pixel to the frame buffer 
+ with the new view distance, which is called a &quot;Write&quot;.&nbsp; 
+ If not, we skip that pixel because it is behind geometry that has already 
+ been drawn.</p>
+
+<p>Sometimes the Zbuffer technique can produce incorrect 
+ results for two or more objects that are close to each other, but far 
+ away from the camera. In this case, you may see a more distant object 
+ showing through a closer object. A 32-bit Zbuffer can usually solve this 
+ problem. However, this option is not available on all graphics cards. 
+ It is often useful to manually set the Zbuffer during rendering. In the 
+ Gamebryo Maya Plug-in, the Zbuffer is on by default. In most cases, you'll 
+ want to turn off writing to the Zbuffer for rendering alpha-blended objects. 
+ Gamebryo controls the Zbuffer via the <span class="NDLSystemFont">NiZBufferProperty</span>. 
+ Since Maya does not have equivalent functionality, the Gamebryo Maya Plug-in 
+ creates these properties using an &quot;Extra Attribute&quot;. There are 
+ four different options that will turn on/off both Zbuffer testing and 
+ Zbuffer writing. When testing is off, all objects will draw their pixels, 
+ even if the pixels are overwriting a closer object that has already been 
+ drawn. When writing is off, objects won't set the distance for their pixels 
+ into the Zbuffer.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Z-buffer Setting</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Test Off Write Off</td>
+			<td>Both test and write are turned off</td>
+		</tr>
+		<tr>
+			<td>Test Off Write On</td>
+			<td>Test is turned off, write is left on</td>
+		</tr>
+		<tr>
+			<td>Test On Write Off</td>
+			<td>Test is left on, write is turned off</td>
+		</tr>
+		<tr>
+			<td>Test On Write On</td>
+			<td>Both test &amp; write are left on. This is the default.</td>
+		</tr>
+	</tbody>	
+</table>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+    <ul>
+        <li><a HREF="Material_Sub_Panel.htm">Material Sub-Panel in Maya</a>
+        </li>
+			<li><a href="Introduction_to_the_NiMultiShader.htm">Introduction to the NiMultiShader</a></li>
+			<li><a HREF="Create_Z_Buffer_Attribute.htm">Create Z Buffer Attribute</a></li>
+			<li><a href="../../Reference/NiMain/NiZBufferProperty.htm">NiZBufferProperty</a></li>
+    </ul> 
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

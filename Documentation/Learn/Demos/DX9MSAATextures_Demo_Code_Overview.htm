@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>DX9MSAATextures Demo Code Overview</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>DX9MSAATextures Demo Code Overview</h1>
+
+<p>The following sections detail the low-level code that creates the shadow mapping effect. Each
+important member function is described:</p>
+
+<h2>Constructor</h2>
+
+<p>The constructor is similar to most other <span class="NDLSystemFont">NiApplication</span>-based
+demos. Each component gets initialized to a sensible default.</p>
+
+<h2>CreateScene</h2>
+
+<p>At compile time, <span class="NDLSystemFont">CreateScene</span> will check to see if
+<span class="NDLSystemFont">_DX9</span> is defined, indicating the application is being compiled
+for use with the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9Renderer.htm">NiDX9Renderer</a></span>. If it is not, then this
+function will compile to a simple message box display that indicates that the sample is not
+supported on the current platform and returns <span class="NDLSystemFont">false</span>.</p>
+
+<p><span class="NDLSystemFont">CreateScene</span> first loads in two NIF files that will be used in
+this sample: one containing the room, and one containing the posing skeleton model. The two scenes
+are added to the application's <span class="NDLSystemFont">m_spScene</span> node, and then the
+<span class="NDLSystemFont">RecursivePrepareScene</span> function is called to patch up the scene
+for this sample's purposes. When that is done, the camera is grabbed from the scene and stored in
+the application's <span class="NDLSystemFont">m_spCamera</span> pointer, and the entire scene has
+<span class="NDLSystemFont">Update</span>, <span class="NDLSystemFont">UpdateProperties</span>, and
+<span class="NDLSystemFont">UpdateEffects</span> called on it.</p>
+
+<p>Next, the rendered texture is constructed using same dimensions as the renderer's default
+backbuffer. An <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span> is then constructed
+to allow rendering to that texture - note that a new depth/stencil buffer is requested for the
+render target group. This is because the rendered texture will not have MSAA enabled, and the
+renderer's default depth/stencil buffer might. Since the back buffer and depth/stencil buffer must
+have the same MSAA parameters, the function must request a new depth/stencil buffer for the
+rendered texture. Of course, if the application was going to use the intermediate render target
+surface for all rendering, it would not be necessary to create this render target group at all -
+this render target group is only created to allow the sample to draw directly to the rendered
+texture.</p>
+
+<p>Because the process is a little more complex, <span class=
+"NDLSystemFont">CreateMSAARenderTarget</span> encapsulates the work needed to create an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span> that contains the
+intermediate render target surface.</p>
+
+<p>Next, the function registers a reset notification function with the renderer. This is because
+the intermediate render target surface needs to be explicitly created using D3D interfaces, and
+will need to be released and recreated when the D3D device is reset. The reset notification
+function will take care of this eventuality. The DX9 renderer then has <span class=
+"NDLSystemFont">PerformPrecache</span> called on it to cause the geometry precaching to take
+place.</p>
+
+<h2>CreateCamera</h2>
+
+<p>Since the camera is loaded from the scene in this sample, the derived version of <span class=
+"NDLSystemFont">CreateCamera</span> does nothing.</p>
+
+<h2>Terminate</h2>
+
+<p><span class="NDLSystemFont">Terminate</span> releases the <span class=
+"NDLSystemFont">DX9MSAATexture</span> sample's smart pointers. All the other smart pointers will be
+released during <span class="NDLSystemFont">NiApplication</span>'s <span class=
+"NDLSystemFont">Terminate</span> call. It also unregisters the reset notification function.</p>
+
+<h2>UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> calls the base class and then updates the scene
+graph.</p>
+
+<h2>CreateFrame</h2>
+
+<p>This function first calls the base class version to construct a <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">render frame</a>
+for use with the Gamebryo <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">frame
+rendering system</a>. It then creates an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span> object
+that contains a single, screen-sized quad that will be used to render the texture to the screen. An
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> is created that
+uses the rendered texture that was built earlier, and that texture is attached to the screen quad
+via the <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_View.htm">render view</a>. A
+<a href="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">render
+click</a> is created to render the screen quad in the frame rendering system, and a pre-processing
+callback function is registered with that render click to update the rendered texture before
+rendering the screen quad. A pointer is obtained to the main scene render click (so that its render
+target can be swapped out later, and the full-screen quad render click is added immediately after
+the main scene render click to the render frame. Finally, the render target group on the main scene
+render click is set to be either the MSAA render target or the regular render target, depending on
+the application mode.</p>
+
+<h2>RecursivePrepareScene</h2>
+
+<p>This recursive function performs a number of last-minute modifications to the scene graph. The
+first of these is simply to force all the time controllers to LOOP. Because of the way the skeleton
+is modeled, this can't be set at export time, and in order to avoid using an <span class=
+"NDLSystemFont"><a href="../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span>
+for such a simple set of animations, the time controllers are manually modified here.</p>
+
+<p>The function also updates any lights in the scene to affect the entire scene - this allows the
+lights in the room to affect the skeleton.</p>
+
+<p>Before returning, <span class="NDLSystemFont">RecursiveModifyScene</span> lives up to its name
+checking to see if the current object is an <span class="NDLSystemFont">NiNode</span> and recursing
+along all the node's children if it is.</p>
+
+<h2>SetCurrentMode</h2>
+
+<p><span class="NDLSystemFont">SetCurrentMode</span> switches between the two rendering modes:
+rendering directly to the rendered texture, and rendering to the intermediate render target buffer.
+The purpose of these two modes is to visually demonstrate the MSAA that using the intermediate
+render target buffer enables.</p>
+
+<p>Besides setting the new value for the <span class="NDLSystemFont">m_bMSAATextureActive</span>
+variable, the <span class="NDLSystemFont">SetCurrentMode</span> function updates the screen text to
+reflect what mode the application is now in, and if it is using MSAA, what MSAA level is enabled.
+The render target group for the main scene render click is also updated here to be either the MSAA
+render target group or the regular render target group, depending on the mode setting.</p>
+
+<h2>CreateMSAARenderTarget</h2>
+
+<p>This function obtains a new render target surface from the <span class=
+"NDLSystemFont">CreateMSAARenderTargetSurface</span> function and creates an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9Direct3DBufferData.htm">NiDX9Direct3DBufferData</a></span>
+object (as well as the associated <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span>) to hold that surface. It then
+creates a new <span class="NDLSystemFont">NiRenderTargetGroup</span> to allow Gamebryo to render to
+that surface.</p>
+
+<h2>UpdateRenderedTexture</h2>
+
+<p>The <span class="NDLSystemFont">UpdateRenderedTexture</span> function is used to transfer the
+render data from the intermediate render target surface to the rendered texture. This step is only
+needed when the application is making use of the intermediate surface, so if <span class=
+"NDLSystemFont">m_bMSAATextureActive</span> is <span class="NDLSystemFont">false</span> then the
+function does nothing. If the intermediate surface is in use, then the first step is to obtain a
+pointer to the that intermediate surface. This can be done by getting the <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/Ni2DBuffer.htm">Ni2DBuffer</a></span> from the
+render target that uses it, grabbing the renderer data from that, casting the result to an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX92DBufferData.htm">NiDX92DBufferData</a></span> object, and
+calling <span class="NDLSystemFont">GetSurface</span> on it. When that is done, the destination D3D
+surface needs to be obtained from the rendered texture that will be used to display the rendered
+data. This is done by requesting the renderer data from the rendered texture, casting that to an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9TextureData.htm">NiDX9TextureData</a></span> object, and then
+calling <span class="NDLSystemFont">GetD3DTexture</span> on it. The resulting D3D texture is used
+to call <span class="NDLSystemFont">GetSurfaceLevel</span>, which returns the D3D surface for that
+texture.</p>
+
+<p>Once both the source and destination surface pointers are available, the renderer data can be
+transferred from the intermediate surface to the rendered texture surface. The current renderer is
+cast to an <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/Introduction_to_the_DX9Renderer.htm">NiDX9Renderer</a></span> so the
+application can obtain the D3D device, and then the device is used to call <span class=
+"NDLSystemFont">StretchRect</span>, which copies the data. While copying the data, the antialiased
+intermediate surface is downsampled - this is what allows the texture to be used as usual, even
+though the original data was multisampled. During this process, the multiple samples per pixel are
+automatically combined into one value per texel in such a way that the resulting texture still
+looks antialiased.</p>
+
+<h2>CreateMSAARenderTargetSurface</h2>
+
+<p>This function uses D3D functions to actually create the intermediate render target surface. This
+surface needs to be the same size and format as the rendered texture, but it also needs to use the
+multisampling parameters used to create the default backbuffer. So the first part of this function
+is responsible for obtaining those values.</p>
+
+<p>Getting the pixel format from the rendered texture is straightforward: simply call <span class=
+"NDLSystemFont">GetPixelFormat</span> on the rendered texture and pass the results into
+<span class="NDLSystemFont">NiDX9PixelFormat::DetermineD3DFormat</span>. Getting the multisample
+information is a little more complex. First, <span class=
+"NDLSystemFont">GetCreationParameters</span> is called on the DX9 renderer to get the values used
+to create the renderer. The <span class="NDLSystemFont">uiFBMode</span> parameter is the one that
+contains the multisampling information. The multisample type is returned from calling <span class=
+"NDLSystemFont">NiDX9Renderer::GetMultiSampleType</span> on that parameter. If the multisample type
+is <span class="NDLSystemFont">NONMASKABLE</span>, then the <span class=
+"NDLSystemFont">uiFBMode</span> parameter has the appropriate bits masked out to reveal the
+multisample quality.</p>
+
+<p>Once those values have been obtained, the function can grab the D3D device and call
+CreateRenderTarget on it, passing in the rendered texture's dimensions and format, and the
+backbuffer's multisampling parameters. The resulting surface is then returned.</p>
+
+<h2>ResetNotificationFunction</h2>
+
+<p>This static function simply hands control off to the <span class=
+"NDLSystemFont">HandleReset</span> function.</p>
+
+<h2>HandleReset</h2>
+
+<p>This is where the application takes care of the intermediate rendered texture in response to a
+lost device. First, the function grabs a pointer to the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9Direct3DBufferData.htm">NiDX9Direct3DBufferData</a></span> that
+will be cleared out or restored.</p>
+
+<p>The <span class="NDLSystemFont">bBeforeReset</span> parameter tells the function whether it is
+getting called before the reset or after. Before the reset, the function will call <span class=
+"NDLSystemFont">PurgeBufferData</span> so the buffer data will release its reference to the D3D
+surface.</p>
+
+<p>After the reset, the function recreates the released render target surface with the function
+<span class="NDLSystemFont">CreateMSAARenderTargetSurface</span>. The D3D surfaceis reapplied to
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiDX9Renderer/NiDX9Direct3DBufferData.htm">NiDX9Direct3DBufferData</a></span> it
+originally came from using <span class="NDLSystemFont">RecreateBufferData</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ComputeEffect</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>ComputeEffect</h1>
+
+<p>This effect implements the NBodyGravity effect from the 
+NBodyGravityCS11 sample in the DX SDK. It makes use of two NSF
+files: NBodyGravity.NSF, which runs the particle simulation
+using a compute shader, and ParticleDraw.NSF, which renders
+the particles using a vertex, geometry, and pixel shader.</p>
+
+<p>Because of the way the buffers need to be set up for
+the compute shader, it wasn't possible to apply these shaders
+to an mesh in an art package and export it. The sample constructs
+the buffers it requires programmatically rather than loading
+them from a NIF file.</p>
+
+<p>As with all other effects, this class relies on a static
+instance of a dummy helper class to create an instance of a
+<span class="NDLSystemFont">ComputeEffect</span>. This allows the
+effect to handle its own creation and initialization without any
+need to change the code for the default application or any other
+effects.</p>
+
+<h2>Init</h2>
+
+<p>During initialization, the first thing to happen is the
+<span class="NDLSystemFont">ShaderEffect::Init</span> function
+gets called, so the <span class=
+"NDLSystemFont">RegisterShaderLibrary</span> will get a chance to
+load the shader library. Then the function generates a new 
+<span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>
+named "Particles" that will be responsible for rendering the results
+of the particle simulation. The new mesh gets an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span>
+to hold the particle texture and an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiStencilProperty.htm">NiStencilProperty</a></span>
+to define the front-facing side of the screen-facing particle triangles that will be emitted from
+the geometry shader. Then, the buffer containing color values is created, initialized, 
+and added to the mesh.</p>
+
+<p>After the mesh is created, the buffers that will act as the input 
+and output for the particle simulation are created. For each frame, one
+buffer will be attached as a buffer resource to the compute shader and will 
+act as the input, and the other buffer will be attached as an unordered access view
+and will be contain the output. Then, the buffers will be switched for the next frame.
+So each buffer must have both an <span class="NDLSystemFont">ID3D11ShaderResourceView</span>
+and an <span class="NDLSystemFont">ID3D11UnorderedAccessView</span> created. The application
+does this using <span class="NDLSystemFont"><a href="../../Reference/ecrD3D11Renderer/ecr__D3D11Renderer.htm">
+ecr::D3D11Renderer</a>::CreateNiTextureFromD3D11Resource</span> to create an <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiTexture.htm">NiTexture</a></span> to manage the 
+shader resource view, and then creates a <span class="NDLSystemFont"><a href=
+"../../Reference/ecrD3D11Renderer/ecr__UnorderedAccessResource.htm">ecr::UnorderedAccessResource</a></span>
+to manage the unordered access view. One of the buffers' <span class="NDLSystemFont">NiTexture</span>
+objects is then applied to the Particles mesh as a source texture, so the ParticleDraw shader
+will have access to it for rendering. The particle mesh preparation is completed by 
+applying the ParticleDraw shader, and then setting a large <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> on the mesh to ensure it will
+be rendered.</p>
+
+<p>After the mesh is prepared, a new camera is created to render the scene.
+The ParticleDraw and NBodyGravity shaders are then tested to determine whether 
+they were loaded correctly, and the application stores off the compute shader pass and the 
+<span class="NDLSystemFont"><a href="../../Reference/ecrD3D11Renderer/ecr__UAVSlot.htm">ecr::UAVSlot</a></span> 
+from the NBodyGravity shader so the input and output buffers can be set on it.</p>
+
+<p>Two <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render clicks</a> are created by this function. The first is an <span class=
+"NDLSystemFont"><a href="../../Reference/ecrD3D11Renderer/ecr__ComputeRenderClick.htm">ecr::ComputeRenderClick</a></span> 
+that runs the compute shader, and the second is a standard 
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span>
+with the particles mesh and camera. Both render clicks are added to the
+<a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">
+render step</a> created by <span class="NDLSystemFont"><a href=
+"ShaderEffect.htm">ShaderEffect</a>::Init</span>.</p>
+
+<h2>Shutdown</h2>
+
+<p>This function releases the various buffers and resource views created
+by the application, and then calls <span class=
+"NDLSystemFont">ShaderEffect::Shutdown</span>.</p>
+
+<h2>UpdateScene</h2>
+
+<p>This function calls <span class="NDLSystemFont">SwapBuffers</span> to 
+set the compute shader's input buffer from the previous frame to the compute 
+shader's output buffer and the particle shader's input resource for the 
+current frame, and vice versa. It then calls <span class=
+"NDLSystemFont">ShaderEffect::UpdateScene</span>.</p>
+
+<p>Refer to <a href=
+"ShaderSample_Platform_Considerations.htm">Platform
+Considerations</a> for additional details on platform-specific
+issues.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

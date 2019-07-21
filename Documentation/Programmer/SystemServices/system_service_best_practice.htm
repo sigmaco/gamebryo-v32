@@ -1,0 +1,250 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best practices for working with system services</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Best practices for working with system services</h1>
+
+<p>Emergent recommends the following best practices when you are working with system services:</p>
+
+<ul>
+    <li>Create a system service for each major, relatively independent, possibly optional component
+    of the application. One example would be the manager or controller for a game module such as
+    path finding, combat resolution, or audio.</li>
+
+    <li>If the module needs periodic or continuing cycles per frame, it is a candidate for a system
+    service, or for being attached to an existing service. This is also true if the module is
+    sensitive to initialization or shutdown order with respect to other services.</li>
+
+    <li>To further increase the loose coupling between services consider using local messages for
+    notification and interaction. This can allow services to be optionally used without
+    complicating the services that use it. Simply send a message and if the message is received the
+    correct action takes place. It can also allow other services to extend the service or respond
+    to the same notification without needing to modify the service; extending services can simply
+    subscribe to the same messages.</li>
+
+    <li>Limit the number of system services to a few dozen. With too large a number of services, it
+    becomes very challenging to find a workable order of initialization and shutdown, and the
+    number of service ticks per frame can become a performance penalty. Further, there tend to a
+    limited number of independent systems in a typical game application so if there are too many
+    services it may be due to overly aggressive decomposition. Consider combining some services
+    since it is unlikely they are truly independent or individually optional.</li>
+
+    <li>Use the constructor only to initialize class variables, do not assume that other system
+    services exist or are initialized.</li>
+
+    <li>System services should avoid using constructor arguments; consider using configuration
+    settings read during <span class="NDLSystemFont">OnPreInit</span> instead.</li>
+
+    <li>The <span class="NDLSystemFont">OnPreInit</span> method is the first point at which it is
+    safe to check for the existence of other services but you cannot assume any other service is
+    ready for use. One important exception is the <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__ConfigManager.htm">efd::ConfigManager</a></span> which can be safely
+    used during <span class="NDLSystemFont">OnPreInit</span> to read your configuration settings.
+    </li>
+
+    <li>During <span class="NDLSystemFont">OnPreInit</span>, register dependencies on all services
+    that your service relies on in order to function correctly. These dependencies ensure that the
+    required services are initialized before your service and will not be shutdown until after your
+    service. Some specific recommendations include:
+    <ul>
+        <li>If a service subscribes for messages, it should depend on the <span
+            class="NDLSystemFont"><a href="../../Reference/efd/efd__MessageService.htm">
+            efd::MessageService</a></span>.</li>
+        <li>If a service creates entities from C++, it should depend on the <span
+            class="NDLSystemFont"><a href="../../Reference/egf/egf__EntityManager.htm">
+            egf::EntityManager</a></span>.</li>
+        <li>If a service loads block files, it should depend on the <span class="NDLSystemFont"><a
+            href="../../Reference/egf/egf__EntityLoaderService.htm">egf::EntityLoaderService</a>
+            </span>.</li>
+        <li>If a service is also a render delegate, it should depend on the <span
+            class="NDLSystemFont"><a href="../../Reference/ecr/ecr__RenderService.htm">
+            ecr::RenderService</a></span>.</li>
+    </ul>
+    These are just examples, this is far from a comprehensive list. Consult the reference
+    documentation for the methods used for additional dependency recommendations.
+    </li>
+
+    <li>Although you should liberally register dependencies for those services you require, it is
+    best to avoid dependencies on other services if possible. The need to depend on another service
+    may indicate poor service decomposition; use optional dependencies when you can or consider
+    combining tightly coupled services into a single service.</li>
+
+    <li>Use <span class="NDLSystemFont">OnInit</span> to interact with other system services for the
+    purpose of initialization. During <span class="NDLSystemFont">OnInit</span> it is safe to assume
+    that any service you registered a dependency on will be fully initialized. Other non-dependent
+    services are unlikely to be initialized and their direct usage should be avoid unless you are
+    calling an API specifically documented as being safe to call prior to that service being
+    initialized.</li>
+
+    <li><span class="NDLSystemFont">OnInit</span> is meant for process start-up work and not complex
+    game-state logic, you should do the minimum work possible for your service to enter a ready
+    state. Optimally the <span class="NDLSystemFont">OnInit</span> method should complete it's work
+    in a single call.</li>
+
+    <li>Use <span class="NDLSystemFont">OnShutdown</span> to clear all smart pointers, especially
+    any references made to other system services. Holding a reference to another service beyond
+    <span class="NDLSystemFont">OnShutdown</span> makes it very likely that you have a pointer to a
+    service which is itself shutdown and thus all method calls on that service might be invalid.
+    </li>
+
+    <li>Any message subscriptions made by your service must be unsubscribed by the completion of
+    the <span class="NDLSystemFont">OnShutdown</span> method. Leaked message subscriptions can
+    result in message handlers being invoked on your service after shutdown has completed which can
+    result in crashes or unexpected behavior.</li>
+    
+    <li>The <span class="NDLSystemFont">OnPreInit</span>, <span class="NDLSystemFont">OnInit</span>,
+    and <span class="NDLSystemFont">OnShutdown</span> methods are for process startup and shutdown.
+    All game logic should occur during the running state (when <span class="NDLSystemFont">OnTick
+    </span> is being called). Consider using the <span class="NDLSystemFont">GameStateService</span>
+    to control game logic during the <span class="NDLSystemFont">OnTick</span> state. See the
+    BaseGame sample for an example of this.</li>
+
+    <li>Classes implementing the <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></span> methods should
+    implement these methods as protected functions. These methods should never be called directly,
+    they should only be called by the <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></span> through the <span
+    class="NDLSystemFont">efd::ISystemService</span> interface. The only potential exception to this
+    recommendation would the the <span class="NDLSystemFont">efd::ISystemService::GetDisplayName
+    </span> method which can be used for logging purposes.</li>
+
+    <li>Attempt to create all system services at application startup time, even though the service
+    may not be ready for operation right away (for example, if the app stays on a menu screen
+    initially, so the simulation isn't running, but it has been created as a service). This allows
+    for order of initialization and shutdown to be controlled by the service system. Even though
+    the service is in a running state, it can still be logically paused.</li>
+
+    <li>Prefer using <span class="NDLSystemFont">ServiceManager::Run()</span> over <span
+    class="NDLSystemFont">ServiceManager::RunOnce()</span>. This will, however, require
+    that the main application logic and flow of control be encoded within an application system
+    service. Application initialization should be performed in the <span class="NDLSystemFont">
+    OnInit</span> method of the application service, and application per-tick work should be
+    performed in its <span class="NDLSystemFont">OnTick</span> method. The advantage is that
+    sophisticated support systems from Foundation will be available in all phases of the
+    application. Examples include configuration, asset management, logging, and message handling. If
+    this is not possible, calls to <span class="NDLSystemFont">RunOnce()</span> can be inserted into
+    the application main loop, but initialization capabilities will be much more limited.</li>
+
+    <li>Dynamically allocate a system service. Static initialization time can be a confusing and
+    error prone microcosm, even when using the static data manager.</li>
+</ul>
+
+<h2>Entities, Rapid Iteration and System Services</h2>
+
+<p>Many system services will interact with specific entity models. For example, a light service
+might need to know about any entities that represent light sources or a pathing service might need
+to know about entities that provide cover or obstruct movement. The most efficient way to perform
+these interactions is to use built-in model implementations, but normal models can also be
+discovered and changes to those models can be detected. Even data that normally isn't expected to
+change can also change during rapid iteration.</p>
+
+<p>Some best practices for services that interact with entities:</p>
+
+<ul>
+    <li>Use one or more built-in models that are specific to your service. These models can
+    automatically register with your service when they are created.</li>
+
+    <li>Services registering built-in model factories should register a dependency on the <span
+    class="NDLSystemFont"><a href="../../Reference/egf/egf__FlatModelManager.htm">
+    egf::FlatModelManager</a></span> during their <span class="NDLSystemFont">OnPreInit</span> call.
+    </li>
+    
+    <li>Queue expensive work and perform it during your <span class="NDLSystemFont">OnTick</span>.
+    Doing expensive work directly in response to entity property changes, for example, can lead to
+    wasted effort as the property might change multiple times or closely related properties might
+    change separately and in any order.</li>
+
+    <li>During rapid iteration properties might change in ways that would normally not be possible
+    given the current run-time state of the game. While it is important not to crash when faced
+    with errant data it is also not a good idea to add complex logic to your system service in
+    order to handle edge cases that only occur during rapid iteration. Instead consider responding
+    to the '<span class="NDLSystemFont">kMSGID_SchedulerCleared</span>' notification which is sent
+    in response to the Toolbench 'Reset Game' command and doing a thorough reset of your internal
+    entity-related state. See the BaseGame tutorial for an example of this.</li>
+
+    <li>Establish clear ownership of shared objects, particularly with respect to resource
+    allocation and destruction. This is of particular concern for objects pointed to by both
+    built-in models and system services. The system service typically must free resources
+    during <span class="NDLSystemFont">OnShutdown</span>, while entities and their models
+    typically release resources during entity destruction, which occurs when the Entity Manager
+    shuts downs. It is hard to gaurantee the ordering of such events such that the shared
+    resource is always released yet never before its final use. Smart pointers can alleviate
+    some of these problems: use smart pointers for the resource in both the service and the
+    built-in. Otherwise, register built-ins with the system service and clear their resources
+    when the service shuts down.
+    </li>
+</ul>
+
+<h2>Parallelism and System Services</h2>
+
+<p>Modern PCs and consoles need to be able to run multiple threads within a single process or
+address space. It allows them to easily share data structures and allow asynchronous and better
+response to external systems, as well as the obvious benefit of better performance by utilizing
+multiple processors or cores.</p>
+
+<p>Some best practices for simplifying this challenge:</p>
+
+<ul>
+    <li>Make shared data structures read-only to avoid any synchronization overhead.</li>
+
+    <li>Consider replicating shared data structures and develop a synchronization mechanism based
+    on message passing (possibly based on shared memory). Further, consider the single-writer
+    approach to avoid race conditions caused by intermingled read/modify/write sequences. This
+    approach is suitable for communicating between distributed processes or threads in separate
+    address spaces.</li>
+
+    <li>Avoid parallelism between system services. Have only one System Service Manager in the
+    application, and consider it the "main thread", making the main loop single threaded. Insulate
+    parallelism for a system service so that external interactions with that service are single
+    threaded. For example, if path finding is on a background thread, do all synchronization on a
+    shared data structure within the path finding service. Multiple parallel services should avoid
+    coordinating with each other. This localizes all synchronization for one service within that
+    service alone.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="system_service_overview.htm">System services overview</a></li>
+    <li><a href="system_service_features.htm">System service features</a></li>
+    <li><a href="system_service_how_work.htm">How system services work</a></li>
+    <li><a href="system_service_priority_and_dependency.htm">Understanding System Service Priorities
+        and Dependencies</a></li>
+    <li><a href="system_service_limitations.htm">System service limitations</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the Emergent
+        Game Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

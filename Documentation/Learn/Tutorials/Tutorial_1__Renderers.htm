@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 1: Renderers</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 1: Renderers</h1>
+
+<p>The <a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> framework provides a convenient method for quickly
+developing cross-platform applications. One of the services that this framework provides by default
+is the creation of a renderer. However, the use of <span class="NDLSystemFont">NiApplication</span>
+is optional, and many users may decide to write their own application framework or extensions. This
+tutorial demonstrates basic renderer creation for those users.</p>
+
+<h2>The Demo</h2>
+
+<p>By default, <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> hides many of the mundane implementation details that are
+required to create a simple Gamebryo application. One of these hidden details is renderer creation.
+It is, however, a simple matter to override the default virtual <span class=
+"NDLSystemFont">NiApplication::CreateRenderer</span> function, which we do in this tutorial to
+illustrate how to create a platform-specific renderer. After creating the platform-specific
+renderer, we set the background color to red to see that our renderer is working as expected.
+Though this example is not terribly exciting, it is common for anyone who is creating a custom
+framework to start with a renderer.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                In subsequent tutorials, we won't bother overriding <span class=
+                "NDLSystemFont">NiApplication::CreateRenderer</span> because the one provided by
+                the <a href=
+                "../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+                "NDLSystemFont">NiApplication</span></a> framework is adequate for our purposes.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display nothing more than a red background. The following screen capture
+was taken on the Win32 platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial1.jpg" width="646" height="512" alt="Basic renderer (20K)">
+
+    <p class="NDLFigureCaption">A basic renderer</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>As in all Gamebryo applications, the customer license code must be embedded for the application
+to link correctly:</p>
+<pre>
+#include &lt;NiLicense.h&gt;
+NiEmbedGamebryoLicenseCode;
+</pre>
+
+<p>In this tutorial, the relevant code for the platform-specific renderer creation lies in our
+overloaded <span class="NDLSystemFont">CreateRenderer</span> function. Since the code is
+platform-dependent, we have separated the source into platform-specific files and directories for
+ease of project management. This separation is also a good idea in regards to platform-specific
+assets. (See <a href="Tutorial_2__Nif_Files.htm">Core Runtime Tutorial 2: Nif Files</a> for more
+information.)</p>
+
+<p>For reference, listed below are the creation methods used to create each platform-specific
+renderer. Each renderer has its own set of expected parameters, flags, and defaults. For a detailed
+explanation, see the specific renderer documentation listed at the end of this document.</p>
+
+<h3>Win32</h3>
+
+<h4>D3D11 renderer</h4>
+<pre>
+ecr::D3D11Renderer::CreationParameters kParameters(
+    GetRenderWindowReference());
+ecr::D3D11RendererPtr spD3D11Renderer;
+
+bool bResult = ecr::D3D11Renderer::Create(kParameters, spD3D11Renderer);
+
+if (bResult)
+    m_spRenderer = spD3D11Renderer;
+</pre>
+
+<h4>D3D10 renderer</h4>
+<pre>
+NiD3D10Renderer::CreationParameters kParameters(
+    GetRenderWindowReference());
+NiD3D10RendererPtr spD3D10Renderer;
+
+bool bResult = NiD3D10Renderer::Create(kParameters, spD3D10Renderer);
+
+if (bResult)
+    m_spRenderer = spD3D10Renderer;
+</pre>
+
+<h4>DX9 renderer</h4>
+<pre>
+m_spRenderer = NiDX9Renderer::Create(uiWidth, uiHeight,
+    NiDX9Renderer::USE_NOFLAGS, GetWindowReference(),
+    GetRenderWindowReference());
+</pre>
+
+<h3>Xbox360</h3>
+<pre>
+m_spRenderer = NiXenonRenderer::Create(uiWidth, 
+ uiHeight, NiXenonRenderer::USE_NOFLAGS);
+</pre>
+
+<h3>PS3</h3>
+<pre>
+NiPS3Renderer::InitOptions kInitOptions;
+m_spRenderer = NiPS3Renderer::Create(&amp;kInitOptions);
+</pre>
+
+<p>After the application has successfully created a renderer, the last thing that occurs in the
+<span class="NDLSystemFont">CreateRenderer</span> function is that the renderer's background color
+is set to <span class="NDLSystemFont">m_kBackgroundColor</span>. In the case of our application,
+<span class="NDLSystemFont">m_kBackgroundColor</span> has been initialized to represent the color
+of pure red. As we saw in the previous tutorial, by default the renderer's background color is
+gray. The following line of code changes it from gray to red:</p>
+<pre>
+m_spRenderer-&gt;SetBackgroundColor(m_kBackgroundColor);
+</pre>
+
+<p>The <span class="NDLSystemFont">SetBackgroundColor</span> method is a virtual function found in
+the <a href="../../Reference/NiMain/NiRenderer.htm"><span class=
+"NDLSystemFont">NiRenderer</span></a> class which is the class from which all the platform specific
+renderers are derived. For more information on <span class=
+"NDLSystemFont">SetBackgroundColor</span> and other interfaces that <a href=
+"../../Reference/NiMain/NiRenderer.htm"><span class="NDLSystemFont">NiRenderer</span></a> provides,
+please see the <a href="../../Reference/NiMain/NiRenderer.htm"><span class=
+"NDLSystemFont">NiRenderer</span></a> documentation.</p>
+
+<h2>Moving on...</h2>
+
+<p>Even though <span class="NDLSystemFont">NiApplication</span> framework provides a method for
+developing cross-platform renderers, we've demonstrated how to create your own platform-specific
+renderer. Next, we'll cover NIF files and the benefits of having platform-specific versions of
+assets. See <a href="Tutorial_2__Nif_Files.htm">Tutorial 2: Nif Files</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></li>
+
+    <li><a href=
+    "../../Reference/ecrD3D11Renderer/Creation_of_a_D3D11Renderer.htm">ecr::D3D11Renderer
+    Creation</a></li>
+
+    <li><a href="../../Reference/NiD3D10Renderer/Creation_of_a_D3D10Renderer.htm">NiD3D10Renderer
+    Creation</a></li>
+
+    <li><a href="../../Reference/NiDX9Renderer/Creation_of_a_DX9Renderer.htm">NiDX9Renderer
+    Creation</a></li>
+
+    <li><a href=
+    "../../ee_goto.htm#Reference/NiXenonRenderer/Creation_of_a_XenonRenderer.htm">NiXenonRender
+    Creation</a></li>
+
+    <li><a href=
+    "../../ee_goto.htm#Reference/NiPS3Renderer/Creation_and_Shutdown_of_a_NiPS3Renderer.htm">NiPS3Renderer
+    Creation</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

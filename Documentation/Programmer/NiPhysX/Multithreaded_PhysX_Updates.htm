@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Multithreaded PhysX Updates</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Multi-threaded PhysX Updates</h1>
+
+<p>There are two issues that arise when using PhysX in 
+ a multi-threaded environment: the PhysX API is not thread-safe, and no 
+ calls should be made on a PhysX scene while it is within the <span class="NDLSystemFont">simulate/fetchResults</span> 
+ block. Otherwise, the update steps are the same. </p>
+
+<h2>Safe PhysX API Access</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">
+ efdPhysX::PhysXSDKManager</a></span> 
+ object manages a lock for protecting access to the PhysX API. Multi-threaded 
+ applications must gain this lock before calling directly into the PhysX 
+ SDK, and release it afterwards. </p>
+
+<p>Unless otherwise documented, Gamebryo-PhysX functions 
+ block on this lock when they need to use the API, and release it afterwards. 
+ The lock has critical section semantics, so it is safe for a thread to 
+ be holding the lock while it calls into the Gamebryo-PhysX API. Of special 
+ note, the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_149cfe5b2c870c101ee9d67cc6a61436d">NiPhysXScene::UpdateSources</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1d0ba9d929463d41fea4a4b0d990893ae">NiPhysXScene::UpdateDestinations</a></span> 
+ functions do not require the SDK lock (the portion of those functions 
+ that access the PhysX SDK is done with <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c1f5c6c3b715ce5a995301ac896be482">NiPhysXScene::Simulate</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c730f723f9649aa93578bd40058cc289">NiPhysXScene::FetchResults</a></span>). 
+ </p>
+
+<h2>Staying Outside Simulate/FetchResults</h2>
+
+<p>Applications should take care not to access a PhysX 
+ scene while it is stepping a simulation. You can find out if a scene is 
+ simulating using the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_143731b209477c7ccf9d9a32ebbf8a910">NiPhysXScene::GetInSimFetch</a></span> 
+ function. If a thread is holding the PhysX SDK lock when it calls this 
+ function, it is guaranteed that the answer it gets will remain valid until 
+ the lock is released. It is good practice to always test the simulate 
+ state when calling into the PhysX SDK in a multi-threaded environment. 
+ </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

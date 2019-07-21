@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Overview of the Shader Picking Method</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Overview of the Shader Picking Method</h1>
+
+<p>The <span class="NDLSystemFont">Picking</span> demo addresses
+a difficult problem: how to perform an accurate pick on an object
+that has been skinned in video hardware. Most picking is done on
+the CPU, using copies of the vertex data stored in system memory.
+For objects that are skinned using the video hardware, however,
+the deformed (skinned) vertices only exist on the video hardware,
+and are never accessible by the CPU. Only the "bind pose"
+vertices (the base position of the skin) exist in system memory.
+This fact means that if an application wants to do picking on
+skinned objects, those objects will need to be skinned in
+software instead of hardware or approximations like Alternate
+Bounding Volumes (ABVs) must be used. Neither approach is optimal
+if exact per-pixel picking is required.</p>
+
+<h2>How The Shader Picking Method Works</h2>
+
+<p>The solution involves the use of a class, <span class=
+"NDLSystemFont"><a href="ColorPicker.htm">ColorPicker</a></span>,
+which makes use of a material named <span class=
+"NDLSystemFont"><a href=
+"ObjectPickMaterial.htm">ObjectPickMaterial</a></span>. That
+material, in turn, manages three shaders: two based on the
+<span class="NDLSystemFont"><a href=
+"ObjectPickBinaryShader.htm">ObjectPickBinaryShader</a></span>
+shader (one for skinned objects and one for unskinned objects),
+which make use of SM2.0 pixel and vertex shaders, and one shader
+named <span class="NDLSystemFont"><a href=
+"FixedFunctionPickShader.htm">FixedFunctionPickShader</a></span>
+that uses the fixed-function pipeline. All three shaders perform
+the same task: render an object with standard vertex transforms,
+but colored a single, flat color that's unique for that geometry
+instance. This unique color can then be read back into main
+memory, and used to identify which object is closest to the
+camera at a given screen space pixel location.</p>
+
+<p>This operation is equivalent to performing a pick on the scene
+at that screen space pixel location, but it will correctly
+represent the scene as it appears on screen, not how it is stored
+in local memory. When called into action via a button click, the
+<span class="NDLSystemFont"><a href=
+"ColorPicker.htm">ColorPicker</a></span> class will render a
+subsection the scene, using the <span class=
+"NDLSystemFont"><a href=
+"ObjectPickMaterial.htm">ObjectPickMaterial</a></span>, to a very
+small texture. The subsection that gets drawn is the 16x16 pixel
+region surrounding the pixel that the pick operation is using. It
+will then pull the rendered texture back into system memory,
+which is not too slow because of the small texture size. The
+color of the center pixel is used to look up which mesh it
+belongs to, and the pointer to the picked geometry can be
+returned.</p>
+
+<p>This method can be extended to address how any object whose
+vertices are manipulated by a vertex shader in hardware, though
+it would require writing a version of the <span class=
+"NDLSystemFont"><a href=
+"ObjectPickMaterial.htm">ObjectPickMaterial</a></span> that uses
+a shader whose vertex shader matches the object's standard vertex
+shader, but that writes the identifying color to the frame buffer
+rather than running the object's standard pixel shader. In many
+cases, a simplified version of the vertex shader can be used that
+performs the vertex manipulation, but removes any unneeded
+calculations like normal transforms or texture coordinate
+generation, since only the vertex positions and unique flat color
+are required.</p>
+
+<h2>Limitations of the Shader Pick Method</h2>
+
+<p>The shader-based picking method is primarily used to indicate
+what piece of geometry was hit when the ray was cast. It is not
+possible to determine the vertex indices or triangle indices from
+this picking method, unlike the <a href=
+"Overview_of_the_NiPick_method.htm">NiPick</a> method.
+Additionally, it is impossible to receive any other information
+than what was picked. Vertex positions, normals, vertex colors,
+etc are not available unless a shader is written that provides
+that additional information. The provided <span class=
+"NDLSystemFont"><a href="ColorPicker.htm">ColorPicker</a></span>
+only supports determining the object picked. Extensions could be
+written by a developer that support writing the requested vertex
+data to the back-buffer using floating point render targets.</p>
+
+<p>Note that since the geometric data on the GPU is used in the
+picking process, this method can adequately reflect the results
+of morphing and skinning operations.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

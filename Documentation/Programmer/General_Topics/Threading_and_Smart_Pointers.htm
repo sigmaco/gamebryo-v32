@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Threading and Smart Pointers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Threading and Smart Pointers</h1>
+
+<p>One of the greatest pitfalls for any thread safety scheme 
+ is reference counted pointers like Gamebryo's smart pointers as pointed 
+ out in a <a href="PerformanceImpacts.htm">previous section</a> of this 
+ document. The internal reference counting mechanisms for <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ based objects are thread safe in Gamebryo. This does not mean that all 
+ smart pointer operations are thread safe in these cases. Specifically, 
+ race conditions can still occur when there are both smart pointer and 
+ regular pointer references to the same object.</p>
+
+<p>Imagine an example where an object is created in a foreground 
+ thread and stored in smart pointer. The reference count on the object 
+ is now 1. A background thread is running and requests a pointer to the 
+ object. Since this is a regular pointer, the background thread goes to 
+ store the object in a smart pointer. At about the same time, the foreground 
+ thread releases its smart pointer to the object. At this point, we have 
+ a race condition. If the background thread manages to increment the reference 
+ count first to 2, the object will not be deleted and will remain valid 
+ when the foreground thread decrements the count to 1. If the foreground 
+ thread decrements first to zero, the object will be deleted and the background 
+ thread will try to perform an increment on the reference count of a deleted 
+ object.</p>
+
+<p>A race condition like this illustrates the danger of 
+ shared objects in any concurrent execution system. Developers can avoid 
+ these situations in Gamebryo by making sure that every thread using a 
+ reference counted object does so via a unique smart pointer. Ideally, 
+ that smart pointer is owned by some object which also owns the executing 
+ thread so that the smart pointer can be guaranteed to persist longer than 
+ the thread. For example, in background loading, smart pointers may reference 
+ a shared texture palette. That palette exists before the background thread 
+ is created by the stream and after it terminates.</p>
+
+<h2>Thread Safety and Performance</h2>
+
+<p>Assuring the thread safety of reference counted objects 
+ can have impacts on performance. Because these safety features are only 
+ necessary or useful in multithreaded applications, developers of single 
+ threaded applications may desire to disable this feature. Disabling this 
+ thread safety feature simply requires changes to <span class="NDLSystemFont">NiRefObject::IncRefCount</span> 
+ and <span class="NDLSystemFont">NiRefObject::DecRefCount</span> in <span 
+ class="NDLSystemFont">NiRefObject.inl</span>. The safe version of the code 
+ is listed below.</p>
+ 
+<pre>
+inline void NiRefObject::IncRefCount()
+{
+    NiAtomicIncrement(m_uiRefCount);
+}
+//---------------------------------------------------------------------------
+inline void NiRefObject::DecRefCount()
+{
+    if (NiAtomicDecrement(m_uiRefCount) == 0)
+        delete this;
+}
+</pre>
+
+<p>Simply replace the atomic increment and decrement function 
+ calls with direct increment and decrement operations to disable thread 
+ safe reference counting.</p>
+
+<pre>
+inline void NiRefObject::IncRefCount()
+{
+    ++m_uiRefCount;
+}
+//---------------------------------------------------------------------------
+inline void NiRefObject::DecRefCount()
+{
+    if (--m_uiRefCount == 0)
+        delete this;
+}
+</pre> 
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

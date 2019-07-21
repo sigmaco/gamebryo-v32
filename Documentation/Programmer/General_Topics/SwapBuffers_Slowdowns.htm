@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>SwapBuffers Slowdowns</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>SwapBuffers Slowdown</h1>
+
+<p>If an application experiences slowdowns in <span class="NDLSystemFont">SwapBuffers</span>, 
+ it is most likely not the process of swapping buffers that is slowing 
+ your application down. An application that stalls in <span class="NDLSystemFont">SwapBuffers</span> 
+ is usually waiting on the GPU to finish rendering all of the objects that 
+ have already been sent down the pipeline. In this case, one must determine 
+ where the GPU is slowing down.</p>
+
+<h2>Understanding the Functional Units of a GPU</h2>
+
+<p>While every GPU is different, they all have similar 
+ functional units. It is convenient to discuss things like the vertex pipeline 
+ and the pixel pipeline for each GPU. Depending on your platform, you may 
+ have more specific knowledge or tools to profile into your GPU. This document 
+ seeks to give a brief description of how to determine where a GPU is slowing 
+ down. Note that on Xenon, the vertex 
+ and pixel pipeline share shader units making some of this discussion irrelevant.</p>
+
+<h3>Parts of a GPU</h3>
+
+<p>What are the parts of a GPU with which we must be concerned? 
+ For the sake of an abstract discussion, let's break the GPU up into a 
+ data bus, a vertex processing unit and a pixel processing unit. The bus 
+ handles getting the vertex data down to the GPU or in some cases getting 
+ the texture data down to VRAM. The vertex processing unit handles all 
+ of the per vertex calculations on the GPU. These calculations include 
+ transformation, lighting, texture coordinate generation, clipping, and 
+ culling. On a programmable hardware, vertex shaders replace the fixed 
+ functionality of a vertex processing unit. The pixel processing unit handles 
+ all the rasterization, texturing, and alpha blending. On a programmable 
+ hardware, all of the code executed by pixel shaders falls into this area.</p>
+
+<p>Once you see a slowdown in the <span class="NDLSystemFont">SwapBuffers</span> 
+ function, the next thing to do is determine where in the GPU you are bound. 
+ Since the GPU is a pipeline, a slowdown in one section can slow everything 
+ down.</p>
+
+<h3>Bus Slowdowns</h3>
+
+<p>Bus slowdowns are some of the hardest slowdowns to diagnose. 
+ On PC, you can try running on the same graphics card on different speed 
+ AGP buses or PCI-E buses. Also consider trying to compress vertices or 
+ textures to reduce the impact on the bus. The less data you have to transfer 
+ while maintaining the amount of stress on the vertex and pixel units can 
+ point to a speed up. Make note that depending on the architecture of your 
+ console, compressed data may take additional time in the vertex or pixel 
+ unit which can make such profiling difficult. If your application is data 
+ bus transfer bound, you have to find ways to reduce the amount of data 
+ transferred by reducing texture sizes, compressing data, or simplifying 
+ meshes. On programmable hardware, consider recomputing any values that 
+ you may be transferring. For example, consider recomputing the binormal 
+ in a vertex shader rather than packing it and transferring it.</p>
+
+<h3>Vertex Processing Unit Slowdowns</h3>
+
+<p>Slowdowns in the vertex unit come from processing too 
+ many vertices or from doing too much work per vertex. Determining these 
+ slowdowns can be fairly easy. If you can send a simplified mesh down the 
+ pipeline, that is the easiest way. You must make sure that it has the 
+ same screen coverage, however, to maintain the load on the pixel processing 
+ unit. Another approach is to eliminate any dynamic lighting on the object. 
+ Dynamic lighting takes up clock cycles in the vertex unit. If you turn 
+ off lights and the application suddenly speeds up, you are bound to some 
+ degree in the vertex processing unit. On programmable hardware, try simplifying 
+ your vertex shaders, and see if there is a change in application performance.</p>
+
+<h3>Pixel Processing Unit Slowdowns</h3>
+
+<p>Slowdowns in the pixel processing unit can be a little 
+ more difficult to determine than in the vertex processing unit. The reason 
+ for this is that you can be bound computationally or by memory access. 
+ Texture sampling requires memory bandwidth to a texture cache on the GPU 
+ or to main memory to fetch a texture. One way to test this is to replace 
+ all textures in your application with a small 2x2 texture. Since this 
+ texture is so small, you will almost always hit in the texture cache. 
+ If this speeds up your application, consider reducing the size of some 
+ textures until you get the performance that you desire. If reducing texture 
+ size does not speed up your application, try reducing the number of textures 
+ on an object or reducing the computational complexity of programmable 
+ shaders. Eliminate all textures except for a base map, or reduce you programmable 
+ shader to simply output the base map sample. In this way, you can determine 
+ if the pixel processing is slowing you down independent from the texture 
+ sampling. If pixel processing is slowing you down, you need to try and 
+ reduce the number and complexity of pixels drawn to the screen by either 
+ reducing the number of textures per object or by reducing overdraw.</p>
+
+<a name=NVPerfHUD></a><h2>NVPerfHUD</h2>
+
+<p>nVidia supplies an excellent tool for profiling performance 
+ slowdowns in rendering on PC. NVPerfHUD will show you a variety of statistics 
+ and allow you to toggle settings such as rendering with only a 2x2 texture, 
+ rendering with a null viewport, and enabling or disabling various levels 
+ of shader support. A screenshot of an NVPerfHUD enabled application is 
+ below. For information on NVPerfHUD, please visit the NVPerfHUD <a href="http://developer.nvidia.com/object/nvperfhud_home.html" target="_blank">homepage</a> 
+ or contact your nVidia developer relations manager.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/Eturnum_NVPerfHUD.jpg" width="800" height="600"
+/>
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

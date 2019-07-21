@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiMemManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<p class="NDLRefHeadClassTitle">NiMemManager</p>
+
+<p class="NDLRefParentage">&lt;NiMemManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiMemManager</span> 
+ is a platform-independent wrapper that is designed to provide an entry 
+ point for user-defined memory management. The <span class="NDLSystemFont">NiMemManager</span> 
+ contains an <a HREF="NiAllocator.htm"><span class="NDLSystemFont">NiAllocator</span></a> 
+ instance and forwards all alloc/dealloc/realloc requests through that 
+ instance. The <span class="NDLSystemFont">NiAllocator</span> is specified 
+ through the <span class="NDLSystemFont"><a HREF="NiInitOptions.htm">NiInitOptions</a></span> 
+ data structure that is passed into <span class="NDLSystemFont">NiInit</span>. 
+ As a result of this dependency, no memory allocation can occur prior to 
+ the application calling <span class="NDLSystemFont">NiInit</span>().</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static NiMemManager&amp; Get()</p>
+
+<p class="NDLRefMemberDescription">This method returns the static instance 
+ of the <span class="NDLSystemFont">NiMemManager</span>.</p>
+
+<p class="NDLRefMemberFunction">static bool IsInitialized()</p>
+
+<p class="NDLRefMemberDescription">This method returns whether or not the 
+ <span class="NDLSystemFont">NiMemManager</span> exists.</p>
+
+<p class="NDLRefMemberFunction">static bool VerifyAddress(const void* pvMemory)</p>
+
+<p class="NDLRefMemberDescription">Called by the memory manager to verify 
+ that a memory address is being managed. This method is only used in <span 
+ class="NDLSystemFont"><a href="NiMemoryDefines.htm#Preprocessor_Definitions">NI_USE_MEMORY_MANAGEMENT</a></span> 
+ builds of the engine.</p>
+
+<p class="NDLRefMemberFunction">void SetThreadLocalHintMixin(<a href="NiMemHint.htm">NiMemHint</a> 
+ kHintMixin)</p>
+
+<p class="NDLRefMemberFunction"><a href="NiMemHint.htm">NiMemHint</a> GetThreadLoalHintMixin()</p>
+
+<p class="NDLRefMemberDescription">Gets and sets the per-thread hint mix-in. 
+ <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->This value 
+ is combined with the hint passed into <span class="NDLSystemFont">Allocate</span>, 
+ <span class="NDLSystemFont">Reallocate</span>, and <span class="NDLSystemFont">TrackAllocate</span> 
+ before being used to change the allocation behavior. <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->The 
+ hint mix-ins are recorded on a per-thread basis, and so setting the hint 
+ on the main thread will not affect allocations done on another thread.</p>
+
+<p class="NDLRefMemberDescription">Note: The combination process does not 
+ safeguard against illegal combinations (e.g., mixing two hints with different 
+ usages together). <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->Typically, 
+ the per-thead hint will be used for implementing custom allocators or 
+ in conjunction with the unused bits in the hint field.</p>
+
+<p class="NDLRefMemberDescription">On SPUs, <span class="NDLSystemFont">GetThreadLocalHintMixin()</span> 
+ will return <span class="NDLSystemFont">NI_MEMHINT_NONE</span>, and <span 
+ class="NDLSystemFont">SetThreadLocalHintMixin()</span> will have no effect.</p>
+
+<p class="NDLRefHead1">Member Functions</p>
+
+<p class="NDLRefMemberFunction">void* Allocate(size_t stSizeInBytes, size_t 
+ stAlignment, <a href="NiMemHint.htm">NiMemHint</a> kHint, <a HREF="NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a> 
+ eEventType, const char* pcFile = NI_MEM_FILE_DEFAULT, int iLine = NI_MEM_LINE_DEFAULT, 
+ const char* pcFunction = NI_MEM_FUNCTION_DEFAULT)</p>
+
+<p class="NDLRefMemberDescription">Allocate <span class="NDLSystemFont">stSizeInBytes</span> 
+ bytes of memory, guaranteeing <span class="NDLSystemFont">stAlignment</span> 
+ alignment if possible for the returned address. The additional arguments 
+ are used by memory tracking and debugging routines. <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->The 
+ <span class="NDLSystemFont">kHint</span> object can be used to provide various 
+ hints to the underlying <span class="NDLSystemFont"><a href="NiAllocator.htm">NiAllocator</a></span> 
+ object, such as which memory arena an allocation should occur in, or if 
+ the subsequent deallocation will have access to an accurate size without 
+ having to explicitly store it. <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->The 
+ <span class="NDLSystemFont">eEventType</span> argument indicates what external 
+ method was used to allocate the date. This may provide additional information 
+ to a memory debugging system or may be used at runtime to determine allocator 
+ behavior.</p>
+
+<p class="NDLRefMemberFunction">void Deallocate(void* pvMemory, <a href="NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a> 
+ eEventType, size_t stSizeInBytes = NI_MEM_DEALLOC_SIZE_DEFAULT) </p>
+
+<p class="NDLRefMemberDescription">Free the memory at the specified address. 
+ In some situations, the deallocation routine may know how large it was 
+ when allocated. If so, the <span class="NDLSystemFont">stSizeInBytes</span> 
+ argument will be the size initially requested. If this size is unknown, 
+ the correct value for the argument is <span class="NDLSystemFont">NI_MEM_DEALLOC_SIZE_DEFAULT</span>. 
+ The <span class="NDLSystemFont">eEventType</span> argument indicates what 
+ external method was used to allocate the date. This may provide additional 
+ information to a memory debugging system or may be used at runtime to 
+ determine allocator behavior.</p>
+
+<p class="NDLRefMemberFunction">void* Reallocate(void* pvMemory, size_t stSizeInBytes, 
+ size_t stAlignment, <a href="NiMemHint.htm">NiMemHint</a> kHint, <a href="NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a> 
+ eEventType, size_t stSizeCurrent = NI_MEM_DEALLOC_SIZE_DEFAULT, <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->const 
+ char* pcFile = NI_MEM_FILE_DEFAULT, int iLine = NI_MEM_LINE_DEFAULT, const 
+ char* pcFunction = NI_MEM_FUNCTION_DEFAULT)</p>
+
+<p class="NDLRefMemberDescription">Reallocate the memory at the specified 
+ address, guaranteeing <span class="NDLSystemFont">stAlignment</span> if 
+ possible for the returned address. Note that if <span class="NDLSystemFont">stSizeInBytes</span> 
+ is zero, this method functions like <span class="NDLSystemFont">Deallocate</span>. 
+ If <span class="NDLSystemFont">pvMemory</span> is NULL, this method functions 
+ exactly like <span class="NDLSystemFont">Allocate</span>. <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->Otherwise, 
+ the memory hint specified by <span class="NDLSystemFont">kHint</span> should 
+ match the original hint passed into Allocate exactly. <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->The 
+ <span class="NDLSystemFont">eEventType</span> argument indicates what external 
+ method was used to allocate the data. This may provide additional information 
+ to a memory debugging system or may be used at runtime to determine allocator 
+ behavior.</p>
+
+<p class="NDLRefMemberFunction">bool TrackAllocate(const void* const pvMemory, 
+ size_t stSizeInBytes, NiMemEventType eEventType, const char* pcFile = 
+ NI_MEM_FILE_DEFAULT, int iLine = NI_MEM_LINE_DEFAULT, const char* pcFunction 
+ = NI_MEM_FUNCTION_DEFAULT)</p>
+
+<p class="NDLRefMemberDescription">Track an external allocation. This function 
+ does not touch the input memory address, it simply allows the allocator 
+ to internally track the address.</p>
+
+<p class="NDLRefMemberFunction">bool TrackDeallocate(const void* const pvMemory, 
+ NiMemEventType eEventType)</p>
+
+<p class="NDLRefMemberDescription">Track an external deletion. This function 
+ should only be called on an input address that also had TrackAllocate 
+ called on it. This function does not touch the input memory address, it 
+ simply allows the allocator to internally track the address.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

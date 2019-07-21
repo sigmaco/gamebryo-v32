@@ -1,0 +1,290 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a Character</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating a Character</h1>
+
+<p>This document is going to be the starting point for 
+ our discussion of the basics of character creation. Furthermore, it will 
+ be a jumping-off point for the discussion of the details.</p>
+
+<h2>The Big Picture</h2>
+
+<p>The easiest way to handle character animation in Gamebryo 
+ is to use the Actor Manager. The Actor Manager is a powerful character 
+ animation system that performs animation sequence playback and blending. 
+ It comes with powerful artist-centric tools that let you see and customize 
+ your character and animations in the Gamebryo engine without requiring 
+ programmer assistance. Your character's animation will be broken into 
+ specific, artist-defined sequences which represent your character's movements. 
+ Sequences typically include movements like walking, running, shooting, 
+ dying, turning, or anything else you desire.</p>
+
+<p>During export, the Controller Extractor exports three 
+ files for the character:</p>
+  <ul>
+    <li> NIF file&mdash;contains the character's skin, skeleton, and textures</li>
+    <li> KF file&mdash;contains the character's animation sequences</li>
+    <li> KFM file&mdash;contains blending information</li>
+  </ul>
+
+ <p>Using the Gamebryo Animation Tool, you are able to preview your character and tweak the transitions from one sequence to the next. The Animation Tool allows you to see your character in the engine and finalize its animations.</p>
+
+<h2>Create the Basic Structure</h2>
+
+
+<div class="FigureContainer">
+	<img src="./images/BasicCharacterSceneGraph.jpg" width="300" height="400" />
+		<p class="FigureCaption">Basic character structure</p>
+</div>
+
+
+<h4>1. Create the Character Root</h4>
+
+<p>The Character Root is the &quot;Group&quot; 
+ in Maya that will completely contain the character. This turns out to 
+ be handy for the programmers when they load your character, but it is 
+ also useful for organization and consistency. The Character Root should 
+ be created at the origin with no rotation and no scaling. It holds your 
+ character's skeleton (the Accumulation Root and its joint children) along 
+ with its skin.</p>
+
+<p>Behind the scenes, there are a number of reasons to 
+ have a Character Root, foremost of which is that it gives the Actor Manager/Controller 
+ Extractor a starting place for exporting the character. All the animations 
+ under the character root are extracted into sequences and organized into 
+ KF files.</p>
+
+<h4>2. Create the Accumulation Root</h4>
+
+<p>The Accumulation Root is a &quot;Group&quot; in Maya 
+ and a child of the Character Root. It contains the character's joint hierarchy 
+ (skeleton). The Accumulation Root is created at the origin with no rotation 
+ and no scaling. In your application, the Accumulation Root will represent 
+ the character's position.</p>
+
+<p>The easiest way to describe the Accumulation Root is 
+ to consider the simple example of a walking animation for the character 
+ in the DestroyerBot.mb file. When you look at the walk sequence, the character's 
+ position is animated by moving the Accumulation Root. In your game, when 
+ the Actor Manager plays the walk sequence, the character movement can 
+ be accumulated into the Accumulation Root. This eliminates the skating 
+ feet effect that often happens with animated characters. If you animate 
+ your character with a jerky motion from a pronounced limp, it will move 
+ with a jerky motion and its feet will remain planted on the floor.</p>
+
+<h4>3. Create Your Character's Skeleton</h4>
+
+<p>Create your character's skeleton as a child of the Accumulation 
+ Root. The exact form of your skeleton is really up to you. Add in locators 
+ if you want attachment points for things like helmets or guns. Just name 
+ them something useful so your programmers can find them later. There are 
+ a few restrictions you need to keep in mind, but they shouldn't hamper 
+ your creativity:</p>
+
+<ul>
+	
+	<li>Unique Name. Everything 
+ under the character root must have a unique name. The Actor Manager will 
+ be matching up objects to their animations by name, so the names must 
+ be unique.</li>
+	
+	<li>No negative scale. 
+ Because of the difference between Maya and Gamebryo, you cannot use negative 
+ scale.</li>
+	
+	<li>No non-uniform scale. 
+ Because of the difference between Maya and Gamebryo, you cannot use non-uniform 
+ scales with the skeleton of a skinned character. The exporter can &quot;bake&quot; 
+ out non-uniform scale for non-skinned objects but NOT for skinned objects.</li>
+	
+	<li>Avoid Joint Orientation, 
+ Rotate Axis, and Pivots. There are fundamental differences between the 
+ scene graphs of Maya and Gamebryo. These options can be represented faithfully 
+ but will cause bloating of the scene graph. Using quaternion sampling can avoid the extra nodes from Joint Orientation and Rotate Axis.</li>
+	
+	<li>XYZ Rotation Order. 
+ For reasons of speed, Gamebryo only supports the XYZ rotate order.</li>
+	
+	<li>How will this character 
+ be rendered in game? The standard fixed function pipeline limits users 
+ to a maximum of 4 bones per skin partition, so your skinned character 
+ can easily be broken into many separate objects for rendering, which can 
+ degrade performance. In general, the fewer the bones you have, the better 
+ your performance will be, and, as you know, hands can have a lot of bones. 
+ Many of todays games use a custom shader to draw skinned characters, and, 
+ depending on the video card, you could see 25 to 75+ bones per skinned 
+ object. Your art director and engineering lead will have figured this 
+ out so you can just check with them for guidance on how complex a bone 
+ hierarchy to use.</li>
+	
+	<li>Bind Pose at Frame 
+ Zero. For the sake of simplicity it is best to start the character out 
+ in its bind pose at frame zero. To properly export a skinned character, 
+ you must be able to return the character to its bind pose. Unfortunately, 
+ in the process of creating your character it is possible to alter the 
+ scene graph sufficiently such that the character can no longer return 
+ to its bind pose. By setting the character in the bind pose at frame zero, 
+ it is possible for the exporter to use the frame zero position of the 
+ joints. In this way, it can still get bind pose information even if Maya 
+ can't return the bind pose information.</li>
+</ul>
+
+<h4>4. Rig Your Character</h4>
+
+<p>This step is mostly about your personal preference for 
+ creating a character. You can use standard Key Frame animation. You can 
+ also use Maya IK handles. It is really up to you. During export, Maya 
+ will look for the animation curves generated by standard Key Frame animation. 
+ If it can't find an animation curve, the Gamebryo exporter will attempt 
+ to automatically bake your transform's animations.</p>
+
+<h4>5. Decide If Your Characters Will Be Sharing Skeletons</h4>
+
+<p>The sharing of skeletons between characters is mostly 
+ a workflow question to be answered by your art director. For example, 
+ if you are doing an RTS game with lots of different human characters, 
+ you might want to create a standard skeletal rig. This skeleton would 
+ be shared among all the different character types making an easy-to-animate, 
+ consistent standard. You would include the standard rig as a Maya reference.</p>
+
+<h4>6. Create Your Character's Skin and Texture</h4>
+
+<p>This step is fairly straightforward. The most important 
+ performance issue to consider relates to applying different materials 
+ to the same object. In Maya, an object can have a different material applied 
+ to each triangle. In Gamebryo every rendered object has one and only one 
+ material. This means that if you create a cube with a different material 
+ on each face, it will be converted into six separate objects upon export. 
+ Simply put, to speed up the rendering of your character, use as few different 
+ materials as possible.</p>
+
+<h4>7. Create Your Character's Blend Shape Expressions (Optional)</h4>
+
+<p>Use this sequence of steps if using blend shapes for 
+ facial expressions. If you are using face bones then you can skip this 
+ step.</p>
+
+<ul>
+	
+	<li>Minimize 
+ the number of morphing vertices. You could skin your character with a 
+ single mesh and blend the entire skin just to get facial expressions. 
+ This would be incredibility wasteful, and you would probably not be happy 
+ with the performance. It is best to cut the mesh so that only the blending 
+ vertices are a separate object. For most characters, this means cutting 
+ out the face.</li>
+	
+	<li>Triangulate 
+ the face mesh.</li>
+	
+	<li>Delete the 
+ face mesh's history.</li>
+	
+	<li>Duplicate 
+ the face mesh using copy for each expression blend target.</li>
+	
+	<li>Leave the 
+ base blend target as a child of the Character Root.</li>
+</ul>
+
+<h4>7. Bind the skin to the bones.</h4>
+
+<p>Bind the character's skin to its bones and setup your skin weights.</p>
+
+<h4>8 Set Up Bone LOD (Optional)</h4>
+
+<p>The Gamebryo animation system contains a valuable feature 
+ called Bone LOD. Similar in principle to typical LOD, Bone LOD allows 
+ you to define simpler versions of your character skeleton that can be 
+ used when you don't need the visual clarity and/or you need the additional 
+ performance. For example, you might be animating facial expressions using 
+ bones. If the character is 300 yards away from the camera and only 30 
+ pixels high, you can animate the character's skin using a simplified skeleton. 
+ At those sizes you might also want to remove the influence of individual 
+ fingers. If you are creating a single Maya file character, setting 
+ up Bone LOD can be done later.</p>
+
+<h4>9. Setup Skin LOD (Optional)</h4>
+
+<p>The Gamebryo animation system contains a valuable feature 
+ called Skin LOD. Similar in principle to Bone LOD. Skin LOD allows you 
+ to define simplified skins that will be used in conjunction with Bone 
+ LOD. If your character is 300 yards away from the camera and only 30 pixels 
+ high, you really don't need to use a high polygon count skin. If you are 
+ creating a single Maya file character, then setting up Skin LOD can be done later.</p>
+
+<h4>10. Decide: Single Maya File Character OR Multiple 
+ Maya File Character</h4>
+
+<p>The decision to go single or multiple Maya files is 
+ half personal preference and half practicality. A single Maya file character 
+ keeps things organized, makes changes easy, and gives you the most reliable 
+ art pipeline because there are less steps to go wrong. Conversely, a single 
+ Maya file can be enormous and can make Maya unusable.</p>
+
+<ul>
+	
+	<li>Number of Sequences; 
+ If you have a dozen or so short sequences you can probably keep your character 
+ in a single Maya file. A couple thousand frames of animation will take 
+ a few seconds to export and view but that isn't unreasonable.</li>
+	
+	<li>Mocap Data: Animations 
+ created with Mocap data can be truly huge. Just image a Maya file with 
+ a Gigabyte of mocap animation and it will probably give new meaning to 
+ the term slide show.</li>
+	
+	<li>Number of Animators: 
+ Simply put, you cannot have a dozen animators working with the same Maya 
+ file.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+    <ul>
+        <li><a href="Understanding_Animation_Sequences.htm">Understanding 
+ Animation Sequences</a>
+        </li>
+        <li><a HREF="Maya_FAQ.htm#Large_Number_of_Moving_Objects">FAQ: Scene Graph Bloat</a>
+        </li>
+        <li><a href="Export_Animation_Options.htm">Export 
+ Animation Options</a>
+        </li>
+        <li><a href="How_To__Set_Up_Bone_LOD.htm">Setting Up Bone LOD</a>
+        </li>
+        <li><a href="How_To__Set_Up_Skin_LOD.htm">Setting Up Skin LOD</a>
+        </li>
+        <li><a href="How_To__Create_a_Single_Maya_File_Character.htm">Creating a Single Maya File Character</a>
+        </li>
+        <li><a href="How_To__Create_a_Multi_Maya_file_Character.htm">Creating a Multiple Maya File Character</a>
+        </li>
+    </ul> 
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

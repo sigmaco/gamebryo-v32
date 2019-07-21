@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Revision Control Wrapper Overview</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="SCM" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Revision Control Wrapper Overview</h1>
+
+<p>Despite very similar features, revision control systems often have very different APIs and
+behavior. The purpose of the <span class="NDLSystemFont"><a href=
+"../../Reference/etkRCS/etk__RCSFactory.htm">etk::RCSFactory</a></span> library is to provide a
+common, pluggable access to different revision control systems. By default, it supports two of the
+most common revision control systems: Perforce and Subversion.</p>
+
+<p>The wrapper works by providing a factory interface that dynamically loads revision control
+plug-in DLLs. The DLLs can factory objects that inherit from the common <span class=
+"NDLSystemFont"><a href="../../Reference/etkRCS/etk__RCSProvider.htm">etk::RCSProvider</a></span>
+interface. <span class="NDLSystemFont">etk::RCSProvider</span> has methods for the standard
+revision control functions: add, edit, delete, rename, and revert. These methods can be used by a
+tool to revision control its data files. This interface does not support synchronization and
+submitting to a remote server since the revision control client application is better suited for
+these types of operations.</p>
+
+<p>The following code demonstrates how to initialize the factory, create a Perforce provider
+object, and check-out a file:</p>
+
+<pre>
+// Initialize Provider Factory
+RCSFactory::Initialize();
+
+// Create Subversion Provider Object. Ideally, we should query the 
+// factory and ask the user to select the system from the available
+// choices.
+SmartPointer&lt;RCSProvider&gt; spProvider = RCSFactory::Create("Subversion");
+if (spProvider == NULL)
+{
+    return -1;
+}
+
+// Connect to RCS system using user-supplied authentication info
+spProvider-&gt;Initialize();
+if (spProvider-&gt;Connect(username, password, host) == false)
+{
+    return -1;
+}
+
+// Place revision control operations in this changelist
+spProvider-&gt;SetChangelist("My Changes");    
+
+// Access P4 specific method to set client spec
+reinterpret_cast&lt;RCSP4*&gt;((RCSProvider*)spProvider)-&gt;SetClient("my-p4-clientspec");
+
+// Check-out a file. Use RCSResult object to get detailed error information.
+RCSResult result;
+if (!spProvider-&gt;Edit("c:\\foorbar.txt", result))
+{
+    printf("%s", result.GetDisplayMessage());
+    return -1;
+}
+
+// Cleanup
+spProvider-&gt;Shutdown();
+
+// Make sure to delete object before unloading DLLs in factory shutdown
+spProvider = NULL;
+RCSFactory::Shutdown();
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="rcs_wrap_create_rcs_plugin_cplus.htm">Creating a C++ Revision Control Provider
+    Plug-in</a></li>
+
+    <li><a href="rcs_wrap_fallbacks.htm">Understanding Fallbacks</a></li>
+
+    <li><a href="rcs_wrap_building.htm">Building Revision Control</a></li>
+
+    <li><a href="../../Tools/Toolbench/tb_scm_intro.htm">Toolbench Revision Control
+    Integration</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Understanding Replication Groups and Categories</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Understanding Replication Groups and Categories</h1>
+
+<p>Replication groups let you organize an entity's properties into multiple arbitrary sets. The
+replication group defines the unit of data that can be updated to a specific set of consumers. The
+group by itself, however, does not control which specific set of consumers should receive the
+update. This is controlled by the category value used by each specific entity for that group. A
+group might consist, for example, of all the properties needed by observing entities in the same
+room and a specific category would specify <em>which</em> room the entity is in. Every instance of
+some particular entity type can choose to use different category values even though they are
+sharing the same group definition. In this way the replication groups define <em>what</em> data
+should be sent and the category determines <em>who</em> the data should be sent to.</p>
+
+<p>The result is that the assignment of categories to specific replication groups on specific
+entities and the subscription to those same categories by interested observers is how you manage
+the area of interest for a multiplayer game. The overall policy for how you decide what category
+values should be used for each replication group is called the categorization policy. For small
+prototypes or simple games with only a few players the categorization policy could be as simple as
+using a single replication group with a single well-known category value. Larger or more complex
+games will want to pay significant attention to devising a categorization policy that minimizes
+bandwidth while ensuring smooth game play. For most games replication producing entities will
+typically change the category value to which they publish updates as they move around the game
+world or as other property state changes. The category value might be algorithmically computed
+based on various entity property values. Other replication groups may be turned on or off based on
+game state by switching between a valid category and the invalid category value (<span class=
+"NDLSystemFont">kCAT_INVALID</span>).</p>
+
+<p>Regardless of the specific categorization policy that will work best for your application there
+are many common elements to keep in mind:</p>
+
+<ul>
+    <li>Replication categories are set at runtime either through behavior scripts or C++ APIs. At
+    tool-time you define the replication groups, but the specific category values to be used
+    typically dynamically respond to your game state and therefore must be set at run-time. Only in
+    the most basic of cases would it make sense to statically assign fixed categories so the tools
+    do not even support this rare case.</li>
+
+    <li>The unit of replication is the replication group, not the entire entity. This provides more
+    fine-grained control over what data is sent to other clients and allows a single entity to use
+    multiple area of interest mechanisms at the same time. For example, an observer might be
+    interested in all nearby entities and also any entities in the same adventuring party. This
+    observer could consume both the category for the "local area" replication group and also the
+    category for the "my party" replication group. The actual category values are most likely
+    computed using properties on the observing entity, such as their current location and which
+    party they are in.</li>
+
+    <li>Producer entities can only publish updates to a single category per group, but observers
+    can choose to consume as many groups as they wish. Producer entities should not need to know
+    anything about who, if anyone, is consuming their updates, they simply generate updates based
+    on their own entity state. It is the observer who must decide how large of an area can be
+    observed. For example, if the world was divided into geometric grids each with its own category
+    then a producer simply publishes into the current grid category but an observer might be able
+    to "see" across many grid areas and would subscribe to all the visible categories.</li>
+
+    <li>Each entity can have up to 32 replication groups and each of these groups can use a
+    different category. This allows different sets of information to be published to different
+    interested consumers. Also remember that the same entity property can be in multiple groups.
+    See <a href="sso_replication_config_groups.htm">Configuring Replication Groups</a> for details
+    about assigning properties to groups.</li>
+
+    <li>Updates normally contain only those properties that have changed since the last update.
+    Still, if a category has many producers or the replication group has many frequently changing
+    properties this can result in a lot of bandwidth. Consider also using replication policies in
+    such cases to further reduce bandwidth. See <a href=
+    "sso_replication_policies.htm">Understanding Replication Policies</a> for details.</li>
+
+    <li>For details on what C++ methods and script built-in APIs to use for setting or querying the
+    categories for each replication group on a specific entity, see <a href=
+    "sso_replication_how_work.htm">How Replication Works</a>.</li>
+
+    <li>For suggestions on how to optimize your categorization policy, see <a href=
+    "sso_replication_best_practice.htm#ChoosingCategorizationPolicies">Best Practices for Working
+    with Replication</a>.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_replication_overview.htm">Replication Overview</a></li>
+
+    <li><a href="sso_replication_prereqs.htm">Replication Prerequisites</a></li>
+
+    <li><a href="sso_replication_requirements.htm">Replication Requirements</a></li>
+
+    <li><a href="sso_replication_how_work.htm">How Replication Works</a></li>
+
+    <li><a href="sso_replication_config_groups.htm">Configuring Replication Groups</a></li>
+
+    <li><a href="sso_replication_policies.htm">Understanding Replication Policies</a></li>
+
+    <li><a href="sso_replication_best_practice.htm">Best Practices for Working with
+    Replication</a></li>
+
+    <li><a href="sso_replication_limitations.htm">Replication Limitations</a></li>
+
+    <li><a href="sso_replication_troubleshoot.htm">Troubleshooting Replication</a></li>
+
+    <li><a href="../../Reference/eon/eon__ReplicationService.htm">eon::ReplicationService</a></li>
+
+    <li><a href=
+    "../../Reference/eon/eon__OnlineEntityManager.htm">eon::OnlineEntityManager</a></li>
+
+    <li><a href="../../Reference/eon/eon__ReplicatingEntity.htm">eon::ReplicatingEntity</a></li>
+
+    <li><a href=
+    "../../Reference/eon/eon__ReplicationProducerEntity.htm">eon::ReplicationProducerEntity</a></li>
+
+    <li><a href=
+    "../../Reference/eon/eon__ReplicationConsumerEntity.htm">eon::ReplicationConsumerEntity</a></li>
+
+    <li><a href=
+    "../../Reference/eon/eon__IReplicationGroupPolicy.htm">eon::IReplicationGroupPolicy</a></li>
+
+    <li><a href="../../Reference/eon/eon__GroupUpdatePolicy.htm">eon::GroupUpdatePolicy</a></li>
+
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm#ReplicationGroup">Replication
+    Group Configuration Options</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

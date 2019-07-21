@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Peer Game: Fixing Lua Scripts</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Peer Game: Fixing Lua Scripts</h1>
+
+<p>As a last step, here are a few script changes you need to make to get the application working
+properly. These changes can be made from Toolbench while the PeerGame instances continue to run.
+The results of the saved changes are visible immediately in the game play.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="sso_peer_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="sso_peer_game_tutorial_transform_bg.htm">Transforming BaseGame</a></li>
+
+    <li><a href="sso_peer_game_tutorial_more_services.htm">Extending Entities and Behaviors for
+    Online</a></li>
+
+    <li><a href="sso_peer_game_tutorial_world.htm">Populating Your World</a></li>
+
+    <li><a href="sso_peer_game_tutorial_code.htm">C++ Code Changes</a></li>
+
+    <li><a href="sso_peer_game_tutorial_loading.htm">Starting the Application</a></li>
+
+    <li><b>Fixing Lua Scripts&nbsp;&nbsp;&lt;-- You are here</b></li>
+</ol>
+
+<h2>Lua Behavior Changes</h2>
+
+<ol>
+    <li>In the <span class="NDLSystemFont">PeerGameTutorial\Samples\GameFramework\BaseGame</span>
+    directory, create a script file called <span class="NDLSystemFont">ChannelHelp.lua</span>, with
+    the following contents:
+        <pre>
+module("ChannelHelp", package.seeall)
+
+-- The replication service's private channel
+function GetMainChannel()
+    baseID = BehaviorAPI.GetEnumValue("eonSystemServiceIDs", "BasicReplication")
+    category = BehaviorAPI.GetServicePublicCategory(baseID)
+    return category
+end
+</pre>
+
+        <p class="indent1">This is a utility function, which will be accessed by a couple of the
+        behaviors that you are about to add. Note that the standard Lua runtime that ships with
+        LightSpeed does normal Lua module importation, which means that other scripts in the same
+        directory can reference it simply by doing "require 'ChannelHelp'". It is not necessary to
+        do anything in Toolbench to make the script visible to entity behavior scripts.</p>
+    </li>
+
+    <li>Fix the avatar animation problem by updating the BgAvatar.SetMovement behavior as follows.
+        <pre>
+-- use ChannelHelp
+require "ChannelHelp"
+</pre>
+        <pre>
+function SetMovement(self, params)
+    local movement = params:GetUInt32("MovementType")
+    egmSample.SetTargetMovementType(self, movement)
+
+    -- update the animation on the replica entities
+    local outstrm = ParameterList.ParameterList()
+    if (movement == egmSample.Idle) then
+        outstrm:PutString("Idle")
+    else
+        outstrm:PutString("Run")
+    end
+    bapiOnline.SendViewEvent(ChannelHelp.GetMainChannel(), self, "SetAnimationSequence", 
+        outstrm, 0.0)
+end
+</pre>
+    </li>
+
+    <li>Fix other animation issues by adding a new behavior to the TriggeredAnimation model (via the
+    Enitity Modeling Tool) called RemoteTriggerAnimation. It should have the following logic:
+        <pre>
+-- Behavior
+function RemoteTriggerAnimation(self, params)
+    local anim = params:GetString()
+    BehaviorAPI.LogMessage(2, string.format("TriggeredAnimation: Setting animation to %s",
+        anim))
+    egmAnimation.SetTargetAnimationByName(self, anim)
+end
+</pre>
+
+        <p class="indent1">Note that the script for this new behavior is identical to what we have
+        for the 'TriggerAnimation' behavior. This new behavior is meant to run on any peer,
+        updating the animation locally. Next, we change the original behavior to send out an event
+        to all peers invoking the new behavior.</p>
+    </li>
+
+    <li>Modify the behavior TriggeredAnimation.TriggerAnimation to just invoke the new behavior.
+        <pre>
+-- use ChannelHelp
+require "ChannelHelp"
+</pre>
+        <pre>
+function TriggerAnimation(self, params)
+    bapiOnline.SendViewEvent(ChannelHelp.GetMainChannel(), self, "RemoteTriggerAnimation", params, 0.0)
+end
+</pre>
+
+        <p class="indent1">This catches the TriggerAnimation event (which is sent from other
+        behaviors as appropriate&mdash;on collision with an avatar, in the case of the treasure
+        chest, for example) on the host and posts the RemoteTriggerAnimation event (which you just
+        added) to any and all replicated entities.</p>
+    </li>
+
+    <li>Make the colored avatars appear. This requires overriding the OnCreate behavior for the
+    BgAvatar model to contain the following:
+        <pre>
+-- lifecycle Behavior
+function OnCreate(self, params)
+    local peerID = params:GetUInt32()
+    local kfmAsset = params:GetString()
+    self.KfmAsset = kfmAsset
+end
+</pre>
+
+        <p class="indent1">The desired property values are passed to OnCreate from the C++ code in
+        GamePlayingState::CreateAvatar.</p>
+    </li>
+</ol>
+
+<h2>Testing Your Changes</h2>
+
+<p><span class="NDLGUILabel">Save all</span> changes, if you have not already done so.</p>
+
+<p>From Toolbench, choose the <span class="NDLGUILabel">Game&gt;Reset Game</span> menu option to
+reset both game instances. You should now see colored avatars and proper animations working on both
+the Host and Peer instance of the game. (There are still a few details to iron out - see the full
+Peer Game demo for a more polished result.)</p>
+
+<h2>Moving on...</h2>
+
+<p>This concludes the Peer Game tutorial. To further investigate the online features in Gamebryo
+LightSpeed, you can check out the full <a href="sso_peer_game_demo.htm">Peer Game demo</a>, which
+builds on the Base Game demo by adding the ability to host games and have other users connect to
+them.</p>
+
+<p>You can also check out Kickstart, a project from Emergent Labs. Kickstart extends Gamebryo LightSpeed
+by providing libraries, tools, and game samples that are designed to support your rapid prototyping
+needs and reduce the time that it takes you to create a first playable. Kickstart demonstrates
+Gamebryo LightSpeed best practices, provides samples that are easy to follow and update, and
+includes useful library code in both C++ and scripting languages.</p>
+
+<p>Visit the Kickstart Project at the following location:</p>
+
+<p><a href="https://pulse.emergent.net/wiki/index.php/Kickstart" target=
+"_blank">https://pulse.emergent.net/wiki/index.php/Kickstart</a></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

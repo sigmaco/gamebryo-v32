@@ -1,0 +1,312 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Adding a custom trigger type to MangledMetal</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Adding a custom trigger type to MangledMetal</h1>
+
+<p>Thanks to the use of the flexible Entity Modeling system, MangledMetal is
+easy to extend with new functionality.</p>
+
+<p>Let's say you want to add a new complete trigger that implements "land
+mine" functionality. We want to define a region that causes an explosion the
+first time any actor (player or enemy) moves into it.</p>
+
+<p>To get started, first invoke Toolbench and open the file <span class=
+"NDLSystemFont">MangledMetal.gsl</span> from the directory <span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\Samples\GameDemos\MangledMetal\Data</span>.
+Make sure the file <span class="NDLSystemFont">MangledMetal.emtproj</span> is
+writeable since we will be editing it. Also make sure that the contents of the
+directories <span class="NDLSystemFont">MangledMetal\Models</span> and
+<span class="NDLSystemFont">MangledMetal\Flats</span> are all writeable. These
+directories contain the model and flat files that we will be modifying.</p>
+
+<p>Once the GSL file is loaded, double-click on <span class="NDLSystemFont">
+MangledMetal.emtproj</span> in the Game Solution pane.</p>
+
+<p>The EMT Project Explorer opens in the same pane as the Game Solution 
+pane. The EMT Project Explorer shows you the models, presets, and folders in 
+an EMT Project. You'll use this view to create and manage your game's 
+entity models.</p>
+
+<p>Now let's create the land mine model:</p>
+
+<ol>
+    <li>Make sure the MangledMetal EMT Project is open in the breadcrumb 
+		control at the top of the EMT Project Explorer. Press "Add-&gt;New Model".
+
+        <div class="FigureContainer">
+            <img src="images/CreateModel.PNG" alt=
+            "Create Model">
+        </div>
+    </li>
+
+    <li>If the Entity Model Editor is not visible on the right side of the
+    screen, enable it using the View menu. Change the name of the new model to
+    <span class="NDLSystemFont">LandMine</span>.</li>
+
+    <li>The land mine will be triggered when an actor (player or enemy) comes
+    within a certain distance. The <span class=
+    "NDLSystemFont">CollisionTriggerSource</span> model, defined in the
+    TriggersLibrary, detects an actor entering a given region, so we will want
+    to mix that in to the land mine model. Select the TriggersLibrary  
+		in the breadcrumb control. The models and presets in the TriggersLibrary
+		are displayed in the Contents list. Click on the <span class=
+    "NDLSystemFont">CollisionTriggerSource</span> model and drag it into the
+    top half of the LandMine Entity Model window. While you are dragging, you
+    should see a tooltip "Drop in this region to add a mix-in to LandMine". Go
+    ahead and drop the <span class=
+    "NDLSystemFont">CollisionTriggerSource</span> into the mix-in area.</li>
+
+    <li>The <span class="NDLSystemFont">CollisionTriggerSource</span> has some
+    properties that need to be set. It has the ability to limit the models that
+    can trigger it - so, for example, it will fire only if the player
+    approaches. We need to turn that ability off since any actor can trigger
+    the land mine. Go to the Entity Model Editor on the right side and make
+    sure you are still editing <span class="NDLSystemFont">LandMine</span>.
+    Click the downward-facing arrow next to Mixin Properties. Set the <span class=
+    "NDLSystemFont">UseModelFilter</span> property to a value of
+        <span class="NDLSystemFont">False</span>.
+
+        <div class="FigureContainer">
+            <img src="images/SetProperty.png" alt="Set Property">
+        </div>
+    </li>
+
+    <li>Next, let's set the size of the land mine's detection area - the area
+    that, when entered, will cause an explosion. Edit the <span class=
+    "NDLSystemFont">ShapeType</span> property, which is inherited from the
+    <span class="NDLSystemFont">PhysXShape</span> model, to change the shape
+    type to sphere. Edit the <span class="NDLSystemFont">ShapeDimensions</span>
+    property, also inherited from <span class=
+    "NDLSystemFont">PhysXShape</span>, and change its value from the default of
+    "1,1,1" to "500,500,500" (only the first value matters and is used for the
+    sphere radius).<br>
+    <br>
+    <span class="NDLSystemFont">PhysXShape</span> properties were brought into 
+		the <span class="NDLSystemFont">LandMine</span> model because we 
+		mixed-in <span class="NDLSystemFont">CollisionTriggerSource</span>, which 
+		has <span class="NDLSystemFont">PhysXShape</span> mixed-in to it. Note that 
+		we are setting the <strong>default</strong>	detection area for a land mine 
+		by setting this property, not the specific size for a specific mine. It is 
+		possible to override the size for each mine.<br></li>
+
+    <li>When the user enters the region, we need to spawn an explosion entity,
+    so let's mix in a <span class="NDLSystemFont">SpawnResponse</span> model.
+    Go back to the TriggersLibrary and drag the <span class=
+    "NDLSystemFont">SpawnResponse</span> mix-in to the top half of the LandMine
+    Entity Model editor window. Make sure the Entity Model Editor is still
+    editing <span class="NDLSystemFont">LandMine</span>, then set the
+    <span class="NDLSystemFont">ModelToSpawn</span> mix-in property to
+    <span class="NDLSystemFont">SpawnEffect</span>. (<span class=
+    "NDLSystemFont">SpawnEffect</span> is a model in the MangledMetal EMT
+    project that looks like a green explosion.)</li>
+
+    <li>Now we need to set up a Property Visualizer so we can view in World 
+		Builder the collision volume that our object will use. Make sure
+    that you are still editing <span class="NDLSystemFont">LandMine</span> in
+    the Entity Model Editor window. Expand the Property Visualizers section and
+    click <span class="NDLSystemFont">Add</span> to add a new visualizer. Set
+    the visualizer type to <span class="NDLSystemFont">Sphere</span>. Click the
+    downward-pointing arrow to the left of the visualizer name to expand the
+    subproperties list, and select the <span class=
+    "NDLSystemFont">Radius</span> drop-down. The drop-down shows a list of all
+    the properties of the object; you'll want to select <span class=
+    "NDLSystemFont">ShapeDimensions</span> as the value for this
+    visualizer.</li>
+
+    <li>In addition to visualizing the detection area in the edit-time tools,
+    we want to be able to see the land mine at runtime. Let's add a runtime
+    representation of the land mine. Add a mix-in of type <span class=
+    "NDLSystemFont">Mesh</span> from the StandardModelLibrary project. Select 
+		<span class="NDLSystemFont">StandardModelLibrary</span>  
+		from the breadcrumb bar in the EMT Project Explorer and find the model named 
+		<span class="NDLSystemFont">Mesh</span>. We're going to
+    reuse the "Soul Cage" asset from MangledMetal. Make sure you are still
+    editing LandMine, then set the <span class="NDLSystemFont">NifAsset</span>
+    property of the <span class="NDLSystemFont">Mesh</span> mix-in. Click the
+    "..." button to bring up an asset selector, and select <span class=
+    "NDLSystemFont">Data\MangledMetal\GamebryoData\Generic\Props\Soulcage.nif</span>
+    as the asset. In order to distinguish between the land mine and other
+    instances of soul cages, we'll change the scale of the land mine; edit the
+    <span class="NDLSystemFont">Scale</span> property of <span class=
+    "NDLSystemFont">Placeable</span> and set it to 0.25.</li>
+
+    <li>Save the active <span class="NDLSystemFont">MangledMetal.emtproj</span> 
+		content by pressing the toolbar button with a diskette image on it. The 
+		asterisk next to the file name in the content tab goes away indicating that 
+		the content no longer needs saving.</li>
+
+    <li>Now let's add a land mine to the world. Switch to the Game Solution 
+		view and open the file <span class=
+    "NDLSystemFont">EmptyBattlefield.block</span>. At the bottom of the pane, 
+		you'll see tabs for "Game Solution", "Palette View", and "Entity View". 
+		Switch to Palette View so we can add our land mine. The Palette View lets 
+		you see the models and presets of all EMT Projects in your solution, creating 
+		a structured menu of models and presets that can be instanced in the 
+		block file. Open up the ManagledMetal EMT Project contents by 
+		double-clicking on the entry in the Contents list. Change the Contents list 
+		view type to Thumbnails by clicking on the Views button at the top right of
+		the palette view.
+
+        <div class="FigureContainer">
+            <img src="images/PaletteView.png" alt=
+            "Palette View">
+        </div>
+    </li>
+
+    <li>In Palette View, scroll down until you find the <span class=
+    "NDLSystemFont">LandMine</span> model. Drag it into the world view on the
+    right anywhere. You'll see the mine object (a small soul cage) and a sphere
+    visualizer indicating the sensitivity area of this mine. To see the Visualizer
+    you must toggle the Property Visualizer option <img src="images/propvis.png" alt="Toggle Property Visualizer">.
+
+        <ol>
+            <li>For cube, cylinder, and capsule visualizers, PhysX uses a
+            different convention for origins than Gamebryo, and the PhysX
+            volumes may not line up correctly with the visualizers you see in
+            Toolbench: they typically will be translated upwards by half of
+            their height. You can verify this using nVidia's Visual Remote
+            Debugger or debug geometry with your runtime application.</li>
+        </ol>
+    </li>
+
+    <li>Let's run MangledMetal and take a look. We will need to specify a
+    command-line parameter to the game to have it load the EmptyBattlefield 
+    block file (or level) instead of the default level. In Toolbench, go to 
+		Utilities-&gt;Settings.	In the Settings dialog, select User Tab-&gt;World 
+		Builder. Set up the path to the MangledMetal application, current 
+		directory, and command line as shown.
+
+        <div class="FigureContainer">
+            <img src="images/settings.PNG" alt=
+            "Settings dialog">
+        </div>
+
+        <p class="indent1">Once this is set up, go back to World Builder
+        and press ALT+T to launch MangledMetal.</p>
+    </li>
+
+    <li>Note that in the running game, the land mine is present and will react
+    with an explosion the first time you or an enemy walk over its area.
+    However, there are still some shortcomings in its behavior - it doesn't
+    disappear after it explodes, and it doesn't do any damage to anyone. To fix
+    these problems we'll write some simple Lua script code. Go back to the
+    <span class="NDLSystemFont">MangledMetal.emtproj</span> project file by 
+		clicking on the tab at the top of the <span class="NDLSystemFont">
+		EmptyBattlefield.block</span> window in World Builder and make sure you are
+    editing the <span class="NDLSystemFont">LandMine</span> model again.</li>
+
+    <li>We need to override the <span class="NDLSystemFont">OnTrigger</span>
+    behavior of the <span class="NDLSystemFont">AbstractTriggerResponse</span>
+    mix-in. Click the downward-facing arrow next to <span class="NDLSystemFont">
+		Mix-in Behaviors</span>. Find the <span class="NDLSystemFont">OnTrigger
+		</span> behavior and click the downward-facing 
+    arrow next to it. Examine the Traits and make sure it says 
+		<span class="NDLSystemFont">Extends</span>. This
+    means that the parent mix-in behaviors will be called before this model's
+    implementation of the behavior (which is what we want). Go ahead and check 
+    the checkbox next to the word OnTrigger to indicate you want to override 
+		this behavior and then click the <span class="NDLSystemFont">Edit</span> 
+		button on the right.</li>
+
+    <li>You are now in the Lua script editor, editing the 
+		<span class="NDLSystemFont">OnTrigger</span> behavior of
+    <span class="NDLSystemFont">LandMine</span> model. This behavior is called 
+		by the <span class="NDLSystemFont">OnCollisionTrigger</span> model when it 
+    detects a player or enemy within its detection zone. The first thing we
+    need to do is determine who is going to take damage from this explosion.
+    We're going to use a built-in function to get a list of all entities within
+    a given radius of our land mine, then iterate over the list doing damage to
+    each. After everything else is complete, we'll delete ourselves. Paste the
+    following code into the Lua editor (replacing everything you see in the
+    editor). After doing that, you'll be able to run MangledMetal again and see
+    your land mine in action.
+        <pre>
+module("EseLandMine", package.seeall)
+
+-- Behavior
+function OnTrigger(self, params)
+   -- Figure out how big our sensitivity radius is.  It'll be the first element
+   -- of our ShapeDimensions property.
+   local shapeDimensions = self.ShapeDimensions
+   local triggerRadius = shapeDimensions[1]
+
+   -- Call the built-in function to get all entities within a given radius of us.
+   local outVal = {}
+   outVal = MmWorldServiceBuiltins.GetEntitiesByProximity(self, triggerRadius)
+
+   -- Iterate over the list and damage each entity.
+   for i,victimID in pairs(outVal) do
+   
+      victim = Emergent:GetEntity(victimID)
+
+      -- A model that mixes in "Victim" can take damage.  Anything not a Victim can be ignored.
+      if victim:ContainsBuiltin("Victim") == true then
+         -- Each Victim will display a damage effect (some sparks), so get the position
+         local victimPos = victim.Position
+
+         -- Create a data stream to pass to the Victim's OnAttacked behavior
+         local victimStream = ParameterList.ParameterList()
+		 
+		 victimPos.z = victimPos.z + 100 -- Add some height so it is not right at his feet
+
+         -- The Victim is expecting attacker ID; damage amount; damage effect name; and xyz of effect
+         victimStream:PutEntityID(self)
+         victimStream:PutFloat32(150) -- 150 points of damage
+         victimStream:PutString("DamageEffect") -- Name of effect we want to play when victim takes damage
+         victimStream:PutPoint3(victimPos)
+		 
+         -- Call the Victim to let it know it has been attacked
+		 victim:SendEvent("OnAttacked", victimStream, "")
+      end
+   end
+    -- Destroy ourself
+    BehaviorAPI.DestroyEntity(self)
+end
+</pre>
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="mm_adding_enemy.htm">Adding a new enemy type to
+    MangledMetal</a></li>
+
+    <li><a href="mm_adding_physical_prop.htm">Adding a new physical prop to
+    MangledMetal</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

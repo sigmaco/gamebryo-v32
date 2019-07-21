@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How to properly register a global shader constant map entry</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>How to properly register a global shader constant 
+ map entry</h1>
+
+<p>It is important to properly register global shader constant 
+ entries when they are being used. The following code snippet will demonstrate 
+ this:</p>
+
+<pre>
+// Assuming:
+//  pvData is the data source,
+//  uiDataSize is the size of the data,
+//  uiDataStride is the stride between data elements,
+//  pcKey is the name of the global attribute,
+//  eGlobalType is the appropriate NiShaderAttributeDesc::AttributeType,
+//  eMapping = NiShaderConstantMapEntry::SCME_MAP_GLOBAL
+//  uiGlobalFlags is the NiShaderConstantMapEntry flags for the
+//    attribute type,
+//  pkSCM is a pointer to a shader constant map, NiShaderConstantMap,
+//    instance,
+//  uiShaderRegister is the register to place the data in
+//  uiRegisterCount is the number of registers taken by the data
+//  pcVariableName is the name of the variable, if the shader makes use of
+//    a higher-level shader language
+ 
+if (!NiShaderFactory::RegisterGlobalShaderConstant(
+    pcKey, eGlobalType, uiDataSize, pvData))
+{
+    // Handle failure here
+    EE_ASSERT(!"Failed to add global constant!");
+}
+ 
+// Retrieve the global entry
+NiShaderFactory* pkShaderFactory =
+    NiShaderFactory::GetInstance();
+ 
+NiGlobalConstantEntry* pkGlobal =
+    pkShaderFactory-&gt;GetGlobalShaderConstantEntry(pcKey);
+EE_ASSERT(pkGlobal);
+ 
+// Add the entry to the constant map
+pkSCM-&gt;AddEntry(pcKey, eMapping |
+    NiShaderConstantMapEntry::GetAttributeFlags(eGlobalType), 0,
+    uiShaderRegister, uiRegisterCount, pcVariableName, uiDataSize,
+    uiDataStride, pkGlobal-&gt;GetDataSource());
+</pre>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

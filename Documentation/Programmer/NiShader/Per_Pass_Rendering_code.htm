@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Per-pass Rendering code</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Per-pass Rendering Code</h1>
+
+<p>For each pass, the renderer has the shader setup the 
+ rendering pass:</p>
+
+<p><span class="NDLSystemFont">uiRet = pkShader-&gt;SetupRenderingPass(kRCC);</span></p>
+
+
+<p>In the <span class="NDLSystemFont">NiD3DShader</span> 
+ class, this function simply calls <span class="NDLSystemFont">NiD3DPass::SetupRenderingPass</span> 
+ on the current pass pointer. In the pass class, the 'local' render state 
+ settings are made, and each texture stage in the pass array is configured. 
+ The return value is currently ignored by the renderer.</p>
+
+<p>The transformations required for the pass are setup 
+ next, via the following call:</p>
+
+<p><span class="NDLSystemFont">uiRet = pkShader-&gt;SetupTransformations(kRCC);</span></p>
+
+<p>On the first pass, this function pushes the world transform 
+ to the rendering device. On other passes, no work is done.</p>
+
+<p>In each pass, every submesh in <span class="NDLSystemFont">NiD3DPass::SetupShaderPrograms</span> 
+ function, which will set the pixel and vertex shaders on the device, as 
+ well as using the constant maps to set and shader constant registers required 
+ by the pass. The shader will also set the 'global' shader constant mappings 
+ in this call. This is currently called every submesh because although 
+ each submesh uses the same shader program, it may have different skin 
+ partitions and require a different set of constants to be set.</p>
+
+<p>Next, a call is made to prepare the submesh itself for 
+ rendering. </p>
+
+<p><span class="NDLSystemFont">pkShader-&gt;PreRenderSubMesh(kRCC);</span></p>
+
+
+
+<p>This function sets all of the stream sources and frequencies 
+ (for instancing support) on the rendering device itself.</p>
+
+<p>The submesh is then actually rendered with either a 
+ call to <span class="NDLSystemFont">IDirect3DDevice9::DrawIndexedPrimitive</span> 
+ or <span class="NDLSystemFont">IDirect3DDevice9::DrawPrimitive</span>, 
+ depending on whether an index array is present or not. (This code is not 
+ shown here, as it is not relevant to the shader system directly.)</p>
+
+<p>After rendering the submesh, a call is made to unset 
+ all of the stream sources and frequencies that were made in <span class="NDLSystemFont">NiD3DShader</span> 
+ calls the <span class="NDLSystemFont">NiD3DPass::PostProcessRenderingPass</span> 
+ on the current pass, increments the <span class="NDLSystemFont">m_uiCurrentPass</span> 
+ member. If the current pass is equal to the total pass count, the call 
+ with return 0 and terminate the rendering loop. Otherwise, the function 
+ sets the <span class="NDLSystemFont">m_spCurrentPass</span> 
+ pointer to the appropriate pass and returns the number of passes remaining.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><a href="Per_Mesh_Rendering_code.htm">Per-mesh Rendering code</a></li>
+</ul>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

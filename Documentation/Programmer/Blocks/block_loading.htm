@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>About loading assets</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>About Loading Blocks</h1>
+
+
+<h2>Block loading prerequisites</h2>
+<p>Block files support background loading through the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__AssetFactoryManager.htm">efd::AssetFactoryManager</a></span> using the
+<span class="NDLSystemFont"><a href="../../Reference/egf/egf__WorldFactory.htm">egf::WorldFactory</a>
+</span>. The asset files themselves are located using the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__AssetLocatorService.htm">efd::AssetLocatorService</a></span>. Finally the
+<span class="NDLSystemFont"><a href="../../Reference/egf/egf__EntityLoaderService.htm">
+egf::EntityLoaderService</a></span> performs the actual work of block parsing and entity creation.
+You should be sure these services and factories are property registered when using block files.</p>
+
+
+<h2>Creating a block</h2>
+
+<p>Blocks are created using Toolbench. To create your block follow these steps as detailed in the
+linked documentation:</p>
+<ol>
+    <li>Create the model using the Entity Modeling Tool. See <a href=
+    "../../Tools/EntityModelingTool/emt_model_create_add.htm">Creating/Adding Entity Models to a
+    Project</a>.</li>
+
+    <li>Create a world in World Builder. See <a href=
+    "../../Tools/Toolbench/tb_game_soln_content_add.htm">Adding Content to your Game Solution</a>.
+    </li>
+
+    <li>Include your model(s) in the world. See <a href=
+    "../../Tools/WorldBuilder/wb_entity_creation.htm">Creating an entity</a>.</li>
+
+    <li>Save (export) the block. See <a href=
+    "../../Tools/Toolbench/tb_game_soln_content_save.htm">Saving Content within your Game
+    Solution</a>.</li>
+</ol>
+
+
+<h2>How to load a block</h2>
+
+<p>To load a block file simply call <span class="NDLSystemFont">RequestEntitySetLoad</span> on the
+Entity Loader Service. For example, if you wanted to load "Level8.xblock" you can do the following:
+</p>
+<pre>
+egf::BlockIdentification worldURN("urn:emergent-world:Level8");
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+pELS-&gt;RequestEntitySetLoad(worldURN);
+</pre>
+
+
+<h2>Loading multiple instances of the same block</h2>
+
+<p>To load multiple copies of the same block file simply specify the block instance ID on the
+BlockIdentification you pass to <span class="NDLSystemFont">RequestEntitySetLoad</span>. For
+example, if you wanted to load two instances of "Level8.xblock" you can do the following:
+</p>
+<pre>
+egf::BlockIdentification firstInstance("urn:emergent-world:Level8", 1);
+egf::BlockIdentification secondInstance("urn:emergent-world:Level8", 2);
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+pELS-&gt;RequestEntitySetLoad(firstInstance);
+pELS-&gt;RequestEntitySetLoad(secondInstance);
+</pre>
+<p>Each block will be seperately loaded and the entities in each block will receive unique EntityID
+values. Any EntityRef properties on the loaded entities will link first to the versions of those
+entities from the same block. If the specified target entity is not from the same block then they
+next attempt to link to an entitity loaded from another block using the same instance ID. Finally
+if neither of those is found they will attempt to link to any entity found in a block with an
+instance ID of zero.</p>
+
+
+<h2>Detecting when a block load completes</h2>
+
+<p>You can detect when a block load has completed loading by passing a callback category when you
+load the block. This will cause one or more <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__EntityLoadResult.htm">egf::EntityLoadResult</a></span> messages to be sent
+to the given callback category. You must define a message handler for <span class="NDLSystemFont">
+egf::EntityLoadResult</span> messages, generate and subscribe to a callback category and pass that
+category to <span class="NDLSystemFont">RequestEntitySetLoad</span> using a <span class=
+"NDLSystemFont"><a href="../../Reference/egf/egf__BlockLoadParameters.htm">egf::BlockLoadParameters
+</a></span> instance. The system will send an <span class="NDLSystemFont">egf::EntityLoadResult</span>
+message to the handler once the world is completely loaded and ready for use.</p>
+
+<p>First define a handler method.</p>
+<pre>
+// This specifies that MyClass::HandleEntityLoadResult is a message handler for messages of type
+// egf::EntityLoadResult.
+EE_HANDLER(MyClass, HandleEntityLoadResult, egf::EntityLoadResult);
+</pre>
+
+<p>When making the <span class="NDLSystemFont">RequestEntitySetLoad</span> call, provide a callback
+category. Here we are assuming a suitable callback category has been created and subscribed to
+before making this call.</p>
+<pre>
+// Setup the BlockIdentification as normal
+egf::BlockIdentification worldURN("urn:emergent-world:Level8");
+
+// For the common case of wanting a message-based callback you can simply pass the desired
+// category to the BlockLoadParameters constructor. See BlockLoadParameters for more options.
+egf::BlockLoadParameters loadParams(m_myCategory);
+
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+
+// Although the BlockLoadParameters is passed by pointer, it is recommended that a stack object
+// be used as the necessary settings are simply copied to other storage.
+pELS-&gt;RequestEntitySetLoad(worldURN, &loadParams);
+</pre>
+
+<p>In your handler, perform any actions you need to take after the world has loaded.</p>
+<pre>
+void MyClass::HandleEntityLoadResult(
+    const egf::EntityLoadResult* pWorldMessage,
+    efd::Category targetChannel)
+{
+    if (pWorldMessage-&gt;m_result == egf::EntityLoadResult::elr_EntityCreationCompleted)
+    {
+        // Perform actions waiting on the block to finish loading. For example, stop showing the
+        // loading screen and start the game.
+    }
+}
+</pre>
+
+<p>There are mutliple <span class="NDLSystemFont">EntityLoadResult</span> status messages that are
+sent as the block file loads. Also for large blocks it will likely take multiple frames to load the
+entire block file in which case status update messages are also sent. For a full list of what status
+messages will be sent see the documentation for <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__EntityLoadResult.htm#classegf_1_1_entity_load_result_1a0a16179d3ea9976996affd56c0bc9bd5"
+>egf::EntityLoadResult::Result</a></span>. In
+addition, you can surpress sending various result values that you are not interested in to avoid the
+message delivery overhead. To suppress certain results use <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__BlockLoadParameters.htm#classegf_1_1_block_load_parameters_1a709dc4db64b05324efb0532275eb0a65"
+>egf::BlockLoadParameters::SetActiveCallbacks</a></span> as in this example:</p>
+<pre>
+egf::BlockLoadParameters loadParams(m_myCategory);
+// The value blc_AnyFinalLoad will supress everything but the final elr_EntityCreationCompleted
+// result or any failure result. This way I should only receive exactly one callback message.
+loadParams.SetActiveCallbacks(egf::BlockLoadParameters::blc_AnyFinalLoad);
+
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+pELS-&gt;RequestEntitySetLoad("urn:emergent-world:Level8", &loadParams);
+</pre>
+
+
+<h2>Loading Multiple World Files</h2>
+
+<p>You are not restricted to loading a single world file at a time. The Entity Loader Service can
+load as many world files as requested. However be aware that block file loads happen asynchronously,
+so there is no guaranteed load order when requesting multiple block loads at the same time. If you
+need to control the order in which the blocks are loaded, you will need application logic to
+sequentuially load the blocks. For example, the <span class="NDLSystemFont">egmSample::LoadingState
+</span> class used in BaseGame and PeerGame samples will load a list of blocks one at a time.</p>
+
+
+<h2>Selecting the initial block file for samples</h2>
+
+<p>Many Emergent samples such as BaseGame and PeerGame specify the initial block file to load from
+a configuration setting read from the "<span class="NDLSystemFont">config.ini</span>" file. If you
+would like to view a different block in one of these samples, simply edit the configuration to
+change the "<span class="NDLSystemFont">Game.InitialWorld</span>" setting to the URN for the desired
+block. Some of these samples come with multiple block files that demonstrate different features. An
+example of setting this option would look like:</p>
+<pre>
+[Game]
+InitialWorld=urn:emergent-world:MyWorld
+</pre>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="block_about.htm">About block files</a></li>
+    <li><a href="block_loading.htm">Loading Blocks</a></li>
+    <li><a href="block_options.htm">Block Loading Options</a></li>
+    <li><a href="block_unloading.htm">Managing Loaded Blocks</a></li>
+    <li><a href="block_load_sequence.htm">Block Loading Sequence</a></li>
+    <li><a href="block_best_practice.htm">Block Best Practices</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

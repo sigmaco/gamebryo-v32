@@ -1,0 +1,494 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Culling a Scene Graph</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Culling a Scene Graph</h1>
+
+<h2>Determining which Objects to Render</h2>
+
+<p>Gamebryo splits the concept of a hierarchical scene graph from
+the actual process of rendering. While scene graphs contain
+<span class="NDLSystemFont">NiAVObject</span> subclasses,
+including internal grouping nodes and leaves that may or may not
+contain renderable objects, the process of renderingonly consumes
+renderable leaf objects. The rendering subsystems are designed to
+deal with <span class="NDLSystemFont">NiRenderObject</span>
+subclasses and flat, array-like containers that hold collections
+of these <span class="NDLSystemFont">NiRenderObject</span>
+objects <span class="NDLSystemFont">NiVisibleArray</span>). In
+fact, the rendering subsystem has no need for or knowledge of the
+hierarchy that is defined by the scene graph, only the leaf
+geometries.</p>
+
+<p>Having prepared all of the renderable objects in a scene graph
+for rendering, the next important step is generating the visible
+set of leaf <span class="NDLSystemFont">NiRenderObject</span>
+objects that form the input to the next stage in the pipeline,
+low-level rendering. It is too expensive computationally to
+simply take all of the leaf geometry objects in the scene and
+send them to the renderer directly. We must extract the
+potentially visible subset of these for the current view. The
+easiest way to determine which of the many leaf renderable
+objects in a scene graphare potentially visible in a given frame
+from a specific camera's point-of-viewis the process of culling,
+and it is implemented in Gamebryo via the <span class=
+"NDLSystemFont">NiCullingProcess</span> class.</p>
+
+<p>The culling process takes a hierarchical scene graph and a
+camera and produces a flat array (an <span class=
+"NDLSystemFont">NiVisibleArray</span>) of the leaf renderable
+objects contained in the scene graph that are potentially visible
+from the camera. "Potentially visible" means that some objects
+may be placed on the list even if they are occluded by others,
+etc. The process of culling is designed to be fast and
+conservative - some culling methods may include objects that do
+not actually end up being visible for one reason or another, but
+no correctly-written culling process should leave out a visible
+object.</p>
+
+<h2>The Concept of Hierarchical Culling</h2>
+
+<p>Scene graph culling is a hierarchical walk of the scene graph,
+looking for visible leaf renderable objects. The traversal is
+generally a partial traversal, as an entire sub-tree of a scene
+graph can be skipped if the bounding sphere of aninternal scene
+graph node is found to be outside of the view frustum. This is
+possible because the update process ensures that the world
+bounding sphere at each node encloses the bounding volumes of its
+sub-tree. If a given node falls entirely outside of the view
+frustum, then nothing under it in the hierarchy can be visible.
+When the culling traversal finds that it has reached a leaf
+renderable object that is visible (and not marked as "app culled"
+via the <span class=
+"NDLSystemFont">NiAVObject::GetAppCulled()</span> function), the
+<span class="NDLSystemFont">NiCullingProcess</span> object
+appends that renderable object to its <span class=
+"NDLSystemFont">NiVisibleArray</span> container (for later
+rendering).</p>
+
+<p>Thus, after each culling traversal of a scene graph, the
+internal and leaf nodes all fall into one of three categories:
+objects that were traversed and found to be visible (and thus
+processed further), objects that were found to be invisible (and
+thus not processed any further), and objects that were never
+traversed at all (because one of their recursive parents was
+found to be invisible). This lattermost category costs nothing in
+terms of computation and thus is the most attractive case. An
+example of a scene graph that is colored according to a
+hypothetical culling traversal is shown below.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/CullingHierarchy.gif" width="513" height=
+    "658"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Culling and NiDrawScene</h2>
+
+<p>The <span class="NDLSystemFont">NiDrawScene</span> global
+drawing utility function culls and renders geometry in a single
+call. Many Gamebryo applications and most of the Gamebryo samples
+use this function to accomplish both their culling and rendering
+functionality. The rendering behavior of <span class=
+"NDLSystemFont">NiDrawScene</span> is discussed in the section
+<a href="Rendering_Meshes.htm">Rendering Meshes</a>.</p>
+
+<p>The function also does a culling traversal. Prior to
+rendering, <span class="NDLSystemFont">NiDrawScene</span>
+generates the set of geometry to be rendered by performing a
+culling operation using all of the four arguments sent to it. It
+uses the visible array that is passed in (or the one attached to
+the culling process if the visible array argument is <span class=
+"NDLSystemFont">NULL</span>, see below) as the destination of the
+culling operation. Any object that existed in the visible array
+prior to the call to <span class=
+"NDLSystemFont">NiDrawScene</span> is cleared out prior to
+culling. Thus, the renderable objects in the visible array after
+culling are only the newly-culled objects. The resulting visible
+array is then rendered by <span class=
+"NDLSystemFont">NiDrawScene</span>, using the methods described
+in <a href="Rendering_Meshes.htm">Rendering Meshes</a>.</p>
+
+<p>The result of this automated behavior is that some more basic
+applications will never need to do anything more with the
+culling-specific objects <span class=
+"NDLSystemFont">NiCullingProcess</span> and <span class=
+"NDLSystemFont">NiVisibleArray</span> other than create them and
+pass them in to <span class="NDLSystemFont">NiDrawScene</span>.
+The following sections provide details regarding the
+functionality of the various culling-related objects, and also
+provide details of the inner workings of hierarchical culling in
+Gamebryo. These will be of interest to most application
+developers.</p>
+
+<h2>Top-level Culling Objects</h2>
+
+<p>There are four objects that must be available in order to
+successfully cull a scene graph into an array of visible
+geometry. These four objects fall into three categories:</p>
+
+<ul>
+    <li>The source objects: The scene graph (represented by its
+    root <span class="NDLSystemFont">NiAVObject</span>) that
+    represents the world to be culled and the <span class=
+    "NDLSystemFont">NiCamera</span> that represents the view from
+    which we will cull</li>
+
+    <li>The processing object: The <span class=
+    "NDLSystemFont">NiCullingProcess</span>, which implements the
+    mechanics of the culling algorithm itself</li>
+
+    <li>The destination object: The <span class=
+    "NDLSystemFont">NiVisibleArray</span>, to which are added
+    references to each of the visible leaf geometry objects in
+    the scene</li>
+</ul>
+
+<p>The requirements regarding the <span class=
+"NDLSystemFont">NiCamera</span> and the scene graph prior to
+culling are described elsewhere in the section <a href=
+"Preparing_a_Scene_for_Rendering.htm">Preparinga Scenefor
+Rendering</a>. The other two objects are specific to culling
+and/or rendering. The <span class=
+"NDLSystemFont">NiVisibleArray</span> is the simpler of the two,
+as it provides nothing more than a simple, automatically growing
+container to hold references to the visible geometry objects.
+<span class="NDLSystemFont">NiCullingProcess</span> is a more
+complex object, but only two of its memberfunctions are of
+interest to an application-level user. The following sections
+discuss the basic usage of these two objects with respect to
+culling.</p>
+
+<h3>NiVisibleArray</h3>
+
+<p><span class="NDLSystemFont">NiVisibleArray</span> implements
+an array-based container of references to <span class=
+"NDLSystemFont">NiRenderObject</span> objects. It represents the
+communication between culling and rendering, as it is the result
+of culling <em>and</em> the source of objects for sorting and
+rendering. Ignoring rendering itself for now (the rendering of
+<span class="NDLSystemFont">NiVisibleArray</span> objects is
+covered in the section <a href="Rendering_Meshes.htm">Rendering
+Meshes</a>), applications that invoke culling directly will need
+to use <span class="NDLSystemFont">NiVisibleArray</span> objects
+explicitly in three places: creation of the <span class=
+"NDLSystemFont">NiVisibleArray</span>, passing the <span class=
+"NDLSystemFont">NiVisibleArray</span> into the <span class=
+"NDLSystemFont">NiCullingProcess</span>, resetting the visible
+array each frame.</p>
+
+<p>Creating an <span class="NDLSystemFont">NiVisibleArray</span>
+is simple;</p>
+
+<p>NiVisibleArray* pkVisible = NiNew NiVisibleArray;</p>
+
+<p>will create an <span class=
+"NDLSystemFont">NiVisibleArray</span> object with default initial
+size (the number of elements in the array as allocated initially)
+and "grow by" increment (the number of elements that will be
+appended to the end of the array each time the existing storage
+is filled). Larger numbers for either will avoid fragmentation
+from many reallocations if the array must grow during culling,
+but using numbers that are much larger than the expected size of
+the array (i.e. the number of expected visible objects) will
+waste memory. See the reference documentation for <span class=
+"NDLSystemFont">NiVisibleArray</span> for details on how to find
+the default size for these values. Alternatively, the application
+can explicitly send the initial size and "grow by" values
+explicitly to the constructor; this allows the application to
+size the visible array at startup according to the expected
+number of objects per culling operation:</p>
+
+<p><span class="NDLSystemFont">NiVisibleArray* pkVisible = NiNew
+NiVisibleArray(uiInitialSize, uiGrowBy);</span></p>
+
+<p>Having created the visible array object, the visible array
+needs to be passed to the <span class=
+"NDLSystemFont">NiCullingProcess</span> for use in culling
+operations. The most common way of doing this is to passthe
+visible array into the<span class=
+"NDLSystemFont">NiCullingProcess</span> constructor. If passed in
+at creation, the <span class=
+"NDLSystemFont">NiCullingProcess</span>can use that <span class=
+"NDLSystemFont">NiVisibleArray</span> implicitly as the
+destination of all culling operations. Alternatively, an
+<span class="NDLSystemFont">NiVisibleArray</span> may be passed
+in to the culling process in the culling call itself (as will be
+discussed below). However, the simpler case is to pass the
+<span class="NDLSystemFont">NiVisibleArray</span> to the
+<span class="NDLSystemFont">NiCullingProcess</span> constructor.
+Note that the <span class="NDLSystemFont">NiCullingProcess</span>
+does not take ownership of its <span class=
+"NDLSystemFont">NiVisibleArray</span> - it is the responsibility
+of the application to delete it:</p>
+
+<p><span class="NDLSystemFont">NiCullingProcess* pkCuller = NiNew
+NiCullingProcess(pkVisible);</span></p>
+
+<p>In fact, many Gamebryo sample applications handle all of these
+steps (including deletion of both objects) in four very simple
+lines. They declare each of the objects in their application
+class header:</p>
+
+<p><span class="NDLSystemFont">NiVisibleArray
+m_kVisible;</span></p>
+
+<p><span class="NDLSystemFont">NiCullingProcess
+m_kCuller;</span></p>
+
+<p>and then initialize them as follows in the constructor's
+initialization list:</p>
+
+<p><span class="NDLSystemFont">m_kVisible(1024, 1024),</span></p>
+
+<p><span class="NDLSystemFont">NiCullingProcess
+m_kCuller(&amp;m_kVisible),</span></p>
+
+<p>The only other step that must be done manually for
+applications calling culling explicitly is to clear out any
+existing objects from the visible array after rendering it and
+before culling the next frame (or batch of renderable objects).
+At the beginning of the frame (or right before culling in some
+cases), the array needs to be reset to empty, since the
+<span class="NDLSystemFont">NiCullingProcess</span> appends
+renderable objects onto an existing array, rather than clearing
+it first (this affords more flexibility by allowing several
+culling operations to append onto the end of the same array). The
+function is <span class=
+"NDLSystemFont">NiVisibleArray::RemoveAll()</span>.</p>
+
+<p><span class="NDLSystemFont">m_kVisible.RemoveAll();</span></p>
+
+<p>The other functions contained in <span class=
+"NDLSystemFont">NiVisibleArray</span> are for the purposes of
+traversing the geometry objects that were added via the culling
+process. Several of these functions are described in <a href=
+"Rendering_Meshes.htm">Rendering Meshes</a>.</p>
+
+<h3>NiCullingProcess</h3>
+
+<p>Construction of an <span class=
+"NDLSystemFont">NiCullingProcess</span> was discussed briefly in
+the section above. The single argument to the <span class=
+"NDLSystemFont">NiCullingProcess</span> constructor is a pointer
+to the <span class="NDLSystemFont">NiVisibleArray</span> to which
+the culling process object should append geometry by default.
+This can be passed as <span class="NDLSystemFont">NULL</span> if
+desired, but most applications will provide a default visible
+array at construction time. The culling process does not take
+ownership of itsvisible arrayand will not delete the visible
+array upon destruction.</p>
+
+<p>There is only one additional member function of <span class=
+"NDLSystemFont">NiCullingProcess</span> that is of interest to
+most applications; <span class="NDLSystemFont">Process</span>.
+However, this is the single most pivotal function in the entire
+culling system:</p>
+
+<p><span class="NDLSystemFont">void Process(const NiCamera*
+pkCamera, NiAVObject* pkScene, NiVisibleArray*
+pkVisibleSet)</span></p>
+
+<p>At the highest level, this function causes the calling culling
+process to cull the given scene from the point-of-view of the
+given camera, appending the potentially visible leaf <span class=
+"NDLSystemFont">NiRenderObject</span> objects from the scene
+graph onto the end of an <span class=
+"NDLSystemFont">NiVisibleArray</span>.</p>
+
+<p>The first argument must be a valid, updated <span class=
+"NDLSystemFont">NiCamera</span> that defines the view. Culling
+will be done from the point-of-view of this camera. The second
+argument must be a valid, updated scene graph root that defines
+the renderable objects to be viewed by the camera.</p>
+
+<p>The third argument is optional in most cases - if a
+non-<span class="NDLSystemFont">NULL</span> visible array is
+passed into the third argument, then it is this visible array
+that is used as the destination of the culling operation. If
+<span class="NDLSystemFont">NULL</span> is passed in as the third
+argument, then the <span class=
+"NDLSystemFont">NiCullingProcess</span> object's internal
+<span class="NDLSystemFont">NiVisibleArray</span> (set at
+construction time or by a later call to <span class=
+"NDLSystemFont">NiCullingProcess::SetVisibleSet</span>) is used.
+If the both the argument and the internally-held <span class=
+"NDLSystemFont">NiVisibleArray</span> are both NULL, then the
+function returns without doing any culling.</p>
+
+<p>When the function returns, the destination visible array (as
+described in the paragraph above) will contain the visible
+renderable objects from the scene, appended onto whatever
+renderable objects were in the visible array prior to the call.
+It is this visible array that is used directly by the next step
+in the scene-drawing process, rendering. Rendering is discussed
+in detail in the section <a href="Rendering_Meshes.htm">Rendering
+Meshes</a> .</p>
+
+<h2>Advanced Discussion: The Mechanics of Culling</h2>
+
+<p>Culling is a recursive process. The recursion itselfinvolves
+two major types of object and several additional "helper"
+objects. The major objects involved in the recursion are the
+<span class="NDLSystemFont">NiAVObjects</span> (and subclasses)
+that form the hierarchical scene graph and the <span class=
+"NDLSystemFont">NiCullingProcess</span> object itself. The result
+of the culling pass is that the <span class=
+"NDLSystemFont">NiCullingProcess</span> object will have placed
+references to the visible leaf <span class=
+"NDLSystemFont">NiRenderObject</span> objects within the given
+scene graph into an <span class=
+"NDLSystemFont">NiVisibleArray</span> that is stored in the
+<span class="NDLSystemFont">NiCullingProcess</span>. The scene
+graph objects and the <span class=
+"NDLSystemFont">NiCullingProcess</span> are both active
+participants in the culling traversal.</p>
+
+<p>The <span class="NDLSystemFont">NiCullingProcess</span>
+implements the act of determining whether a given object in the
+hierarchy is visible in and of itself. In the case of the base
+class <span class="NDLSystemFont">NiCullingProcess</span>, this
+involves testing the scene graph object's world-space bounding
+sphere against a set of view frustum planes that represent the
+camera. These view frustum planes are stored in an <span class=
+"NDLSystemFont">NiFrustumPlanes</span> object within the
+<span class="NDLSystemFont">NiCullingProcess</span>.</p>
+
+<p>When the <span class="NDLSystemFont">NiCullingProcess</span>
+determines that a given scene graph object is visible by the
+aforementioned test, it calls <span class=
+"NDLSystemFont">NiAVObject::OnVisible</span> on the scene graph
+object in question. <span class="NDLSystemFont">OnVisible</span>
+is virtual, and implements different "on visible" behavior for
+each type of scene graph object. Visible internal nodes pass
+their children to the <span class=
+"NDLSystemFont">NiCullingProcess</span> object (via <span class=
+"NDLSystemFont">NiCullingProcess::Process(NiAVObject*)</span>)in
+order to continue the recursion. Visible leaf geometry nodes pass
+themselves back to the <span class=
+"NDLSystemFont">NiCullingProcess (via
+NiCullingProcess::Append)</span> to be added to the list of
+visible geometry.</p>
+
+<p>Thus, the <span class="NDLSystemFont">NiCullingProcess</span>
+handles the visibility testing of each potentially visible object
+in the hierarchy and the registration of visible leaf geometry
+objects into the array of visible objects. The scene graph
+objects themselves implement the per-node hierarchical traversal
+behavior. This splits the responsibilities quite cleanly, and
+allows for advanced behavior in both the scene graph traversal
+dimension (e.g. <span class="NDLSystemFont">NiLODNode</span>,
+which traverses only the child representing themost appropriate
+level of detail) and in the culling dimension (e.g. <span class=
+"NDLSystemFont">NiFixtureCuller</span>, an <span class=
+"NDLSystemFont">NiCullingProcess</span> that ensures that
+cell-portal scenes do not register any single geometry object
+more than once per culling pass).</p>
+
+<p>To relate this discussion to the figure above, we consider the
+meaning of each shading color with respect to the culling-related
+functions that will have been called upon or with that
+object.</p>
+
+<ul>
+    <li>Any object marked in gray (not visited) has had none of
+    the above calls invoked upon it or with it as an argument -
+    culling has not considered it at all in this pass.</li>
+
+    <li>Any object marked in black (visited, not visible) has had
+    <span class=
+    "NDLSystemFont">NiCullingProcess::Process(NiAVObject*)</span>
+    called with it, but has <em>not</em> had <span class=
+    "NDLSystemFont">NiAVObject::OnVisible</span> called upon it.
+    In other words, objects shaded black were tested by the
+    <span class="NDLSystemFont">NiCullingProcess</span>, but were
+    found not to be visible.</li>
+
+    <li>Any objectmarked inwhite (visited, visible) have had both
+    <span class=
+    "NDLSystemFont">NiCullingProcess::Process(NiAVObject*)</span>
+    called with it, and had <span class=
+    "NDLSystemFont">NiAVObject::OnVisible</span> called upon it.
+    In other words, objects shadedwhite were tested by the
+    <span class="NDLSystemFont">NiCullingProcess</span> andwere
+    foundto be visible, requiring further processing. If the
+    visible object is an internal node, this will lead to
+    <span class=
+    "NDLSystemFont">NiCullingProcess::Process(NiAVObject*)</span>
+    being called on each of its children. If the visible object
+    is a leaf geometry node, this will lead to the object calling
+    <span class="NDLSystemFont">NiCullingProcess::Append</span>
+    upon itself.</li>
+</ul>
+
+<p>The result of most culling operations will be that the visible
+array is filled with visible objects that are added in the order
+in which they were found in the scene graph traversal - namely,a
+depth-firsttraversal (in scene graph terms, <em>not</em> view
+depth!),in order ofincreasing child index within a node. However,
+each subclass of <span class="NDLSystemFont">NiNode</span> can
+override the exact traversal method, as mentioned above.
+<span class="NDLSystemFont">NiSwitchNode</span>, for
+exampletraverses only a single, selected child during
+culling.</p>
+
+<h2>Culling and the NiSortAdjustNode</h2>
+
+<p>One type of node in the scene graph hierarchy adds additional
+behavior during the culling passwhose effectis not actually
+realized until the (later) rendering stage; <span class=
+"NDLSystemFont">NiSortAdjustNode</span>. <span class=
+"NDLSystemFont">NiSortAdjustNode</span> is different from most
+other scene graph classes in that it "tags" the visible leaf
+geometry objects under it during a culling traversal. The "tags"
+it sets are the <span class=
+"NDLSystemFont">NiRenderObject::Set/GetSortObject</span> flags.
+These flags are used later in the process by some <span class=
+"NDLSystemFont">NiAccumulator</span> objects during sorted
+rendering to adjust the sorting behavior. See the documentation
+sections <a href="Rendering_Meshes.htm">Rendering Meshes</a>and
+<a href="Object_Sorting.htm">Object Sorting</a> for details of
+geometry rendering, both sorted and unsorted. The initial
+"tagging" work is done during the culling pass because the
+culling phase is the last hierarchical stage in the drawing
+pipeline. For more details on <span class=
+"NDLSystemFont">NiSortAdjustNode</span> and how it fits into the
+process of sorted rendering, see the documentation sections on
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSortAdjustNode.htm">NiSortAdjustNode</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAlphaAccumulator.htm">NiAlphaAccumulator</a></span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

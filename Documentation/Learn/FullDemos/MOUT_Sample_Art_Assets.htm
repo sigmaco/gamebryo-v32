@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MOUT Sample Art Assets</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>MOUT Sample Art Assets</h1>
+
+<p>The source data files for the assets used in MOUT can be found
+in the <span class="NDLSystemFont">Art Files</span> subfolder of
+the MOUT sample. Three main datasets were created for MOUT: the
+character file, <span class="NDLSystemFont">Soldier.max</span>,
+the scene file, <span class="NDLSystemFont">DT.max</span>, and
+the sky, <span class="NDLSystemFont">skydome.max</span>.</p>
+
+<h2>The Character</h2>
+
+<h3>Rigging</h3>
+
+<p>The soldier character was rigged to the standard Character
+Studio Biped. A Skin modifier was used on the soldier mesh
+instead of the Physique modifier because Skin is more stable and
+simpler to set up in Max. The default settings were used when
+setting up the character's skin.</p>
+
+<h3>Texturing</h3>
+
+<p>The soldier's material was set to a "<a href=
+"../../Art/Max/Multi_Sub_Object_Materials_and_Shell_Materials.htm">
+multi-sub</a>" material with three sub-materials; one each for
+the body, head, and goggles. The goggles required their own
+sub-material due to the fact that the goggles required an alpha
+channel in the texture map. The maps used for the body and head
+were 512x512 pixels each; both were 24 bits per pixel. The
+goggle texture was 128x256 pixels at 32 bits per pixel. When
+creating real-time datasets, it is important to minimize the
+number of distinct textures applied to any object. Each
+independent texture becomes a separate mesh in the runtime
+dataset, even if multiple textures are a part of the same overall
+multi-sub material. </p>
+
+<p>Minimizing total object count is important to runtime
+performance, especially when creating character datasets to be
+rendered on consumer-level DirectX based hardware.</p>
+
+<h3>Animation</h3>
+
+<p>The character animations consist of a set of independent
+loops: a walk cycle, a run cycle, and several idle cycles. These
+loops were marked as sequences in 3ds Max using the Gamebryo
+Animation Manager. In order to facilitate smooth morphing
+between walk and run cycles, sequence tags were added to the
+animation tracks. This allows the system to synchronize the
+footfalls when transitioning between the run and walk cycles.
+Text tags called .left' and .right' were created at each footfall
+for the left and right feet (respectively) in both the run and
+walk cycles. (These can be set under the Sequence Tags rollout of
+the Gamebryo <a href=
+"../../Art/Max/Introduction_!Animation_Manager.htm">Animation
+Manager Utility</a> in 3ds Max.)</p>
+
+<p>Having exported the character, it was loaded into the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Animation
+Tool</a> to create the KFM file. The KFM file was adjusted to
+recognize the aforementioned .left' and .right' text keys,
+stretching the animations in time during transitions so that
+footfalls would always match up. These settings can be adjusted
+using the <a href=
+"../../Tools/animation_tool/Transition_View.htm">Transition
+View</a> in the Gamebryo Animation Tool.</p>
+
+<h2>The Scene</h2>
+
+<h3>Hierarchy</h3>
+
+<p>The file <span class="NDLSystemFont">DT.max</span> contains
+the main scenery object, specifically the buildings and
+landscape. The hierarchy in 3ds Max consists of five sibling
+group objects, which exports to a Gamebryo scene graph with five
+main nodes. Each of these nodes contains additional structures
+beneath them, as follows:</p>
+
+<ul>
+    <li>"buildings": This node contains the geometry representing
+    all of the town buildings. All objects under this node
+    support an "x-ray" mode, which is used to make the buildings
+    transparent when they block the camera's view of the soldier
+    in the final application. This node contains only rendered
+    geometry, with no additional collision information. The
+    components of each building are grouped together into
+    per-building group nodes. No multi-sub materials are used,
+    ensuring that a flat hierarchy will appear under each
+    building group. This is required by the application in order
+    for the "x-ray" mode to operate properly.</li>
+
+    <li>"collision": This node contains all of the invisible
+    collision data. The collision objects were placed under a
+    separate node to avoid having to traverse the entire scene
+    graph at runtime in order to find the bounding boxes. In
+    order for the collision system to parse the data properly,
+    the geometric data for each collision box object is grouped
+    under an individual group node.</li>
+
+    <li>"effects": All of the special effects are grouped under
+    this node, including the particle systems, morphing fire
+    geometry, and water effects.</li>
+
+    <li>"environment objects": This node contains all static town
+    geometry that is not intended to be affected by the "x-ray"
+    mode (i.e. static town objects other than buildings). Most
+    importantly, this includes the terrain (or land)
+    objects.</li>
+
+    <li>"lights": Contains all lights that affect the scene.
+    These lights are animated, changing color and brightness over
+    time. The effect is quite subtle and may not be immediately
+    apparent. </li>
+</ul>
+
+<p>One additional standalone node at the root of the 3ds Max file
+is a dummy object called "start". This object's location and
+orientation determine the initial placement of the soldier
+character, as well as his initial orientation (the initial
+character orientation is equal to the local space negative-Y
+direction of this node in max).   </p>
+
+<h3>Terrain</h3>
+
+<p>The terrain geometry is contained in the "land" object. This
+object is also the only one in the scene that uses a multi-sub
+material. The object uses a custom shader, which was written to
+blend between two textures based on the per-vertex alpha value of
+the mesh to which it is applied. This custom shader is called
+"VCAlphaTextureBlender", and can be found under the "<a href=
+"../../Art/Max/Custom_Shader_Sub_Panel.htm">Custom Shader</a>"
+drop-down in the Gamebryo <a href=
+"../../Art/Max/Materials_Introduction.htm">Material panel</a> in
+3ds Max. With this shader, an alpha value of 100 will cause the
+shader to use the texture loaded in slot 1 of the shader's
+<a href=
+"../../Art/Max/Custom_Attributes_For_your_Custom_Shaders.htm">custom
+attributes</a>, while an alpha value of 0 will cause the shader
+to use the texture in slot two. Alpha values between 1 and 99
+will blend between these two textures proportionally. Each of
+these two textures has its own UVW coordinates, allowing the
+textures to be mapped completely independent of one another. In
+addition, a third independent map (a detail map) is applied over
+the entire surface.</p>
+
+<p>The shader uses the per-vertex alpha values to blend the
+textures in order to avoid having to use the vertex colors for
+the same purpose. The scene contains static vertex colors to
+create the effect of varying lighting and color across the
+terrain. Owing to the fact that the terrain required more then
+two distinct textures across its surface, the terrain was split
+into a multi-sub material. Each sub-material uses the
+VCAlphaTextureBlender with the image <span class=
+"NDLSystemFont">dirt01.dds</span> in the first slot (as the
+common "base" texture), while the second texture of each
+sub-material varies depending on the terrain area. The vertex
+alpha values were set to 100 along the edges of abutting
+multi-sub materials (material ID's), causing the common dirt
+texture to be drawn on either side of the shared edge. This
+causes the edges of the multi-sub materials to be almost
+completely invisible.</p>
+
+<p>Note that this Gamebryo "shader" does <em>not</em> require
+support for D3D Pixel or Vertex Shaders, and is an example of a
+fixed-function shader. The Gamebryo shader in this case simply
+replaces Gamebryo's standard rendering pipeline; it is capable of
+running on 3D hardware cards that do not support Pixel and Vertex
+Shaders.</p>
+
+<h3>Buildings</h3>
+
+<p>Each building contains several pieces; windows, doors, etc.
+Each piece has its own texture, applied as a base map.
+Additionally, the dark map slot is used to add additional "dirt"
+or "noise" to the buildings (e.g. the texture <span class=
+"NDLSystemFont">darknoise01-06.dds</span>.) In this dataset, the
+dark map slot is <em>not</em> used for lighting (the standard use
+of a darkmap), because static vertex colors were used to provide
+any extra lighting and shadows as needed. The dark map is used to
+apply dirt and noise textures, which were applied with different
+UVW coordinates from those of the base maps. This minimizes the
+obvious effects of repeating textures.</p>
+
+<h3>Water</h3>
+
+<p>The water effect is created using the combination of several
+basic elements, none of which require custom shaders. These
+elements include:</p>
+
+<ol>
+    <li>An environment map: The omni light called
+    "EnvironmentMap01" is set to include the water mesh in its
+    inclusion list. An environment map image is loaded under the
+    omni's Shadow Parameters; thus, when exported, Gamebryo
+    converts the light into a projected texture effect. The light
+    had to be rotated along its local X-axis to tweak the viewing
+    angle of the reflection.</li>
+
+    <li>A flipbook (or animated) texture is used as a bumpmap.
+    The animated effect consists of 31 textures, each a 64x64
+    grayscale image (<span class=
+    "NDLSystemFont">caust##.bmp</span>). These are placed in the
+    bump map slot of the water material.</li>
+
+    <li>Per-vertex alpha values are used to fade the water out
+    along the riverbank; vertex colors are used to modulate the
+    color of the water itself. A tiled UVW mapping of the bump
+    map created quite a repetitive pattern, so an "unwrap"
+    modifier was applied and the UVW coordinates were warped.
+    This decreases the effect of the repeating pattern and
+    creates the slight illusion of the water speeding up and
+    slowing down in some sections of the river.</li>
+</ol>
+
+<h3>Lighting</h3>
+
+<p>There are two main lights in the <span class=
+"NDLSystemFont">DT.max</span> file; these are set to light the
+entire scene. The first of these lights is an omni light, which
+represents the sun. A dummy node is placed in the same position
+as this light, and provides the direction for the projected
+shadow on the soldier in the application itself. The second main
+light is a directional light, added to provide some "cold"
+backlighting. Both of these lights animate slightly over time in
+both color and intensity.</p>
+
+<p>Three smaller omni lights are placed in the scene to provide
+dynamic lighting effects around the fire areas. In addition,
+these lights serve to light up the smoke particle effects,
+providing the effect of depth to the smoke clouds. These omni
+lights are set to attenuate with increasing distance, and do not
+affect the whole scene. The limits are set in the light dialog by
+adjusting the far attenuation settings and setting the decay type
+to "Inverse Square".</p>
+
+<p>Static lighting was burned into the buildings and the terrain
+by using the "Paint Vertex Colors" modifier in max. Additional
+lights were set up, burned into all the meshes, and then deleted
+from the Max file. Remaining lighting artifacts on several meshes
+were touched-up with additional hand painting of the vertex
+colors.</p>
+
+<h2>Export</h2>
+
+<p>The default Gamebryo Process Script was modified slightly
+prior to exporting data sets for the MOUT Demo. The "<a href=
+"../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">Scene
+Graph Optimization</a>" plug-in was set to disable the merging of
+sibling nodes and to disable the merging of sibling <span class=
+"NDLSystemFont">NiMesh</span> objects that share the same
+material. While these are normally very powerful optimizations,
+the "x-ray" mode used in the application requires that each
+building remains a separate group node.</p>
+
+<p>In addition, the "Remove Extra Texture Coordinate Sets" was
+also disabled, as the "x-ray" mode requires an additional UVW set
+that is accessed directly by the application code (to display the
+wire frame "x-ray" uniformly across each building). </p>
+
+<p>Textures were exported internal to the NIF file, and were set
+to remain as .Image Default' format. Most of the textures were
+compressed into DDS files, as this format works well on
+DirectX-based hardware.</p>
+
+<h2>Diced Terrain Data</h2>
+
+<p>The MOUT demo makes use of a quadtree version of the terrain
+for picking and character shadow generation. The source art for
+this process is a Max file containing only the terrain. The mesh
+has a special <a href=
+"../../Art/Max/Mesh_Profile_Custom_Attribute.htm">mesh
+profile</a> applied to it that enabled a utility program, the
+<a href="Mesh_Dicer_Tool.htm">Mesh Dicer</a> tool, to
+execute.</p>
+
+<p>The export process for the diced terrain begins with an export
+script that leaves the mesh unchanged on export. The Mesh Dicer
+tool is then run on the mesh to produce a diced version which is
+loaded by the application.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

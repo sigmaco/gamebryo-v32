@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Debugging game initialization</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Debugging game initialization</h1>
+
+<p>A number of things could go wrong during game initialization.
+A good place to start is the game's log file. The game writes
+errors and warnings to the log destination that is specified in
+your application main. See the <a href=
+"../Logging/logging_intro.htm">Logging, Asserts, and Debuggers:
+Introduction</a> for details on how to setup logging.</p>
+
+<p>A log file will only contain messages for the levels that are
+specified in your config file. So, you should make sure that you
+have all modules showing logs up to error level 3 (UPTO_ERR3).
+See <a href="../Logging/logging_tuning.htm">Tuning logging,
+asserts, and debugging performance</a> for details on how to
+change log levels.</p>
+
+<p>Now that we have log files showing errors, look for the |Err*|
+keywords in your log. The module name will help narrow down the
+area, and the message will show what went wrong. For example:</p>
+<pre>
+TimeStamp|Level|Module|File|Line|Message|
+2009/01/22 19:00:06.062|<b>Lvl1</b>|ConfigManager|||Creating a
+ConfigManager instance 0x00A19444|
+2009/01/22 17:17:06.128|<b>Err2</b>|ConfigManager|||Error: Could
+not find Config1.ini|
+</pre>
+
+<h2>Common problems and their solutions</h2>
+
+<h3>Loading the correct world</h3>
+
+<p>Make sure that the Asset Locator Service (<span class=
+"NDLSystemFont"><a href=
+"../../Reference/QuickRef_Services/svc_qckref_asset_locator_svc.htm">
+efd::AssetLocatorService</a></span>) is fetching the correct
+block file. Double check that you are specifying the correct file
+in your load world request. See <a href=
+"game_init_load_assets.htm">About loading assets</a>.</p>
+<pre>
+|Err1|Asset Locator Service found no assets that matched URI 'urn:MyInvalidWorld'|
+</pre>
+
+<h3>Loading the correct Config file</h3>
+
+<p>Make sure that the Configuration Manager (<span class=
+"NDLSystemFont"><a href=
+"../../Reference/QuickRef_Services/svc_qckref_config_mgr.htm">efd::ConfigManager</a></span>)
+is using the correct config file. Look for messages similar to
+the following to make sure that the game has loaded the desired
+config file.</p>
+<pre>
+|Lvl1|ConfigManager|Creating a configuration source 'Config.ini' (0x0266E7B4) of type 2|
+</pre>
+
+<p>If not, check your main function to see if you are passing the
+right path to your Configuration Manager instantiation:</p>
+<pre>
+efd::IConfigManagerPtr spConfigManager = EE_NEW ConfigManage ("Config.ini", 0, NULL, false);
+</pre>
+
+<h4>Using a corrupt asset metadata</h4>
+
+<p>Make sure your asset metadata is up to date. When you find a
+error in the log file that indicates that an asset could not be
+found while in fact you know it is in the right place and that
+your asset web path is pointing to the right directory, it means
+that your metadata is out of date. See <a href=
+"../AssetRuntimeService/asset_runtime_best_practice.htm">Asset
+Runtime Service Best Practices</a> to ensure that this happens
+before you run the game. </p>
+
+<h3>Using the correct scripting path and loading the correct
+built-ins</h3>
+
+<p>Make sure that you have all of the helper scripts in your
+scripting path. Your scripting engine and behaviors might be
+using helper scripts that are usually not found next to the
+game's executable. If behaviors are not running, this could mean
+that the scripts were not found (for example, or my character
+isn't animating). Look for errors similar to the following in
+your log file:</p>
+<pre>
+|Lua error: [string "require("scheduler");scheduler.init()"]:1: module 'scheduler' not found:
+no field package.preload['scheduler']
+no file '.\Data\Scripts\scheduler.lua'
+no file '.\Data\Scripts\scheduler.lc'
+no file '..\ML\SDK\Win32\Lua\scheduler.dll'
+no file '..\ML\SDK\Win32\Lua\scheduler.lua'
+</pre>
+<pre>
+|Scheduler.lua failed to load. Check your LUA_PATH to make sure
+scheduler.lua is available. Also ensure the Lua and Lua Built-in
+sections are defined in the config.ini file. Lua scripting is now
+disabled.|
+</pre>
+
+<p>The fix is to verify that you have specified the correct
+script paths in your config file:</p>
+<pre>
+[ScriptEngine.Lua]
+LoadBuiltin#=egfLua!luaopen_BehaviorAPI
+LoadBuiltin#=egmAnimationLua!luaopen_egmAnimation
+SystemScriptPath1=./Data/Scripts ...
+</pre>
+
+<h3>Using the correct product version</h3>
+
+<p>Make sure that your PATH and EMERGENT_PATH points to the
+correct SDK. If you have multiple versions of the product
+installed, you might be using a different version of the SDK or a
+generated one if you compiled and did not use the binary.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                If your application is crashing on shutdown, make
+                sure that you are releasing smart pointers
+                referenced by other services and that you are
+                destroying your system services in the right
+                order.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<ul>
+    <li><a href="game_init_overview.htm">Game initialization overview</a></li>
+    <li><a href="game_init_best_practice.htm">Best practices for working with game
+        initialization</a></li>
+    <li><a href="game_init_configuration.htm">Configuring an Application</a></li>
+    <li><a href="game_init_load_assets.htm">About loading assets</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

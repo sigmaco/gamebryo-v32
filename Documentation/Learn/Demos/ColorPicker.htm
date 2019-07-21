@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>ColorPicker</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>ColorPicker</h1>
+
+<p>The most significant portion of this sample is in the
+<span class="NDLSystemFont">ColorPicker</span> class, which uses
+the <span class="NDLSystemFont"><a href=
+"ObjectPickMaterial.htm">ObjectPickMaterial</a></span> object to
+render the a subset of the scene to a texture, and then reads
+that texture to determine which object rendered the center-most
+pixel.</p>
+
+<h3>ColorPicker (Constructor)</h3>
+
+<p>After initializing itself with the input parameters and
+storing a pointer to the D3D device, this function registers a
+callback function so it can be notified when the device is lost
+on Windows. This will give the class a chance to grab a reference
+to the new rendered texture surface after the device is reset.
+Once the callback is registered, the function goes on to call
+<span class="NDLSystemFont">CreateRenderTarget</span>,
+<span class="NDLSystemFont">CreatePropertyAndEffectStates</span>,
+and <span class="NDLSystemFont">CreateMaterial</span> to prepare
+the object for picking.</p>
+
+<h3>StartPick</h3>
+
+<p>This function begins the picking process. It first resets the
+unique color that will be used to render the first object to 0.
+When that is done, it calculates a new frustum for the camera -
+one that is designed to render a narrow frustum that is centered
+around the picked point on the screen. The new frustum retains
+the other camera settings, so that the view rendered for picking
+is a subset of the original view, rather than a different view
+(which would cause erroneous picking). This view will render a
+small square centered on the picking ray, with the same essential
+proportions as the camera originally had. Then, the function
+calls <span class="NDLSystemFont">ResetColorObjectMap</span> to
+clear out the database of color/object relationships, and then
+opens the rendered texture for geometry rendering, clearing it in
+the process. Finally, the new camera data is passed down to the
+renderer so drawing can begin..</p>
+
+<h3>RecursivePickRender</h3>
+
+<p>This function takes the scene graph it was called with and
+recurses through it, storing each leaf geometry objects it
+encounters in one of two lists: one for skinned objects, and one
+for nonskinned objects. Note that no objects are actually
+rendered at this point, in spite of the name of this
+function.</p>
+
+<h3>EndPick</h3>
+
+<p><span class="NDLSystemFont">EndPick</span> takes the lists
+that were generated in <span class=
+"NDLSystemFont">RecursivePickRender</span> and performs the
+actual rendering operations. It renders each object, replacing
+the object's material, property state, and effect state with the
+<span class="NDLSystemFont">ObjectPickMaterial</span> and a
+different set of properties and effects, after storing references
+to the currently active material and states. After this is done,
+the function replaces the original active material and states on
+the geometry meshes.</p>
+
+<p>When the rendering is all done, the renderer's render target
+is closed to allow low-level rendering to complete, and the
+function retrieves the rendered texture from the video hardware.
+The method for doing this depends on the platform the application
+is running on. Once the 16x16 render target is read back into
+system memory, the function reads the color of the center texel,
+which represents the screen space location of the cursor. This
+result is passed into <span class=
+"NDLSystemFont">GetPickData</span>, which returns a the geometry
+information for that color (if any). A pointer to the picked mesh
+is returned, and the camera's frustum is restored to its original
+values before the function returns that stored pointer.</p>
+
+<h3>CreateRenderTarget</h3>
+
+<p>This function creates a rendered texture and render target
+group that will be used in the picking process. It also creates a
+second data buffer in system memory that the rendered texture
+will be copied into during <span class=
+"NDLSystemFont">EndPick</span>.</p>
+
+<h3>CreatePropertyAndEffectStates</h3>
+
+<p>This function sets up the property states and dynamic effects
+that will be used in the rendering process. The properties are
+simple enough: an <a href=
+"../../Reference/NiMain/NiZBufferProperty.htm"><span class=
+"NDLSystemFont">NiZBufferProperty</span></a> to ensure the object
+closest to the camera is the one to get picked, and an empty
+(i.e. untextured) <a href=
+"../../Reference/NiMain/NiTexturingProperty.htm"><span class=
+"NDLSystemFont">NiTexturingProperty</span></a> to let the object
+ID color come through unscathed. The set of dynamic effects is
+left empty.</p>
+
+<h3>CreateMaterial</h3>
+
+<p>This function creates and initializes the <span class=
+"NDLSystemFont">ObjectPickMaterial</span> that is used to assist
+in the picking operation.</p>
+
+<h3>ResetNotificationFunction</h3>
+
+<p>This callback function was the one registered with the
+renderer for use when the device is reset. It simply calls the
+<span class="NDLSystemFont">HandleReset</span> function.</p>
+
+<h3>HandleReset</h3>
+
+<p>This function refreshes the pointer to the rendered texture
+that was stored during <span class=
+"NDLSystemFont">CreateRenderTarget</span>. During a device reset,
+the D3D texture that rendered textures use needs to be released
+and recreated.</p>
+
+<h3>GetPickData</h3>
+
+<p>This function is responsible for looking up the geometry
+object from the color that's passed in. Because the value in the
+alpha channel may be different depending on the hardware, the
+alpha channel is first masked out, and then used to look up the
+geometry from the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTMap.htm">NiTMap</a></span>. If no
+match is found, this function returns <span class=
+"NDLSystemFont">NULL</span>.</p>
+
+<h3>DetermineNextAvailableColor</h3>
+
+<p>This simple function just increments the counter that stores
+the current object's color and returns the new color.</p>
+
+<h3>ResetColorObjectMap</h3>
+
+<p>This function is called after the pick has completed: it
+empties the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTMap.htm">NiTMap</a></span> that stores
+the color-geometry relationship.</p>
+
+<h3>FreeObjectPickData</h3>
+
+<p>This function simply calls <span class=
+"NDLSystemFont">ResetColorObjectMap</span> in preparation for
+shutdown.</p>
+
+<h3>GetColorForObject</h3>
+
+<p>This function, called by the various shaders during the
+rendering process, is responsible for assigning new unique colors
+to objects and recording which colors get associated with which
+geometry. It first calls <span class=
+"NDLSystemFont">DetermineNextAvailableColor</span> to get the new
+color, then it adds the color and geometry object to the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTMap.htm">NiTMap</a></span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Overview of B-Spline Compression</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Overview of B-Spline Compression</h1>
+
+<p>In order to properly reproduce procedural or IK-driven 
+ animation generated in an art package, the Gamebryo exporters may be forced 
+ to sample the animation at a regular time interval. Although sampling 
+ the animation will generate a faithful reproduction of the motion, the 
+ animations will often be much larger in memory than desired. B-Spline 
+ curve fitting was added to the Gamebryo tools to address this issue. The 
+ curve fit code will generate an open, uniform B-Spline for a given set 
+ of regularly spaced input points. The curve fitting algorithm is encapsulated 
+ in the <a HREF="NiBSplineFit.htm"><span 
+ class="NDLSystemFont">NiBSplineFit</span></a> object. Gamebryo provides 
+ a tool library named <span class="NDLSystemFont">NiAnimationCompression</span> 
+ for use in compressing interpolators as well as sequence-based evaluators.</p>
+
+<p>Since the B-Spline is a uniform curve it is not necessary 
+ to store the time values with the keys. Additionally, since the B-Spline 
+ curve only needs the control points and a <a HREF="NiBSplineBasis.htm">basis 
+ function</a> to evaluate to a specific degree, higher order curves can 
+ be specified in a very compact manner, making even a naive compression 
+ of one control point per original keyframe smaller than the original keyframe 
+ array. Decreasing the number of control points relative to the original 
+ keyframes will further reduce the size of the animation data.</p>
+
+<p>Another optimization in the animation system is the 
+ ability to compact the control points to the B-Spline. Only two additional 
+ parameters are required per control point array to compact the full floating 
+ point 32-bit data into a 16-bit short representation. While this is a 
+ lossy operation, the results are often quite satisfactory for real-time 
+ evaluation. </p>
+
+<p>B-Spline evaluation and control point storage is encapsulated 
+ in the <a HREF="NiBSplineData.htm"><span 
+ class="NDLSystemFont">NiBSplineData</span></a> and <a HREF="NiBSplineBasisData.htm"><span 
+ class="NDLSystemFont">NiBSplineBasisData</span></a> objects. These objects 
+ are used by <a HREF="NiBSplineInterpolator.htm"><span 
+ class="NDLSystemFont">NiBSplineInterpolator</span></a> and <span class="NDLSystemFont"><a 
+ HREF="NiBSplineEvaluator.htm">NiBSplineEvaluator</a></span>-derived 
+ classes in the normal scene graph update process. To help alleviate the 
+ number of memory allocations made by the system, <span class="NDLSystemFont">NiBSplineData</span> 
+ objects can contain more than one control point array. These control point 
+ arrays are accessed via handle objects. <span class="NDLSystemFont">NiBSplineBasisData</span> 
+ objects are often shared amongst evaluators within a single sequence so 
+ the sequence update operation can cache and reuse the evaluation of the 
+ basis function, thereby reducing the overhead of using B-Splines.</p>
+
+<p>As a convenience to artists, compression is performed 
+ when animations are extracted into <span class="NDLSystemFont"><a HREF="NiSequenceData.htm">NiSequenceData</a></span> 
+ objects by the <a HREF="../../../Tool_Plug_ins/Controller_Extractor.htm">Controller 
+ Extractor plug-in</a>. Please see the Gamebryo animation compression documentation 
+ for <a HREF="../../Art/Max/Introduction_to_Animation_Compression_Utility.htm">3ds 
+ max</a> and <a HREF="../../Art/Maya/Character_Animation_Compression_with_Maya.htm">Maya</a> 
+ for more details.</p>
+
+<p>It is important to note that certain <span class="NDLSystemFont"><a 
+ HREF="NiInterpolator.htm">NiInterpolator</a></span>, 
+ <span class="NDLSystemFont"><a HREF="NiEvaluator.htm">NiEvaluator</a></span>, 
+ and <span class="NDLSystemFont"><a HREF="NiInterpController.htm">NiInterpController</a></span> 
+ objects will not be compressed by the <span class="NDLSystemFont">NiAnimationCompression</span> 
+ library. Particle system controllers, LookAt interpolators, bool interpolators, 
+ and quaternion interpolators as well as their equivalent evaluators are 
+ all ignored.</p>
+
+<p>To illustrate the impact that various compression settings 
+ can have on a file, the following chart displays the result of various 
+ animation compression settings for a set of art files.</p>
+
+<!--(Table)=========================================================-->
+<table>
+<thead>
+<tr>
+<th>
+Art File</th>
+<th>
+B-Spline Compression Ratio</th>
+<th>
+Use Compact Keys</th>
+<th>
+Size On Disk (Percent of Original Uncompressed)</th></tr>
+</thead><tbody>
+<tr>
+<td>
+Killbot.max</td>
+<td>
+(deactivated)</td>
+<td>
+(deactivated)</td>
+<td>
+950kb (100%)</td></tr>
+
+<tr>
+<td>
+Killbot.max</td>
+<td>
+100%</td>
+<td>
+true</td>
+<td>
+540kb (57%)</td></tr>
+
+<tr>
+<td>
+Killbot.max</td>
+<td>
+50%</td>
+<td>
+false</td>
+<td>
+492kb (51%)</td></tr>
+
+<tr>
+<td>
+Killbot.max</td>
+<td>
+50%</td>
+<td>
+true</td>
+<td>
+356kb (37%)</td></tr>
+
+<tr>
+<td>
+Killbot.max</td>
+<td>
+25%</td>
+<td>
+true</td>
+<td>
+245kb (26%)</td></tr>
+
+<tr>
+<td>
+DestroyerBot.mb</td>
+<td>
+(deactivated)</td>
+<td>
+(deactivated)</td>
+<td>
+198kb (100%)</td></tr>
+
+<tr>
+<td>
+DestroyerBot.mb</td>
+<td>
+50%</td>
+<td>
+false</td>
+<td>
+94kb (47%)</td></tr>
+
+<tr>
+<td>
+DestroyerBot.mb</td>
+<td>
+50%</td>
+<td>
+true</td>
+<td>
+81kb (41%)</td></tr>
+
+<tr>
+<td>
+DestroyerBot.mb</td>
+<td>
+25%</td>
+<td>
+false</td>
+<td>
+80kb (40%)</td></tr>
+
+<tr>
+<td>
+DestroyerBot.mb</td>
+<td>
+25%</td>
+<td>
+true</td>
+<td>
+66kb (33%)</td></tr>
+</tbody>
+</table>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction 
+ to Animation</a> to read about other animation concepts.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

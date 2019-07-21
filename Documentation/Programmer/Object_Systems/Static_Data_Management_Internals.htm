@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Static Data Management Internals</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Static Data Management Internals</h1>
+
+<p>Static data initialization is one of several actions 
+ that must be taken once when a library is first loaded into memory. For 
+ example, a library that contains a singleton manager object must have 
+ that manager created once only when the application is initialized, and 
+ deleted once only when the application shuts down. Gamebryo uses the Static 
+ Data Management, or SDM, system to handle such actions.</p>
+
+<h2>Adding SDM Functionality to a New Library</h2>
+
+<p>SDM functionality is typically provided per-library, 
+ so that actions are taken when the library is loaded into memory and static 
+ objects are initialized by the runtime system.</p>
+
+<p>Libraries that need static data functionality typically 
+ define a class that will include all of the SDM functionality. For Gamebryo 
+ libraries, the is named <span class="NDLSystemFont">[Library]SDM</span>, 
+ such as <span class="NDLSystemFont">NiMainSDM</span>.</p>
+
+<p>The header file, say <span class="NDLSystemFont">NewLibrarySDM.h</span>, 
+ contains code like this:</p>
+
+<pre>
+#include "NiStaticDataManager.h"
+#include "NewLibraryLibType.h"
+NiDeclareSDM(NewLibrary, NEWLIBRARY_ENTRY)
+</pre>
+
+<p>The header file <span class="NDLSystemFont">NewLibraryLibType.h</span> 
+ defines the preprocessor symbol <span class="NDLSystemFont">NEWLIBRARY_ENTRY</span> 
+ to set up DLL symbol export or import on Win32. The macro <span class="NDLSystemFont">NiDeclareSDM</span> 
+ declares a class named <span class="NDLSystemFont">NewLibrarySDM</span> 
+ which contains a constructor and <span class="NDLSystemFont">Init</span> 
+ and <span class="NDLSystemFont">Shutdown</span> functions.</p>
+
+<p>The header file <span class="NDLSystemFont">NewLibraryLibType.h</span> 
+ is typically included by the <span class="NDLSystemFont">NewLibraryLib.h</span> 
+ header file which all applications would include to use the library. This 
+ is why Gamebryo requires that the global header for any library be included 
+ someplace before using that library.</p>
+
+<p>The source file <span class="NDLSystemFont">NewLibraryLibType.cpp</span> 
+ defines the constructor and <span class="NDLSystemFont">Init</span> and 
+ <span class="NDLSystemFont">Shutdown</span> functions for the <span class="NDLSystemFont">NewLibrarySDM</span> 
+ class. First is the constructor, defined with the following macro:</p>
+
+<p><span class="NDLCodeSystemFont">NiImplementSDMConstructor(NewLibrary, "NiMain NiFloodgate");</span></p>
+
+<p>The first argument to the macro is the name of the library 
+ we are working with, while the second is a space-separated list of other 
+ library names on which this library depends. For example, the <span class="NDLSystemFont">NewLibrary</span> 
+ library uses code from <span class="NDLSystemFont">NiMain</span> and <span 
+ class="NDLSystemFont">NiFloodgate</span>, and implicitly <span class="NDLSystemFont">NiSystem</span>. 
+ The list is used to identify a static initialization order that ensures 
+ that every library is initialized after those that it depends on. Static 
+ data initialization can therefore assume that the libraries it depends 
+ upon are usable. The <span class="NDLSystemFont">NiSystem</span> library 
+ is an implicit dependency of every library, and should not be listed.</p>
+
+<p>Libraries that might be dynamically loaded on Win32 
+ then define the following macro:</p>
+
+<pre>
+#ifdef NEWLIBRARY_EXPORT
+NiImplementDllMain(NewLibrary);
+#endif // NEWLIBRARY_EXPORT
+</pre> 
+
+<p>The symbol <span class="NDLSystemFont">NEWLIBRARY_EXPORT</span> 
+ will be defined in a project file to indicate that the library is being 
+ compiled for a DLL. Use of the <span class="NDLSystemFont">NiImplementDllMain</span> 
+ macro adds the code necessary to initialize the static data when the library 
+ is dynamically loaded.</p>
+
+<p>The <span class="NDLSystemFont">Init</span> and <span 
+ class="NDLSystemFont">Shutdown</span> functions must now be defined. These 
+ do one-off actions necessary to prepare the library for use. A typical 
+ function looks like this:</p>
+
+<pre>
+void NewLibrarySDM::Init()
+{
+    NiImplementSDMInitCheck();
+    
+    NewLibraryClass::_SDMInit();
+ 
+    NiRegisterStream(NewLibraryClass);
+}
+ 
+void NiMainSDM::Shutdown()
+{
+    NiImplementSDMShutdownCheck();
+    
+    NiUnregisterStream(NewLibraryClass);
+ 
+    NewLibraryClass::_SDMShutdown();
+}
+</pre>
+
+<p>The macros to verify the correct SDM state should always 
+ be included. The <span class="NDLSystemFont">Init</span> and <span class="NDLSystemFont">Shutdown</span> 
+ functions for the library call any class-specific initialization and shutdown 
+ functions. Class-specific functions perform actions such as initializing 
+ <span class="NDLSystemFont">NiFixedString</span> objects or filling memory 
+ pools.</p>
+
+<p>Classes that are streamed by <a href="Streaming_Internals.htm">Gamebryo's 
+ streaming system</a> must be registered once before any NIF file 
+ is loaded, and un-registered when no more streaming will be done. This 
+ functionality is therefore included in the SDM functions.</p>
+
+<p>Finally, an object of type <span class="NDLSystemFont">NewLibrarySDM</span> 
+ must be declared somewhere such that it will appear in every application 
+ that uses the library. In most cases, it is placed in the <span class="NDLSystemFont">NewLibraryLib.h</span> 
+ header file which is intended to be included by all applications using 
+ the library:</p>
+
+<p><span class="NDLSystemFont">static NiMainSDM NiMainSDMObject;</span></p>
+
+<p>Note that this assumes that the header file is protected 
+ from multiple-inclusion and hence only one object will be created regardless 
+ of how many files include the per-library header file. The declaration 
+ may also be placed in some other header or source file that is sure to 
+ be used by every application using the library. For example, the <span 
+ class="NDLSystemFont">NiMainSDM</span> static object is declared in <span 
+ class="NDLSystemFont">NiObject.cpp</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

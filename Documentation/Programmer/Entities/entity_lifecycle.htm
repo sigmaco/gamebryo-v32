@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Entity lifecycle</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Entity lifecycle</h1>
+
+<p>After it is created, an entity transitions through several phases. These phases are called
+lifecycles. Each lifecycle event has a related behavior that is called when that lifecycle
+executes. These behaviors are some of the most important starting points for behavior authors to be
+aware of. In addition to invoking these behaviors, the lifecycle also interacts with the Entity
+Manager (<span class="NDLSystemFont"><a href=
+"../../Reference/QuickRef_Services/svc_qckref_entity_mgr.htm">efd::EntityManager</a></span>) and
+with any built-in model implementations that are mixed into the entity.</p>
+
+<h2>Entity-specific lifecycle behaviors</h2>
+
+<p>Various models can implement these lifecycle behaviors. By default all lifecycle behaviors are
+extends-style behaviors. So, it is easy to add new behavior to the existing behavior of the models
+that you mix-in.</p>
+
+<ul>
+    <li><b>OnCreate</b>&mdash;Called after the entity has been created and added to the Entity
+    Manager. It is recommended not to spend too long in OnCreate or to block in this behavior for
+    excessive amounts of time. Instead, consider sending yourself another behavior event in which
+    non-setup related logic can be run. The OnCreate behavior accepts a ParameterList to hold any
+    additional arguments needed by the entity.</li>
+
+    <li><b>OnAssetsLoaded</b>&mdash;This lifecycle is called after all assets that are preloaded by
+    the entity have finished loading. To preload assets you must mix in the <a href=
+    "../../Reference/QuickRef_Models/StandardModelLibrary__Preloadable.htm">Preloadable</a> model.
+    The <a href="../../Reference/egf/egf__EntityManager.htm">entity manager service</a> checks the
+    PreloadAssets property after executing the OnCreate behavior. This lifecycle is always invoked
+    after preloading completes, even when the entity opts out of preloading (either by not mixing
+    in Preloadable or by setting PreloadAssets to False). This behavior is where you are first able
+    to use any asset data that an entity requires, such as registering for animation text key
+    callbacks or interacting with other .nif or .kfm attributes. When this behavior completes, the
+    initial OwnedEntityAddedMessage will be sent out locally by the Entity Manager so that various
+    system services can discover the newly created entity.</li>
+
+    <li><b>OnEntitySetFinished</b>&mdash;Called after all entities in the same entity set have had
+    OnCreate called. All the entities that are loaded from the same block file are loaded as a
+    single entity set. Entities that are created independently (in other words, not as part of a
+    block file) still have this lifecycle called as soon as they finish the OnCreate lifecycle.
+    This is the first place where you can safely interact with other entities in the same block
+    file, knowing that they have been fully created. There is no guarantee as to the order in which
+    OnAssetsLoaded and OnEntitySetFinished will be called.</li>
+
+    <li><b>OnEnterWorld</b>&mdash;Called after the entity has entered the world. Before entering the
+    world an entity will not be rendered or physically simulated. Behaviors with the 'In World Only'
+    trait set will only execute on Entities after they have entered the world.</li>
+
+    <li><b>OnExitWorld</b>&mdash;Called after the entity has exited the world. The entity is still
+    valid and can have behaviors without the 'In World Only' trait set called. The entity can enter
+    and exit the world multiple times before being destroyed.</li>
+    
+    <li><b>OnDestroy</b>&mdash;Called just before the entity is destroyed. This is where you would
+    do any required cleanup, such as destroying any dynamic child entities that were created by
+    this entity. When the OnDestroy lifecycle is completed, the entity will be automatically
+    removed from the Entity Manager. All of the state for the entity is still completely valid
+    during the OnDestroy behavior but you can no longer queue any new behaviors on the current
+    entity after it has reached the OnDestroy lifecycle.</li>
+</ul>
+
+<p>These lifecycle behaviors are invoked when they are created as replica entities.</p>
+
+<ul>
+    <li><b>OnDiscovery</b>&mdash;Called after the replica entity has been created and added to the
+    Online Entity Manager. This is the replica entity equivalent to the OnCreate behavior.</li>
+
+    <li><b>OnReplicaAssetsLoaded</b>&mdash;This lifecycle is called after all assets that are
+    preloaded by the entity have finished loading. This is the replica entity equivalent to the
+    OnAssetsLoaded behavior.</li>
+
+    <li><b>OnFinalLoss</b>&mdash;Called just before the replica entity is destroyed. This is the
+    replica entity equivalent to the OnDestroy behavior. This happens when the producer entity in
+    the owning process is destroyed. It also happens when the process unsubscribes from the last
+    replication group of the entity, not on every replication group loss.</li>
+</ul>
+
+<h2>Additional built-in model-specific entity hooks</h2>
+
+<p>Built-in models can implement lifecycle behaviors just like any other mixed-in model, but they
+have a few extra methods that are useful for interacting with system services. These are not
+behaviors, they are simply virtual methods on the IBuiltinModel interface that can be overridden by
+the final built-in model implementation.</p>
+
+<ul>
+    <li><b>OnAdded</b>&mdash;Called immediately after the entity that contains the built-in model
+    has been added to the Entity Manager or Online Entity Manager, but before the
+    OnCreate/OnDiscovery lifecycle has been called. This is the first opportunity for your built-in
+    model implementation to interact with other system services or entities. Services may wish to
+    hold smart pointer references directly to the built-in model rather than the parent entity. In
+    such an event, this method is the first place where it is valid to store these references.</li>
+
+    <li><b>OnRemoved</b>&mdash;Called as the entity that contains the built-in model is being
+    removed from the Entity Manager or Online Entity Manager and after the OnDestroy/OnFinalLoss
+    lifecycle has completed. If any system services are holding references directly to the built-in
+    model implementation, they must be released in this method.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_creating.htm">Creating entities</a></li>
+
+    <li><a href="entity_world_state.htm">Controlling entity in-world/out-of-world state</a></li>
+
+    <li><a href="entity_destroying.htm">Destroying entities</a></li>
+
+    <li><a href="../../Reference/egf/egf__Entity.htm">egf::Entity</a></li>
+
+    <li><a href="entity_how_work.htm">How entities work</a></li>
+
+    <li><a href="entity_best_practice.htm">Best practices for working with entities</a></li>
+
+    <li><a href="entity_tuning.htm">Tuning entity performance</a></li>
+
+    <li><a href="../../Programmer/Models/builtin_model_creating.htm">Creating built-in
+    models</a></li>
+
+    <li><a href="../../Reference/egf/egf__IBuiltinModel.htm">egf::IBuiltinModel</a></li>
+
+    <li><a href="../../Reference/egf/egf__IBuiltinModelImpl.htm">egf::IBuiltinModelImpl</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

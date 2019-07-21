@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTurret Usage</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiTurret Usage</h1>
+
+<p>The <span class="NDLSystemFont">NiApplication</span> framework
+includes an optional camera control class called <span class=
+"NDLSystemFont">NiTurret</span> to control the movement and
+rotation of the camera. <span class=
+"NDLSystemFont">NiTurret</span> is designed to support moving an
+object where translation and rotation are not necessarily
+constrained to the same node. In particular, the class supports a
+three-object system TRANSLATION_NODE -&gt; ROTATION_NODE -&gt;
+CAMERA that allows the camera to be moved so that the translation
+node controls translation in x, y, z, and rotation about an "up"
+vector. The rotation node controls "look-up/look-down"
+functionality, which is a rotation about the "right" vector.</p>
+
+<p>For example, the following code sets up a turret where the
+up/down arrow keys control translation in the forward/backward
+direction, the keys 'Z' and 'A' control vertical translation, the
+keys 'X' and 'S' control horizontal translation (sliding), the
+left/right arrow keys control turning about the up axis, and the
+PageUp/PageDown keys control looking up/down. The rotation about
+the direction vector (roll) is not enabled in this code sample.
+The first parameter to <span class="NDLSystemFont">SetTrn</span>
+and <span class="NDLSystemFont">SetRot</span> indicates the axis
+that the keys control. Index 0 refers to the forward/backward
+direction, index 1 refers to the up/down direction, and index 2
+refers to the left/right direction.</p>
+
+<p>Code is typically in <span class=
+"NDLSystemFont">NiApplication::Initialize():</span></p>
+
+<pre>
+NiTurret turret;
+NiCameraPtr spCamera;
+NiPoint3 initialCamTrn = &lt;whatever&gt;;
+NiMatrix3 initialCamRot = &lt;whatever&gt;;
+float fDirTrnSpeed = &lt;whatever&gt;;
+float fUpTrnSpeed = &lt;whatever&gt;;
+float fRightTrnSpeed = &lt;whatever&gt;;
+float fTurnRotSpeed = &lt;whatever&gt;;
+float fLookRotSpeed = &lt;whatever&gt;;
+ 
+NiNodePtr spTrnNode = NiNew NiNode;
+NiNodePtr spRotNode = NiNew NiNode;
+spTrnNode-&gt;SetTranslate(initialCamTrn);
+spRotNode-&gt;SetRotate(initialCamRot);
+turret.SetAxes(initialCamRot);
+turret.SetStandardTrn(spTrnNode);
+turret.SetTrnSpeed(0, fDirTrnSpeed);
+turret.SetTrnSpeed(1, fUpTrnSpeed);
+turret.SetTrnSpeed(2, fRightTrnSpeed);
+turret.SetStandardRot(spTrnNode, spRotNode);
+turret.SetRotSpeed(1, fTurnRotSpeed);
+turret.SetRotSpeed(2, fLookRotSpeed);
+ 
+spRotNode-&gt;AttachChild(spCamera);
+spTrnNode-&gt;AttachChild(spRotNode);
+spTrnNode-&gt;Update();
+</pre>
+
+<p>In the <span class="NDLSystemFont">UpdateFrame()</span>
+function, an application may handle the turret using:</p>
+<pre>
+if (turret.Read())
+{
+spTrnNode-&gt;Update();
+       &lt;application does whatever here&gt;;
+}
+</pre>
+
+<p>In <span class="NDLSystemFont">Terminate()</span>, the
+application must release the turret using:</p>
+
+<pre>
+spTrnNode = 0;
+spRotNode = 0;
+</pre>
+
+<p>and the reference counts for <span class=
+"NDLSystemFont">spRotNode</span> and <span class=
+"NDLSystemFont">spCamera</span> are automatically adjusted by the
+recursive traversal of the three-object hierarchy rooted at
+<span class="NDLSystemFont">spTrnNode</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,422 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+ 
+<html>
+<head>
+
+<title>Loading Lua Scripts at Runtime</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+        WriteNavLink(2);
+</script>
+
+<h1>Loading Lua Scripts at Runtime</h1>
+
+<p>There are several ways you can load Lua scripts at runtime.
+Traditional approaches include setting the Lua runtime
+package.path global variable and converting Lua scripts into
+bytecode using luac and converting this bytecode into a C byte
+array using bin2c.</p>
+
+<p>Gamebryo LightSpeed 3.1 introduced two additional ways to load
+Lua scripts for use at runtime: Lua script preloading and
+automatic loading with flat model, entities, and world files.
+Both preloading and automatic loading use a background thread to
+load Lua scripts from disk. Automatic loading also calculates
+script dependencies and loads dependent scripts as needed.</p>
+
+<p>Each of these loading techniques has advantages and
+disadvantages. This section describes each of these
+approaches.</p>
+
+<h2>Lua Script Loading Options</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Source</th>
+
+            <th>When to use / advantages</th>
+
+            <th>When to avoid / disadvantages</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><a href="#package_path">Setting Lua
+            package.path</a></td>
+
+            <td>Traditional</td>
+
+            <td>
+                <ul>
+                    <li>Use when your scripts are not part of
+                    your Asset Web.</li>
+
+                    <li>Use when you know where all of your
+                    scripts exist at runtime.</li>
+
+                    <li>Scripts are located automatically at
+                    runtime.</li>
+                </ul>
+            </td>
+
+            <td>
+                <ul>
+                    <li>Introduces unpredictable synchronous I/O
+                    in your main thread.</li>
+
+                    <li>Avoid if it's possible that you'll have
+                    multiple scripts with the same name in your
+                    package.path; the first script found
+                    wins.</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td><a href="#embedded">Embedding Lua
+            Bytecode</a></td>
+
+            <td>Traditional</td>
+
+            <td>
+                <ul>
+                    <li>Use when you want strict control over
+                    which scripts are loaded at runtime.</li>
+
+                    <li>Use if you want to avoid all file I/O
+                    related to loading Lua scripts.</li>
+
+                    <li>Use only if you can afford the space/time
+                    tradeoff required to load all of your scripts
+                    into static memory.</li>
+                </ul>
+            </td>
+
+            <td>
+                <ul>
+                    <li>Avoid if you want to rapidly iterate your
+                    scripts.</li>
+
+                    <li>Avoid if you want to use the Toolbench
+                    Lua Script Debugger.</li>
+
+                    <li>Avoid if loading all of your Lua scripts
+                    into static memory is unacceptable.</li>
+
+                    <li>Avoid if you cannot automate the
+                    conversion process; doing the conversion by
+                    hand is error prone.</li>
+
+                    <li>You must manage dependencies by hand,
+                    ensuring that they load in the correct
+                    order.</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td><a href="#Preloading">Lua Script
+            Preloading</a></td>
+
+            <td>Gamebryo LightSpeed</td>
+
+            <td>
+                <ul>
+                    <li>Use when you want to load Lua scripts in
+                    a background thread and these scripts are not
+                    associated with Model behaviors.</li>
+
+                    <li>Calculates dependencies and loads
+                    dependencies in the correct order.</li>
+                </ul>
+            </td>
+
+            <td>
+                <ul>
+                    <li>Avoid if you don't use the <span class=
+                    "NDLSystemFont">efd::AssetFactoryManager</span>.</li>
+
+                    <li>Avoid if you must load scripts
+                    immediately instead of asynchronously.</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td><a href="#Automatic">Automatic Lua script
+            loading</a></td>
+
+            <td>Gamebryo LightSpeed</td>
+
+            <td>
+                <ul>
+                    <li>Used automatically any time you have an
+                    <span class=
+                    "NDLSystemFont">efd::AssetFactoryManager</span>
+                    and Lua behaviors.</li>
+
+                    <li>Calculates dependencies and loads
+                    dependencies in the correct order.</li>
+
+                    <li>Requires no changes to application
+                    code.</li>
+                </ul>
+            </td>
+
+            <td>
+                <ul>
+                    <li>Avoid if you don't use the <span class=
+                    "NDLSystemFont">efd::AssetFactoryManager</span>.</li>
+
+                    <li>Avoid if you must load scripts
+                    immediately instead of asynchronously.</li>
+                </ul>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Traditional Approaches to Loading Lua Scripts</h2>
+
+<a name="package_path" id="package_path"></a><h3>Setting Lua package.path</h3>
+
+<p>The approach most familiar with Lua developers is to add the
+paths to all Lua scripts to the <span class=
+"NDLSystemFont">package.path</span> Lua runtime global variable,
+either using the LUA_PATH environment variable or setting it
+directly in script or C++ code. Setting <span class=
+"NDLSystemFont">package.path</span> informs Lua where to search
+at runtime for files and modules when executing '<span class=
+"NDLSystemFont">require</span>' and '<span class=
+"NDLSystemFont">dofile</span>' functions. Lua performs a search
+of the <span class="NDLSystemFont">package.path</span> for these
+files if they are not already loaded. If a matching file is
+found, Lua loads the file into the runtime.</p>
+
+<p>Setting the <span class="NDLSystemFont">package.path</span> is
+an easy way to load modules at runtime. Most of the work is done
+by the Lua runtime as it loads necessary modules or files.</p>
+
+<p>There are several issues related to using this approach. Lua
+will perform File I/O whenever a file isn't already loaded. The
+runtime will search every path in <span class=
+"NDLSystemFont">package.path</span> until it finds what it needs
+or it exhausts all paths. It can be hard to predict when this
+search and load will happen. All file I/O in Lua happens in the
+foreground thread using synchronous I/O calls. This can lead to a
+temporary drop in frame rate as the main thread performs these
+synchronous operations.</p>
+
+<p>We recommend that you avoid this approach when using the
+<span class="NDLSystemFont">efd::AssetFactoryManager</span>.
+Instead, use script preloading and automatic script loading to
+load all of your scripts at runtime. This ensures that the
+scripts that are loaded at runtime exist in your Asset Web. It
+also enables both rapid iteration on Lua scripts and runtime Lua
+debugging in Toolbench.</p>
+
+<a name="embedded" id="embedded"></a><h3>Embedding Lua Bytecode</h3>
+
+<p>The next approach uses the luac compiler and a tool like bin2c
+to convert Lua source scripts to an embedded byte array
+representation. Converting scripts into a byte array means there
+is no disk I/O at all at runtime. Your scripts live as part of
+your runtime application and will always be available.</p>
+
+<p>This can be an excellent approach to deploying your scripts in
+a shipping configuration. Your scripts are no longer available on
+disk, you have strict control over when they're added and removed
+from the runtime, and you avoid all disk I/O to load your
+scripts.</p>
+
+<p>Some issues related to this approach include increased
+application memory footprint, more build steps required to do the
+conversion, and a disconnect between the source Lua files and the
+byte arrays. Converting all of your scripts into byte arrays
+implies these arrays are always available at runtime. This will
+increase the static memory footprint of your application, which
+may not be acceptable in some applications. There is also
+additional overhead involved in converting the scripts to
+bytecode and then converting the bytecode into a C byte array.
+This step is best resolved by updating your build procedures to
+do this automatically. If do not automate this step, you run the
+risk of having your Lua source scripts and the byte array used at
+runtime becoming out of synch.</p>
+
+<p>This approach also precludes the ability to rapidly iterate on
+your Lua script files, and may prevent you from debugging Lua
+scripts at runtime.</p>
+
+<p>We recommend that if you plan to embed your scripts into your
+application, reserve this step for shipping configurations only.
+This approach enables you to rapidly iterate and debug your
+scripts during development and embed the finished product only in
+shipping builds.</p>
+
+<h2>Lua Script Loading in Gamebryo LightSpeed</h2>
+
+<p>Gamebryo LightSpeed includes two additional ways to load your
+scripts: preloading and automatic loading. You can use these
+approaches together to make your scripts available to the Lua
+runtime system.</p>
+
+<a name="Preloading" id="Preloading"></a><h3>Lua Script Preloading</h3>
+
+<p>By using script preloading, you can take advantage of the
+background loading capabilities built into the <span class=
+"NDLSystemFont">efd::AssetFactoryManager</span>. This enables you
+to load your scripts into the Lua runtime system without
+synchronous I/O in your main application thread. The preloading
+system will calculate dependencies for you and load them when
+necessary. This means that you do not have to track Lua script
+file dependencies by hand.</p>
+
+<p>To use Lua script preloading, you need to:</p>
+
+<ul>
+    <li>Include an efd::AssetFactoryManager instance.
+
+        <p class="indent1">The efd::AssetFactoryManager enables
+        background loading of assets. Please note, including this
+        service implies most assets are background loaded
+        asynchronously. This behavior is not limited to Lua
+        scripts.</p>
+        <pre>
+    AssetFactoryManagerPtr spAFM = EE_NEW efd::AssetFactoryManager();
+    m_spServiceManager-&gt;RegisterSystemService(AssetFactoryManager::CLASS_ID, spAFM);
+</pre>
+    </li>
+
+    <li>Get an instance of the egfLua::SchedulerLua object.
+
+        <p class="indent1">We need the egfLua::SchedulerLua
+        object to make our preload requests.</p>
+        <pre>
+    Scheduler* pSim = m_pServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+    ISchedulerScripting* pLua = pSim-&gt;GetScriptingRuntime(BehaviorType_Lua);
+</pre>
+    </li>
+
+    <li>Call egf::ISchedulerScripting::PreloadModule function for
+    each module you want to load.
+
+        <p class="indent1">The
+        egf::ISchedulerScript::PreloadModule function takes two
+        arguments: the name of the module (without file
+        extension), and an optional callback category. This
+        category, if present, is used to forward the
+        egf::ScriptFactoryResponse messages to the requestor once
+        the script load is processed. You can use this callback
+        to check the status of the load request and perform any
+        error handling in case the script load failed.</p>
+        <pre>
+    pLua-&gt;PreloadModule("MyModule", myCallbackCategory);
+</pre>
+    </li>
+
+    <li>Optionally register a handler to listen for Asset load
+    completion messages.
+
+        <p class="indent1">If you provided a callback category
+        when calling PreloadModule, you need to register a
+        handler function to receive the response.</p>
+        <pre>
+// We need both of these. If the asset fails to locate, we'll get a generic AssetLoadResponse
+EE_HANDLER(MyClassRequestingPreload, HandleAssetLoadResponse, efd::AssetLoadResponse);
+// If the asset is located, we'll get a ScriptFactoryResponse.
+EE_HANDLER_SUBCLASS(MyClassRequestingPreload, HandleAssetLoadResponse, 
+    efd::AssetLoadResponse, egf::ScriptFactoryResponse);
+</pre>
+
+        <p class="indent1">And implement this handler in your
+        class.</p>
+        <pre>
+void MyClassRequestingPreload::HandleAssetLoadResponse(
+    const efd::AssetLoadResponse* pMsg, 
+    efd::Category targetCategory)
+{
+    if (pMsg-&gt;GetResult() != AssetLoadResponse::ALR_Success)
+    {
+        // Error handling here...
+    }
+
+    const ScriptFactoryResponse* pResponse = EE_DYNAMIC_CAST(ScriptFactoryResponse, pMsg);
+    
+    // Do something with the response. e.g. track it against a list of requests.
+}
+</pre>
+    </li>
+</ul>
+
+<a name="Automatic" id="Automatic"></a><h3>Automatic Lua Script Loading</h3>
+
+<p>If you are using the <span class=
+"NDLSystemFont">efd::AssetFactoryManager</span> to load flat
+models, entities, or world files in the background, all behavior
+scripts that are associated with these objects will automatically
+be loaded along with the requested asset. This automatic script
+loading includes any dependent scripts needed to execute these
+behaviors. If all of your Lua scripts are implementations of
+Model behaviors and you're using the <span class=
+"NDLSystemFont">efd::AssetFactoryManager</span> to background
+load assets, you do not have to do anything to load your Lua
+scripts. The runtime entity system will load the necessary Lua
+scripts in the background automatically.</p>
+
+<p>You can combine automatic Lua script loading with preloading
+to load all of your Lua scripts in a background thread. Automatic
+Lua script loading is used to load your behaviors. Lua script
+preloading is used to load any non-behavior related Lua scripts
+that are needed by your application.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href=
+    "../AssetRuntimeService/asset_runtime_overview.htm">Asset
+    Infrastructure Overview</a></li>
+
+    <li><a href=
+    "../AssetRuntimeService/asset_load_svcs_how_work.htm">How
+    Asset Loading Services Work</a></li>
+
+    <li><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_asset_factory_mgr.htm">
+    efd::AssetFactoryManager Reference</a></li>
+
+    <li><a href=
+    "../../Reference/egf/egf__ISchedulerScripting.htm">egf::ISchedulerScripting
+    Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

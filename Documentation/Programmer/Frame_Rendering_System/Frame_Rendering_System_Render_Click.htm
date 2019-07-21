@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Render Click</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Render Click</h1>
+
+<p>A <em>render click</em> 
+ represents a single rendering operation to a single render target group. 
+ Multiple render clicks can happen in sequence to produce a single rendering 
+ effect. The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiClickRenderStep.htm">NiClickRenderStep</a></span> 
+ class holds a list of render clicks that is used to execute that step. 
+ Prior to being executed, each render click is validated by one or more 
+ <a href="Frame_Rendering_System_Render_Click_Validator.htm">render click 
+ validator</a> objects, which can prevent the render click from rendering 
+ based on some criteria. Render clicks also store an active state that 
+ can be used to skip out of execution altogether. Some render clicks use 
+ <a href="Frame_Rendering_System_Render_View.htm">render view</a> objects 
+ to generate the array of geometry to render.</p>
+
+<p>Callback functions that are invoked before and after 
+ rendering can be registered with a render click. Additionally, a custom 
+ camera viewport can be specified that will be used when rendering. Values 
+ determining which buffers to clear (if any) during the rendering operation 
+ are also stored in the render click.</p>
+
+<h2>NiRenderClick</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderClick.htm">NiRenderClick</a></span> 
+ class is an abstract class that serves as a base class for all render 
+ clicks. It contains a pure virtual <span class="NDLSystemFont">PerformRendering</span> 
+ function that is called by its <span class="NDLSystemFont">Render</span> 
+ function during rendering. It also stores and provides access to the render 
+ target group and viewport to use when rendering. A bitfield holds flags 
+ that indicate which buffers (color, depth, stencil) should get cleared 
+ during the rendering operation.</p>
+
+<p><span class="NDLSystemFont">NiRenderClick</span> objects 
+ are created by an application during initialization. They are provided 
+ with the appropriate render target group and other parameters. Since <span 
+ class="NDLSystemFont">NiRenderClick</span> is an abstract class, instances 
+ of its derived classes are created by the application. Render clicks are 
+ added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiClickRenderStep.htm">NiClickRenderStep</a></span> 
+ in the appropriate order to achieve the desired rendering effect.</p>
+
+<h2>NiViewRenderClick</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ class is a render click that uses a set of <a href="Frame_Rendering_System_Render_View.htm">render 
+ view</a> objects to determine what geometry objects to render. In its 
+ implementation of the <span class="NDLSystemFont">PerformRendering</span> 
+ function from its base class, <span class="NDLSystemFont">NiViewRenderClick</span> 
+ iterates over the list of its render view objects. It first tells each 
+ render view to set the camera data on the renderer using the camera viewport 
+ stored in the render click. Then, it gets an array of potentially visible 
+ geometry from that render view and passes it to a <a href="Frame_Rendering_System_Render_List_Processor.htm">render 
+ list processor</a> object, which processes the input array of geometry, 
+ perhaps rendering some objects in the process, and returns an output array 
+ of geometry that must still be rendered. <span class="NDLSystemFont">PerformRendering</span> 
+ then renders that geometry and passes the array of rendered geometry back 
+ to the processor for any post-processing that may be necessary.</p>
+
+<p>The <span class="NDLSystemFont">NiViewRenderClick</span> 
+ class is the primary class that applications use for render clicks that 
+ render a scene from a camera. During initialization, an application constructs 
+ a set of <span class="NDLSystemFont">NiViewRenderClick</span> objects, specifying 
+ render views for each in addition to the other required render click parameters 
+ (render target group, viewport, etc.), and assigns that set of render 
+ clicks to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiClickRenderStep.htm">NiClickRenderStep</a></span> 
+ object for inclusion in an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span>.</p>
+
+<h2>Other Types of Render Clicks</h2>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ only knows how to handle <a href="Frame_Rendering_System_Render_View.htm">render 
+ views</a>, which can only return arrays of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a></span> 
+ objects to render. Since render clicks actually perform the rendering 
+ operations in the frame rendering system, any non-<span class="NDLSystemFont">NiMesh</span> 
+ object that needs custom rendering can use a render click that knows how 
+ to render that type of object. Some examples that ship with Gamebryo are 
+ listed below:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiCursor/NiCursorRenderClick.htm">NiCursorRenderClick</a></span>: 
+ stores and renders a list of <span class="NDLSystemFont"><a href="../../Reference/NiCursor/NiCursor.htm">NiCursor</a></span> 
+ objects.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiFont/Ni2DStringRenderClick.htm">Ni2DStringRenderClick</a></span>: 
+ stores and renders a list of <span class="NDLSystemFont"><a href="../../Reference/NiFont/Ni2DString.htm">Ni2DString</a></span> 
+ objects.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiUserInterface/NiUIManagerRenderClick.htm">NiUIManagerRenderClick</a></span>: 
+ renders the Singleton <span class="NDLSystemFont"><a href="../../Reference/NiUserInterface/NiUIManager.htm">NiUIManager</a></span> 
+ object.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiVisualTracker/NiVisualTrackerRenderClick.htm">NiVisualTrackerRenderClick</a></span>: 
+ stores and renders a list of <span class="NDLSystemFont"><a href="../../Reference/NiVisualTracker/NiVisualTracker.htm">NiVisualTracker</a></span> 
+ objects.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

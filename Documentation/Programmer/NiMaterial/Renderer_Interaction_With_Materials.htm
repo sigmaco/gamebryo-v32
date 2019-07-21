@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Renderer Interaction With Materials</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Renderer Interaction With Materials</h1>
+
+<p>The first thing that any renderer will do when rendering 
+ an object is to obtain the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMaterialInstance.htm">NiMaterialInstance</a></span> 
+ for the active material using the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a>::GetShaderFromMaterial</span> 
+ function. This material instance will then be queried to provide the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShader</a></span> 
+ that will be used to render the object.</p>
+
+<a name=NiMaterialInstanceEvaluation></a><h2>NiMaterialInstance 
+ Evaluation</h2>
+
+<p>The first job of the material instance when asked to 
+ provide a shader is to see if there's a cached shader available already. 
+ The material instance will always store a pointer to a shader that it 
+ returns, in case that shader can be used again in the future. It is not 
+ always the case that the cached shader can be used as-is, though. Occasionally, 
+ the conditions affecting the renderable object that a material considers 
+ may change: a new light could have been applied to an object, or it may 
+ have an additional decal map applied, for instance. In these situations, 
+ the object will need to be reevaluated for a new shader.</p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMaterialInstance.htm">NiMaterialInstance</a></span> 
+ uses a system of flags to handle this situation. Each material instance 
+ can be explicitly marked as <span class="NDLSystemFont">CLEAN</span>, <span 
+ class="NDLSystemFont">DIRTY</span>, or <span class="NDLSystemFont">UNKNOWN</span>. 
+ If a material instance is <span class="NDLSystemFont">CLEAN</span>, then 
+ it knows it doesn't need to reevaluate the renderable object, and it will 
+ use the cached shader. If the material instance is <span class="NDLSystemFont">DIRTY</span>, 
+ then it will throw out the cached shader and ask the material for a new 
+ one. Either way, when the shader has been returned, the material instance 
+ will reset itself back to <span class="NDLSystemFont">UNKNOWN</span>. If 
+ the material instance is <span class="NDLSystemFont">UNKNOWN</span> when 
+ it is asked for a shader, it will rely on the result of calling <span 
+ class="NDLSystemFont">GetDefaultMaterialNeedsUpdateFlag</span> on the object 
+ in question. If that function returns <span class="NDLSystemFont">true</span>, 
+ the object is reevaluated, and if it returns <span class="NDLSystemFont">false</span>, 
+ then the cached shader is used. If the shader can not be created, the 
+ NULL value will be cached and the material instance will be <span class="NDLSystemFont">UNKNOWN</span>; 
+ the material will not be asked to create the shader again.</p>
+
+<p>The flag on a material instance can be set by calling 
+ <span class="NDLSystemFont">SetMaterialNeedsUpdate</span> on it. This will 
+ set the flag to <span class="NDLSystemFont">DIRTY</span> if <span class="NDLSystemFont">true</span> 
+ is passed into this function, or <span class="NDLSystemFont">CLEAN</span> 
+ if <span class="NDLSystemFont">false</span> is used instead. Alternatively, 
+ an application can call <span class="NDLSystemFont">SetMaterialNeedsUpdate</span> 
+ on a renderable object to have the flag propagated to every material instance 
+ on the object, even the inactive material instances.</p>
+
+<p>Note that the default value for the <span class="NDLSystemFont">GetDefaultMaterialNeedsUpdateFlag</span> 
+ flag is false. This results in most materials not reevaluating their geometry 
+ every frame for better performance. Setting the flag to true would give 
+ a more correct result if conditions were often changing, but might perform 
+ needless updates. If an application is willing to take responsibility 
+ for calling <span class="NDLSystemFont">SetMaterialNeedsUpdate</span> each 
+ time a change is made to a render object that would affect the material, 
+ then it would be a good practice to keep the flag set to false. Otherwise, 
+ <span class="NDLSystemFont">NiRenderObject::SetDefaultMaterialNeedsUpdateFlag(true)</span> 
+ can be used to change this behavior. For more information on this, please 
+ read the programmer's reference on <a href="NiMaterialInstance.htm"><span 
+ class="NDLSystemFont">NiMaterialInstance</span></a>.</p>
+
+<a name=DefaultMaterial></a><h2>Default Material</h2>
+
+<p>If no material is active on a given renderable object 
+ when it is being rendered, then the renderer's default material will be 
+ used instead. The default material will be applied to the object if it is 
+ not already, and then will be temporarily activated. When rendering is 
+ complete, the default material will be deactivated, so the object will 
+ remain basically unchanged by the rendering process. </p>
+
+<p>Any material can be set as the default material using 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::SetDefaultMaterial</span>. 
+ If an application wants to supply a default material, it should be one 
+ that will provide a valid shader in most circumstances, to avoid the error 
+ shader.</p>
+
+<p>Gamebryo's default material is discussed in detail <a 
+ href="Gamebryo_Standard_Material.htm">here</a>. There is also a <a href="Gamebryo_Legacy_Pipeline.htm">legacy 
+ pipeline</a>, which acts as the default material on graphics hardware 
+ that's not capable enough. </p>
+
+<a name=ErrorShader></a><h2>Error Shader</h2>
+
+<p>If, for whatever reason, the active material (or default 
+ material if no material is active) cannot provide any shader to the renderer, 
+ then the renderer will use its error shader to render the object instead. 
+ The error shader is the shader of last resort - it is used because no 
+ shader or binding between the mesh and shader can be found.</p>
+
+<p>Applications should normally use a very visible shader 
+ as the error shader when they're in development, but switch to a very 
+ subtle shader for release. This allows any problems to be obvious while 
+ there's a chance to fix them, but won't let bugs jump out to customers.</p>
+
+<p>Gamebryo's default error shader randomly offsets the 
+ transform of the object by as much as 10% of the object's bounding radius 
+ each frame, and colors the object a flat random color. This results in 
+ an oscillating, flashing object when rendered at normal frame rates, which 
+ should catch anyone's attention. The error shader can be replaced using 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::SetErrorShader</span>. 
+ </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

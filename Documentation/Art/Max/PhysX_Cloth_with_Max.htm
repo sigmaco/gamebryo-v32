@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Cloth with Max</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>PhysX Cloth with Max</h1>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+            <div class="NDLNote">Exporting PhysX cloth from the Gamebryo Max Plug-in only supports
+            cloth authored by version 1.06 of the PhysX Max Plug-in. Since this is an older version
+            and versions of the PhysX Max Plug-in should not co-exist, it is recommended that you
+            install the older PhysX Max Plug-in on an older version of Max to work with the cloth.
+			<br />
+            <br />
+            The information on this page refers to the process for setting up cloth using the 
+            PhysX 1.06 plug-in.
+            </div>
+        </td>
+    </tr>
+</table> 
+
+<p>PhysX cloth is authored in Max using the PhysX Max plug-in. 
+ Gamebryo's plug-in understands the data created by the cloth authoring 
+ process and uses it to correctly associate cloth with rendered Gamebryo 
+ geometry. This page describes how Gamebryo treats this data and provides 
+ tips for effectively authoring cloth for Gamebryo. </p>
+
+<h2>Cloth Properties</h2>
+
+<p>The PhysX Max interface exposes several properties that 
+ control the behavior of the cloth. See the PhysX documentation for a complete 
+ description of these flags. Of note is the <span class="NDLSystemFont">Tearable</span> 
+ flag, which Gamebryo interprets as enabling tearing of both the cloth 
+ and its attachments. If the <span class="NDLSystemFont">Auto Attach</span> 
+ check is set, then the cloth is automatically attached to any geometry 
+ that it intersects. </p>
+
+<h2>Gamebryo-Specific Setup</h2>
+
+<p>By default, PhysX cloth meshes will not update their 
+ normals or NBT frames as they deform. This can produce very incorrect 
+ results if the cloth deforms more than a small amount, and can also make 
+ it more difficult to perceive the cloth's motion. To enable normal and 
+ NBT updating, add the string &quot;NiClothUpdateNormals&quot; to the UserProps 
+ for the cloth object.</p>
+
+<p>In addition to the above properties, you can also specify 
+ the collision group for the cloth using the <span class="NDLSystemFont"><a 
+ HREF="Gamebryo_Rigid_Body_Extras_with_Max.htm">NiPhysXActorGroup</a></span> 
+ User Prop. </p>
+
+<h2>Tips for Authoring Cloth</h2>
+
+<p>Certain aspects of the cloth authoring interface may 
+ cause confusion. We discuss them here. </p>
+
+<ul>
+	
+	<li>Cloth objects must 
+ have only a single material attached for the entire mesh. If you need 
+ different textures on different parts of a cloth object, combine the textures 
+ into one map and use UVs to select appropriate pieces of the whole texture 
+ for each portion of the mesh.</li>
+	
+	<li>Many cloth parameters 
+ have a limited range of valid values. Unfortunately the PhysX Max plug-in 
+ does not respect these limits, while in other cases it does not allow 
+ valid values to be set. Consult the PhysX SDK documentation on the <span 
+ class="NDLSystemFont">NxClothDesc</span> class and <span class="NDLSystemFont">NxClothMeshDesc</span> 
+ class for the range of valid values. If the interface prevents you from 
+ setting a particular valid value, you can modify the User Props on the 
+ object directly. If a value is inaccurate, you will get a message either 
+ at export or when you try to open the NIF file in the PhysX Nif Viewer. 
+ </li>
+	
+	<li>The run-time cloth 
+ system in Gamebryo only support NDL format NBT coordinate frames. You 
+ must explicitly specify the NBT Generation method in the Gamebryo Shader 
+ roll-out of the Material Editor if the cloth has a shader on it that requires 
+ NBT frames (such as a normal or parallax map). If you forget to do this, 
+ the cloth will generate an error message when it is loaded into a Gamebryo 
+ application.</li>
+	
+	<li>You may find that cloth 
+ seems to not respect attachments, particularly if the cloth is tearable. 
+ The problem is that the attachment is immediately tearing when the cloth 
+ initially settles. You can prevent this by reducing the mesh resolution 
+ of the cloth (effectively creating longer edges), by increasing the tear 
+ factor, or by reducing the density of the cloth (which reduces the force 
+ of gravity on it). Also check that the cloth is actually intersecting 
+ the shape you wish to attach it to, and note that you cannot attach to 
+ a concave mesh shape.</li>
+	
+	<li>Cloth that has the 
+ <span class="NDLSystemFont">Hardware</span> flag turned on will not simulate 
+ on software. The hardware option in Max PhysX Cloth roll-out takes precedence 
+ any per-prop settings in the <a HREF="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor Tool Plug-in</a>. You will receive an error message when creation 
+ of the cloth prop fails in a Gamebryo application. This will happen even 
+ if you try to create hardware cloth in a software scene with no PhysX 
+ hardware available. For applications that run on both PhysX hardware and 
+ software you will require two versions of the exported asset.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

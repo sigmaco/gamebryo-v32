@@ -1,0 +1,1391 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Integrating CGFX Files</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Integrating CGFX Files</h1>
+
+<p>In order to get the best use out of CGFX files, they 
+ must be able to link data, such as transforms, constants, and textures, 
+ between the application and the shader. The conventions for making such 
+ links require the CGFX file to include semantics and annotations on parameters 
+ to allow the application to set the appropriate data for those parameters. 
+ Some of the terminology in this section is based on the terminology used 
+ for creating NSF files, and is documented at <a 
+ href="NSF_File_Format_Reference.htm">NSF Reference</a>. Annotations and semantics related to using <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span> 
+ objects from the scene graph in your CGFX shaders are listed in a separate 
+ section <a href="Object_Annotations_for_CGFX_Files.htm">here</a>. </p>
+
+<p>Also note that some bindings can be accomplished either 
+ via semantics or annotations. Developers should prefer annotations over 
+ semantics for maximum portability to all Gamebryo platforms.</p>
+
+<h2>Global Attributes</h2>
+
+<p>Global attributes are parameters that apply to all objects 
+ in a scene. Such attributes include lighting parameters or fogging values, 
+ and are stored in Gamebryo in a global shader constant map. These values 
+ can be set by the application using the function <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a>::UpdateGlobalShaderConstant</span>. 
+ Global attributes are identified in CGFX files using the <span class="NDLSystemFont">VarType</span> annotation. For example:</p>
+
+<pre>
+// Annotated Light Direction
+float3 LightDirection
+&lt;
+    string VarType = "Global";
+&gt; = {0.0, 0.0, 1.0};
+</pre>
+
+<p>This declaration will create a global attribute, named 
+ &quot;LightDirection&quot;, consisting of a 3-element vector with an initial 
+ value of (0.0, 0.0, 1.0). The initial value need not be declared, and 
+ will default to 0 if it is not provided. </p>
+
+<p>Annotations can be provided to further describe the 
+ attribute, depending on the data type of the attribute. All attributes 
+ support the following annotations:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">string 
+ description</span>: this annotation provides a brief description of the 
+ parameter, often useful for displaying in artist tools.</li>
+	
+	<li><span class="NDLSystemFont">bool 
+ hidden or UIWidget=&quot;None&quot;</span>: these annotations indicate 
+ whether the parameter should be hidden in artists tools. The default value 
+ is false for the hidden annotation, indicating the parameter will be available 
+ for the artist to manipulate. When UIWidget is set to &quot;None&quot; 
+ the parameter will be hidden from the artist as well. UIWidget is used 
+ by certain authoring tools to indicate which user interface component 
+ to present to the user for manipulating the parameter's value.</li>
+</ul>
+
+<p>Vector attributes support the following annotations 
+ in addition to the global annotations:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">bool 
+ color</span>: this annotation is used to differentiate a standard float 
+ vector from a color. There is no real difference at runtime between a 
+ vector and a color, but attributes labeled as a color can be manipulated 
+ using a color picking interface rather than requiring the artist to enter 
+ the floating-point R, G, B, and A values.</li>
+	
+	<li><span class="NDLSystemFont">&lt;type&gt; 
+ min</span>: this represents the minimum allowable value that an artist 
+ can set for the attribute. Note that the type must match the attribute 
+ type.</li>
+	
+	<li><span class="NDLSystemFont">&lt;type&gt; 
+ max</span>: this represents the maximum allowable value that an artist 
+ can set for the attribute. Note that the type must match the attribute 
+ type.</li>
+</ul>
+
+<p>Floating point attributes support the following annotations 
+ in addition to the global annotations: </p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">float 
+ min</span>: this represents the minimum allowable value that an artist 
+ can set for the attribute.</li>
+	
+	<li><span class="NDLSystemFont">float 
+ max</span>: this represents the maximum allowable value that an artist 
+ can set for the attribute.</li>
+</ul>
+
+<p>Integer attributes support the following annotations 
+ in addition to the global annotations: </p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">int 
+ min</span>: this represents the minimum allowable value that an artist 
+ can set for the attribute.</li>
+	
+	<li><span class="NDLSystemFont">int 
+ max</span>: this represents the maximum allowable value that an artist 
+ can set for the attribute.</li>
+</ul>
+
+<p>Note that for compatibility with 3ds Max FX files, the min and max semantics can also be indicated using &quot;<span class="NDLSystemFont">UIMin</span>&quot; and &quot;<span class="NDLSystemFont">UIMax</span>&quot; for all attribute types that support minimum and maximum values.</p>
+
+<p>An example of a fully annotated global attribute is:</p>
+
+<pre>
+float3 LightDirection
+   &lt;string description = "The world-space light direction";
+   bool color = false;
+&gt; = {0.0, 0.0, 1.0};
+</pre>
+
+<h2>Attributes</h2>
+
+<p>Attributes are sets of data that apply to a given object, 
+ such as material color or direction of anisotropy. The data for these 
+ attributes are attached to objects via <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ objects. These attributes are identified CGFX files using the <span class="NDLSystemFont">VarType</span> annotation. For example:</p>
+
+<pre>
+// Annotated Material Color Attribute
+float3 MaterialColor
+&lt;
+    string VarType = "Attribute";
+&gt; = {0.0, 0.0, 1.0};
+</pre>
+
+<p>Either declaration will create an attribute, named &quot;MaterialColor&quot;, consisting of a 3-element vector with an initial value of (0.0, 0.0, 1.0). The initial value need not be declared, and will default to 0 if it is not provided. If there is an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiColorExtraData.htm">NiColorExtraData</a></span> 
+ object named "MaterialColor" attached to the geometry being 
+ rendered, it will be queried when the shader constants are being set.</p>
+
+<p>Variables with no semantic or <span class="NDLSystemFont">VarType</span> annotation will also be considered attributes. The following declaration will be treated exactly the same as the previous example:</p>
+
+<pre>
+float3 MaterialColor = {0.0, 0.0, 1.0};
+</pre>
+
+<p>Annotations can be used with attributes just as they 
+ can with global attributes.</p>
+
+<a name=PredefinedShaderConstantEntries></a><h2>Predefined Constants</h2>
+
+<p>Predefined constants are a set of predefined values 
+ that Gamebryo can load into a parameter. They represent commonly used 
+ values, such as the current world matrix, view matrix, or projection matrix. 
+ Both EffectEdit and Gamebryo allow parameters to indicate they expect 
+ a predefined value by using the appropriate semantic. For example:</p>
+ 
+<pre>
+// Declaration of WorldView Matrix
+float4x4 WorldView : WORLDVIEW;
+</pre> 
+
+<p>This declaration will create a parameter, named &quot;WorldView&quot;, 
+ that will be automatically set to the current world matrix times the current 
+ view matrix.</p>
+
+<p>Most FX Composer predefined constants can be used in 
+ Gamebryo. In addition, Gamebryo provides many additional constants, including 
+ all constants used by the <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiShaderConstantMap.htm">NiShaderConstantMap</a></span> class. The potential constants are:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Defined Mapping String</th>
+
+            <th>NiPS3SCM_Vertex::Vertex_DefinedMappings</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PROJECTION</span>"</td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_PROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVPROJECTION</span><br>
+            <span class="NDLSystemFont">PROJECTIONI</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVPROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PROJECTIONTRANSPOSE</span><br>
+            <span class="NDLSystemFont">PROJECTIONT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_PROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVPROJECTIONTRANSPOSE</span><br>
+            <span class="NDLSystemFont">PROJECTIONIT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVPROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">VIEW</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_VIEW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">INVVIEW</span><br>
+            <span class="NDLSystemFont">VIEWI</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVVIEW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">VIEWTRANSPOSE</span><br>
+            <span class="NDLSystemFont">VIEWT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_VIEW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVVIEWTRANSPOSE</span><br>
+            <span class="NDLSystemFont">VIEWIT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVVIEW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WORLD</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLD</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">INVWORLD</span><br>
+            <span class="NDLSystemFont">WORLDI</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLD</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">WORLDTRANSPOSE</span><br>
+            <span class="NDLSystemFont">WORLDT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLD_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVWORLDTRANSPOSE</span><br>
+            <span class="NDLSystemFont">WORLDIT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLD_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">WORLDVIEW</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLDVIEW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVWORLDVIEW</span><br>
+            <span class="NDLSystemFont">WORLDVIEWI</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLDVIEW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">WORLDVIEWTRANSPOSE</span><br>
+            <span class="NDLSystemFont">WORLDVIEWT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLDVIEW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVWORLDVIEWTRANSPOSE</span><br>
+            <span class="NDLSystemFont">WORLDVIEWIT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLDVIEW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">VIEWPROJ</span><br>
+            <span class=
+            "NDLSystemFont">VIEWPROJECTION</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_VIEWPROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVVIEWPROJ</span><br>
+            <span class=
+            "NDLSystemFont">INVVIEWPROJECTION</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVVIEWPROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">VIEWPROJTRANSPOSE</span><br>
+            <span class=
+            "NDLSystemFont">VIEWPROJECTIONTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_VIEWPROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVVIEWPROJTRANSPOSE</span><br>
+            <span class=
+            "NDLSystemFont">INVVIEWPROJECTIONTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVVIEWPROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">WORLDVIEWPROJ</span><br>
+            <span class=
+            "NDLSystemFont">WORLDVIEWPROJECTION</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLDVIEWPROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVWORLDVIEWPROJ</span><br>
+            <span class=
+            "NDLSystemFont">INVWORLDVIEWPROJECTION</span><br>
+            <span class=
+            "NDLSystemFont">WORLDVIEWPROJI</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLDVIEWPROJ</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">WORLDVIEWPROJTRANSPOSE</span><br>
+            <span class=
+            "NDLSystemFont">WORLDVIEWPROJECTIONTRANSPOSE</span><br>
+
+            <span class=
+            "NDLSystemFont">WORLDVIEWPROJT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_WORLDVIEWPROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVWORLDVIEWPROJTRANSPOSE</span><br>
+            <span class=
+            "NDLSystemFont">INVWORLDVIEWPROJECTIONTRANSPOSE</span><br>
+
+            <span class=
+            "NDLSystemFont">WORLDVIEWPROJIT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVWORLDVIEWPROJ_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">SKINBONEMATRIX3</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_SKINBONE_MATRIX_3</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMBASE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMBASE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMBASE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMBASE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMBASETRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMBASE_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMBASETRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMBASE_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDARK</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDARK</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDARK</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDARK</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDARKTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDARK_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDARKTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDARK_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDETAIL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDETAIL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDETAIL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDETAIL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDETAILTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDETAIL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDETAILTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDETAIL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMGLOSS</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMGLOSS</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMGLOSS</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMGLOSS</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMGLOSSTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMGLOSS_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMGLOSSTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMGLOSS_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMGLOW</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMGLOW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMGLOW</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMGLOW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMGLOWTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMGLOW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMGLOWTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMGLOW_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMBUMP</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMBUMP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMBUMP</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMBUMP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMBUMPTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMBUMP_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMBUMPTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMBUMP_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDECAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDECAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDECAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDECAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMDECALTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMDECAL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMDECALTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMDECAL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMSHADER</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMSHADER</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMSHADER</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMSHADER</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMSHADERTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMSHADER_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMSHADERTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMSHADER_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">MATERIALDIFFUSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_MATERIAL_DIFFUSE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">MATERIALAMBIENT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_MATERIAL_AMBIENT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">MATERIALSPECULAR</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_MATERIAL_SPECULAR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">MATERIALEMISSIVE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_MATERIAL_EMISSIVE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">MATERIALPOWER</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_MATERIAL_POWER</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TIME</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_CONSTS_TIME</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">SIN_TIME</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_CONSTS_SINTIME</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">COS_TIME</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_CONSTS_COSTIME</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">TAN_TIME</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_CONSTS_TANTIME</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TIME_SIN_COS_TAN</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_CONSTS_TIME_SINTIME_COSTIME_TANTIME</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">AMBIENTLIGHT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_AMBIENTLIGHT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMNORMAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMNORMAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMNORMAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMNORMAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMNORMALTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMNORMAL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMNORMALTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMNORMAL_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMPARALLAX</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMPARALLAX</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMPARALLAX</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMPARALLAX</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXTRANSFORMPARALLAXTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXTRANSFORMPARALLAX_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">INVTEXTRANSFORMPARALLAXTRANSPOSE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_INVTEXTRANSFORMPARALLAX_T</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FOGDENSITY</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_FOG_DENSITY</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FOGNEARFAR</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_FOG_NEARFAR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">FOGCOLOR</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_FOG_COLOR</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BUMPMATRIX</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_BUMP_MATRIX</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">BUMPLUMAANDSCALE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_BUMP_LUMA_OFFSET_AND_SCALE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PARALLAXOFFSET</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_PARALLAX_OFFSET</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEBASE</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEBASE</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEDARK</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEDARK</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEDETAIL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEDETAIL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEGLOSS</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEGLOSS</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEGLOW</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEGLOW</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEBUMP</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEBUMP</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZENORMAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZENORMAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEPARALLAX</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEPARALLAX</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZEDECAL</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZEDECAL</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXSIZESHADER</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_TEXSIZESHADER</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ALPHATESTFUNCTION</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_ALPHA_TEST_FUNC</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ALPHATESTREF</span></td>
+
+            <td><span class=
+            "NDLSystemFont">SCM_DEF_ALPHA_TEST_REF</span></td>
+        </tr>
+    </tbody>
+</table>
+
+
+<p>Note that for compatibility between FX Composer and 
+ Gamebryo, both &quot;<span class="NDLSystemFont">PROJ</span>&quot; 
+ and &quot;<span class="NDLSystemFont">PROJECTION</span>&quot; 
+ are acceptable for naming transforms that contain the projection matrix. 
+ In addition, the 3ds Max conventions of appending &quot;<span class="NDLSystemFont">I</span>&quot; 
+ and/or &quot;<span class="NDLSystemFont">T</span>&quot; to indicate inverse 
+ or transverse matrices are also supported.</p>
+
+<p>Matrices identified with the &quot;<span class="NDLSystemFont">SKINBONEMATRIX3</span>&quot; 
+ semantic need to be declared as arrays of matrices, where the number of 
+ entries in the array is equal to the number of bones declared in the &quot;<span 
+ class="NDLSystemFont">BonesPerPartition</span>&quot; annotation of the technique.</p>
+
+<p>Matrices identified with any of the &quot;<span class="NDLSystemFont">TEXTRANSFORM</span>&quot; 
+ semantics represent the texture transformed associated with the respective 
+ texture map. Since multiple decal maps and shader maps can exist for any 
+ given geometry, the index representing which decal/shader map's texture 
+ transform to use can be specified using an integer annotation, <span class="NDLSystemFont">NTMIndex</span>. 
+ If no such annotation is present, the index is assumed to be 0.</p>
+
+<h2>Textures</h2>
+
+<p>Textures are linked to parameters through the use of 
+ annotations. They can be linked in one of two ways:&nbsp; by naming the 
+ texture file to use, or by indicating which Gamebryo <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> map to use. </p>
+
+<p>The following texture annotations are currently supported in Gamebryo:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">string 
+ description</span>: this annotation provides a brief description of the 
+ parameter, often useful for displaying in artist tools.</li>
+	
+	<li><span class="NDLSystemFont">bool 
+ hidden</span>: this annotation indicates whether the parameter should 
+ be hidden in artists tools. The default value is false, indicating the 
+ parameter will be available for the artist to manipulate.</li>
+	
+	<li><span class="NDLSystemFont">string 
+ ResourceName</span>: this annotation indicates the name of the texture 
+ file to be loaded.</li>
+	
+	<li><span class="NDLSystemFont">string 
+ NTM</span>: this annotation indicates which <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> map slot to find the texture in. The possibilities include "base", 
+ "detail", "dark", "bump", "gloss", "glow", "decal", and "shader".</li>
+</ul>
+
+<p>A texture with no annotations is treated as if it has 
+ the annotation <span class="NDLSystemFont">&lt;string 
+ NTM = "shader";&gt;</span> attached to it. So in the 
+ following texture declarations:</p>
+
+<pre>
+texture Tex1 &lt;string NTM = "shader"; int NTMIndex = 0;&gt;;
+texture Tex2;
+texture Tex3 &lt;string NTM = "shader"&gt;;
+texture Tex4;
+</pre> 
+
+<p>texture Tex1 will be assigned to shader map slot 0, 
+ texture Tex2 will be assigned to shader map slot 1, texture Tex3 will 
+ be assigned to shader map slot 2, and texture Tex4 will be assigned to 
+ shader map slot 3.</p>
+
+<p>Textures can also be assigned directly to a texture 
+ file. The shader system will look for the file from the current working 
+ directory, so it may be necessary to add path information to the texture 
+ name. </p>
+
+<a name=Samplers></a><h2>Samplers</h2>
+
+<p>When using samplers it is currently necessary to specify 
+ the sampler register to use. This information is used during the conversion 
+ processing from CGFX to NSF. The example below shows how to properly declare 
+ samplers.</p>
+
+<a name=MultiplePasses></a><h2>Multiple Passes</h2>
+
+<p>Gamebryo CGFX supports the use of multiple passes in 
+ a given technique. The example below uses multiple passes in the main 
+ technique.</p>
+
+<h2>Known Limitations</h2>
+
+<ul>
+	
+	<li>Procedural 
+ texture generation is currently not supported.</li>
+	
+	<li>Meshes cannot 
+ be specified in the file as they are in EffectEdit by using the string 
+ parameter named "XFile".</li>
+</ul>
+
+<h2>Sample CGFX file</h2>
+
+<p>A sample CGFX file is included here to show a file that 
+ works well with Gamebryo. This is a multipass example of a skinned character 
+ lit by two directional lights and a warp effect.</p>
+
+<pre>
+string description
+&lt;
+    string detail0 = "This shader skins a model using 20 bones per partition, applies a base ";
+    string detail1 = "map, and lights it with two directional lights using a normal map. ";
+    string detail2 = "Then, the entire effect is modified by a warping effect that allows ";
+    string detail3 = "the shader to fade out over time. The warp effect is a 2D texture that ";
+    string detail4 = "will be sampled using (N dot V) as the U coordinate and 'warpAlpha' as ";
+    string detail5 = "the V coordinate.";
+&gt; = "Skin With 2 Directional Lights and Warp Effect";
+// Parameters
+float4x4 ViewProjTranspose : ViewProjTranspose
+&lt;
+    string UIWidget="None";
+&gt;;
+float4 EyePos : EyePos
+&lt;
+    string UIWidget="None";
+&gt;;
+// This will come from the application
+float4 MaterialDiffuse : MaterialDiffuse
+&lt;
+    string UIWidget = "None";
+&gt;;
+// Effectively the V coordinate of the WarpEffects texture lookup.
+float WarpAlpha
+&lt;
+    string UIName = "Warp Alpha";
+    string UIWidget = "Slider";
+    float UIMin = -2.0;
+    float UIMax = 2.0;
+    float UIStep = 1.0;
+&gt; = 0.3;
+float3x4 SkinBoneMatrices[30] : SkinBoneMatrix3
+&lt;
+    string UIWidget = "None";
+    string Semantic = "SkinBoneMatrix3";
+&gt;;
+// Light1: Dynamic Effect
+string Light1
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectIndex="0";
+    string Object="GeneralLight";
+&gt; = "Light1";
+// Light2: Dynamic Effect
+string Light2
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectIndex="1";
+    string Object="GeneralLight";
+&gt; = "Light2";
+float3 Light1Direction
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light1";
+    string ObjectProperty="WorldDirection";
+&gt;;
+float3 Light2Direction
+&lt;
+    string UIWidget="None";
+    string ObjectName="Light2";
+    string ObjectProperty="WorldDirection";
+&gt;;
+float3 Light1Color
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light1";
+    string ObjectProperty="Diffuse";
+&gt;;
+float3 Light2Color
+&lt;
+    string UIWidget="None";
+    string VarType="Object";
+    string ObjectName="Light2";
+    string ObjectProperty="Diffuse";
+&gt;;
+float time: time
+&lt;
+    string UIWidget="None";
+&gt;;
+ 
+struct VS_INPUT
+{
+    float3 Position     : POSITION;
+    float3 BlendWeights : BLENDWEIGHT;
+    int4 BlendIndices   : BLENDINDICES;
+    float3 Normal       : NORMAL;
+    float3 Binormal     : BINORMAL;
+    float3 Tangent      : TANGENT;
+    float2 TexCoord     : TEXCOORD0;
+};
+struct VS_OUTPUT
+{
+    float4 Pos          : POSITION;
+    float3 Diffuse      : COLOR0;
+    float2 TexCoord     : TEXCOORD0;
+    float3 ViewVector   : TEXCOORD1;
+    float3 Light1Vector : TEXCOORD3;
+    float3 Light2Vector : TEXCOORD4;
+};
+VS_OUTPUT vmain(VS_INPUT In)
+{
+    VS_OUTPUT Out;
+    
+    //Determine the 4th weight.  We only pack 3, and this insures that the
+    //weights sum to 1.  
+    float fWeight3 = 1.0 - In.BlendWeights.x - In.BlendWeights.y - In.BlendWeights.z;
+    float3x4 ShortSkinBoneTransform;
+    ShortSkinBoneTransform  =
+        SkinBoneMatrices[In.BlendIndices.x] * In.BlendWeights.x;
+    ShortSkinBoneTransform +=
+        SkinBoneMatrices[In.BlendIndices.y] * In.BlendWeights.y;
+    ShortSkinBoneTransform +=
+        SkinBoneMatrices[In.BlendIndices.z] * In.BlendWeights.z;
+    ShortSkinBoneTransform +=
+        SkinBoneMatrices[In.BlendIndices.w] * fWeight3;
+    float4x4 SkinBoneTransform = float4x4(ShortSkinBoneTransform[0],
+        ShortSkinBoneTransform[1],
+        ShortSkinBoneTransform[2],
+        float4(0.0f, 0.0f, 0.0f, 1.0f));
+    // Transform into world space.
+    Out.Pos.xyz = mul(ShortSkinBoneTransform, float4(In.Position.xyz, 1.0));
+    Out.Pos = mul(ViewProjTranspose, float4(Out.Pos.xyz, 1.0));
+    //Get eye pos in world space
+    
+    //Find normalized view vector(V)
+    float3 WorldViewVector = normalize(EyePos.xyz - Out.Pos.xyz);
+        
+    float3 WorldNormal = mul(In.Normal, (float3x3)SkinBoneTransform);
+    WorldNormal = normalize(WorldNormal);
+    //We need to deform B and T now.  We're taking B and T to world space.  Then
+    //we can use them to deform back into tangent space bypassing the object space
+    //of the skin which can be problematic.
+    
+    // Transform the normal into world space for lighting
+    float3 WorldNrm      = mul( In.Normal, (float3x3)SkinBoneTransform);
+    float3 WorldBinormal = mul( In.Binormal, (float3x3)SkinBoneTransform);
+    float3 WorldTangent  = mul( In.Tangent, (float3x3)SkinBoneTransform);
+    WorldNrm      = normalize(WorldNrm);     
+    WorldBinormal = normalize(WorldBinormal);
+    WorldTangent  = normalize(WorldTangent);
+    //The vectors for the 2 directional lights come to us in world space so we can
+    //use N, B, and T to transform into tangent space.  We'll use oT3, and oT4
+    Out.Light1Vector.x = dot(-Light1Direction, WorldTangent);
+    Out.Light1Vector.y = dot(-Light1Direction, WorldBinormal);
+    Out.Light1Vector.z = dot(-Light1Direction, WorldNormal);
+    Out.Light2Vector.x = dot(-Light2Direction, WorldTangent);
+    Out.Light2Vector.y = dot(-Light2Direction, WorldBinormal);
+    Out.Light2Vector.z = dot(-Light2Direction, WorldNormal);
+    
+    //Move material color into oD0 for use in the pixel shader.
+    Out.Diffuse = MaterialDiffuse.rgb;
+   
+    // Texture coordinates for the base map and normal map.
+    Out.TexCoord = In.TexCoord;
+    // Place V in tangent space into oT1 for per pixel N dot V in pixel shader.
+    Out.ViewVector.x = dot(WorldViewVector, WorldTangent);
+    Out.ViewVector.y = dot(WorldViewVector, WorldBinormal);
+    Out.ViewVector.z = dot(WorldViewVector, WorldNormal);
+    return Out;
+}
+// NTM_Base texture and sampler
+texture BaseTexture
+&lt;
+    string NTM = "base";
+    string ResourceType = "2D";
+&gt;;
+sampler2D BaseMapSampler: register(s0) = sampler_state
+{
+    WrapS = Clamp;
+    WrapT = Clamp;
+    Texture = &lt;BaseTexture&gt;;
+    MinFilter = LinearMipMapLinear;
+    MagFilter = Linear;
+};
+// The texture for the effect.  WarpAlpha will be used as V.  
+// N dot V will be used for U
+texture WarpEffects
+&lt;
+    string ResourceName = "WarpEffects.tga";
+    string ResourceType = "2D";
+&gt;;
+sampler2D WarpEffectSampler: register(s1) = sampler_state
+{
+    WrapS = Clamp;
+    WrapT = Clamp;
+    Texture = &lt;WarpEffects&gt;;
+    MinFilter = Linear;
+    MagFilter = Linear;
+};
+// The texture for the normals.  
+texture NormalMap
+&lt;
+    string ResourceName = "normals.tga";
+    string ResourceType = "2D";
+&gt;;
+sampler2D NormalMapSampler: register(s2) = sampler_state
+{
+    WrapS = Clamp;
+    WrapT = Clamp;
+    Texture = &lt;NormalMap&gt;;
+    MinFilter = LinearMipMapLinear;
+    MagFilter = Linear;
+};
+float4 fmain(VS_OUTPUT In) : COLOR
+{
+    float4 Out;
+    
+    float3 Normal = tex2D(NormalMapSampler, In.TexCoord).xyz * 2.0 - 1.0;
+        
+    // N dot L.  The light vector is not biased coming out of the vertex shader.
+    float NdotL1 = saturate(dot(Normal, In.Light1Vector));
+    float3 Lighting = saturate(NdotL1 * Light1Color);
+    float NdotL2 = saturate(dot(Normal, In.Light2Vector));
+    Lighting = saturate(Lighting + (NdotL2 * Light2Color));
+    
+    //Perform per pixel N dot V calc
+    float2 WarpEffectUV;
+    WarpEffectUV.x = saturate(dot(Normal, In.ViewVector));
+    WarpEffectUV.y = WarpAlpha;
+    
+    float4 WarpEffect = tex2D(WarpEffectSampler, WarpEffectUV);
+    
+    //Modulate lighting by material
+    Lighting *= In.Diffuse;
+    
+    //Modulate base by lighting and add warp
+    Out = tex2D(BaseMapSampler, In.TexCoord);
+    
+    Out.rgb = Out.rgb * Lighting + WarpEffect.rgb;
+            
+    //Modulate in alpha from WE
+    Out.a *= WarpEffect.a;
+    
+    return Out;
+}
+float4 fmain_pass2(VS_OUTPUT In) : COLOR
+{
+    float4 Out;
+    float3 Normal = tex2D(NormalMapSampler, In.TexCoord).xyz * 2.0 - 1.0;
+    
+    float NdotL2 = saturate(dot(Normal, In.Light2Vector));
+    float3 Lighting = saturate(Lighting + (NdotL2 * Light2Color));
+    
+    //Perform per pixel N dot V calc
+    float2 WarpEffectUV;
+    WarpEffectUV.x = saturate(dot(Normal, In.ViewVector));
+    WarpEffectUV.y = lerp(0.5, 1, cos(time * 10));
+    float4 WarpEffect = tex2D(WarpEffectSampler, WarpEffectUV);
+    WarpEffect.r = WarpEffect.b;
+    WarpEffect.g -= 0.2;
+        
+    //Modulate base by lighting and add warp
+    Out = tex2D(BaseMapSampler, In.TexCoord);
+    
+    Out.rgb = Out.rgb * (In.Diffuse * Lighting) + WarpEffect.rgb;
+    
+    
+    // Move in warp alpha
+    Out.a = lerp(0.1, 0.3, cos(time * 5));
+    return Out;
+}
+technique main
+{
+    pass p0
+    {
+        // We are writing Z which can cause problems with alpha
+        // sorting. We sidestep this in the application by turning off
+        // alpha sorting for the alien when he's opaque. There are
+        // artifacts as he warps in, but they are hard to notice with
+        // so much going on visually.
+        VertexProgram = compile arbvp1 vmain();
+        BlendEnable = true;
+        BlendFunc = int2(SrcAlpha,InvSrcAlpha);
+        PolygonMode = int2(Front, Fill);
+ 
+        FragmentProgram = compile arbfp1 fmain();
+    }
+    pass p1
+    {
+        VertexProgram = compile arbvp1 vmain();
+        BlendEnable = true;
+        BlendFunc = int2(One,One);
+        PolygonMode = int2(Front, Fill);
+        FragmentProgram = compile arbfp1 fmain_pass2();
+    }
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Render List Processor</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Render List Processor</h1>
+
+<p>A <em>render list processor</em> 
+ for an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ object is used to pre- and post-process the array of geometry objects 
+ when rendering. A single render list processor can be assigned to multiple 
+ render clicks and thus must operate in a stateless fashion between render 
+ clicks.</p>
+
+<p>During rendering, the processor is passed an array of 
+ geometry objects that need to be rendered and passes back an array of 
+ objects that still need to be rendered. By controlling that output array, 
+ the render list processor can modify the geometry array, such as rendering 
+ some geometry objects immediately and deferring rendering of a sorted 
+ list for later. After the render click has rendered the remaining geometry 
+ objects, the process is provided with the array of geometry objects that 
+ were just rendered to perform any necessary post-processing.</p>
+
+<p>Render list processors are the replacement in the frame 
+ rendering system for <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAccumulator.htm">NiAccumulator</a></span> 
+ objects. They can be used to sort geometry objects before rendering, to 
+ further cull or otherwise exclude geometry objects from being rendered, 
+ or to apply custom materials or shaders to the geometry objects before 
+ they are rendered, removing those materials when rendering is complete. 
+ Information about the view matrices can be accessed from the renderer 
+ to enable distance-based sorting of geometry objects as would be needed 
+ for alpha or z-buffer sorting.</p>
+
+<p>Since render list processors replace accumulators, a 
+ special processor class is provided that wraps the functionality of an 
+ <span class="NDLSystemFont">NiAccumulator</span>. The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAccumulatorProcessor.htm">NiAccumulatorProcessor</a></span> 
+ class enables existing accumulator classes to be used directly in the 
+ frame rendering system, if desired.</p>
+
+<h2>NiRenderListProcessor</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderListProcessor.htm">NiRenderListProcessor</a></span> 
+ class is the base class for all render list processors. It provides two 
+ virtual functions, <span class="NDLSystemFont">PreRenderProcessList</span> 
+ and <span class="NDLSystemFont">PostRenderProcessList</span>, which are 
+ used to pre- and post-process the geometry objects, respectively. It also 
+ provides default implementations for both of these functions. The default 
+ <span class="NDLSystemFont">PreRenderProcessList</span> function simply 
+ renders all the geometry objects immediately and returns an empty output 
+ array, indicating that no other geometry needs to be rendered. The default 
+ <span class="NDLSystemFont">PostRenderProcessList</span> function does nothing. 
+ Extra data can be provided to both virtual functions via the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ object, but neither default implementation does anything with it.</p>
+
+<p>Unless an application specifies a different render list 
+ processor to use with an <span class="NDLSystemFont">NiViewRenderClick</span>, 
+ a default instance of <span class="NDLSystemFont">NiRenderListProcessor</span> 
+ will be used to render the geometry objects in the order in which they 
+ are received. More customized processing behavior can be added by creating 
+ instances of a derived class and assigning it to the render click.</p>
+
+<h2>Examples of Render List Processors</h2>
+
+<p>Examples of some render list processors that ship with 
+ Gamebryo are listed below:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAccumulatorProcessor.htm">NiAccumulatorProcessor</a></span>: 
+ wraps the functionality of an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAccumulator.htm">NiAccumulator</a></span> 
+ class; provides an option to not close the accumulator after rendering.</li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMaterialSwapProcessor.htm">NiMaterialSwapProcessor</a></span>: 
+ swaps out the material on each geometry object with a specified replacement 
+ before rendering, replacing the original material once the geometry has 
+ been rendered.</li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBackToFrontSortProcessor.htm">NiBackToFrontSortProcessor</a></span>: 
+ similar to <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBackToFrontAccumulator.htm">NiBackToFrontAccumulator</a></span>; 
+ sorts all geometry objects from back to front by either bounding volume 
+ center or closest point and defers all rendering to the render click.</li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAlphaSortProcessor.htm">NiAlphaSortProcessor</a></span>: 
+ similar to <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAlphaAccumulator.htm">NiAlphaAccumulator</a></span>; 
+ immediately renders all opaque geometry, sorts all transparent geometry 
+ from back to front, and defers rendering of transparent geometry to the 
+ render click.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPSSimulatorStep</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiPSSimulatorStep</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../NiMain/NiObject.htm">NiObject</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NiPSSimulatorStep.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/class_ni_p_s_simulator_step.gif" alt="Inheritance graph for NiPSSimulatorStep"/>
+  <p class="FigureCaption">Inheritance graph for NiPSSimulatorStep</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Abstract base class for a single step in the particle system simulation process. </p>
+<p class="NDLNormal">Each simulator step encapsulates a Floodgate kernel that performs an aspect of the particle simulation. During its Update function, each step has the chance to suspend execution of its Floodgate kernel based on various criteria.</p>
+<p class="NDLNormal">This class stores sets of associated Floodgate streams and semantics. These stream/semantic pairs are used by the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> mesh modifier to re-arrange streams on the step to ensure the proper ordering during Floodgate execution. In the Attach function for derived classes, any streams that refer to shared particle data should be constructed and added using the protected AddInput and AddOutput functions in this class. This will pass ownership of these streams to the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object and allow it to re-arrange them as necessary. Additionally, the semantics used for streams that reference particle data should come from <span class="NDLSystemFont"><a href="NiPSCommonSemantics.htm">NiPSCommonSemantics</a></span>. The PrepareInputStream and PrepareOutputStream functions must be implemented in each derived class to handle initializing these shared streams properly.</p>
+<p class="NDLNormal">The Attach function is called when the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object is attached to the particle system. This function should be used to add any locally owned streams (not shared streams) directly to the Floodgate task. This function is called before PrepareInputStream and PrepareOutputStream, so any streams added here should be handled first in the kernel.</p>
+<p class="NDLNormal">The Detach function is called when the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object is detached from the particle system. Derived classes should set all their pointers to shared Floodgate streams to NULL in this function. They should be sure to call the base class version of Detach, though, which ensures that the array of streams and semantics stored in this class are properly emptied.</p>
+<p class="NDLNormal">A pure virtual function, GetKernel, exists that is called by the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object to get the Floodgate kernel associated with the step. The GetLargestInputStride function should be implemented to return the largest stride of all the input streams used by the step. This value is used by <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> to compute the optimal block count for the Floodgate task using the kernel.</p>
+<p class="NDLNormal">The Update function should be used to initialize any data in locally owned streams, update the block count of shared streams to match the number of active particles, and determine whether or not execution of the kernel should be skipped due to various factors. </p>
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="class_ni_p_s_simulator_step_1acd1c3026a05d9e011bd52cca02f21336"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../NiFloodgate/NiSPKernel.htm">NiSPKernel</a></span>*  GetKernel() = 0</p>
+<p class="NDLRefMemberDetailedDescription">Returns the Floodgate kernel associated with the step. </p>
+
+<a name="class_ni_p_s_simulator_step_1a49c4c573e8d02c9c95745539892f4d61"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">NiUInt16</span>  GetLargestInputStride() = 0</p>
+<p class="NDLRefMemberDescription">Returns the largest stride value of all the input streams in the step. </p>
+<p class="NDLRefMemberDetailedDescription">This value is used to compute an optimal block count for the Floodgate task that executes the step's kernel. </p>
+
+<a name="class_ni_p_s_simulator_step_1a0d772ee103fa4c256d699faf1825586a"></a>
+<p class="NDLRefMemberFunction">virtual NiSPTaskPtr  Attach(<span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>* pkParticleSystem) = 0</p>
+<p class="NDLRefMemberDescription">Called when the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object is attached to the particle system. </p>
+<p class="NDLRefMemberDetailedDescription">This function should allocate a task and create any Floodgate streams that will be shared - call AddInput and AddOutput to associate them with semantics. It should also add only its locally owned streams to the allocated task, not the shared streams that are registered with AddInput and AddOutput. Those streams will be added to the task by the <span class="NDLSystemFont"><a href="NiPSSimulator.htm#class_ni_p_s_simulator_1ad546c77f4d5f5c37d06a7ee800164b74">NiPSSimulator::Attach</a></span> function.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkParticleSystem</span></td>
+    <td>A pointer to the particle system object.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>A task allocated to perform this step. It can be NULL on error. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_step_1a43653af23b4d4d150834acbaea17899e"></a>
+<p class="NDLRefMemberFunction">virtual void  Detach(<span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>* pkParticleSystem) = 0</p>
+<p class="NDLRefMemberDescription">Called when the <span class="NDLSystemFont"><a href="NiPSSimulator.htm">NiPSSimulator</a></span> object is detached from the particle system. </p>
+<p class="NDLRefMemberDetailedDescription">This function should clear out any pointers to shared Floodgate streams, since those streams will be deleted by the <span class="NDLSystemFont"><a href="NiPSSimulator.htm#class_ni_p_s_simulator_1a3d6ac220f7abc4855128e39abdfe7246">NiPSSimulator::Detach</a></span> function. The base class version of this function must be called to ensure that the semantics and stream arrays are properly emptied.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkParticleSystem</span></td>
+    <td>A pointer to the particle system object. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="class_ni_p_s_simulator_step_1a3431ff6e3f58ea87641c0879423379a0"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  Update(<br/><span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>* pkParticleSystem, <br/>float fTime) = 0</p>
+<p class="NDLRefMemberDescription">Update function called each frame. </p>
+<p class="NDLRefMemberDetailedDescription">This function should be used to initialize any data in locally owned streams, update the block count of shared streams to match the number of active particles, and determine whether or not execution of the kernel should be skipped due to various factors.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkParticleSystem</span></td>
+    <td>A pointer to the particle system object. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">fTime</span></td>
+    <td>The current simulation time. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Whether or not the kernel for the step should be executed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="input_stream_functions"></a>
+<p class="NDLRefHead1">Input Stream Functions</p>
+
+
+<a name="class_ni_p_s_simulator_step_1afe1296bc7c4b9e99b30e521c33f6ce80"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiTObjectSet.htm">NiTObjectSet</a></span>&lt;<span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>&gt;&  GetInputSemantics() const</p>
+<p class="NDLRefMemberDescription">Returns the stored set of input stream semantics. </p>
+<p class="NDLRefMemberDetailedDescription">This set is populated by the AddInput protected function. </p>
+
+<a name="class_ni_p_s_simulator_step_1a4bf97cadb295f2ec8b916573ca2933df"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiTPrimitiveSet.htm">NiTPrimitiveSet</a></span>&lt;<span class="NDLSystemFont"><a href="../NiFloodgate/NiSPStream.htm">NiSPStream</a></span>*&gt;&  GetInputStreams() const</p>
+<p class="NDLRefMemberDescription">Returns the stored set of input streams. </p>
+<p class="NDLRefMemberDetailedDescription">This set is populated by the AddInput protected function. </p>
+
+<a name="class_ni_p_s_simulator_step_1a3775ff62d88e4dd2e7c0e1f2bcf8c9fc"></a>
+<p class="NDLRefMemberFunction">virtual void  PrepareInputStream(<br/><span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>* pkParticleSystem, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>& kSemantic, <br/><span class="NDLSystemFont"><a href="../NiFloodgate/NiSPStream.htm">NiSPStream</a></span>* pkStream) = 0</p>
+<p class="NDLRefMemberDescription">Prepares the input stream with the specified semantic for execution. </p>
+<p class="NDLRefMemberDetailedDescription">This function should compare kSemantic to all known input stream semantics and perform the following actions:</p>
+<p class="NDLRefMemberDetailedDescription">
+<ul>
+<li>If pkStream does not match the stored input stream for that semantic, delete the old stream and replace it with pkStream.</li>
+<li>Set the data for the stored stream to point to the particle system's particle data.</li></ul></p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkParticleSystem</span></td>
+    <td>A pointer to the particle system object. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSemantic</span></td>
+    <td>The semantic for the input stream to be prepared. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkStream</span></td>
+    <td>A pointer to the input stream that needs to be prepared. This may not match the existing stored input stream, in which case the existing stream should be deleted and replaced with this one. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="output_stream_functions"></a>
+<p class="NDLRefHead1">Output Stream Functions</p>
+
+
+<a name="class_ni_p_s_simulator_step_1a409813d50497d7a632af60bd49ed1528"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiTObjectSet.htm">NiTObjectSet</a></span>&lt;<span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>&gt;&  GetOutputSemantics() const</p>
+<p class="NDLRefMemberDescription">Returns the stored set of output stream semantics. </p>
+<p class="NDLRefMemberDetailedDescription">This set is populated by the AddOutput protected function. </p>
+
+<a name="class_ni_p_s_simulator_step_1aee310772f509af1f98110ef87826ca13"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../NiMain/NiTPrimitiveSet.htm">NiTPrimitiveSet</a></span>&lt;<span class="NDLSystemFont"><a href="../NiFloodgate/NiSPStream.htm">NiSPStream</a></span>*&gt;&  GetOutputStreams() const</p>
+<p class="NDLRefMemberDescription">Returns the stored set of output streams. </p>
+<p class="NDLRefMemberDetailedDescription">This set is populated by the AddOutput protected function. </p>
+
+<a name="class_ni_p_s_simulator_step_1a6c523c1f4d4638483093eae100a42a82"></a>
+<p class="NDLRefMemberFunction">virtual void  PrepareOutputStream(<br/><span class="NDLSystemFont"><a href="NiPSParticleSystem.htm">NiPSParticleSystem</a></span>* pkParticleSystem, <br/>const <span class="NDLSystemFont"><a href="../NiMain/NiFixedString.htm">NiFixedString</a></span>& kSemantic, <br/><span class="NDLSystemFont"><a href="../NiFloodgate/NiSPStream.htm">NiSPStream</a></span>* pkStream) = 0</p>
+<p class="NDLRefMemberDescription">Prepares the output stream with the specified semantic for execution. </p>
+<p class="NDLRefMemberDetailedDescription">This function should compare kSemantic to all known output stream semantics and perform the following actions:</p>
+<p class="NDLRefMemberDetailedDescription">
+<ul>
+<li>If pkStream does not match the stored output stream for that semantic, delete the old stream and replace it with pkStream.</li>
+<li>Set the data for the stored stream to point to the particle system's particle data.</li></ul></p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pkParticleSystem</span></td>
+    <td>A pointer to the particle system object. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSemantic</span></td>
+    <td>The semantic for the output stream to be prepared. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pkStream</span></td>
+    <td>A pointer to the output stream that needs to be prepared. This may not match the existing stored output stream, in which case the existing stream should be deleted and replaced with this one. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

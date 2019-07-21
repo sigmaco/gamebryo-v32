@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Passing Values Between C++ Built-in API Functions and Scripting Languages</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Passing Values Between C++ Built-in API Functions and Scripting Languages</h1>
+
+<p>When you are passing values between the C++ built-in API functions and the scripting languages there are two
+factors to consider:</p>
+
+<ul>
+    <li>Type conversion</li>
+
+    <li>Calling conventions</li>
+</ul>
+
+<h2>Type Conversion</h2>
+
+<p>The system provides mappings for most of the primitive types and many of the basic
+application-specific types. It also provides mappings for some of the basic data structures such as
+lists and maps. A lot can be accomplished by using the types that are provided. The user can,
+however, add their own custom types by following the examples in the base code.</p>
+
+<p>The table below summarizes some of the type conversions that are already provided for the
+user.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>C++ Type</th>
+
+            <th>Lua Type</th>
+
+            <th>Python Type</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>efd::ParameterList*</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>PyObject</td>
+        </tr>
+
+        <tr>
+            <td>efd::Point2</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Tuple with three items</td>
+        </tr>
+
+        <tr>
+            <td>efd::Point3</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Tuple with three items</td>
+        </tr>
+
+        <tr>
+            <td>efd::Point4</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::Quaternion</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::Color</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::ColorA</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::Matrix3</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::AssetID</td>
+
+            <td>String</td>
+
+            <td>Not supported</td>
+        </tr>
+
+        <tr>
+            <td>efd::UniversalID</td>
+
+            <td>64-bit integer</td>
+
+            <td>Long integer</td>
+        </tr>
+
+        <tr>
+            <td>efd::Category</td>
+
+            <td>64-bit integer</td>
+
+            <td>Long integer</td>
+        </tr>
+
+        <tr>
+            <td>egf::EntityID</td>
+
+            <td>64-bit integer</td>
+
+            <td>Long integer</td>
+        </tr>
+
+        <tr>
+            <td>egf::EventID</td>
+
+            <td>64-bit integer</td>
+
+            <td>Long integer</td>
+        </tr>
+
+        <tr>
+            <td>efd::ID128</td>
+
+            <td>String</td>
+
+            <td>String</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Calling Conventions</h2>
+
+<p>For a simple built-in API function that takes one or more input parameters and returns one output value,
+calling the built-in API function from the scripting code is straightforward. For example, consider the
+following C++ built-in API function declaration:</p>
+<pre>
+C++ - Two inputs and one output
+
+  EntityCheck HasBehavior(egf::EntityID entity, const efd::utf8string&amp; behaviorName);
+</pre>
+
+<p>This function takes two inputs and returns one value. This built-in API function can be called using the
+following Lua and Python code samples:</p>
+<pre>
+Lua
+
+  local result = self:ContainsBehavior("PickupObject")
+
+Python
+
+  result = HasBehavior(entityID, "PickupObject")
+  
+</pre>
+
+<p>Lua and Python both allow a function to return more than one value. C++ allows function
+parameters to be modified. Consider the following C++ built-in API function declaration:</p>
+<pre>
+C++ - One input and two outputs
+
+  EntityCheck FindBehaviors(egf::EntityID entity, efd::list&lt;efd::utf8string&gt;* OutValue);
+</pre>
+
+<p>This function takes as input an EntityID and returns two values: a result via the return value,
+and a list of behavior names using the second function parameter. To call this built-in API function from both
+Lua and Python, the second function parameter becomes a second return value.</p>
+<pre>
+Lua
+
+  local result, behaviors = BehaviorAPI.FindBehaviors(entityID)
+
+Python
+
+  result, behaviors = FindBehaviors(entityID)
+</pre>
+
+<p>Next, consider a function where one of the parameters is used as both input to and output from
+the function:</p>
+<pre>
+ C++ - Second function parameter is used for both input and output
+ 
+    bool UpdatePosition(egf::EntityID entity, efd::Point3&amp; position);
+ 
+</pre>
+
+<p>This function takes two inputs: an EntityID and a Point3. It returns a boolean, but, it can also
+update the Point3 value. Calling this function from the scripting languages requires that the
+second parameter also be used as a second return value.</p>
+<pre>
+Lua
+
+  result, position = ExampleBuiltins.UpdatePosition(entity, position)
+
+Python
+
+  result, position = UpdatePosition(entity, position)
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_best_practice.htm">Best practices for working with built-in API functions</a></li>
+
+    <li><a href="../../Programmer/SystemServices/system_service_creating.htm">Creating a system
+    service</a></li>
+
+    <li><a href="../../Programmer/SystemServices/system_service_modifying.htm">Modifying a system
+    service</a></li>
+
+    <li><a href="../../Programmer/SystemServices/system_service_deleting.htm">Deleting a system
+    service</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>StandardMaterial Demo Functional Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>StandardMaterial Demo Functional Overview</h1>
+
+<h2>Basic concepts</h2>
+
+<p>A NIF file containing the simple landscape, snail, and snail
+house is loaded and supplies the scene graph of this demo. An
+animated camera, and lights, are also provided. They track the
+snail using a look at controller.</p>
+
+<p>The <a href=
+"../../Programmer/NiMaterial/Gamebryo_Standard_Material.htm">Gamebryo
+Standard Material</a> is used, layering many texture maps onto
+the snail, terrain, and snail house. Sample code is provided that
+disables each effect independently. The shadow from the snail
+shell is generated in code, and is described below.</p>
+
+<h2>Shadow Image Creation</h2>
+
+<p>The shadow image is a square texture that represents the snail
+as viewed from the shadow casting light. The shadow is commonly
+drawn as black-on-white wherever the snail appears from the
+light's point of view is black, and wherever it does not appear
+is white (other colors may be chosen for the background and/or
+shadow if desired).</p>
+
+<p>In order to create the texture, a camera representing the
+shadowing light source is built. The camera is updated to reflect
+the animated transform of the light. Finally, the frustum field
+of view parameters (left, right, bottom, top) are adjusted so
+that they are slightly outside of the bounding sphere of the
+shadowing object. As a result, we know that for every frame the
+camera will "track and zoom" to follow the character. The
+resulting image will always have the character centered and
+zoomed to almost fill the image.</p>
+
+<p>This shadow camera is rendered to an off-screen frame buffer,
+creating a projected texture map. Since the camera is zoomed to
+be slightly wider than the bounding sphere of the character, the
+edge pixels of the texture will always be white (or whatever
+background color is selected). This behavior is important, since
+we will use CLAMP texture addressing with the texture.</p>
+
+<p>Additionally, a special accumulator (a <span class=
+"NDLSystemFont">MasterPropertyAccumulator</span> object) is used
+to render the shadow caster into the shadow map texture. Rather
+than sorting the geometry, the <span class=
+"NDLSystemFont">MasterPropertyAccumulator</span> object simply
+draws all of the geometry that is registered with it, replacing
+whatever rendering properties are in each object's property state
+with properties that will cause the object to be a flat color -
+the shadow color. After rendering each object, the <span class=
+"NDLSystemFont">MasterPropertyAccumulator</span> object returns
+the original properties to the geometry objects that it
+modified.</p>
+
+<h2>Projected Shadow Application</h2>
+
+<p>Applying the texture image as a projected shadow is simple.
+The light is modeled as an infinite directional light and the
+shadow camera (as described above) is configured to approximate a
+parallel projection. To apply the texture to the scene, a
+parallel projected shadow <a href=
+"../../Reference/NiMain/NiTextureEffect.htm"><span class=
+"NDLSystemFont">NiTextureEffect</span></a> is created, and the
+projection transformation set to match the parallel projection
+that the shadow camera approximates.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

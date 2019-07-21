@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Dodgeball Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Dodgeball Code Overview</h1>
+
+<p>In this section we review the important classes that make up
+the Dodgeball sample.</p>
+
+<h2>The DodgeBall Class</h2>
+
+<p>The top-level application class is derived from Gamebryo's
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span>
+class. It is primarily responsible for three areas of
+functionality:</p>
+
+<ul>
+    <li><b>Initialization:</b> The Dodgeball class initializes
+    the basic application and all of the other classes. It
+    creates the custom UI system and initializes the PhysX SDK
+    object. Initialization is done in this class because it is
+    the central starting point for the application.</li>
+
+    <li><b>UI and Game State Management:</b> The Dodgeball class
+    manages the current game and UI state, such as which splash
+    screen is up or whether the game is in play. It also manages
+    the custom UI created for the splash screens and handles
+    input. We put UI functionality in this class because it has
+    top-level control of the application and contains the access
+    to inherited <span class="NDLSystemFont">NiSample</span>
+    functions.</li>
+
+    <li><b>Update:</b> The basic per-frame update code is
+    contained in the Dodgeball class, although virtually all the
+    work of update is inherited from the <span class=
+    "NDLSystemFont">NiSample</span> class or done by the
+    <span class="NDLSystemFont">PlaygroundManager</span> object.
+    Update is done here because this class is derived from the
+    <span class="NDLSystemFont">NiSample</span> class and can
+    inherit functionality.</li>
+</ul>
+
+<h2>UI Manager Classes</h2>
+
+<p>Dodgeball implements a custom UI built on top of <a href=
+"../../Reference/NiUserInterface/NiUserInterface_Introduction.htm">
+<span class="NDLSystemFont">NiUserInterface</span></a> classes.
+The custom UI is designed to display the splash screens and
+buttons (the <span class="NDLSystemFont">CustomUIGroup</span> and
+<span class="NDLSystemFont">CustomButton</span> classes). It is
+also responsible for the camera navigation system (the
+<span class="NDLSystemFont">NiNavCustomController</span> class)
+and hence the interpretation of all user input.</p>
+
+<h2>Playground Manager</h2>
+
+<p>The <span class="NDLSystemFont">PlaygroundManager</span> class
+performs most of the work in dealing with the game environment,
+and it also manages the character and cannons. Its functionality
+can be broken into 3 areas:</p>
+
+<ul>
+    <li><b>Playground management:</b> The <span class=
+    "NDLSystemFont">PlaygroundManager</span> class is responsible
+    for loading the playground art assets and providing
+    information about them, such as the playable area and the
+    locations of cannon mount points.</li>
+
+    <li><b>PhysX Scene Management:</b> The <span class=
+    "NDLSystemFont">PlaygroundManager</span> object creates and
+    owns the <span class="NDLSystemFont"><a href=
+    "../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+    object and is hence the primary contact point for the PhysX
+    scene. In a step that comes post initialization (when all
+    PhysX content has been created) it sets up a contact reporter
+    so that the application knows about collisions. This
+    information is restricted to collisions between the ball and
+    the character using the actor group information.</li>
+
+    <li><b>Update:</b> The update functionality is broken into
+    two pieces in order to facilitate asynchronous physics
+    simulation and to enforce the requirement that no input be
+    given to the physics system while it is simulating. The
+    pre-input update fetches simulation results that were begun
+    in the previous frame and pushes any results to the Gamebryo
+    scene graph. Note the use of the previous frame time as the
+    time for which results are requested. User input and
+    processing is done now, while simulation is known to be
+    stopped. The post-update function updates all the other
+    objects with the current time before re-starting
+    simulation.</li>
+</ul>
+
+<h2>Cannon and Ball Management</h2>
+
+<p>The cannons and balls are managed by the <span class=
+"NDLSystemFont">CannonManager</span> class and the <span class=
+"NDLSystemFont">Cannon</span> class. The latter deals with
+targeting the cannon - setting its pose to follow the character
+while it is targeting to fire. Its <span class=
+"NDLSystemFont">Update</span> function returns true when the
+cannon is in a position to fire.</p>
+
+<p>The <span class="NDLSystemFont">CannonManager</span> is
+responsible for loading the art assets for both the cannon and
+the ball. The cannons are cloned to create one for each mount
+point. Twenty ball clones are created at initialization so that
+they are available immediately to avoid frame stutter when a
+cannon fires. We know the number of balls we need because the
+application resets after a fixed number.</p>
+
+<p><span class="NDLSystemFont">Update</span> for the <span class=
+"NDLSystemFont">CannonManager</span> class updates each cannon in
+turn. If the cannon indicates that it should fire, and we don't
+reset, the <span class="NDLSystemFont">ShootBall</span> function
+is called to take a ball from the list of inactive balls, set its
+pose to match the cannon's orientation, and set it in motion.
+Here we make use of the ability to add and remove <a href=
+"../../Reference/NiPhysX/NiPhysXProp.htm"><span class=
+"NDLSystemFont">NiPhysXProp</span></a> objects to and from an
+<a href="../../Reference/NiPhysX/NiPhysXScene.htm"><span class=
+"NDLSystemFont">NiPhysXScene</span></a> object. Creation and
+deletion of the prop in the PhysX scene is automatically handled.
+The ball is also added to the scene graph.</p>
+
+<h2>Character Management</h2>
+
+<p>The character in Dodgeball, Slim, is both an animated
+character and a physics rag-doll. Most of the work in setting
+Slim up to use both animation and physics was done in the art
+tools (see <a href="Dodgeball_Art_Assets.htm">Dodgeball Art
+Assets</a>), but some run-time set-up is also required. All the
+code for managing the character is in the <span class=
+"NDLSystemFont">TargetManager</span> class.</p>
+
+<p>Slim has a physics sequence assigned. When Slim is loaded
+(note the ordering of function calls in <span class=
+"NDLSystemFont">TargetManager::LoadActor</span> to ensure correct
+loading) we create a <a href=
+"../../Programmer/NiPhysX/Mixing_Animation_and_Physics_in_Gamebryo.htm">
+<span class="NDLSystemFont">NiPhysXSequenceManager</span></a>
+object to manage transitions between physics and animations. And
+we specify the physical sequence:</p>
+<pre>
+    m_spActorPhysX = NiNew NiPhysXSequenceManager;
+    m_spActorPhysX-&gt;SetManager(pkCtrlMgr, m_spActorProp);
+    m_spActorPhysX-&gt;MakeSequencePhysical(
+        m_spActorManager-&gt;GetSequenceData(SLIM_Anim::PHYSX01));
+</pre>
+
+<p>With the <span class=
+"NDLSystemFont">NiPhysXSequenceManager</span> in place, the actor
+manager can be used to transition to and from physics without any
+special handling. However, the exact time when physics is
+activated depends on the transition settings, so we set up
+callbacks so that we can track when physics is activated. The
+information is important for force application: forces should
+only be applied to a dynamic actor, but the character is
+kinematic when it is controlled by a key-sequence. The callbacks
+on the "get-up" animations are used to prevent the cannons from
+firing when the character is unable to run away.</p>
+
+<p>The character can be in any one of three states:</p>
+
+<ul>
+    <li><b>Demo Mode:</b> If there is no user input, Slim
+    randomly chooses a point in the playground and uses greedy
+    search to try to run there. When Slim gets near the goal, he
+    pauses and then chooses a new goal. Demo mode ends when Slim
+    is hit by a ball (in which case he goes physical) or when the
+    player provides some input, in which case Slim becomes player
+    controlled.</li>
+
+    <li><b>Player Controlled:</b> In this mode Slim is controlled
+    by the input system. The code determines the reference frame
+    for input (the camera frame) and the direction Slim is
+    facing. Based on the input, a new target animation is
+    selected to move Slim in the desired direction. There is
+    special handling of situations when Slim gets too close to a
+    boundary of the playground and his shocked stop animation is
+    played.</li>
+
+    <li><b>Physics controlled:</b> When Slim is under physics
+    control the application must manage the forces applied to
+    Slim and keep track of when Slim should get up again. When
+    applying forces from the ball impact we must buffer the
+    forces. There are three reasons for this: PhysX requires that
+    information obtained from a contact report not be used to
+    modify the scene until after the simulation step has
+    completed; when Slim is first hit he is kinematic (animation
+    controlled) and hence does not respond to the impact force;
+    and we wish to modify the forces to exaggerate the hit.
+    Hence, forces are queued when the contact report function is
+    called (via <span class=
+    "NDLSystemFont">TargetManager::ProcessHit</span>) and removed
+    from the queue in the update function for physics mode.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">TargetManager::Update</span>
+function keeps track of which sequence is active and calls the
+appropriate update procedure.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

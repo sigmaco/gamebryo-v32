@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Overview of Shipping Your Game</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Overview of Shipping Your Game</h1>
+
+<a name="UseShippingConfiguration" id="UseShippingConfiguration"></a><h3>Use the Shipping build configuration</h3>
+
+<p>Using the Shipping build configuration instead of Release has a number of benefits. It disables
+internal uses of some APIs and tools that cannot or should not be used in a shipped title, such as
+TTY or OutputDebugString output calls. Logging, memory diagnostics (including extra padding and
+runtime checks), and asserts are disabled as well.</p>
+
+<a name="LockShaderCache" id="LockShaderCache"></a><h3>Pre-populate shader caches</h3>
+
+<p>NiFragmentMaterial based materials store a .cache file that contains all shaders that have been
+produced by the material. The material will first check to see if the desired shader is located in
+the cache when attempting to create a new shader. If it is in the cache, the material can avoid
+generating shader code and compiling it by simply loading the compiled shader from the cache.</p>
+
+<p>Titles which make use of a NiFragmentMaterial based material (e.g., NiStandardMaterial) should
+pre-populate the shader caches with all possible shaders that may be encountered. This can be done
+manually by running around in the world and performing game actions during development or QA, or in
+a semi-automated method that loads and renders every asset in the game under various lighting
+conditions (e.g., 0-2 directional lights x 0-2 point lights).</p>
+
+<p>The pre-populated caches should be shipped with the title, and the caches put into lock-down via
+<span class="NDLSystemFont">NiFragmentMaterial::SetDefaultLockProgramCache(true)</span>. Calling
+<span class="NDLSystemFont">SetDefaultLockProgramCache(true)</span> will prevent any additional shaders
+from being entered into the cache. On the PC, there will be a separate cache for each shader model
+target, so be sure to run and generate shaders for the full range of hardware the title is intended to run on.</p>
+
+<p>The next section discusses how to handle the case where a combination was missed when the cache
+is locked down.</p>
+
+<a name="ReplaceShader" id="ReplaceShader"></a> <a name="ReplaceErrorShader" id=
+"ReplaceErrorShader"></a><h3>Understand replacement shaders and the error shader</h3>
+
+<p>On some platforms it may not be possible for a shipped title to write to the shader cache.
+Additionally, it may not be possible to compile a shader in a shipped title. In these cases if the a
+desired shader is not found in the shader cache, then there is no way for the title to produce the
+desired shader. This typically results in the title rendering the object with the error shader. To
+prevent the need to use the error shader in a shipping title, replacement shaders were
+introduced.</p>
+
+<p>All NiFragmentMaterial base materials shipped with Gamebryo support replacement shaders. When a
+shader cache is produced for one of the Gamebryo NiFragmentMaterials, such as NiStandardMaterial,
+the shader cache will be pre-populated with a set of very simplistic shaders that should always work.
+If the shader cache is locked (meaning it not possible to add entries to the cache) and the desired
+shader can not be found in the cache, then one of the replacement shaders will be used. While the
+replacement shaders are very simplistic, generally only supporting one light and a base texture,
+they provide a way to render an object without having to resort to the garish looking error
+shader.</p>
+
+<p>As stated above, support for using replacement shaders will automatically be enabled if the
+material shader caches are locked. The material shader caches can be locked or unlocked via
+<span class="NDLSystemFont">NiFragmentMaterial::SetDefaultLockProgramCache()</span>.</p>
+
+<a name="AspectRatioAware" id="AspectRatioAware"></a><h3>Be aware of various common aspect ratios</h3>
+
+<p>There are three common aspect ratios in wide use for PC and console games: 4:3, 16:9, and 16:10.
+It does not take much effort during development to consider different aspect ratios and adjust the
+camera accordingly, but forgetting to do so can have a negative impact on end user experience. For
+all three consoles, the aspect ratios to be aware of are 16:9 and 4:3, while on the PC
+theoretically almost any ratio is possible, but 4:3, 16:9, and 16:10 are the most common.</p>
+
+<p>The PS3 renderer provides GetDisplayAspectRatio() which returns a float indicating
+the aspect ratio.</p>
+
+<a name="SafeZone" id="SafeZone"></a><h3>Render important User Interface elements in a safe zone</h3>
+
+<p>Output devices on different platforms all lose some amount of output image data due to how the
+image is cast to the display device. The amount of edge data lost can vary from almost none to on
+the order of 10% of the visible width. While this may be generally ignored when presenting image
+data to the screen, it causes significant loss when presenting text as is common on UI elements.
+This problem, factored with widely varying resolutions across output devices led to a special "Safe
+Zone" rendering implementation for all UI elements.</p>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span> class provides methods to obtain a
+default safe zone rectangle for a given platform. See the <a href=
+"../../Reference/NiMain/NiRenderer.htm#SafeZone">safe zone rendering</a> method reference for more
+information.</p>
+
+<p>Note: Although the safe zone was originally a physical issue due to the operation of a CRT, it
+has been preserved into the era of digital TV and HDTV monitors because existing TV content
+contains junk outside of what was the traditional safe zone region. It needs to be considered (and
+is a TRC/TCR/Lotcheck issue) even for HD resolution console games.</p>
+
+<a name="LongRunningTime" id="LongRunningTime"></a><h3>Reset the time base</h3>
+
+<p>A number of systems throughout Gamebryo deal with absolute time in seconds since an epoch as a
+single-precision floating point number. If a title is long running then precision issues can start
+to occur as this time gets large (problems typically manifest as odd animation jerkiness).</p>
+
+<p>The epoch can be reset to avoid these problems, which is done by calling <span class=
+"NDLSystemFont">efd::SetInitialTimeInSec()</span>. Note: This must be done during a transition when
+no animations are playing. When a player enters a menu, dies, or a new level is loaded are all
+potentially good opportunities.</p>
+
+<p>To maintain a granularity of at least half a milisecond, the longest time between resets should
+be no greater than about 2^13 seconds (2^23 / 1000) or about 2 and 1/2 hours.</p>
+
+<a name="BackgroundLoading" id="BackgroundLoading"></a><h3>Leverage background loading</h3>
+
+<p>Why is background loading important?</p>
+
+<ul>
+    <li>A single byte access from a dual-layer DVD may take over a <b>second</b> just in seek time
+    alone. If the spindle motor has spun down, the delay can be even greater. For this reason, any
+    form of file access should always be constrained to a background thread or done asynchronously,
+    no matter how much or little data is being read.</li>
+</ul>
+
+<p>Gamebryo provides a number of mechanisms to support loading content in the background:</p>
+
+<ul>
+    <li>The <span class="NDLSystemFont">NiStream</span> class has <a href=
+    "../../Programmer/Object_Systems/Streaming.htm">built-in support</a> for <a href=
+    "../../Programmer/General_Topics/BackgroundLoading.htm">background loading</a> of NIF
+    assets.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Programmer/AssetRuntimeService/asset_load_loading.htm">AssetFactoryManager</a></span>
+    class supports background loading of many asset types, provided they are present in an asset
+    web. Additional asset loading factories can be easily created and registered to support
+    background loading of custom files without having to rebuild the supporting infrastructure each
+    time.</li>
+</ul>
+
+<p>Background loading threads, particularly the default NiStream background thread are created at a
+lower priority than the main application thread. This means they may get starved on machines with a
+single hardware thread or cooperative thread scheduling if the main thread does not Sleep or Yield
+periodically.</p>
+
+<h3>Minimize initial load times</h3>
+
+<p>It is important to minimize the time until an animated loading screen is displayed (time to
+first display flip), as the loading screen gives a visual indication that the title has not crashed
+or hung. In addition, some consoles have specific maximum times as a certification requirement.</p>
+
+<p>The first displayed 'loading screen' may not mention loading at all. Loading can be occurring
+during the display of required legal text or logos as well.</p>
+
+<p>How to keep this time to a minimum:</p>
+
+<ul>
+    <li>Load only what is needed to display the loading screen (likely just shaders and a font or
+    logo screen)</li>
+
+    <li>Get a render loop up and running, displaying the loading screen</li>
+
+    <li>Load the rest of the content to get to the menu or level in the background (or in a
+    timeboxed manner on the foreground thread).</li>
+</ul>
+
+<h3>Avoid hitches due to loading</h3>
+
+<p>Some consoles have specific maximum times between flips (minimum frame rates) as a certification
+requirement. This serves both to ensure a minimum acceptable performance and because the console
+on-screen-displays (guide, XMB, etc...) are co-operatively dependent on the title, relying on flips
+in order to have a chance to get displayed.</p>
+
+<p>Games using the AssetWeb will need to be sure and set PreloadGraphs in their config.ini
+to be true. By default this is the case, but what that flag will do is cause all of the *.nt
+files in their asset-web-metadata folder to be loaded at the start of their game, instead of
+loading on demand when a never before seen asset tag is used in an asset lookup.</p>
+
+<p>File accesses are a very common cause of avoidable frame rate issues.</p>
+
+<p>By performing all loading in the background and continuing to flip during a render loop on the
+foreground, hitches can typically be avoided, both during gameplay and in loading between or before
+gameplay. However, some types of resources need to acquire the renderer lock in order to allocate
+memory from or upload data to the GPU, and this can cause a hitch if the background thread kicks in
+just before the foreground thread begins rendering the frame.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="ship_prepare_pc.htm">Preparing to Ship Your PC Title</a></li>
+
+    <li><a href="../../ee_goto.htm#Programmer/Ship/ship_prepare_ps3.htm">Preparing to Ship Your PS3
+    Title</a></li>
+
+    <li><a href="../../ee_goto.htm#Programmer/Ship/ship_prepare_xbox360.htm">Preparing to Ship Your
+    Xbox 360 Title</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

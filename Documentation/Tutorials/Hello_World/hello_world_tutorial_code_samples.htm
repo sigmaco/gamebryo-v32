@@ -1,0 +1,1133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Hello World: Tutorial Code Samples</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Hello World: Tutorial Code Samples</h1>
+
+<p>Over the course of the tutorial, we've referred to the <span class=
+"NDLSystemFont">HelloWorld.h</span>, <span class="NDLSystemFont">HelloWorld.cpp</span>, and
+<span class="NDLSystemFont">Main.cpp</span> files. Below, the code samples that are identified as
+"version 1" refer to the versions of these files as of the fifth phase (<a href=
+"hello_world_tutorial_services.htm">Creating Main.cpp and adding services</a>) of this tutorial.
+The code samples that are identified as "complete" refer to the final version of these files as of
+the end of the tutorial.</p>
+
+<ul>
+    <li><a href="#HelloWorld_H_1">HelloWorld.h, version 1</a></li>
+
+    <li><a href="#HelloWorld_CPP_1">HelloWorld.cpp, version 1</a></li>
+
+    <li><a href="#Main_cpp_1">Main.cpp, version 1</a></li>
+
+    <li><a href="#ALL">Complete version of HelloWorld.h and .cpp</a></li>
+</ul>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Tip</p>
+
+            <div class="NDLNote">
+                You might be able to better visualize the changes between "version 1" and the
+                "complete" version of each file by comparing them in a diff tool like Beyond
+                Compare.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<a name="HelloWorld_H_1" id="HelloWorld_H_1"></a><h2>HelloWorld.h, version 1</h2>
+
+<p>This section contains the first version of the <span class="NDLSystemFont">HelloWorld.h</span>
+file used in the Hello World tutorial.</p>
+
+<pre>
+#pragma once
+#ifndef EE_HELLOWORLD_H
+#define EE_HELLOWORLD_H
+
+#include &lt;efd/ServiceManager.h&gt;
+#include &lt;egf/EntityChangeMessage.h&gt;
+#include "egfDemoSystemServiceIDs.h"
+
+#if defined(EE_PLATFORM_WIN32)
+typedef LPTSTR CmdLineType;
+#else
+typedef const char* CmdLineType;
+#endif
+
+/**
+   The HelloWorld class is a system service that represents the game itself. It is responsible
+   for setting up all the other system services required by the game, starting up the
+   ServiceManager which in turn runs the game's main loop and loading the main block file.
+   It also creates the default camera. HelloWorld is built using a basic set of system
+   services.
+*/
+
+//------------------------------------------------------------------------------------------------
+class HelloWorld : public efd::ISystemService
+{
+    EE_DECLARE_CLASS1 (HelloWorld, efd::kCLASSID_HelloWorldService, IBase);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+
+public:
+    /**
+        Constructor - Perform standard Gamebryo initialization and create a ServiceManager.
+    */
+    HelloWorld();
+
+    /**
+        Destructor - Perform standard Gamebryo cleanup and deletes the ServiceManager.
+    */
+    ~HelloWorld();
+
+    /**
+        Called from main to start the game. It sets up the required system services and
+        starts up ServiceManager.
+
+        @param instance Standard WinMain parameter. Not used by other platforms. It
+            is a handle to the current instance of the application.
+        @param previous Standard WinMain parameter. Not used by other platforms.
+        @param commandLine Standard WinMain parameter. Not used by other platforms.
+            It is a pointer to the command line for the application.
+        @param argcInit Number of command line parameters.
+        @param argvInit Command line arguments.
+        @return 0 if the game runs OK and 1 if game fails to start correctly.
+    */
+    efd::SInt32 Go(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+
+    /**
+        A message handler function for the EntityChangeMessage message. This message
+        is sent by the EntityManager in response to an entity create request. We
+        use this to know when our camera has been created and associate it with the
+        render surface.
+
+        @param pMessage EntityChangeMessage message.
+        @param targetCategory Category the message was sent on.
+     */
+    void HandleCameraDiscoverMessage(
+        const egf::EntityChangeMessage* pMessage,
+        efd::Category targetCategory);
+
+    virtual const char* GetDisplayName() const;
+
+protected:
+	// We register dependencies with other services during preInit
+	virtual efd::SyncResult HelloWorld::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar);
+
+    // We create the renderer and setup some input actions during init.
+    virtual efd::AsyncResult OnInit();
+
+    // The OnTick handler allows us to perform any periodic processing.
+    virtual efd::AsyncResult OnTick();
+
+    // Release resources.
+    virtual efd::AsyncResult OnShutdown();
+
+    void InitLoggingDestinations();
+    bool SetupServices(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+
+private:
+    // As the "Application" object I hold the primary reference count for the service manager.
+    // Since I'm also an ISystemService myself this means I also have a plain pointer to the
+    // service manager, but that pointer is automatically managed by the ServiceManager itself
+    // so I need a separate pointer for application usage.
+    efd::ServiceManagerPtr m_spServiceManager;
+};
+
+#endif
+</pre>
+
+<a name="HelloWorld_CPP_1" id="HelloWorld_CPP_1"></a><h2>HelloWorld.cpp, version 1</h2>
+
+<p>This section contains the first version of the <span class="NDLSystemFont">HelloWorld.cpp</span>
+file used in the Hello World tutorial.</p>
+
+<pre>
+// Headers for the various system services we use:
+#include &lt;efd/ServiceAllocator.h&gt;
+#include &lt;egf/ServiceAllocator.h&gt;
+#include &lt;ecr/ServiceAllocator.h&gt;
+
+#if defined(EE_PLATFORM_WIN32)
+#include &lt;efd/Win32/Win32PlatformService.h&gt;
+#elif defined(EE_PLATFORM_PS3)
+#include &lt;efd/PS3/PS3PlatformService.h&gt;
+#endif
+
+#include &lt;egmAnimation/AnimationService.h&gt;
+
+// Our main application service:
+#include "HelloWorld.h"
+
+// Other various headers
+#include &lt;efd/SystemUniqueIndex.h&gt;
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ConfigManager.h&gt;
+#include &lt;egf/EntityLoaderService.h&gt;
+#include &lt;egf/FlatModelManager.h&gt;
+#include &lt;egf/EntityManager.h&gt;
+#include &lt;efd/AssetFactoryManager.h&gt;
+#include &lt;egf/StandardModelLibraryFlatModelIDs.h&gt;
+#include &lt;ecr/CameraService.h&gt;
+
+//------------------------------------------------------------------------------------------------
+using namespace efd;
+using namespace egf;
+using namespace ecr;
+
+//------------------------------------------------------------------------------------------------
+static const char g_AppName[] = "HelloWorld";
+static efd::SystemUniqueIndex g_uniqueIndex("HelloWorld");
+
+//------------------------------------------------------------------------------------------------
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(HelloWorld);
+
+EE_HANDLER_WRAP(HelloWorld, HandleCameraDiscoverMessage, EntityChangeMessage,
+                kMSGID_OwnedEntityAdded);
+
+//------------------------------------------------------------------------------------------------
+HelloWorld::HelloWorld()
+{
+    // The ServiceManager is the heart of any Foundation based application.  It owns all
+    // of the System Services that compose your application and runs the main loop.
+    m_spServiceManager = EE_NEW ServiceManager();
+}
+
+//------------------------------------------------------------------------------------------------
+HelloWorld::~HelloWorld()
+{
+    m_spServiceManager = NULL;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SInt32 HelloWorld::Go(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    if (SetupServices(instance, previous, commandLine, argcInit, argvInit))
+    {
+        m_spServiceManager-&gt;Run();
+
+        // We need to release the service manager so that it will release all the services that it
+        // holds references to (which includes HelloWorld itself) or else we'll have a circular
+        // reference which will prevent proper shutdown from occurring.
+        m_spServiceManager = NULL;
+        return 0;
+    }
+    return 1;
+}
+
+//------------------------------------------------------------------------------------------------
+void HelloWorld::InitLoggingDestinations()
+{
+    // The Logger is a special Singleton, not a system service, so it must be created and
+    // registered by calling LoggerSingleton::Initialize. This should be created as early as
+    // possible to avoid missing any important log messages.
+    LoggerPtr spLogger = EE_NEW Logger();
+    efd::LoggerSingleton::Initialize(spLogger);
+
+    // You can specify one or more output handlers for each logging module.  In this case we
+    // are simply logging everything to a text file, but we could route different modules to
+    // different files or all critical errors to a separate file.  We could also log to other
+    // destinations like OutputDebugString or a network socket by using specialized
+    // ILogDestination implementations.
+    utf8string name =  g_uniqueIndex.GetName();
+    utf8string strLogFileName(Formatted, "%s.log", name.c_str());
+    FileDestinationPtr logDest = EE_NEW FileDestination("default", strLogFileName,
+        FileDestination::kFileOverwrite);
+    spLogger-&gt;AddDest(logDest, true);
+
+    // Logging defaults to having level 0 to 3 errors and level 0 to 1 non-errors enabled.
+    // You can override those defaults here either for all categories or specific categories.
+    // See the following examples:
+    //  spLogger-&gt;SetLogLevel(efd::kALL, efd::ILogger::kLogMask_None);
+    //  spLogger-&gt;SetLogLevel(efd::kEntity, efd::ILogger::kLogMask_All);
+    // Also note that default logging settings can be changed via the config.ini file too, so
+    // there is no need to recompile your code to change the log configuration.
+}
+
+//------------------------------------------------------------------------------------------------
+bool HelloWorld::SetupServices(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Setup the default logging as soon as possible so other services can log early
+    InitLoggingDestinations();
+
+    // Set the name displayed by this process when connected to Toolbench
+    m_spServiceManager-&gt;SetVirtualProcessName("HelloWorld");
+
+    // Use the Service Allocator helper functions to create common game services needed by
+    // most applications.  This is a simplified approach to creating instances of the services
+    // directly.
+
+    // Foundation services - messaging, logging, asset service, application configuration
+    EE_VERIFY(efd::CreateFoundationServices(m_spServiceManager, argcInit, argvInit));
+
+    // Game Framework services - entities, behaviors, rapid iteration
+    EE_VERIFY(egf::CreateGameServices(m_spServiceManager));
+
+    // Core Runtime services - rendering, lights, cameras, scenes
+    EE_VERIFY(ecr::CreateRuntimeServices(
+        m_spServiceManager,
+        ecr::rsaf_NO_PICK_SERVICE));
+
+    // The AnimationService handles all actors, which are animating scene objects.
+    // A note on priority, we use a higher priority than the scene graph service so the actors
+    // get updated before their associated scene graph nodes.
+    egmAnimation::AnimationServicePtr spAnimationService = EE_NEW egmAnimation::AnimationService();
+    m_spServiceManager-&gt;RegisterSystemService(spAnimationService);
+
+    // Our HelloWorld application object is also a service that controls some game-specific logic
+    m_spServiceManager-&gt;RegisterSystemService(this);
+
+    IConfigManagerPtr spConfigManager = m_spServiceManager-&gt;GetSystemServiceAs&lt;IConfigManager&gt;();
+#if defined(EE_PLATFORM_WIN32)
+    // On windows you can use the Win32PlatformService to implement a simple default windows
+    // message pump.  It will create a main window and pump messages for it.
+    Win32PlatformServicePtr spWin32 = EE_NEW Win32PlatformService(instance, previous, commandLine);
+    spWin32-&gt;SetWindowTitle(g_uniqueIndex.GetName());
+
+    utf8string width, height;
+    UInt32 windowWidth = 640;
+    UInt32 windowHeight = 480;
+
+    if (spConfigManager-&gt;FindValue("Game.WindowWidth", width))
+    {
+        if (!width.empty())
+            windowWidth = atoi(width.c_str());
+    }
+
+    if (spConfigManager-&gt;FindValue("Game.WindowHeight", height))
+    {
+        if (!height.empty())
+            windowHeight = atoi(height.c_str());
+    }
+
+    spWin32-&gt;SetWindowWidth(windowWidth);
+    spWin32-&gt;SetWindowHeight(windowHeight);
+
+    int xSlots = GetSystemMetrics(SM_CXSCREEN) / windowWidth;
+    int ySlots = GetSystemMetrics(SM_CYSCREEN) / windowHeight;
+    UInt32 left = (windowWidth * ((g_uniqueIndex.GetIndex()-1)%xSlots)) + 1;
+    UInt32 top = (windowHeight * (((g_uniqueIndex.GetIndex()-1)/xSlots)%ySlots)) + 1;
+
+    spWin32-&gt;SetWindowLeft(left);
+    spWin32-&gt;SetWindowTop(top);
+
+    spWin32-&gt;SetWindowClass(g_AppName);
+
+    m_spServiceManager-&gt;RegisterSystemService(spWin32);
+#elif defined(EE_PLATFORM_PS3)
+    // This service is used to perform any PS3 specific behavior that may be required such
+    // as running PS3 specific initialization code.
+    const int callbackSlot = 0;
+    PS3PlatformServicePtr spPS3 = EE_NEW PS3PlatformService(callbackSlot);
+
+    m_spServiceManager-&gt;RegisterSystemService(spPS3);
+#endif
+
+    // Some shared code might run slightly different based on whether it is being used in
+    // a client application or a tool application.  We call this concept the Program Type,
+    // in order for such code to operate correctly you need to tell the ServiceManager what
+    // Program Type your application is running as.
+    m_spServiceManager-&gt;SetProgramType(ServiceManager::kProgType_Client);
+
+    return true;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SyncResult HelloWorld::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar)
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it. The value will be cleared when we are removed from the manager so
+    // we can pretty much always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // We load a block during OnInit so depend on the EntityLoaderService. This dependency causes
+    // the EntityLoaderService to be initialed before this service and shutdown after this service
+    // so we can always rely on that service being available during our OnInit, OnTick and
+    // OnShutdown methods.
+    pDependencyRegistrar-&gt;AddDependency&lt;EntityLoaderService&gt;();
+
+    // For managing subscriptions without bypassing leaked subscription detection it is recommended
+    // (but not strictly required) that services using subscriptions depend on the MessageService.
+    pDependencyRegistrar-&gt;AddDependency&lt;MessageService&gt;();
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (pRenderService)
+    {
+        pRenderService-&gt;SetDefaultSurfaceBackgroundColor(efd::ColorA(0.0f, 0.0f, 0.15f, 1.0f));
+    }
+
+    return efd::SyncResult_Success;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnInit()
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it.  The value will be cleared when we are removed from the manager so
+    // we can pretty must always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // Initialize random number generator
+    HighPrecisionClock clock;
+    TimeType currentTime = clock.GetCurrentTime();
+    TimeType* pCurrentTime = &amp;currentTime;
+    UInt64* seed64 = reinterpret_cast&lt;UInt64*&gt;(pCurrentTime);
+    Srand((UInt32)*seed64);
+
+    // If there is no surface, add one.
+    RenderServicePtr spRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (!spRenderService-&gt;GetActiveRenderSurface())
+    {
+        RenderContext* pRenderContext = EE_NEW RenderContext(spRenderService);
+        spRenderService-&gt;AddRenderContext(pRenderContext);
+        pRenderContext-&gt;SetBackgroundColor(NiColorA(0.0f, 0.0f, 0.15f, 1.0f));
+        RenderSurfacePtr spSurface = spRenderService-&gt;CreateRenderSurface(NULL);
+        pRenderContext-&gt;AddRenderSurface(spSurface);
+        spRenderService-&gt;SetActiveRenderSurface(spSurface);
+
+        EE_ASSERT(spRenderService-&gt;GetActiveRenderSurface());
+    }
+
+    // Subscribe to the local message category to receive entity discovery messages. Such a message
+    // will be generated when our camera is created, and we use this to associate the camera with
+    // the render surface later.
+    MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+    pMessageService-&gt;Subscribe(this, kCAT_LocalMessage);
+
+    // Load the main block file
+    efd::IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::IConfigManager&gt;();
+    efd::utf8string world_file = pConfig-&gt;FindValue("Game.InitialWorld");
+    if (world_file.empty())
+    {
+        EE_LOG(efd::kApp, efd::ILogger::kERR0, ("No block file specified, set Game.InitialWorld."));
+    }
+    else
+    {
+        EntityLoaderService* els = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+		EE_ASSERT(els);
+        els-&gt;RequestEntitySetLoad(world_file);
+    }
+
+    return efd::AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnTick()
+{
+    return AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnShutdown()
+{
+    return AsyncResult_Complete;
+}
+
+//-----------------------------------------------------------------------------------------------
+void HelloWorld::HandleCameraDiscoverMessage(
+    const egf::EntityChangeMessage* pMessage,
+    efd::Category targetCategory)
+{
+    Entity* pEntity = pMessage-&gt;GetEntity();
+    EE_ASSERT(pEntity);
+
+    // Ignore entities that do not contain a camera entity.
+    if (!pEntity-&gt;GetModel()-&gt;ContainsModel(kFlatModelID_StandardModelLibrary_Camera))
+        return;
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    EE_ASSERT(pRenderService);
+    CameraService* pCameraService = m_pServiceManager-&gt;GetSystemServiceAs&lt;CameraService&gt;();
+    EE_ASSERT(pCameraService);
+
+    pCameraService-&gt;CreateCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetRenderTargetGroup());
+
+    pCameraService-&gt;SetActiveCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetWindowRef());
+}
+
+//-----------------------------------------------------------------------------------------------
+const char* HelloWorld::GetDisplayName() const
+{
+    return "HelloWorld";
+}
+
+//-----------------------------------------------------------------------------------------------
+</pre>
+
+<a name="Main_cpp_1" id="Main_cpp_1"></a><h2>Main.cpp, version 1</h2>
+
+<p>This section contains the first version of the <span class="NDLSystemFont">Main.cpp</span> file
+used in the HelloWorld tutorial.</p>
+
+<pre>
+#include &lt;NiStandardAllocator.h&gt;
+
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ILogger.h&gt;
+#include &lt;efd/MemoryDefines.h&gt;
+#include &lt;NiStaticDataManager.h&gt;
+
+#include "HelloWorld.h"
+
+#define TITLE_SERVICE_NAME HelloWorld
+
+//--------------------------------------------------------------------------------------------------
+#if defined(EE_PLATFORM_WIN32)
+// Support for D3D renderers
+
+// DX9 renderer
+#include &lt;NiDX9Renderer.h&gt;
+#include &lt;NiDX9RendererSetup.h&gt;
+
+// D3D10 renderer
+#include &lt;NiD3D10Renderer.h&gt;
+#include &lt;NiD3D10RendererSetup.h&gt;
+
+// D3D11 renderer
+#include &lt;ecrD3D11Renderer/D3D11Renderer.h&gt;
+#include &lt;ecrD3D11RendererSetup/D3D11RendererSetup.h&gt;
+
+#endif
+
+// Make use of the default memory allocator implementation.  For instructions
+// on how to use a custom allocator, see the notes in &lt;efd/MemoryDefines.h&gt;.
+#include &lt;efd/DefaultInitializeMemoryManager.h&gt;
+EE_USE_DEFAULT_ALLOCATOR;
+
+//--------------------------------------------------------------------------------------------------
+int GamebryoMain(
+    efd::InstanceRef instance,
+    efd::InstanceRef previousInstance,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Initialize Gamebryo
+    NiInitOptions* pInitOptions = EE_EXTERNAL_NEW NiInitOptions();
+    NiInit(pInitOptions);
+
+    // Disable writing the memory log to disk (saves time when it is not needed)
+    if (efd::MemTracker::Get())
+        efd::MemTracker::Get()-&gt;SetWriteToLog(false);
+
+    // Run the title
+    efd::SmartPointer&lt;HelloWorld&gt; spApp = EE_NEW HelloWorld();
+    int returnCode = spApp-&gt;Go(instance, previousInstance, commandLine, argcInit, argvInit);
+    spApp = NULL;
+
+    // Shut down Gamebryo
+    NiShutdown();
+    EE_EXTERNAL_DELETE pInitOptions;
+
+    return returnCode;
+}
+//--------------------------------------------------------------------------------------------------
+#if defined(EE_PLATFORM_WIN32)
+int WINAPI WinMain(HINSTANCE hI, HINSTANCE hPI, CmdLineType cmdline, int /*iWinMode*/)
+{
+    return GamebryoMain(hI, hPI, cmdline, __argc, __argv);
+}
+#else
+int main(int argc, char* argv[])
+{
+    return GamebryoMain(NULL, NULL, NULL, argc, argv);
+}
+#endif
+//--------------------------------------------------------------------------------------------------
+</pre>
+
+<a name="ALL" id="ALL"></a><h2>Complete HelloWorld.h and HelloWorld.cpp</h2>
+
+<p>The following are the completed versions of the <span class="NDLSystemFont">HelloWorld.h</span>
+and <span class="NDLSystemFont">HelloWorld.cpp</span> files as used in the Hello World Tutorial.
+The <span class="NDLSystemFont">Main.cpp</span> file is identical to the version 1 and thus not
+listed below.</p>
+
+<a name="helloworld_h_complete" id="helloworld_h_complete"></a><h3>HelloWorld.h</h3>
+
+<pre>
+#pragma once
+#ifndef EE_HELLOWORLD_H
+#define EE_HELLOWORLD_H
+
+#include &lt;efd/ServiceManager.h&gt;
+#include &lt;egf/EntityChangeMessage.h&gt;
+#include &lt;ecrInput/InputActionMessage.h&gt;
+#include "egfDemoSystemServiceIDs.h"
+
+#if defined(EE_PLATFORM_WIN32)
+typedef LPTSTR CmdLineType;
+#else
+typedef const char* CmdLineType;
+#endif
+
+/**
+   The HelloWorld class is a system service that represents the game itself. It is responsible
+   for setting up all the other system services required by the game, starting up the
+   ServiceManager which in turn runs the game's main loop and loading the main block file.
+   It also creates the default camera. HelloWorld is built using a basic set of system
+   services.
+*/
+
+//------------------------------------------------------------------------------------------------
+class HelloWorld : public efd::ISystemService
+{
+    EE_DECLARE_CLASS1 (HelloWorld, efd::kCLASSID_HelloWorldService, IBase);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+
+public:
+    /**
+        Constructor - Perform standard Gamebryo initialization and create a ServiceManager.
+    */
+    HelloWorld();
+
+    /**
+        Destructor - Perform standard Gamebryo cleanup and deletes the ServiceManager.
+    */
+    ~HelloWorld();
+
+    /**
+        Called from main to start the game. It sets up the required system services and
+        starts up ServiceManager.
+
+        @param instance Standard WinMain parameter. Not used by other platforms. It
+            is a handle to the current instance of the application.
+        @param previous Standard WinMain parameter. Not used by other platforms.
+        @param commandLine Standard WinMain parameter. Not used by other platforms.
+            It is a pointer to the command line for the application.
+        @param argcInit Number of command line parameters.
+        @param argvInit Command line arguments.
+        @return 0 if the game runs OK and 1 if game fails to start correctly.
+    */
+    efd::SInt32 Go(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+
+    /**
+        A message handler function for the EntityChangeMessage message. This message
+        is sent by the EntityManager in response to an entity create request. We
+        use this to know when our camera has been created and associate it with the
+        render surface.
+
+        @param pMessage EntityChangeMessage message.
+        @param targetCategory Category the message was sent on.
+     */
+    void HandleCameraDiscoverMessage(
+        const egf::EntityChangeMessage* pMessage,
+        efd::Category targetCategory);
+
+    /**
+    A message handler function for the InputActionMessage message. That message
+    is sent by the InputService when it detects user input. This method looks for
+    an event that indicates that the user wants to end the game. If that event is
+    seen then it shuts down the ServiceManager which in turn ends the game.
+
+    @param pMessage The InputActionMessage message.
+    @param targetChannel Category the message was sent on.
+    */
+    void HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+        efd::Category targetChannel);
+
+    virtual const char* GetDisplayName() const;
+
+protected:
+	// We register dependencies with other services during preInit
+	virtual efd::SyncResult HelloWorld::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar);
+
+    // We create the renderer and setup some input actions during init.
+    virtual efd::AsyncResult OnInit();
+
+    // The OnTick handler allows us to perform any periodic processing.
+    virtual efd::AsyncResult OnTick();
+
+    // Release resources.
+    virtual efd::AsyncResult OnShutdown();
+
+    void InitLoggingDestinations();
+    bool SetupServices(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+    void SetupInputActions();
+
+private:
+    // As the "Application" object I hold the primary reference count for the service manager.
+    // Since I'm also an ISystemService myself this means I also have a plain pointer to the
+    // service manager, but that pointer is automatically managed by the ServiceManager itself
+    // so I need a separate pointer for application usage.
+    efd::ServiceManagerPtr m_spServiceManager;
+
+    // Category we use for additional action messages
+    efd::Category m_catQuitGame;
+};
+
+#endif
+</pre>
+
+<a name="helloworld_cpp_complete" id="helloworld_cpp_complete"></a><h3>HelloWorld.cpp</h3>
+
+<pre>
+// Headers for the various system services we use:
+#include &lt;efd/ServiceAllocator.h&gt;
+#include &lt;egf/ServiceAllocator.h&gt;
+#include &lt;ecr/ServiceAllocator.h&gt;
+
+#if defined(EE_PLATFORM_WIN32)
+#include &lt;efd/Win32/Win32PlatformService.h&gt;
+#elif defined(EE_PLATFORM_PS3)
+#include &lt;efd/PS3/PS3PlatformService.h&gt;
+#endif
+
+#include &lt;egmAnimation/AnimationService.h&gt;
+
+// Our main application service:
+#include "HelloWorld.h"
+
+// Other various headers
+#include &lt;efd/SystemUniqueIndex.h&gt;
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ConfigManager.h&gt;
+#include &lt;egf/EntityLoaderService.h&gt;
+#include &lt;egf/FlatModelManager.h&gt;
+#include &lt;egf/EntityManager.h&gt;
+#include &lt;efd/AssetFactoryManager.h&gt;
+#include &lt;egf/StandardModelLibraryFlatModelIDs.h&gt;
+#include &lt;ecr/CameraService.h&gt;
+#include &lt;ecrInput/InputService.h&gt;
+#include &lt;egfLua/SchedulerLua.h&gt;
+
+//------------------------------------------------------------------------------------------------
+using namespace efd;
+using namespace egf;
+using namespace ecr;
+
+//------------------------------------------------------------------------------------------------
+#if !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+// This include is only necessary when static Lua game packs are being linked in.
+
+// Since we statically link game-pack built-ins we need to know about all these methods.  These
+// functions are typically auto-generated by SWIG.
+extern "C" int luaopen_ecr(lua_State *L);
+extern "C" int luaopen_egmAnimation(lua_State *L);
+
+#include &lt;NiLicense.h&gt;
+NiEmbedGamebryoLicenseCode;
+
+#endif // !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+
+//------------------------------------------------------------------------------------------------
+static const char g_AppName[] = "HelloWorld";
+static efd::SystemUniqueIndex g_uniqueIndex("HelloWorld");
+
+//------------------------------------------------------------------------------------------------
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(HelloWorld);
+
+EE_HANDLER_WRAP(HelloWorld, HandleCameraDiscoverMessage, EntityChangeMessage,
+                kMSGID_OwnedEntityAdded);
+EE_HANDLER(HelloWorld, HandleActionMessage, ecrInput::InputActionMessage);
+
+//------------------------------------------------------------------------------------------------
+HelloWorld::HelloWorld()
+{
+    // The ServiceManager is the heart of any Foundation based application.  It owns all
+    // of the System Services that compose your application and runs the main loop.
+    m_spServiceManager = EE_NEW ServiceManager();
+}
+
+//------------------------------------------------------------------------------------------------
+HelloWorld::~HelloWorld()
+{
+    m_spServiceManager = NULL;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SInt32 HelloWorld::Go(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    if (SetupServices(instance, previous, commandLine, argcInit, argvInit))
+    {
+        m_spServiceManager-&gt;Run();
+
+        // We need to release the service manager so that it will release all the services that it
+        // holds references to (which includes HelloWorld itself) or else we'll have a circular
+        // reference which will prevent proper shutdown from occurring.
+        m_spServiceManager = NULL;
+        return 0;
+    }
+    return 1;
+}
+
+//------------------------------------------------------------------------------------------------
+void HelloWorld::InitLoggingDestinations()
+{
+    // The Logger is a special Singleton, not a system service, so it must be created and
+    // registered by calling LoggerSingleton::Initialize. This should be created as early as
+    // possible to avoid missing any important log messages.
+    LoggerPtr spLogger = EE_NEW Logger();
+    efd::LoggerSingleton::Initialize(spLogger);
+
+    // You can specify one or more output handlers for each logging module.  In this case we
+    // are simply logging everything to a text file, but we could route different modules to
+    // different files or all critical errors to a separate file.  We could also log to other
+    // destinations like OutputDebugString or a network socket by using specialized
+    // ILogDestination implementations.
+    utf8string name =  g_uniqueIndex.GetName();
+    utf8string strLogFileName(Formatted, "%s.log", name.c_str());
+    FileDestinationPtr logDest = EE_NEW FileDestination("default", strLogFileName,
+        FileDestination::kFileOverwrite);
+    spLogger-&gt;AddDest(logDest, true);
+
+    // Logging defaults to having level 0 to 3 errors and level 0 to 1 non-errors enabled.
+    // You can override those defaults here either for all categories or specific categories.
+    // See the following examples:
+    //  spLogger-&gt;SetLogLevel(efd::kALL, efd::ILogger::kLogMask_None);
+    //  spLogger-&gt;SetLogLevel(efd::kEntity, efd::ILogger::kLogMask_All);
+    // Also note that default logging settings can be changed via the config.ini file too, so
+    // there is no need to recompile your code to change the log configuration.
+}
+
+//------------------------------------------------------------------------------------------------
+bool HelloWorld::SetupServices(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Setup the default logging as soon as possible so other services can log early
+    InitLoggingDestinations();
+
+    // Set the name displayed by this process when connected to Toolbench
+    m_spServiceManager-&gt;SetVirtualProcessName("HelloWorld");
+
+    // Use the Service Allocator helper functions to create common game services needed by
+    // most applications.  This is a simplified approach to creating instances of the services
+    // directly.
+
+    // Foundation services - messaging, logging, asset service, application configuration
+    EE_VERIFY(efd::CreateFoundationServices(m_spServiceManager, argcInit, argvInit));
+
+    // Game Framework services - entities, behaviors, rapid iteration
+    EE_VERIFY(egf::CreateGameServices(m_spServiceManager));
+
+    // Core Runtime services - rendering, lights, cameras, scenes
+    EE_VERIFY(ecr::CreateRuntimeServices(
+        m_spServiceManager,
+        ecr::rsaf_NO_PICK_SERVICE));
+
+    // The AnimationService handles all actors, which are animating scene objects.
+    // A note on priority, we use a higher priority than the scene graph service so the actors
+    // get updated before their associated scene graph nodes.
+    egmAnimation::AnimationServicePtr spAnimationService = EE_NEW egmAnimation::AnimationService();
+    m_spServiceManager-&gt;RegisterSystemService(spAnimationService);
+
+	// The InputService service manages input from keyboard and joystick devices.  It uses an
+    // actionmap to convert device input into events.  Further you can register for either
+    // message based or behavior based callbacks when an input event occurs.
+    ecrInput::InputServicePtr spInputService = EE_NEW ecrInput::InputService(false, false);
+    m_spServiceManager-&gt;RegisterSystemService(spInputService);
+
+    // Since we want to be able to run Lua behaviors we must add the Lua scripting runtime to the
+    // scheduler.
+    Scheduler* pScheduler = m_spServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+    pScheduler-&gt;RegisterScriptingRuntime("Lua", BehaviorType_Lua, EE_NEW SchedulerLua());
+
+    // Our HelloWorld application object is also a service that controls some game-specific logic
+    m_spServiceManager-&gt;RegisterSystemService(this);
+
+    IConfigManagerPtr spConfigManager = m_spServiceManager-&gt;GetSystemServiceAs&lt;IConfigManager&gt;();
+#if defined(EE_PLATFORM_WIN32)
+    // On windows you can use the Win32PlatformService to implement a simple default windows
+    // message pump.  It will create a main window and pump messages for it.
+    Win32PlatformServicePtr spWin32 = EE_NEW Win32PlatformService(instance, previous, commandLine);
+    spWin32-&gt;SetWindowTitle(g_uniqueIndex.GetName());
+
+    utf8string width, height;
+    UInt32 windowWidth = 640;
+    UInt32 windowHeight = 480;
+
+    if (spConfigManager-&gt;FindValue("Game.WindowWidth", width))
+    {
+        if (!width.empty())
+            windowWidth = atoi(width.c_str());
+    }
+
+    if (spConfigManager-&gt;FindValue("Game.WindowHeight", height))
+    {
+        if (!height.empty())
+            windowHeight = atoi(height.c_str());
+    }
+
+    spWin32-&gt;SetWindowWidth(windowWidth);
+    spWin32-&gt;SetWindowHeight(windowHeight);
+
+    int xSlots = GetSystemMetrics(SM_CXSCREEN) / windowWidth;
+    int ySlots = GetSystemMetrics(SM_CYSCREEN) / windowHeight;
+    UInt32 left = (windowWidth * ((g_uniqueIndex.GetIndex()-1)%xSlots)) + 1;
+    UInt32 top = (windowHeight * (((g_uniqueIndex.GetIndex()-1)/xSlots)%ySlots)) + 1;
+
+    spWin32-&gt;SetWindowLeft(left);
+    spWin32-&gt;SetWindowTop(top);
+
+    spWin32-&gt;SetWindowClass(g_AppName);
+
+    m_spServiceManager-&gt;RegisterSystemService(spWin32);
+#elif defined(EE_PLATFORM_PS3)
+    // This service is used to perform any PS3 specific behavior that may be required such
+    // as running PS3 specific initialization code.
+    const int callbackSlot = 0;
+    PS3PlatformServicePtr spPS3 = EE_NEW PS3PlatformService(callbackSlot);
+
+    m_spServiceManager-&gt;RegisterSystemService(spPS3);
+#endif
+
+#if !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+    // For Statically linked built-ins we need to add the static ecr module to the Lua
+    // scheduler here before it starts ticking.  We do this by registering the SWIG-generated
+    // init function with the scheduler as a static built-in function.  Static built-ins can be
+    // used on any platform, but since DLLs are easy to use on Windows we are using DLLs on that
+    // platform.  With DLLs we can specify what modules to load purely through config.ini settings
+    // and we can also reload those DLLs on the fly which makes testing changes easier.
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_ecr));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmAnimation));
+#endif // !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+
+    // Some shared code might run slightly different based on whether it is being used in
+    // a client application or a tool application.  We call this concept the Program Type,
+    // in order for such code to operate correctly you need to tell the ServiceManager what
+    // Program Type your application is running as.
+    m_spServiceManager-&gt;SetProgramType(ServiceManager::kProgType_Client);
+
+    return true;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SyncResult HelloWorld::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar)
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it. The value will be cleared when we are removed from the manager so
+    // we can pretty much always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // We load a block during OnInit so depend on the EntityLoaderService. This dependency causes
+    // the EntityLoaderService to be initialed before this service and shutdown after this service
+    // so we can always rely on that service being available during our OnInit, OnTick and
+    // OnShutdown methods.
+    pDependencyRegistrar-&gt;AddDependency&lt;EntityLoaderService&gt;();
+
+    // We also manually set our input actions so we need ecrInput::InputService to be available.
+    pDependencyRegistrar-&gt;AddDependency&lt;ecrInput::InputService&gt;();
+
+    // For managing subscriptions without bypassing leaked subscription detection it is recommended
+    // (but not strictly required) that services using subscriptions depend on the MessageService.
+    pDependencyRegistrar-&gt;AddDependency&lt;MessageService&gt;();
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (pRenderService)
+    {
+        pRenderService-&gt;SetDefaultSurfaceBackgroundColor(efd::ColorA(0.0f, 0.0f, 0.15f, 1.0f));
+    }
+
+    return efd::SyncResult_Success;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnInit()
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it.  The value will be cleared when we are removed from the manager so
+    // we can pretty must always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // Initialize random number generator
+    HighPrecisionClock clock;
+    TimeType currentTime = clock.GetCurrentTime();
+    TimeType* pCurrentTime = &amp;currentTime;
+    UInt64* seed64 = reinterpret_cast&lt;UInt64*&gt;(pCurrentTime);
+    Srand((UInt32)*seed64);
+
+    // If there is no surface, add one.
+    RenderServicePtr spRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (!spRenderService-&gt;GetActiveRenderSurface())
+    {
+        RenderContext* pRenderContext = EE_NEW RenderContext(spRenderService);
+        spRenderService-&gt;AddRenderContext(pRenderContext);
+        pRenderContext-&gt;SetBackgroundColor(NiColorA(0.0f, 0.0f, 0.15f, 1.0f));
+        RenderSurfacePtr spSurface = spRenderService-&gt;CreateRenderSurface(NULL);
+        pRenderContext-&gt;AddRenderSurface(spSurface);
+        spRenderService-&gt;SetActiveRenderSurface(spSurface);
+
+        EE_ASSERT(spRenderService-&gt;GetActiveRenderSurface());
+    }
+
+    SetupInputActions();
+
+    // Subscribe to the local message category to receive entity discovery messages. Such a message
+    // will be generated when our camera is created, and we use this to associate the camera with
+    // the render surface later.
+    MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+    pMessageService-&gt;Subscribe(this, kCAT_LocalMessage);
+
+    // Load the main block file
+    efd::IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::IConfigManager&gt;();
+    efd::utf8string world_file = pConfig-&gt;FindValue("Game.InitialWorld");
+    if (world_file.empty())
+    {
+        EE_LOG(efd::kApp, efd::ILogger::kERR0, ("No block file specified, set Game.InitialWorld."));
+    }
+    else
+    {
+        EntityLoaderService* els = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+		EE_ASSERT(els);
+        els-&gt;RequestEntitySetLoad(world_file);
+    }
+
+    return efd::AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnTick()
+{
+    return AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult HelloWorld::OnShutdown()
+{
+    return AsyncResult_Complete;
+}
+
+//-----------------------------------------------------------------------------------------------
+void HelloWorld::HandleCameraDiscoverMessage(
+    const egf::EntityChangeMessage* pMessage,
+    efd::Category targetCategory)
+{
+    Entity* pEntity = pMessage-&gt;GetEntity();
+    EE_ASSERT(pEntity);
+
+    // Ignore entities that do not contain a camera entity.
+    if (!pEntity-&gt;GetModel()-&gt;ContainsModel(kFlatModelID_StandardModelLibrary_Camera))
+        return;
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    EE_ASSERT(pRenderService);
+    CameraService* pCameraService = m_pServiceManager-&gt;GetSystemServiceAs&lt;CameraService&gt;();
+    EE_ASSERT(pCameraService);
+
+    pCameraService-&gt;CreateCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetRenderTargetGroup());
+
+    pCameraService-&gt;SetActiveCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetWindowRef());
+}
+
+//-----------------------------------------------------------------------------------------------
+void HelloWorld::HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+    efd::Category targetCategory)
+{
+    if (pMessage-&gt;GetEventName() == "GAME_QUIT")
+    {
+        m_pServiceManager-&gt;Shutdown();
+    }
+}
+
+//-----------------------------------------------------------------------------------------------
+void HelloWorld::SetupInputActions()
+{
+    ecrInput::InputService* pInputService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;ecrInput::InputService&gt;();
+    EE_ASSERT(pInputService);
+    MessageService* pMessageService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+
+    // activate our action map
+    pInputService-&gt;PushActionMap("GAMEPLAY_ACTION_MAP");
+
+    // create and subscribe to a category for quit messages
+    m_catQuitGame = pMessageService-&gt;GetGloballyUniqueCategory();
+    pInputService-&gt;ListenForInputActionEvent("GAME_QUIT", m_catQuitGame);
+    pMessageService-&gt;Subscribe(this, m_catQuitGame);
+}
+
+//-----------------------------------------------------------------------------------------------
+const char* HelloWorld::GetDisplayName() const
+{
+    return "HelloWorld";
+}
+
+//-----------------------------------------------------------------------------------------------
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="hello_world_tutorial_overview.htm">Hello World Tutorial Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

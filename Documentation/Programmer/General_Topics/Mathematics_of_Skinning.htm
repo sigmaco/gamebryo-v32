@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>The Mathematics of Skinning</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>The Mathematics of Skinning</h1>
+
+<p>Skinning allows developers to create deformed meshes using weighted matrices that define the
+relation of a vertex to various bones. Because it may be necessary to include skinning in a custom
+pixel or vertex shader, it is necessary to understand the mathematics of skinning. The following
+sections explain the base mathematics of skinning as well as the particulars of the Gamebryo
+implementation which operates in world space rather than root parent space to avoid unnecessary
+extra calculations.</p>
+
+<h2>Skinning Defined Mathematically - Local Space Skinning</h2>
+
+<p>The following description defines the calculations that are used to deform vertices and normals
+in a skinned object. Given the index, <b>i</b>, of a particular bone, a transformation,
+<b>M</b><sub><b>i</b></sub> , for that bone is calculated as follows:</p>
+
+<p><b>M<sub>i</sub> = M<sub>rp-s</sub> * M<sub>b-rp</sub><sup>i</sup> *
+M<sub>s-b</sub><sup>i</sup></b></p>
+
+<p>Where:</p>
+
+<ul>
+    <li><b>M<sub>s-b</sub><sup>i</sup></b> transforms bind-pose vertices and normals from the
+    coordinate system of the skinned object to the coordinate system of bone <span class=
+    "NDLSystemFont">b.</span></li>
+
+    <li><b>M<sub>b-rp</sub><sup>i</sup></b> deforms bind-pose vertices by transforming them from
+    the coordinate system of bone <span class="NDLSystemFont">b</span> to the coordinate system of
+    the root bone parent, using the current object transformations.</li>
+
+    <li><b>M<sub>rp-s</sub></b> transforms deformed vertices from the coordinate system of the
+    parent of the root bone back to coordinate system of the skinned object.</li>
+</ul>
+
+<p>At first glance, it may seem that these transformations combine to form an identity matrix,
+since they transform from the skin's coordinate system to bone <span class=
+"NDLSystemFont">b's</span> coordinate system, and then back again to the skin's coordinate system.
+They do not combine to form an identity matrix, however, because the vertices are transformed from
+the coordinate system of the skin to the coordinate system of bone <span class=
+"NDLSystemFont">b</span> using <em>bind pose</em> transformations, and then transformed from bone
+<span class="NDLSystemFont">b</span>'s coordinate system to the coordinate system of the root
+bone's parent using the <em>current</em> transformations of all the bones in the hierarchy from
+bone <span class="NDLSystemFont">b</span> to the root bone parent, and then finally from the root
+bone parent's coordinate system back to the skin's coordinate system using <em>bind pose</em>
+transformations.</p>
+
+<p>Having defined how a transformation matrix for each bone is calculated, we can define how these
+transformations are combined to calculate final vertex positions and normal vectors for a skinned
+object. Suppose a particular vertex is influenced by two bones, whose indices are <span class=
+"NDLSystemFont">0</span> and <span class="NDLSystemFont">1</span>, and that the weight of bone
+<span class="NDLSystemFont">0</span> is <span class="NDLSystemFont">w0</span>, and the weight of
+bone <span class="NDLSystemFont">1</span> is <span class="NDLSystemFont">w1.</span> Note that the
+sum of <span class="NDLSystemFont">w0</span> and <span class="NDLSystemFont">w1</span> must be
+<span class="NDLSystemFont">1.0</span>. If the bind-pose position of the vertex is <span class=
+"NDLSystemFont">v</span>, then the deformed vertex position is:</p>
+
+<p><b>w0 * M<sub>0</sub> * v + w1 * M<sub>1</sub> * v</b></p>
+
+<p>This formula extends naturally to vertices that are influenced by any number of bones.</p>
+
+<p>Bind pose normals are deformed in the same way, except the scales are factored out of the
+transformation matrices, and, since the above equation does not produce normals that are of unit
+length even if the bind pose normals are of unit-length, the normals produced by the deformation
+code are re-unitized.</p>
+
+<h2>Gamebryo's Implementation of Skinning - World Space Skinning</h2>
+
+<p>Although the mathematics above can be directly implemented in a game engine, Gamebryo adds some
+additional steps to the skinning algorithm to optimize calculation. Most notably, Gamebryo performs
+skinning in world space. This change of space allows the use of the existing world transforms of
+the bones rather than calculating the transform of the bone to root parent space each frame. A full
+discussion of the matrices and other data employed by Gamebryo is below.</p>
+
+<h3>Skinning Algorithm in Gamebryo</h3>
+
+<ol>
+    <li>Start with a vertex, <b>V</b>, in the bind pose in local skin space. This data is held by
+    the <a href="../../Reference/NiMesh/NiMesh.htm"><span class="NDLSystemFont">NiMesh</span></a>
+    object representing the skin and will be packed directly into a vertex buffer for hardware
+    accelerated skinning. For simplicity, we'll assume this vertex is only affected by one bone and
+    drop the numerical index, <b>i</b>. As noted above, however, multiple bones can be used.
+    Weights for vertex-bone interactions are stored in an <span class=
+    "NDLSystemFont">NiDataStream</span> with the BLENDWEIGHT common semantic.</li>
+
+    <li>Apply a skin-to-bone matrix <b>M<sub>s-b</sub></b>. This static matrix is calculated per
+    bone during export, and describes the relationship between the bone, in bind pose, and the
+    skin. The vertex is now in "bone space". This transformation is stored in an <span class=
+    "NDLSystemFont">NiSkinningMeshModifier</span>, accessible through the <span class=
+    "NDLSystemFont">GetSkinToBoneTransforms</span> member function.</li>
+
+    <li>Apply the bone's world transform <b>M<sub>b-w</sub></b>. This transform accounts for the
+    bone's animation, and it has been calculated in advance by the <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiAVObject.htm#UpdateFunctions">NiAVObject::Update</a></span>
+    function.. The vertex is in world space, but the transform of the skin itself hasn't been taken
+    into account. Note in the mathematics described above, we would take the vertex to root parent
+    space rather than world space. Taking the vertex to root parent space, however, would require
+    recalculating the bone to root parent matrix each frame. Instead, we use the already calculated
+    world transform of the bone and factor the additional transform from root parent to world space
+    out in later steps.</li>
+
+    <li>Apply a world-to-skin transform, <b>M<sub>w-s</sub></b> . This transform is calculated from
+    two matrices. The first matrix is calculated during export to describe the relationship between
+    root parent the skin and the bones and the skin itself. This transformation is accessible
+    through the <span class=
+    "NDLSystemFont">NiSkinningMeshModifier::GetRootBoneParentToSkinTransform</span>. The second
+    matrix is the inverse of the root parent's current world transform. Now the vertex is once
+    again in local skin space, but this time the positions of the bone have been factored in. If
+    skinning is done in software, this is the point where the deformed skin can be packed into a
+    vertex buffer and rendered as a static object.</li>
+
+    <li>Apply the skin's world transform <b>M<sub>world</sub></b>, just like any other mesh. This
+    puts the deformed vertex in world space.</li>
+
+    <li>Apply the view <b>M<sub>view</sub></b> and projection <b>M<sub>projection</sub></b>
+    matrices, as usual to project the vertex into clip space for the graphics card.</li>
+</ol>
+
+<p>Concatenating all these matrices together produces:</p>
+
+<p>
+<b>V<sub>final</sub>=M<sub>projection</sub>*M<sub>view</sub>*M<sub>world</sub>*M<sub>w-s</sub>*M<sub>
+b-w</sub>*M<sub>s-b</sub>*V</b></p>
+
+<h3>Vertex Shader Considerations</h3>
+
+<p><b>M<sub>s-b</sub></b> and <b>M<sub>b-w</sub></b> are the only matrices the only ones that vary
+per bone. To reduce the amount of work done per vertex in shaders, Gamebryo combines those into one
+matrix which can be called <b>M<sub>bone</sub></b>. <b>M<sub>w-s</sub></b> and
+<b>M<sub>world</sub></b> vary per skin, so those can be combined into <b>M<sub>skin</sub></b>.
+<b>M<sub>view</sub></b> and <b>M<sub>projection</sub></b> are calculated by the renderer per camera
+and can be combined as <b>M<sub>viewproj</sub></b>. Therefore, the string of multiplies in a vertex
+can be condensed to:</p>
+
+<p><b>V<sub>final</sub>=M<sub>viewproj</sub>*M<sub>skin</sub>*M<sub>bone</sub>*V</b></p>
+
+<p>Note that this equates to 3 matrix multiplies per vertex. In order to reduce the amount of work
+done in the vertex shaders even further, the <b>M<sub>skin</sub></b> matrix can be provided to the
+vertex shaders premultiplied by one of the other two matrices. If you want to do lighting, you'll
+need to transform your normals appropriately into world space, so you'll want to multiply the
+<b>M<sub>skin</sub></b> matrix by each <b>M<sub>bone</sub></b> matrix to produce
+<b>M<sub>boneskin</sub></b>. This will give you this set of transforms:</p>
+
+<p><b>V<sub>final</sub>=M<sub>viewproj</sub>*M<sub>boneskin</sub>*V</b></p>
+
+<p>This is implemented in Gamebryo by using the shader constant SKINBONEMATRIX3 and multiplying it
+by the VIEWPROJ matrix in the shader.</p>
+
+<p>Alternatively, you could get better performance on the CPU by multiplying the
+<b>M<sub>skin</sub></b> matrix by the <b>M<sub>viewproj</sub></b> matrix to produce
+<b>M<sub>skinviewproj</sub></b>. Since both values are constant for a given draw call, you will
+have a single matrix multiply instead of one matrix multiply per bone. The down side is that the
+vertex shader wouldn't be able to transform normals into world space. This combination gives
+you:</p>
+
+<p><b>V<sub>final</sub>=M<sub>skinviewproj</sub>*M<sub>bone</sub>*V</b></p>
+
+<p>This is implemented in Gamebryo by using shader constant BONEMATRIX3 and multiplying it by the
+SKINWORLDVIEWPROJ matrix in the shader. For more information on using shader constant maps to
+access these bone matrices, please refer the <a href="../NiShader/Shader_Constant_Maps.htm">NSF</a>
+and <a href="../NiShader/Integrating_D3D_Effect_Files.htm">FX</a> references and the <a href=
+"../../Reference/NiMain/NiShaderConstantMap.htm"><span class=
+"NDLSystemFont">NiShaderConstantMap</span></a> reference.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

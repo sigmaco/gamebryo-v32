@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiApplication and NiVisualTrackers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiApplication and NiVisualTrackers</h1>
+
+<p><span class="NDLSystemFont">NiApplication</span> has several
+methods that support the use of the <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker.</span></a> A base set of graphs is defined, and
+methods to provide some interaction to show and hide the graphs
+have been implemented.</p>
+
+<p>A collection <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects is maintained within
+<span class="NDLSystemFont">NiApplication</span> and is
+accessible via the <span class=
+"NDLSystemFont">GetVisualTrackers</span> function. This
+collection is used by the various methods to maintain the various
+tracked statistics.</p>
+
+<h2>NiVisualTracker Related Methods</h2>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual bool CreateVisualTrackers()</span></p>
+
+<p class="NDLRefMemberDescription">This method is called from
+within <span class=
+"NDLSystemFont">NiApplication::Initialize</span> and creates the
+basic set of <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects. The trackers and graphs
+created are:</p>
+
+<div class="indent1">
+<ul>
+<li>
+Performance Tracker: This tracker contains a <a href=
+"../../Reference/NiVisualTracker/Common_Graph_Callback_Objects.htm">
+<span class="NDLSystemFont">FrameRateUpdate</span></a> graph and
+a <span class="NDLSystemFont"><a href=
+"../../Reference/NiVisualTracker/Common_Graph_Callback_Objects.htm">
+VisibleArrayUpdate</a></span> graph. The <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiVisualTracker/Common_Graph_Callback_Objects.htm">
+VisibleArrayUpdate</a></span> is based on the <span class=
+"NDLSystemFont">m_kVisible</span> attribute, which may not be
+correct for all derived applications. The <a href=
+"../../Reference/NiVisualTracker/Common_Graph_Callback_Objects.htm">
+<span class="NDLSystemFont">FrameRateUpdate</span></a> is
+controlled by the <span class="NDLSystemFont">m_kFrameRate</span>
+attribute, which is maintained by <span class=
+"NDLSystemFont">NiApplication</span> each frame to have the
+current frame rate. The interaction of these two graphs can be
+used to see how frame rate is affected by the number of objects
+that survive culling and are actually drawn to the screen.</li>
+
+<li>
+Timing Tracker: This tracker contains three <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiVisualTracker/Common_Graph_Callback_Objects.htm">
+GenericFloatUpdate</a></span> graphs that represent the time per
+frame used by updating objects, culling and rendering. A set of
+helper functions <span class="NDLSystemFont">ResetFrameTimings,
+BeginUpdate EndUpdate, BeginCull, EndCull, BeginRender</span> and
+<span class="NDLSystemFont">EndRender</span> are implemented
+along with associated attributes to maintain the timing
+information. The Begin/End pairs accumulate timing information
+each frame, so derived applications that do updating, culling or
+rendering outside of the normal <span class=
+"NDLSystemFont">NiApplication</span> functions should make
+additional calls to the appropriate Begin/End pairs to add those
+timings to the ones calculated by <span class=
+"NDLSystemFont">NiApplication</span>.</li>
+
+<li>
+Memory Tracker: This is only created if an <a href=
+"../../Reference/NiSystem/NiMemTracker.htm"><span class=
+"NDLSystemFont">NiMemTracker</span></a> exists. The visual
+tracker contains a <span class=
+"NDLSystemFont">MemHighWaterMarkUpdate</span>, a <span class=
+"NDLSystemFont">MemCurrentUpdate</span>, and a <span class=
+"NDLSystemFont">MemCurrentAllocCountUpdate.</span> So long as the
+<a href="../../Reference/NiSystem/NiMemTracker.htm"><span class=
+"NDLSystemFont">NiMemTracker</span></a> exists, these statistics
+should be accurate for all derived applications.</li>
+</ul>
+</div>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual void UpdateVisualTrackers()</span></p>
+
+<p class="NDLRefMemberDescription">This is called from within the
+<span class="NDLSystemFont">OnIdle</span> function, and it
+iterates over all the <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects in the collection and calls
+<span class="NDLSystemFont">Update</span> on each, causing
+samples to be taken and graphs updated. If a derived application
+overrides <span class="NDLSystemFont">OnIdle</span>, <span class=
+"NDLSystemFont">UpdateVisualTrackers</span> must be called to
+maintain correct statistical tracking.</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">void
+SetShowAllTrackers(bool bShow)</span></p>
+
+<p class="NDLRefMemberDescription">This method iterates over all
+<a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects in the collection and sets the
+show/hide status for each <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> to <span class=
+"NDLSystemFont">bShow</span>.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual void
+ProcessVisualTrackerInput()</span></p>
+
+<p class="NDLRefMemberDescription">This method checks the
+keyboard for a keypress of F11, or a gamepad B button press. If
+the correct key/button had been pressed, <span class=
+"NDLSystemFont">SetShowAllTrackers</span> is called to toggle the
+show/hide status of all the <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects. This method is called from
+<span class="NDLSystemFont">ProcessInput</span>, and derived
+applications that want to use the default Gamebryo buttons to
+bring up the visual tracker should be sure to call this function
+explicitly if <span class="NDLSystemFont">ProcessInput</span> is
+overridden.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual void RenderVisualTrackers()</span></p>
+
+<p class="NDLRefMemberDescription">This method is called from
+<span class="NDLSystemFont">RenderFrame</span> if the <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a> is not used for <span class=
+"NDLSystemFont">NiApplication</span>. In that case, all <a href=
+"../../Reference/NiVisualTracker/NiVisualTracker.htm"><span class="NDLSystemFont">
+NiVisualTracker</span></a> objects in the collection are iterated
+over, and each object's <span class="NDLSystemFont">Draw</span>
+method is called. If <span class=
+"NDLSystemFont">RenderFrame</span> is overridden in a derived
+application, this method must be called explicitly. If
+<span class="NDLSystemFont">NiApplication</span> 
+<!--kadov_tag{{<spaces>}}--> <!--kadov_tag{{</spaces>}}-->is
+using the frame rendering system (i.e., if the <span class=
+"NDLSystemFont">bUseFrameSystem</span> constructor parameter is
+true), the visual trackers are rendered via an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiVisualTracker/NiVisualTrackerRenderClick.htm">NiVisualTrackerRenderClick</a></span>
+object during the <span class="NDLSystemFont">RenderFrame</span>
+function.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

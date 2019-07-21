@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Using the NiSPWorkflowManager Class</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Using the NiSPWorkflowManager Class</h1>
+
+<p>Sometimes it is more efficient to batch several tasks 
+ together in a single workflow, even though those tasks are started at 
+ different locations in an application. Mesh Modifiers provide the most 
+ common example of this in Gamebryo, where there are many meshes and no 
+ one mesh has many tasks. Rather than create and queue many small <span 
+ class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPWorkflow.htm">NiSPWorkflow</a></span> 
+ objects, it is more efficient to batch the tasks for many meshes.</p>
+
+<p>The <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager</span></a> class provides functionality 
+ for batching <a href="../../Reference/NiFloodgate/NiSPTask.htm"><span 
+ class="NDLSystemFont">NiSPTask</span></a> objects into a single workflow. 
+ Applications submit tasks that an <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager</span></a> object adds to a workflow. 
+ When the workflow is full, or when the application requests it, the workflow 
+ is submitted to the <span class="NDLSystemFont">NiStreamProcessor</span> 
+ object for execution.</p>
+
+<h2>Construction</h2>
+
+<p>The constructor for an <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager</span></a> object takes two arguments. 
+ The first controls the minimum number of tasks that must be added to a 
+ workflow before the workflow is automatically submitted. This value can 
+ be tuned to trade-off the total number of outstanding workflows against 
+ the size of each workflow against the delay before a given task is submitted. 
+ Larger values lead to fewer workflows of larger size that might take longer 
+ to be submitted (because they require more tasks to fill them up).</p>
+
+<p>The second argument is an estimate of the number of 
+ task IDs that will be submitted. See below for the meaning of a task ID.</p>
+
+<h2>Submitting Tasks</h2>
+
+<p>Tasks are added to a workflow using the <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager::AddTask</span></a> function. 
+ This assigns the task to a workflow. If the workflow is full, it might 
+ be submitted for execution. The workflow is returned by the function so 
+ that applications can track outstanding jobs.</p>
+
+<p>Some tasks are related and must appear in the same workflow. 
+ For example, one task may have a output streams that is used as the input 
+ for another task. These two tasks must be in the same workflow for their 
+ dependency to be recognized. Tasks that are related are added using the 
+ <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager::AddRelatedTask</span></a> function, 
+ which never causes the submission of a workflow. Hence, multiple calls 
+ to the <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager::AddRelatedTask</span></a> function 
+ end up in the same workflow. The <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager::FinishRelatedTasks</span></a> 
+ function is used to tell the manager that it is safe to submit the workflow 
+ for processing. The workflow will then be submitted if it is full.</p>
+
+<h2>Delayed Submission</h2>
+
+<p>Sometimes it is desirable to delay the start of processing 
+ for a task. For example, a task that is launched during scene graph update 
+ that relies on a finished update should not be executed until the end 
+ of update. This is the case for skinning mesh modifiers. The <span 
+ class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager::AddTask</a></span> and <span 
+ class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm">NiSPWorkflowManager::AddRelatedTask</a></span> functions 
+ have an argument that causes the workflow to not be submitted, even if 
+ full. Rather, the workflow is placed on an internal queue. The queue must 
+ later be flushed using the &nbsp;<a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager::FlushTaskGroup</span></a> 
+ function.</p>
+
+<h2>Task Group IDs</h2>
+
+<p>Tasks that appear in the same workflow will be submitted 
+ for execution at the same time, and will be completed at the same time. 
+ Tasks that produce results for different parts of an application, say 
+ AI processing and rendering, should not be forced to execute together 
+ as this might force the application to block on a result that is not needed. 
+ For example, Gamebryo mesh modifiers sometimes produce results for the 
+ culling phase and sometime produce results for rendering. It is unnecessary 
+ to put these tasks in the same workflow, and to do so would block the 
+ culling phase on results that are not needed until rendering.</p>
+
+<p>The <a href="../../Reference/NiFloodgate/NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager</span></a> object supports a Task 
+ Group ID associated with each task. Only tasks with the same ID will be 
+ placed in the same workflow. The manager can simultaneously manage many 
+ task groups - the approximate number should be given in the constructor. 
+ Operations can also be restricted to certain task IDs or to IDs that appear 
+ the same when masked. For example, all <a href="../NiMesh/Introduction_to_Mesh_Modifiers.htm">mesh 
+ modifiers</a> use their <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span> 
+ to construct a task ID. This forces the manager to only combine tasks 
+ that must start and complete at the same time.</p>
+
+<h2>Thread Safety</h2>
+
+<p>Floodgate <span class="NDLSystemFont">NiSPWorkflow</span> 
+ and <span class="NDLSystemFont">NiSPTask</span> objects are not inherently 
+ thread safe. The <span class="NDLSystemFont">NiSPWorkflowManager</span> 
+ class should be used to enforce thread safety when multiple threads are 
+ constructing workflows.</p>
+
+<p>Create one <span class="NDLSystemFont">NiSPWorkflowManager</span> 
+ object per-thread and restrict calls for each thread to that thread's 
+ object. For example, when using <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm#UpdateFunctions">NiAVObject::Update</a></span> 
+ from separate threads, the <span class="NDLSystemFont">Update</span> call 
+ from each thread should use a thread-local <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshUpdateProcess.htm">NiMeshUpdateProcess</a></span> 
+ object containing a thread-local <span class="NDLSystemFont">NiSPWorkflowManager</span> 
+ object. An <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiBatchedUpdateProcess.htm">NiBatchedUpdateProcess</a></span> 
+ object may be used in place of <span class="NDLSystemFont">NiMeshUpdateProcess</span>.</p>
+
+<h2>Floodgate and the Game Framework</h2>
+
+<p>Several system services in the Game Framework require an
+   <span class="NDLSystemFont">NiSPWorkflowManager</span> object. The
+   <a href="../../Reference/QuickRef_Services/svc_qckref_scene_graph_svc.htm">
+   Scene Graph Service</a> provides access to an object that other services use. For example, the
+   <a href="../../Reference/QuickRef_Services/svc_qckref_render_svc.htm">Render Service</a> and
+   related classes use the Scene Graph Service's workflow manager for culling operations.
+   We recommend that application-specific services also use this workflow manager when one is
+   required.
+</p>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

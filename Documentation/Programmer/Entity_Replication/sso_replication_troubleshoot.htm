@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Troubleshooting Replication</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Troubleshooting Replication</h1>
+
+<p>If you are not receiving the entity discoveries or updates that you are expecting to receive,
+the system log file from your application is a great resource for helping you debug the possible
+causes of the problems.</p>
+
+<p>Emergent recommends the following troubleshooting methods when you are working with
+replication:</p>
+
+<ul>
+    <li>Make sure that you are creating <span class="NDLSystemFont"><a href=
+    "../../Reference/eon/eon__OnlineEntityManager.htm">eon::OnlineEntityManager</a></span> and not
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a></span>.</li>
+
+    <li>Ensure that logs that are related to replication and entities are enabled. These logs can
+    be fairly verbose, so you might want to route them to their own log file or adjust the log
+    level. The following are the modules that you need to enable to debug replication:
+        <pre>
+[Log.Filters]
+ReplicationService = UptoErr3 | UptoLvl2
+ReplicationGroups = UptoErr3 | UptoLvl2
+ReplicationProducerEntity = UptoErr3 | UptoLvl2
+ReplicationConsumerEntity = UptoErr3 | UptoLvl2
+EntityManager = UptoErr3 | UptoLvl2
+</pre>
+    </li>
+
+    <li>Verify that the Replication service is available in both the producer and consumer
+    processes. Look for a log line similar to the following:
+        <pre>
+2009/08/08 15:01:49.447|Lvl1|ReplicationService|||ReplicationService::HandleNetIDAssigned: Using Private Category Category(0xD00000001F003000)|
+</pre>
+
+        <p class="indent1">If you don't see a line like this, make sure you have created an
+        <span class="NDLSystemFont">eon::ReplicationService</span> and added it to <span class=
+        "NDLSystemFont">efd::ServiceManager</span>. Also make sure both producer and consumer are
+        connected to an <span class="NDLSystemFont">efd::ChannelManager</span>. For more
+        information on networking, see <a href="../Networking/sso_networking_intro.htm">Networking:
+        Introduction</a>.</p>
+    </li>
+
+    <li>Verify that producer and consumer processes are not creating entities with overlapping
+    entity IDs. You can check this by looking at the following log statement in both the consumer
+    and producer log files:
+        <pre>
+Producer log file:
+2009/08/08 16:44:33.579|Lvl1|EntityManager|||EntityManager: Successfully added &lt;EntityID=(0xF13800<span class="CodeHighLight">4</span>0000000F4)&gt; (PeerAvatar) owned=<span class="CodeHighLight">1</span>|
+</pre>
+        <pre>
+Consumer log file:
+2009/08/08 16:44:38.754|Lvl1|EntityManager|||EntityManager: Successfully added &lt;EntityID=(0xF13800<span class="CodeHighLight">6</span>0000000F4)&gt; (PeerAvatar) owned=<span class="CodeHighLight">1</span>|
+</pre>
+
+        <p class="indent1">Verify that the EntityIDs are different between processes. It is valid
+        to have the same EntityID as long as only one process has "owned=1". If both processes are
+        creating owned producer entities with overlapping IDs, make sure you are not creating any
+        entities that you want to replicate until the tick after you have received the <span class=
+        "NDLSystemFont">efd::AssignNetIDMessage</span>. See <a href=
+        "../Networking/sso_networking_best_practice.htm">Best Practices for Working with
+        Networking</a> for more information.</p>
+    </li>
+
+    <li>Verify that the source entity is getting created. Look for a log line on the producer side
+    that is similar to the following:
+        <pre>
+2009/08/08 16:44:33.579|Lvl1|EntityManager|||EntityManager: Successfully added &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) owned=1|
+</pre>
+
+        <p class="indent1">If you do not see a line like this in your producer log file, your
+        producer entity was not created. For more information about creating entities, see <a href=
+        "../Entities/entity_creating.htm">Creating entities</a>.</p>
+    </li>
+
+    <li>Verify that the source entity has the correct properties in the correct property groups.
+    Each property that you want to replicate should have a log line on the producer side that is
+    similar to the following:
+        <pre>
+2009/08/08 15:01:56.421|Lvl1|ReplicationProducerEntity|||&lt;EntityID=(0xF13800400000007F)&gt; (PeerAvatar) discovering property 'PeerID' (705593358) in group 0 cleardirty=1|
+</pre>
+
+        <p class="indent1">If you do not see a line like this, see <a href=
+        "sso_replication_config_groups.htm">Configuring Replication Groups</a> for details.</p>
+    </li>
+
+    <li>Verify that the source entity is using the correct categories for the correct property
+    groups. Look for a log line on the producer side that is similar to the following:
+        <pre>
+2009/08/08 15:21:32.039|Lvl1|ReplicationGroups|||&lt;Group=0&gt;: Set &lt;EntityID=(0xF13800400000007F)&gt; replication channel to &lt;Channel=Category(0xC000007FF7013001)&gt;|
+</pre>
+
+        <p class="indent1">If you do not see a line like this, see <a href=
+        "sso_replication_config_groups.htm">Configuring Replication Groups</a> for details.</p>
+    </li>
+
+    <li>Verify that data is being changed on the source entity. Under most replication policies,
+    the data is only transferred if it changes. During prototyping or rapid iteration, you might
+    have lua script errors or code problems that cause logic to stop prior to updating the source
+    entity. Look for a log line on the producer side that is similar to the following:
+        <pre>
+2009/08/08 15:21:32.412|Lvl2|ReplicationProducerEntity|||&lt;EntityID=(0xF13800400000007F)&gt; (PeerAvatar) dirting property 'PeerID' (0x2A0E800E) in groups 0x00000001, prop=0A250118, RS=00000000|
+</pre>
+
+        <p class="indent1">If you do not see a line like this in your producer log, make sure you
+        are actually setting the property that you want to change. See <a href=
+        "../Entities/entity_debugging.htm">Debugging entities</a> for information on debugging
+        entities.</p>
+    </li>
+
+    <li>Verify that the observing process has subscribed to the correct channels.
+        <pre>
+2009/08/08 15:01:55.748|Lvl2|ReplicationService|||Category(0xC000007FF7013001)| ReplicationService subscribing to new replication category|
+</pre>
+
+        <p class="indent1">If you do not see a line like this, see <a href=
+        "sso_replication_config_groups.htm">Configuring Replication Groups</a> for details.</p>
+    </li>
+
+    <li>Verify that replication messages are received.
+        <pre>
+2009/08/08 16:44:38.836|Lvl2|ReplicationConsumerEntity|||UpdatePropertiesFromStream: &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) group='0' prevSequence='0' sequence='1'|
+2009/08/08 16:44:38.836|Lvl1|ReplicationConsumerEntity|||FromStream read &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) propID=0x12383CEA name KfmAsset value=pProp-&gt;ToString().c_str()|
+2009/08/08 16:44:38.836|Lvl1|ReplicationConsumerEntity|||FromStream read &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) propID=0x2A0E800E name PeerID value=pProp-&gt;ToString().c_str()|
+2009/08/08 16:44:38.836|Lvl2|ReplicationService|||Discover: &lt;EntityID=(0xF1380040000000F4)&gt; of type 'PeerAvatar' added to local cache.|
+2009/08/08 16:45:01.997|Lvl2|ReplicationConsumerEntity|||UpdatePropertiesFromStream: &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) group='0' prevSequence='1' sequence='2'|
+2009/08/08 16:45:01.997|Lvl1|ReplicationConsumerEntity|||FromStream read &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) propID=0x68C7C29D name Rotation value=pProp-&gt;ToString().c_str()|
+2009/08/08 16:45:01.997|Lvl2|ReplicationService|||Update: &lt;EntityID=(0xF1380040000000F4)&gt; updated in local cache.|
+</pre>
+
+        <p class="indent1">If you do not see a line like this, see <a href=
+        "sso_replication_config_groups.htm">Configuring Replication Groups</a> for details.</p>
+    </li>
+
+    <li>Verify that replica entities can be factoried. It is also possible that built-in model
+    factories might be missing, and their absence prevents the replica entity from being created.
+    If your entity has been successfully factoried, you will see a line in the consumer log similar
+    to the following:
+        <pre>
+2009/08/08 16:44:38.237|Lvl1|EntityManager|||EntityManager: Successfully added &lt;EntityID=(0xF1380040000000F4)&gt; (PeerAvatar) owned=<span class="CodeHighLight">0</span>|
+</pre>
+
+        <p class="indent1">If you do not see a line like this, see <a href=
+        "../Entities/entity_creating.htm">Creating entities</a> for details on how to create
+        entities. (There is no difference in the requirements for creating replica entities or
+        original entities.)</p>
+    </li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_replication_overview.htm">Replication Overview</a></li>
+
+    <li><a href="sso_replication_prereqs.htm">Replication Prerequisites</a></li>
+
+    <li><a href="sso_replication_requirements.htm">Replication Requirements</a></li>
+
+    <li><a href="sso_replication_how_work.htm">How Replication Works</a></li>
+
+    <li><a href="sso_replication_limitations.htm">Replication Limitations</a></li>
+
+    <li><a href="sso_replication_best_practice.htm">Best Practices for Working with
+    Replication</a></li>
+
+    <li><a href="sso_replication_groups_categories.htm">Understanding Replication Groups and
+    Categories</a></li>
+
+    <li><a href="sso_replication_config_groups.htm">Configuring Replication Groups</a></li>
+
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm#ReplicationGroup">Replication
+    Group Configuration Options</a></li>
+
+    <li><a href="../Networking/sso_networking_intro.htm">Networking: Introduction</a></li>
+
+    <li><a href="../../Reference/eon/eon__ReplicationService.htm">eon::ReplicationService</a></li>
+
+    <li><a href="../../Reference/egf/egf__Entity.htm">egf::Entity</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_net_svc.htm">Network Service
+    (NetService) Quick Reference</a></li>
+
+    <li><a href="../../Reference/efd/efd__AssignNetIDMessage.htm">efd::AssignNetIDMessage</a></li>
+
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm#ReplicationGroup">Replication
+    Group Configuration Options</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

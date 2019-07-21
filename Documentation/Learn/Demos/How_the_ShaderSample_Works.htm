@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How ShaderSample Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How ShaderSample Works</h1>
+
+<p>The <span class="NDLSystemFont">ShaderSample</span> works by
+handling a number of discrete <span class=
+"NDLSystemFont">ShaderEffect</span> objects. Each <span class=
+"NDLSystemFont">ShaderEffect</span> object handles one complete
+effect - its creation, initialization, input handling,
+update,rendering, and destruction. The <span class=
+"NDLSystemFont">ShaderSample</span> application code just needs
+to make the appropriate calls at the appropriate time for each
+<span class="NDLSystemFont">ShaderEffect</span> that has been
+registered with it, and switch between the active <span class=
+"NDLSystemFont">ShaderEffect</span> objects in response to user
+input. It also keeps track of whether the <span class=
+"NDLSystemFont">NSFParserLib</span> has been used yet to parse
+the NSF files, as well as the whether the <span class=
+"NDLSystemFont">NSBShaderLib</span> and <span class=
+"NDLSystemFont">NiD3DXEffectShaderLib</span> have loaded shaders
+from the NSB and FX files.</p>
+
+<p>The main work in the program is done by the various
+<span class="NDLSystemFont">ShaderEffect</span>-derived classes.
+The base <span class="NDLSystemFont">ShaderEffect</span> class
+takes care of most of the common functionality. It prepares and
+handles the <span class="NDLSystemFont"><a href=
+"../../Reference/NiFont/NiFont_Overview.htm">NiFont</a></span>
+system to let each effect identify itself and assists in
+initialization and shutdown of each effect. It also filters all
+input and takes care of the scene rotations and translations so
+the code won't need to be duplicated among all the effects.</p>
+
+<h2>ShaderSample Application Code</h2>
+
+<h3>Terminate</h3>
+
+<p>Before calling the <span class=
+"NDLSystemFont">NiApplication::Terminate</span> function to shut
+down the renderer and application, this function calls
+<span class="NDLSystemFont">Shutdown</span> on each effect that
+had been registered with the application. This enables each
+effect to handle its own cleanup.</p>
+
+<h3>CreateScene</h3>
+
+<p>This function adds the appropriate shader directory for the
+platform to the shader program factory. Then, it calls
+<span class="NDLSystemFont">Init</span> on each effect that had
+been registered with the application. This enables each effect to
+set itself up as it needs. When this is done, the application
+enables the first effect.</p>
+
+<h3>CreateFrame</h3>
+
+<p>This function does not call the base class version. Instead,
+it duplicates some of the base class behavior by creating a
+post-processing <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">
+render step</a> that contains <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">
+render clicks</a> for screen elements, screen textures, visual
+trackers, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiUserInterface/NiUIManager.htm">NiUIManager</a></span>.
+It then creates a <a href=
+"../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">
+render frame</a> and adds that render step to it. For Win32
+builds, a render step with an <span class=
+"NDLSystemFont"><a href="../../Reference/NiCursor/NiCursorRenderClick.htm">
+NiCursorRenderClick</a></span> is appended to the render frame
+after the post-processing step. After that, all registered
+<span class="NDLSystemFont"><a href=
+"ShaderEffect.htm">ShaderEffect</a></span> objects are queried
+for their render steps, which are prepended to the render frame
+so that all effects are rendered before the screen-space
+elements. Only one effect is active at a time, and inactive
+render steps will not be executed.</p>
+
+<h3>UpdateFrame</h3>
+
+<p>After calling the base class version of the function, this
+function updates the scene graph for the current effect using
+<span class="NDLSystemFont">ShaderEffect::UpdateScene</span>.</p>
+
+<h3>RenderFrame</h3>
+
+<p>This function calls the base class version of <span class=
+"NDLSystemFont">RenderFrame</span> to cause the active
+<span class="NDLSystemFont">ShaderEffect</span> to render using
+the Gamebryo <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a>. The cull and render time for that
+<span class="NDLSystemFont">ShaderEffect</span> is then
+recorded.</p>
+
+<h3>ProcessInput</h3>
+
+<p>Calls <span class="NDLSystemFont">HandleKeyboard</span> and
+<span class="NDLSystemFont">HandleGamePad</span>.</p>
+
+<h3>HandleKeyboard</h3>
+
+<p>Handles the first round of responding to keyboard input. The
+buttons for switching to the next effect and quitting the
+application are tested, and then the input is passed to the
+currently active effect for further input handling.</p>
+
+<h3>HandleGamePad</h3>
+
+<p>Handles the first round of responding to game pad input. The
+buttons for switching to the next effect and quitting the
+application are tested, and then the input is passed to the
+currently active effect for further input handling.</p>
+
+<h3>NextEffect</h3>
+
+<p>Calls <span class="NDLSystemFont">DisableCurrentEffect</span>,
+switches the active effect to the next available effect, and then
+calls <span class="NDLSystemFont">EnableCurrentEffect</span>.</p>
+
+<h3>DisableCurrentEffect</h3>
+
+<p>Calls <span class="NDLSystemFont">Disable</span> on the
+currently active effect so it can perform whatever actions are
+necessary to enable itself for display.</p>
+
+<h3>EnableCurrentEffect</h3>
+
+<p>After ensuring the currently active effect has been
+initialized, this function will call <span class=
+"NDLSystemFont">Enable</span> on it so it can perform whatever
+actions are necessary to enable itself for display.</p>
+
+<h3>RegisterEffect</h3>
+
+<p>Static function used by each effect to register itself with
+the application. The function simply stores the effect in an
+array, which the application uses to manage all the effects.</p>
+
+<h3>GetNSFParserRun</h3>
+
+<h3>SetNSFParserRun</h3>
+
+<h3>GetNSBLoaderRun</h3>
+
+<h3>SetNSBLoaderRun</h3>
+
+<h3>GetFXLoaderRun</h3>
+
+<h3>SetFXLoaderRun</h3>
+
+<p>Utility functions used by the effects to make sure that the
+and shader parsing and loading functions don't get called more
+than once per application run.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

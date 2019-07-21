@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Tutorial - Ball in a Box</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>PhysX Tutorial - Ball in a Box</h1>
+
+<p>The aim of this portion of the Gamebryo-PhysX tutorial 
+ is to show how PhysX content is loaded into Gamebryo and how it is updated 
+ at run-time. The code extends the <a HREF="PhysX_Tutorial_Initializing_the_SDK.htm">Initializing 
+ the SDK</a> tutorial. When you start the application, you should see a 
+ ball bouncing up and down a few times in a box. </p>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/Ball_in_a_Box_Screen.jpg" width="400" height="313" />
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Creating a PhysX Scene</h2>
+
+<p>The <span class="NDLSystemFont">CreateScene</span> function 
+ does the work of loading and instantiating PhysX content.</p>
+
+<p>The first task is to create an <a HREF="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a> 
+ object to manage the PhysX <span class="NDLSystemFont">NxScene</span> object, 
+ and to create the <span class="NDLSystemFont">NxScene</span> object itself. 
+ The last stage in preparing the scene to receive objects is to associate 
+ the PhysX scene with the Gamebryo scene:</p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;SetPhysXScene(pkScene);</span></p>
+
+<p>At this stage we are ready to add PhysX props to the 
+ scene. We load the box file, just as you would a regular NIF file. PhysX 
+ content is stored in a top-level object in the file stream. To find it, 
+ we need to loop over the top-level objects looking for something of type 
+ <span class="NDLSystemFont"><a HREF="../../Reference/NiPhysX/NiPhysXProp.htm">NiPhysXProp</a></span>: 
+ </p>
+
+<pre>
+// Look for a camera and the PhysX content. In this case, the PhysX
+// content is the box model.
+NiPhysXPropPtr spBoxProp = 0;
+for (unsigned int ui = 1; ui &lt; kStream.GetObjectCount(); ui++)
+{
+    if (NiIsKindOf(NiCamera, kStream.GetObjectAt(ui)))
+    {
+        m_spCamera = (NiCamera*)kStream.GetObjectAt(ui);
+    }
+    else if (NiIsKindOf(NiPhysXProp, kStream.GetObjectAt(ui)))
+    {
+        // We have found the PhysX content in the NIF.
+        spBoxProp = (NiPhysXProp*)kStream.GetObjectAt(ui);
+    }
+}
+NIASSERT(spBoxProp != 0);
+</pre>
+
+<p>We load another NIF file containing data for the ball 
+ object, and we find the PhysX prop within the file.</p>
+
+<p>We can optimize the updating of transformations when 
+ actors are sleeping. This is only appropriate if there is no moving object 
+ in the scene graph below the actor-controlled object. In this case there 
+ is nothing moving below the ball in the scene graph. Here we directly 
+ access the destination that is responsible for the state update. We could 
+ also access the prop's snapshot, then the actor's snapshot, and then its 
+ destination (which would ultimately be the same object).</p>
+
+<p><span class="NDLSystemFont">((NiPhysXRigidBodyDest*)spBallProp->GetDestinationAt(0))-&gt;SetOptimizeSleep(true)</span></p> 
+
+<p>Loading the props does not create them in the PhysX 
+ scene. To do so, we add the props into the scene:</p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;AddProp(spBallProp);</span></p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;AddProp(spBoxProp);</span></p>
+
+<p>This causes several things to happen. It registers the 
+ prop as an object that needs updating by Gamebryo when this scene is updated. 
+ Because the scene we are attaching to already has an <span class="NDLSystemFont">NxScene</span> 
+ object, adding the prop also causes its PhysX content to be created in 
+ the PhysX scene, thus completely preparing the object for simulation.</p>
+
+<p>After instantiating the props, the last step in creating 
+ the scene is enabling destination updates. A destination in Gamebryo-PhysX 
+ is a scene graph object that is controlled by physics. In this case, the 
+ ball is to be controlled by the physical ball. Destinations updating must 
+ be explicitly enabled: </p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;SetUpdateDest(true)</span></p>
+
+<p><span class="NDLSystemFont">We are now ready to simulate.</span></p>
+
+<h2>Run-Time Updating</h2>
+
+<p>Gamebryo-PhysX adds some steps to the update process 
+ to push data to and from the physics simulation. In this application the 
+ work is done in the <span class="NDLSystemFont">UpdateFrame</span> function. 
+ After processing input, we start a simulation step with </p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;Simulate(m_fAccumTime);</span></p>
+
+<p>The argument is the time we want to simulate to, in 
+ this case global application time.This gets simulation started. To get 
+ the answers, we have to call </p>
+
+<p><span class="NDLSystemFont">m_spPhysScenee-&gt;FetchResults(m_fAccumTime, true);</span></p>
+
+<p>The argument is the time we want to fetch for, which 
+ will almost always be the same as the time we were simulating to. The 
+ <span class="NDLSystemFont">true</span> argument forces the function to 
+ wait for simulation to finish, because we need the answers now. When this 
+ function returns, physics state is ready to be used in the Gamebryo scene 
+ graph. To set the scene graph transformation, we must update the destinations, 
+ in this case the ball: </p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;UpdateDestinations(m_fAccumTime);</span></p>
+
+<p>This causes the pose of the PhysX actor be extracted 
+ and pushed into the Gamebryo scene graph node's transformation. To 
+ apply this transformation for rendering, we still need to call update 
+ on the scene graph. </p>
+
+<h2>Simulation Reset</h2>
+
+<p>The call </p>
+
+<p><span class="NDLSystemFont">m_spPhysScene-&gt;RestoreSnapshotState(0);</span></p>
+
+<p>restores the pose and velocity of the ball to the state 
+ that was loaded from the NIF file. You can create other snapshots if desired 
+ and restore from any one of them. </p>
+
+<h3>Next</h3>
+
+<p>The <a href="PhysX_Tutorial_Kinematic_Actors.htm">Kinematic 
+ Actors</a> tutorial is next. </p>
+
+<h3><a HREF="PhysX_Tutorial_Initializing_the_SDK.htm">Previous</a></h3>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

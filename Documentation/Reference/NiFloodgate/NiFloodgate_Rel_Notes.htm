@@ -1,0 +1,283 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiFloodgate Library Release Notes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiFloodgate Library Release Notes</h1>
+
+<p><a href="#Added_Features_and_Fixed_Bugs">Added Features, Changed Behavior, and Fixed Bugs</a></p>
+
+<p><a href="#Known_Issues_and_Limitations">Known 
+ Issues and Limitations</a></p>
+
+<a name="Added_Features_and_Fixed_Bugs"></a><h2>Added Features, Changed Behavior, and Fixed Bugs</h2>
+
+<h3>Gamebryo LightSpeed 3.2</h3>
+
+<ul>
+  <li>Legacy code to support operating systems older than Windows XP caused a race condition that
+  could result in a Floodgate crash on a multi-core PC. The legacy code has been removed.</li>
+  
+  <li>The smart pointer declaration in
+  <span class="NDLSystemFont"><a href="NiSPStream.htm">NiSPStream</a></span> has been removed.
+  The smart pointer could never be instantiated because the
+  <span class="NDLSystemFont">NiSPStream</span> class does not derive
+  from the <span class="NDLSystemFont">NiRefObject</span> class. In development we found numerous
+  problems with the shutdown and release of streams and tasks in Floodgate, and allowing smart
+  pointers to streams would complicate matters considerably, leading to bugs.</li>
+</ul>
+
+<h3>Gamebryo LightSpeed 3.1</h3>
+
+<ul>
+  <li>None in this release.</li>
+</ul>
+
+<h3>Gamebryo LightSpeed 3.0</h3>
+
+<ul>
+  <li>None in this release.</li>
+</ul>
+
+<h3>Gamebryo 2.6.0</h3>
+
+<ul>
+	
+	<li>Fixed the recursion 
+ counter in <span class="NDLSystemFont"><a href="NiSPAnalyzer.htm">NiSPAnalyzer</a>::Analyze</span> 
+ to more accurately check for excessively deep recursion situations.</li>
+	
+	<li>Added an assert to 
+ the <a href="NiSPStreamPartitioner.htm"><span 
+ class="NDLSystemFont">NiSPStreamPartitioner</span></a> implementation on 
+ all platforms to catch the error case in which a task has input or output 
+ streams of unequal block count. Fixed input streams can be of any block 
+ count, and streams with NULL data do not assert.</li>
+</ul>
+
+<h3>Gamebryo 2.5.0</h3>
+
+<ul>
+	
+	<li>The <a href="NiSPWorkflowManager.htm"><span 
+ class="NDLSystemFont">NiSPWorkflowManager</span></a> class has been added. 
+ It is used to batch <a href="NiSPTask.htm"><span 
+ class="NDLSystemFont">NiSPTask</span></a> objects into a single workflow.</li>
+	
+	<li>The <a href="NiSPDataStream.htm"><span 
+ class="NDLSystemFont">NiSPDataStream</span></a> class has been added to 
+ simplify the specification of data sources for <a href="NiSPStream.htm"><span 
+ class="NDLSystemFont">NiSPStream</span></a> objects.</li>
+	
+	<li>The map used to rapidly 
+ find workflows in the <a href="NiStreamProcessor.htm"><span 
+ class="NDLSystemFont">NiStreamProcessor</span></a> class has been changed 
+ to an array. Given the functionality provided by this object, and the 
+ memory usage associated with it, it was determined that an array was a 
+ better structure.</li>
+	
+	<li>Added the ability to 
+ specify the affinity of threads in Floodgate and the worker thread count. 
+ These values are specified via callbacks which can be set through <span 
+ class="NDLSystemFont"><a href="../NiSystem/NiInitOptions.htm">NiInitOptions</a></span> 
+ or through interfaces on <span class="NDLSystemFont"><a href="NiStreamProcessor.htm">NiStreamProcessor</a></span>. 
+ Note that these callbacks must be set prior to SDM init or they will not 
+ change behavior.</li>
+	
+	<li>Added a serial execution 
+ mode to Floodgate that can be enabled by specifying a worker thread count 
+ of zero or by setting the appropriate flag in <span class="NDLSystemFont"><a 
+ href="../NiSystem/NiInitOptions.htm">NiInitOptions</a></span>.</li>
+	
+	<li>A bug in the <span 
+ class="NDLSystemFont"><a href="NiStreamProcessor.htm">NiStreamProcessor</a></span> 
+ class that caused infinite looping when more than 16 workflows were active 
+ has been fixed.</li>
+	
+	<li>A bug where the kernel 
+ size was not properly taken into account when computing optimal block 
+ counts was fixed. </li>
+ 
+ <li><span class="NDLSystemFont"><a href="NiSPWorkflow.htm">NiSPWorkflow</a></span> 
+ objects are now reference counted, and applications should use a <span class="NDLSystemFont">NiSPWorkflowPtr</span> smart pointer to reference 
+ such objects. <span class="NDLSystemFont">NiSPWorkflow</span> objects must 
+ be created using <span class="NDLSystemFont">NiStreamProcessor::GetFreeWorkflow</span> 
+ or <span class="NDLSystemFont">NiSPWorkflow::GetFreeWorkflow</span>. <span class="NDLSystemFont">NiSPWorkflow</span> objects are returned to the object 
+ pool when their reference count goes to zero. </li>
+
+	
+	<li><span class="NDLSystemFont"><a href="NiSPTask.htm">NiSPTask</a></span> 
+ objects are now reference counted, and applications should use a <span class="NDLSystemFont">NiSPTaskPtr</span> smart pointer to reference such 
+ objects. <span class="NDLSystemFont">NiSPTask</span> objects must be created 
+ using <span class="NDLSystemFont">NiSPWorkflow::AddNewTask</span> or <span class="NDLSystemFont">NiSPTask::GetNewTask</span>. <span class="NDLSystemFont">NiSPTask</span> 
+ objects are returned to the object pool when their reference count goes 
+ to zero.</li>
+
+	
+	<li><span class="NDLSystemFont"><a href="NiStreamProcessor.htm">NiStreamProcessor::Wait</a></span> 
+ now treats the timeout value differently. A timeout of 0xFFFFFFFF is infinite 
+ as opposed to Gamebryo 2.3 where 0 signified an infinite timeout. Additionally, 
+ specifying a small timeout may return without yielding the thread now 
+ resulting in improved performance. The timeout is now specified in microseconds 
+ across all platforms.</li>
+	
+	<li>Extensive changes have 
+ been made to the internals of Floodgate to reduce memory usage by a factor 
+ of almost 100 with no performance penalty (and maybe an improvement). 
+ This change has introduce dynamic memory allocation into the core of Floodgate, 
+ structured such that memory allocations should not occur in a steady state 
+ system. However, extra memory may be held in order to avoid steady state 
+ allocations. The <span class="NDLSystemFont"><a href="NiSPTask.htm">NiSPTask::SetIsCompacted</a></span> 
+ function has been added so that applications can specify that tasks compact 
+ their arrays to minimize memory. See the documentation for details on 
+ the usage of compacted flag. Also note that the arrangement of data in 
+ the <span class="NDLSystemFont"><a href="NiSPWorkload.htm">NiSPWorkload</a></span> 
+ class has changed, so Floodgate kernels that were directly accessing <span class="NDLSystemFont">NiSPWorkload </span>data (without using member functions) 
+ will probably require modification.</li>
+	
+	<li>Extensive changes have 
+ been made to the execution model on PC 
+ and Xbox 360 reducing the overall CPU utilization. The Floodgate 
+ dispatch thread will now only execute when tasks require dispatch or finalization 
+ rather than actively polling the status of those tasks and workflows. 
+ On PC, this has significantly improved the performance of the system. 
+ On Xbox 360, performance is similar 
+ to active polling but with a sizable reduction in CPU utilization for 
+ the HW thread running the dispatch thread, HW Thread 1 by default.</li>
+
+	
+	<li>The default behavior 
+ for worker thread allocation on PC has been changed to use the improved 
+ CPU topology detection functions in <span class="NDLSystemFont"><a href="../NiSystem/NiSystemDesc.htm">NiSystemDesc</a></span>. 
+ By default, the number of worker threads will use the following algorithm. 
+ Users can override that algorithm using the <span class="NDLSystemFont">SetDefineWorkerThreadCountFunc</span> 
+ interface in <span class="NDLSystemFont"><a href="NiStreamProcessor.htm">NiStreamProcessor</a></span> 
+ as noted above.
+	
+	<ul>
+		
+		<li>Systems with a 
+ single physical core will allocate no worker threads and run in serial 
+ execution mode. This scenario includes hyperthreaded machines which report 
+ multiple logical cores.</li>
+		
+		<li>Systems with multiple 
+ physical cores will allocate one less worker thread than the number of 
+ physical cores.</li>
+
+		
+		<li>Systems with logical 
+ core counts that exceed the physical core count will allocate one additional 
+ worker thread for each two additional logical cores. For example, a system 
+ with two physical and four logical cores will allocate one worker thread 
+ for the two physical cores and one worker thread for the two additional 
+ logical cores.</li>
+	</ul>
+	
+	</li>
+	
+	<li>In order to provide 
+ thread safety for <span class="NDLSystemFont"><a href="NiSPTask.htm">NiSPTask</a></span> 
+ and <span class="NDLSystemFont"><a href="NiSPStream.htm">NiSPStream</a></span> 
+ deletions, the behavior of <span class="NDLSystemFont">NiSPStream</span> 
+ has been changed (this was also necessary for other reasons). When all 
+ of the tasks that reference an <span class="NDLSystemFont">NiSPStream</span> 
+ object are deleted (all the tasks that use it as an input and output), 
+ the <span class="NDLSystemFont">NiSPStream::GetEffectiveInputSize</span> 
+ and <span class="NDLSystemFont">NiSPStream::GetEffectiveOutputSize</span> 
+ will return 0. In this case, applications should also call <span class="NDLSystemFont">NiSPSTream::ClearTaskArrays</span> 
+ to remove <span class="NDLSystemFont">NULL</span> entries from those arrays.</li>
+
+	
+	<li>The <span class="NDLSystemFont"><a href="NiSPTask.htm">NiSPTask::SetOptimalBlockCount</a></span> 
+ function has been superceded in almost all situations by automatic per-platform 
+ code for setting the optimal block count. Applications should not use 
+ this function unless they have a specific reason for wanting a certain 
+ block count in a kernel, and care must be taken to avoid problematic situations 
+ on some platforms. See the <a href="../../Programmer/NiFloodgate/Features_and_Limitations_of_Floodgate.htm">Known 
+ Limitations.</a></li>
+
+</ul>
+
+<h3>Gamebryo 2.3.0</h3>
+
+<ul>
+	
+	<li>Implemented thread 
+ pools for PC and Xbox 360. For more information on resource usage, please 
+ refer to the <a href="../../Programmer/NiFloodgate/Features_and_Limitations_of_Floodgate.htm">NiFloodgate 
+ Features and Limitations documentation</a>.</li>
+
+	
+	<li>Implemented 
+ cache prefetching for input parameters on Xbox 360. For more information 
+ on prefetching behavior, please refer to the <a href="../../Programmer/NiFloodgate/Features_and_Limitations_of_Floodgate.htm">NiFloodgate Features and Limitations documentation</a>.</li>
+</ul>
+
+<a name="Known_Issues_and_Limitations"></a><h2>Known Issues 
+ and Limitations</h2>
+
+<ul>
+	
+	<li>The documentation for 
+ the following classes is taken from the PS3 versions of these classes 
+ only. Due to a limitation in the automatic generation of class reference 
+ documentation, only the PS3 version of this documentation is available 
+ in the this file. For Win32 and Xbox 360 versions of these classes, refer 
+ to the documentation comments in the associated platform-specific header 
+ files for the classes:
+	
+  	<ul>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPJob.htm">NiSPJob</a></span></li>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPJobList.htm">NiSPJobList</a></span></li>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPStreamPartitioner.htm">NiSPStreamPartitioner</a></span></li>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPTaskImpl.htm">NiSPTaskImpl</a></span></li>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPWorkflowImpl.htm">NiSPWorkflowImpl</a></span></li>
+  		
+  		<li><span class="NDLSystemFont"><a 
+   href="NiSPWorkload.htm">NiSPWorkload</a></span></li>
+  	</ul>
+	</li>
+	
+	<li>See the <a href="../../Programmer/NiFloodgate/Features_and_Limitations_of_Floodgate.htm">Floodgate 
+ Features and Limitations</a> page for other known issues.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

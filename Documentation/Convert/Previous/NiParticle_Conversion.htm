@@ -1,0 +1,1301 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiParticle Conversion</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiParticle Conversion</h1>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Programmer/NiParticle/Introduction_to_NiParticle.htm">NiParticle</a></span>
+library has been completely revamped in Gamebryo 2.5 to work well
+with the <a href=
+"../../Programmer/NiMesh/Introduction_to_Mesh_Modifiers.htm">mesh
+modifier</a> system and <a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a>.
+The generation of renderable geometry for particles has now been
+separated from the code for the various renderers, allowing for
+customization and for rendering using shaders. Both quad
+generation and particle simulation are performed in Floodgate
+tasks that can be decomposed and run concurrently in separate
+threads on additional CPU cores and on the PS3 SPUs. The
+supported particle system features have not changed much since
+Gamebryo 2.3, but their implementation has changed significantly.
+The mechanism by which particle systems can be extended has also
+changed.</p>
+
+<p>The following sections provide more detail about what has
+changed in the <span class="NDLSystemFont">NiParticle</span>
+library and how to convert existing applications to work with
+Gamebryo 2.5:</p>
+
+<ul>
+    <li><a href=
+    "NiParticle_Conversion.htm#Deprecated_Classes">Deprecated
+    Classes</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Particle_System_Load_Time_Conversion">
+    Particle System Load-Time Conversion</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Programmatically_Creating_Particle_Systems">
+    Programmatically Creating Particle Systems</a></li>
+
+    <li><a href="NiParticle_Conversion.htm#Quad_Generation">Quad
+    Generation</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Emitters">Emitters</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Colliders">Colliders</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Forces">Forces</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Porting_Custom_NiPSysModifier_Classes">
+    Porting Custom NiPSysModifier Classes</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Running_Up_Particle_Systems">Running
+    Up Particle Systems</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Bounding_Volume_Computation">Bounding
+    Volume Computation</a></li>
+
+    <li><a href=
+    "NiParticle_Conversion.htm#Particle_Age_Update_Changes">Particle
+    Age Update Changes</a></li>
+</ul>
+
+<a name="Deprecated_Classes" id="Deprecated_Classes"></a><h2>Deprecated Classes</h2>
+
+<p>Nearly all Gamebryo 2.3 <span class=
+"NDLSystemFont">NiParticle</span> classes have been deprecated
+and replaced with new classes that provide similar functionality.
+These deprecated classes are located in the <span class=
+"NDLSystemFont"><em>%EGB_PATH%</em>\CoreLibs\NiParticle\_Deprecated</span>
+directory in your Gamebryo installation. The classes have been
+stripped down to include only the functionality necessary to
+support streaming them in from pre-2.5 NIF files. When the
+<span class="NDLSystemFont">NiParticle</span> library is built,
+the deprecated header files are not copied to the SDK directory
+and thus cannot be included in applications that use
+Gamebryo.</p>
+
+<p>Below is a list of all the <span class=
+"NDLSystemFont">NiParticle</span> classes that were deprecated,
+along with the class that replaces them and any pertinent notes.
+If no notes are listed, the replacement class has identical
+interfaces and functionality to its deprecated class. Note that
+nearly all deprecated classes start with the prefix "<span class=
+"NDLSystemFont">NiPSys</span>", while all new <span class=
+"NDLSystemFont">NiParticle</span> classes start with the prefix
+"<span class="NDLSystemFont">NiPS</span>".</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Deprecated Class</th>
+
+            <th>Replacement Class</th>
+
+            <th>Notes</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiMeshParticleSystem</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshParticleSystem.htm">
+            NiPSMeshParticleSystem</a></span></td>
+
+            <td>Mesh particles have their own class, derived from
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>,
+            that itself encapsulates all mesh particle management
+            behavior.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiMeshPSysData</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshParticleSystem.htm">
+            NiPSMeshParticleSystem</a></span></td>
+
+            <td>The interfaces for managing mesh particle pools
+            and the container node of particles have all been
+            moved to <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshParticleSystem.htm">
+            NiPSMeshParticleSystem</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiParticleInfo</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td>The per-particle data is now stored entirely
+            within arrays that are member variables of
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>,
+            eliminating the need for this class.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiParticleMetrics</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMetrics.htm">NiPSMetrics</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiParticleSystem</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td>The main particle system class derives from
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>
+            and holds data streams that are rendered. It also
+            internally holds all the per-particle data and a set
+            of emitters.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysAgeDeathModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>,
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorFinalStep.htm">
+            NiPSSimulatorFinalStep</a></span></td>
+
+            <td>The <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorFinalStep.htm">
+            NiPSSimulatorFinalStep</a></span> class controls
+            updating the age of particles and killing them off.
+            The <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            class holds a death spawner that controls whether and
+            how particles are spawned on death.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysAirFieldAirFrictionCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSAirFieldAirFrictionCtlr.htm">
+            NiPSAirFieldAirFrictionCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysAirFieldInheritVelocityCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSAirFieldInheritedVelocityCtlr.htm">
+            NiPSAirFieldInheritedVelocityCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysAirFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSAirFieldForce.htm">NiPSAirFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysAirFieldSpreadCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSAirFieldSpreadCtlr.htm">
+            NiPSAirFieldSpreadCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysBombModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSBombForce.htm">NiPSBombForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysBoundUpdateModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span></td>
+
+            <td>An <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>
+            object is held directly by the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            class, but its functionality remains the same.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysBoxEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSBoxEmitter.htm">NiPSBoxEmitter</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysCollider</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSCollider.htm">NiPSCollider</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysColliderManager</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorCollidersStep.htm">
+            NiPSSimulatorCollidersStep</a></span></td>
+
+            <td>Particle colliders are now managed by a simulator
+            step, which also contains a <a href=
+            "../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">
+            Floodgate</a> kernel to simulate them. This simulator
+            step is owned by the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span>
+            class.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysColorModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span></td>
+
+            <td>The <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span> class contains
+            all the interfaces for animating particle colors. The
+            color format has changed from <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiColorA.htm">NiColorA</a></span>
+            to <span class="NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiRGBA.htm">NiRGBA</a></span>,
+            which takes up only 32 bits. The color keys supported
+            have also changed from <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiAnimation/NiColorKey.htm">NiColorKey</a></span>
+            to <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSKernelColorKey.htm">NiPSKernelColorKey</a></span>
+            classes and are restricted to linear
+            interpolation.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysCylinderEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSCylinderEmitter.htm">NiPSCylinderEmitter</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysData</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td>The main <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            class contains all its particle data, so there is no
+            need for a separate data class.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysDragFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSDragFieldForce.htm">NiPSDragFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysDragModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSDragForce.htm">NiPSDragForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">
+            NiPSEmitParticlesCtlr</a></span></td>
+
+            <td>This controller is the main class responsible for
+            causing particles to get emitted. Note that the
+            replacement class is not named <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterCtlr.htm">NiPSEmitterCtlr</a></span>,
+            as that is the base class for all time controllers
+            that affect emitter objects. Instead, the name of the
+            replacement class is <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">
+            NiPSEmitParticlesCtlr</a></span>, which is itself
+            derived from <span class=
+            "NDLSystemFont">NiPSEmitterCtlr</span> and has
+            identical functionality to its deprecated
+            version.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterCtlrData</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">
+            NiPSEmitParticlesCtlr</a></span></td>
+
+            <td>All the data needed to animate particle emission
+            is stored directly in the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">
+            NiPSEmitParticlesCtlr</a></span> class, eliminating
+            the need for a separate data class.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterDeclinationCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterDeclinationCtlr.htm">
+            NiPSEmitterDeclinationCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterDeclinationVarCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterDeclinationVarCtlr.htm">
+            NiPSEmitterDeclinationVarCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterInitialRadiusCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterRadiusCtlr.htm">
+            NiPSEmitterRadiusCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterLifeSpanCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterLifeSpanCtlr.htm">
+            NiPSEmitterLifeSpanCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterPlanarAngleCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterPlanarAngleCtlr.htm">
+            NiPSEmitterPlanarAngleCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterPlanarAngleVarCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterPlanarAngleVarCtlr.htm">
+            NiPSEmitterPlanarAngleVarCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysEmitterSpeedCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterSpeedCtlr.htm">
+            NiPSEmitterSpeedCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysFieldAttenuationCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSFieldAttenuationCtlr.htm">
+            NiPSFieldAttenuationCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysFieldMagnitudeCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSFieldMagnitudeCtlr.htm">
+            NiPSFieldMagnitudeCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysFieldMaxDistanceCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSFieldMaxDistanceCtlr.htm">
+            NiPSFieldMaxDistanceCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSFieldForce.htm">NiPSFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysGravityFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSGravityFieldForce.htm">
+            NiPSGravityFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysGravityModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSGravityForce.htm">NiPSGravityForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysGravityStrengthCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSGravityStrengthCtlr.htm">
+            NiPSGravityStrengthCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysGrowFadeModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span></td>
+
+            <td>Growing and shrinking of particles is handled by
+            the <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span> class, which now
+            contains the interfaces for specifying those options.
+            Particle "fading" has been renamed particle
+            "shrinking".</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysInitialRotAngleCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterRotAngleCtlr.htm">
+            NiPSEmitterRotAngleCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysInitialRotAngleVarCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterRotAngleVarCtlr.htm">
+            NiPSEmitterRotAngleVarCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysInitialRotSpeedCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterRotSpeedCtlr.htm">
+            NiPSEmitterRotSpeedCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysInitialRotSpeedVarCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterRotSpeedVarCtlr.htm">
+            NiPSEmitterRotSpeedVarCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysMeshEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshEmitter.htm">NiPSMeshEmitter</a></span></td>
+
+            <td>The mesh emitter now deals with <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>
+            objects instead of <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMain/NiGeometry.htm">NiGeometry</a></span>
+            objects. It handles skinned and nonskinned meshes,
+            but there are certain mesh requirements. See the
+            documentation for <span class=
+            "NDLSystemFont"><a href="../../Reference/NiParticle/NiPSMeshEmitter.htm">
+            NiPSMeshEmitter</a>::AddMeshEmitter</span> for a list
+            of these requirements.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysMeshUpdateModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshParticleSystem.htm">
+            NiPSMeshParticleSystem</a></span></td>
+
+            <td>All the work that used to be performed by the
+            <span class=
+            "NDLSystemFont">NiPSysMeshUpdateModifier</span> class
+            is now done by the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSMeshParticleSystem.htm">
+            NiPSMeshParticleSystem</a></span> class itself. The
+            master copies for each mesh particle are called
+            "master particles" and are held by the <span class=
+            "NDLSystemFont">NiPSMeshParticleSystem</span> class,
+            which contains the interfaces for specifying
+            them.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span>,
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSForce.htm">NiPSForce</a></span>,
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSCollider.htm">NiPSCollider</a></span></td>
+
+            <td>There is no longer a single "modifier" class that
+            can be attached to a particle system. Instead, the
+            deprecated modifiers have been separated out into
+            emitters, forces, and colliders. Additional particle
+            simulation functionality beyond these types of
+            modifiers can be added by creating a custom
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>
+            class.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysModifierActiveCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSForceActiveCtlr.htm">NiPSForceActiveCtlr</a></span></td>
+
+            <td>This controller now only applies to forces and
+            not to particle system modifiers in general. There is
+            no way to set an emitter as inactive. Colliders can
+            be set to be inactive, but there is no controller to
+            animate that.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysModifierBoolCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSForceBoolCtlr.htm">NiPSForceBoolCtlr</a></span></td>
+
+            <td>Since there is no longer a general particle
+            system modifier class, there cannot be a general
+            Boolean controller class for it. Instead, only a
+            Boolean controller class for forces is provided.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysModifierCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterCtlr.htm">NiPSEmitterCtlr</a></span>,
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSForceCtlr.htm">NiPSForceCtlr</a></span></td>
+
+            <td>Since there is no longer a general particle
+            system modifier class, there cannot be a general time
+            controller class for it. Instead, there are two
+            general controller classes, one for emitters and one
+            for forces.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysModifierFloatCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitterFloatCtlr.htm">
+            NiPSEmitterFloatCtlr</a></span>, <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSForceFloatCtlr.htm">NiPSForceFloatCtlr</a></span></td>
+
+            <td>Since there is no longer a general particle
+            system modifier class, there cannot be a general
+            float controller class for it. Instead, float
+            controller classes for emitters and forces are
+            provided.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysPlanarCollider</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSPlanarCollider.htm">NiPSPlanarCollider</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysPositionModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorFinalStep.htm">
+            NiPSSimulatorFinalStep</a></span></td>
+
+            <td>The particle position is updated based on the
+            particle velocity in the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorFinalStep.htm">
+            NiPSSimulatorFinalStep</a></span> class. There are no
+            parameters to set here.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysRadialFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSRadialFieldForce.htm">
+            NiPSRadialFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysResetOnLoopCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSResetOnLoopCtlr.htm">NiPSResetOnLoopCtlr</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysRotationModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span>, <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span></td>
+
+            <td>Particle rotation is updated by the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">
+            NiPSSimulatorGeneralStep</a></span> class each frame.
+            The initial rotation values assigned to emitted
+            particles are now stored in each <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span>
+            object rather than being the same for all
+            emitters.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysSpawnModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSpawner.htm">NiPSSpawner</a></span></td>
+
+            <td>The <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSpawner.htm">NiPSSpawner</a></span>
+            class is similar to <span class=
+            "NDLSystemFont">NiPSysSpawnModifier</span> except
+            that it also contains a pointer to the particle
+            system that owns it along with a unique ID that is
+            assigned when it is added to an <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            object.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysSphereEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSphereEmitter.htm">NiPSSphereEmitter</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysSphericalCollider</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSSphericalCollider.htm">
+            NiPSSphericalCollider</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysTurbulenceFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSTurbulenceFieldForce.htm">
+            NiPSTurbulenceFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysUpdateCtlr</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td>There is no longer a need for a separate time
+            controller to tell the particle system to update its
+            simulation. Instead, the <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            class handles this automatically during its scene
+            graph update.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysVolumeEmitter</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSVolumeEmitter.htm">NiPSVolumeEmitter</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiPSysVortexFieldModifier</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSVortexFieldForce.htm">
+            NiPSVortexFieldForce</a></span></td>
+
+            <td>&nbsp;</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>In addition to the <span class=
+"NDLSystemFont">NiParticle</span> classes listed above, the
+following classes in the <span class=
+"NDLSystemFont">NiMain</span> library relating to particle
+systems have been deprecated.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Deprecated Class</th>
+
+            <th>Replacement Class</th>
+
+            <th>Notes</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiParticles</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            derives directly from <span class=
+            "NDLSystemFont"><a href=
+            "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>
+            and no longer needs to derive from a class in
+            <span class="NDLSystemFont">NiMain</span>. This was
+            done before so that the renderer classes could render
+            particles without knowing about classes in the
+            <span class="NDLSystemFont">NiParticle</span>
+            library. Renderable geometry is now added as data
+            streams to the <span class=
+            "NDLSystemFont">NiMesh</span>-derived <span class=
+            "NDLSystemFont">NiPSParticleSystem</span> class, so
+            the renderers can just render it directly.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiParticlesData</span></td>
+
+            <td><span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span></td>
+
+            <td>All the data for the particle system is stored
+            inside the <span class="NDLSystemFont"><a href=
+            "../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+            class itself, eliminating the need for a separate
+            data class.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>If an application references a deprecated <span class=
+"NDLSystemFont">NiParticle</span> class, it will fail to compile.
+In most cases, the class name can be swapped to the replacement
+class name with no further changes. In some cases, there may not
+be a one-to-one correspondence between old functionality and new
+functionality, and an alternate conversion plan will need to be
+used. The underlying functionality has not fundamentally changed,
+though, so it should be relatively easy to map old interfaces to
+new. Use the notes above to guide the conversion
+efforts.</p>
+
+<a name="Particle_System_Load_Time_Conversion" id="Particle_System_Load_Time_Conversion"></a><h2>Particle System Load-Time Conversion</h2>
+
+<p>When a pre-2.5 NIF file is loaded, all the old particle system
+objects contained in it are automatically converted to their
+equivalent replacement classes. This includes all particle system
+controllers and modifiers (as well as any controllers contained
+in <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiControllerSequence.htm">NiControllerSequence</a></span>
+objects loaded from KF files). The conversion is done as an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a></span>
+post-processing step by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSConverter.htm">NiPSConverter</a></span>
+class. Since the conversion is always performed, loading a NIF
+file with Gamebryo 2.5 will always end up using the new
+<span class="NDLSystemFont">NiParticle</span> classes. Thus, any
+application that refers directly to any of the deprecated classes
+must be updated to refer to the appropriate replacement classes
+in order to compile and work properly. In addition to the notes
+in the list of <a href=
+"NiParticle_Conversion.htm#Deprecated_Classes">deprecated
+classes</a> above, the <span class=
+"NDLSystemFont">NiPSConverter</span> source code can be used as a
+further guide for how old particle system classes should map to
+new ones.</p>
+
+<a name="Programmatically_Creating_Particle_Systems" id="Programmatically_Creating_Particle_Systems"></a><h2>Programmatically Creating Particle Systems</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span>
+objects have various requirements that must be met when they are
+created. For example, they must have an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span>
+object attached to perform particle simulation and possibly a
+"generator" mesh modifier to create renderable geometry. To aid
+in programmatic creation of these objects (and to protect against
+invalid configurations), a static <span class=
+"NDLSystemFont">Create</span> function is provided for each class
+that takes in the creation parameters, calls a protected
+constructor to create the particle system, attaches the
+appropriate mesh modifiers and other objects, and returns a
+pointer to the particle system.</p>
+
+<p>The values passed into the <span class=
+"NDLSystemFont">Create</span> functions are similar to the
+parameters that used to be passed into the deprecated
+<span class="NDLSystemFont">NiParticleSystem</span> and
+<span class="NDLSystemFont">NiMeshParticleSystem</span>
+constructors, including the maximum number of particles, whether
+or not the particle system has colors or rotations, whether the
+particles are in world space or model space, and whether or not
+the bounding volume should be dynamically updated. Refer to the
+documentation for the <span class="NDLSystemFont">Create</span>
+functions for more information.</p>
+
+<a name="Quad_Generation" id="Quad_Generation"></a><h2>Quad Generation</h2>
+
+<p>The generation of renderable geometry from the per-particle
+data has been removed from each individual renderer in Gamebryo
+2.5. Instead, a "generator" <a href=
+"../../Programmer/NiMesh/Introduction_to_Mesh_Modifiers.htm">mesh
+modifier</a> is attached to the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object that is responsible for creating and updating data streams
+on that object that hold the renderable geometry for the
+particles. The generator that ships with Gamebryo 2.5 is the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span>
+class. This class generates a screen-facing, rotated quad for
+each particle, each of which is textured with a single texture
+coordinate set (whose coordinates range from 0.0 to 1.0 over the
+quad) and which may optionally contain vertex colors.</p>
+
+<p>When the generator mesh modifier is attached, it creates the
+appropriate data streams on the <span class=
+"NDLSystemFont">NiPSParticleSystem</span> object based on the
+per-particle data that is available (i.e., a vertex color stream
+is not added if no colors exist for the particles). The data in
+these streams is updated each frame to match the particle data.
+The Gamebryo renderers then simply render these data streams like
+any other data streams on <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> objects,
+requiring no special-case code. The main benefit of this is that
+arbitrary materials and shaders can be applied to particles,
+although particles generated by the <span class=
+"NDLSystemFont">NiPSFacingQuadGenerator</span> class are limited
+to a single texture coordinate set and screen-facing normals with
+no NBTs. If custom particle rendering behavior is desired, it can
+be achieved by creating a custom mesh modifier that will create
+and update the appropriate data streams. When applying materials
+and shaders to particle systems, the requirements of the shader
+must match the output of the generator mesh modifier.</p>
+
+<a name="Emitters" id="Emitters"></a><h2>Emitters</h2>
+
+<p>Emitters in the new particle system all derive from
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span>
+and are owned by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object itself. The <span class="NDLSystemFont">NiPSEmitter</span>
+objects hold initial parameters that should be used when
+particles are emitted. They also contain an <span class=
+"NDLSystemFont">EmitParticles</span> function that can be called
+directly to emit particles into the system. One change from
+Gamebryo 2.3 is that initial rotation information is stored by
+each emitter rather than in a separate <span class=
+"NDLSystemFont">NiPSysRotationModifier</span> object. This means
+that initial rotations can now differ per emitter.</p>
+
+<p>While it is certainly possible to programmatically emit
+particles with the <span class=
+"NDLSystemFont">NiPSEmitter::EmitParticles</span> function, in
+most cases particles will be automatically emitted by an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">NiPSEmitParticlesCtlr</a></span>
+time controller. This class is the equivalent of the <span class=
+"NDLSystemFont">NiPSysEmitterCtlr</span> class from Gamebryo 2.3
+and holds animation keys determining the emission rate and when
+emission should be active.</p>
+
+<a name="Colliders" id="Colliders"></a><h2>Colliders</h2>
+
+<p>Particle colliders in Gamebryo 2.5 derive from <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSCollider.htm">NiPSCollider</a></span>.
+They are not owned directly by the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object. Instead, they are owned by the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorCollidersStep.htm">NiPSSimulatorCollidersStep</a></span>
+simulator step. This class is one of the simulator steps that are
+added to the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span>
+mesh modifier during particle system creation. The <span class=
+"NDLSystemFont">NiPSSimulatorCollidersStep</span> simulator step
+uses a <a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a>
+kernel to detect and respond to all particle collisions. Its
+functionality replaces that of the <span class=
+"NDLSystemFont">NiPSysColliderManager</span> class in Gamebryo
+2.3. Adding a custom particle collider requires code to be added
+in multiple locations. See the <a href=
+"../../Programmer/NiParticle/Particle_System_Colliders.htm">Particle
+System Colliders</a> documentation for more
+information.</p>
+
+<a name="Forces" id="Forces"></a><h2>Forces</h2>
+
+<p>Rather than just being generic <span class=
+"NDLSystemFont">NiPSysModifier</span>-derived classes like in
+Gamebryo 2.3, particle forces in Gamebryo 2.5 all derive from the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSForce.htm">NiPSForce</a></span>
+class and are owned by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorForcesStep.htm">NiPSSimulatorForcesStep</a></span>
+simulator step. This simulator step uses a single <a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a>
+kernel to simulate all active particle forces, one after the
+other in the order in which they occur in its array of forces.
+Adding a custom particle force requires code to be added in
+multiple locations. See the <a href=
+"../../Programmer/NiParticle/Particle_System_Forces.htm">Particle
+System Forces</a> documentation for more information.</p>
+
+<a name="Porting_Custom_NiPSysModifier_Classes" id="Porting_Custom_NiPSysModifier_Classes"></a><h2>Porting Custom NiPSysModifier Classes</h2>
+
+<p>The Gamebryo 2.3 <span class=
+"NDLSystemFont">NiPSysModifier</span> system was very flexible,
+allowing custom modifier classes to be derived that could perform
+arbitrary operations on particles. Since all particle simulation
+has been moved into <a href=
+"../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a>
+kernels in Gamebryo 2.5 and adapted to execute on PS3 SPUs, the
+new system is a bit more rigid. Most old <span class=
+"NDLSystemFont">NiPSysModifier</span> classes have been separated
+out into <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSForce.htm">NiPSForce</a></span>,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSCollider.htm">NiPSCollider</a></span>,
+and <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitter.htm">NiPSEmitter</a></span>
+classes. The functionality of the rest of the modifiers has
+either been absorbed into the <span class=
+"NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">
+NiPSParticleSystem</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span>
+classes themselves or is performed via simulator steps derived
+from the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>
+class.</p>
+
+<p>If a custom <span class="NDLSystemFont">NiPSysModifier</span>
+class exists that must be ported to the new system and that does
+not fit into the force, collider, or emitter categories, the
+functionality of that modifier can be implemented in a custom
+simulator step class. The custom class should be derived from
+<span class="NDLSystemFont">NiPSSimulatorStep</span> and should
+be adapted to perform all of its work in a Floodgate kernel. Each
+simulator step must provide a set of input and output Floodgate
+streams that refer to shared particle system data, and the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span>
+mesh modifier will automatically re-map streams between simulator
+steps to ensure proper dependency analysis by
+Floodgate.</p>
+
+<a name="Running_Up_Particle_Systems" id="Running_Up_Particle_Systems"></a><h2>Running Up Particle Systems</h2>
+
+<p>The <span class=
+"NDLSystemFont">NiParticleSystem::GetMinBeginKeyTime</span>
+function from Gamebryo 2.3 does not exist in <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>.
+Instead, a more general version of that function exists as
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTimeController.htm">NiTimeController</a>::GetMinBeginKeyTime</span>.
+The <span class="NDLSystemFont">NiTimeController</span> version
+will return the minimum begin key time for all time controllers
+in the provided scene graph instead of just for particle system
+controllers. If your application is running up time for particle
+systems in order to ensure that particles exist by the time the
+first frame is rendered, then you will need to switch to using
+the <span class="NDLSystemFont">NiTimeController</span> function
+instead.</p>
+
+<a name="Bounding_Volume_Computation" id="Bounding_Volume_Computation"></a><h2>Bounding Volume Computation</h2>
+
+<p>Because Gamebryo 2.5 particle systems perform the simulation
+of their particles in Floodgate kernels that are kicked off
+during the update pass and only forced to complete after the
+particle system has been determined to be visible, there is now a
+one frame delay between emission of particles and reflection of
+those particles in the computed bounding volume. This is most
+evident at frame 0, when no particles currently exist in the
+system. In this case, the bounding volume initially has a zero
+radius because no particles exist. Particles are emitted on the
+first frame, but the bounding volume is not computed until after
+the simulation completes. Thus, the zero bounding volume is used
+to determine visibility for the particles on the first frame, and
+no particles are rendered. On all subsequent frames, the bounding
+volume will reflect the active particles from the previous
+frame.</p>
+
+<p>Even though the bounding volume has a one frame lag, the same
+is not true for rendering of the particles. If particles are
+emitted in a particular frame, they will be rendered in that
+frame (provided that the bounding volume from the last frame is
+within the view frustum).</p>
+
+<p>Applications that emit large numbers of particles in a single
+frame are most affected by this change. A workaround for this
+issue is to not use a dynamic bounding volume for your particle
+systems. Static bounding volumes for particle systems can be
+specified prior to export or set programmatically and do not
+exhibit any delay. Additionally, static bounding volumes are
+significantly cheaper, as they do not need to be recalculated
+each frame.</p>
+
+<a name="Particle_Age_Update_Changes" id="Particle_Age_Update_Changes"></a><h2>Particle Age Update Changes</h2>
+
+<p>The age of particles in Gamebryo 2.3 and earlier is updated at
+the beginning of a particle update step, so that all modifiers
+that run on the particles have the updated age. The behavior has
+changed in Gamebryo 2.5 to update particles at the end of an
+update step, so that the simulator steps all operate with the
+previous age. The result is that some effects that depend on the
+particle age, such as grow/fade and particle color animations,
+are delayed by one frame.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

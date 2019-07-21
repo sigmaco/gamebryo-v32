@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Nodes and 3ds Max</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Nodes and 3ds Max</h1>
+
+<p>The Gamebryo Max plug-in supports Nodes by adding a Gamebryo
+NiNode to the scene graph. This NiNode serves the same function
+as a Node in that it contains position, rotation, and uniform
+scale. Just as Nodes can be linked together to form a hierarchy,
+Gamebryo NiNodes are linked together to form a matching
+hierarchy. Usually, when an object is created in Max two objects
+are actually created. The first object is a Node with all of the
+transforms for the object. The second object is the Max object
+itself (i.e. a Camera or PolyShape). Gamebryo will preserve this
+relationship by creating a corresponding NiNode with the
+corresponding NiObject (i.e. an NiCamera or NiMesh) as its first
+child.</p>
+
+<p>Due to the fact that Max Nodes can support non-uniform scale,
+all scales are pushed down to the leaves of the scene graph. A
+leaf in a scene graph is an NiNode or NiObject with no children.
+In the case of non-uniform scale, these units are pushed down
+into the vertices themselves for geometry. Please see the
+Animation documentation on <a href=
+"Position__Rotation__And_Scale.htm">Position, Rotation, And
+Scale</a> for more details.</p>
+
+<p>Additionally, the <a href=
+"../../Reference/Tool_Plug_ins/Scene_Graph_Optimization.htm">Gamebryo
+Optimization plug-in</a>, part of the <a href=
+"Scripting_the_Art_Pipeline_in_3ds_Max.htm">"Default Process
+Script"</a> used when exporting or viewing a
+file will attempt to compress the structure of the scene graph.
+This will involve deleting nodes with no children, merging the
+parent and child if there is only one child, and merging
+complementary geometry if they are siblings. This behavior can be
+overridden by adding an <a href=
+"Quick_Reference.htm">"NiOptimizeKeep"</a> tag to the User
+Defined Properties of the Node. Alternatively, the <a href=
+"NiOptimization_Helper.htm">NiOptimization toolbar utility</a>
+can be used to set the tag.</p><a name="Billboard_Nodes" id=
+"Billboard_Nodes"></a>
+
+<h2>Billboard_Nodes</h2>
+
+<p>Gamebryo allows the user to specify a billboard node using the
+user-defined properties of a Node in Max. A billboard node will
+orient itself to face the camera within certain constraints.
+These constraints and a utility to set them up are discussed in
+the documentation for the <a href=
+"Billboard_Utilities_Panel.htm">Billboard Utilities Panel</a>. To
+see examples of this node type, please look at the samples
+documentation for <a href=
+"Billboard_and_billboardUp.htm">Billboard and
+billboardUp</a>.</p><a name="Sort_Adjust_Nodes" id=
+"Sort_Adjust_Nodes"></a>
+
+<h2>Sort_Adjust_Nodes</h2>
+
+<p>In some cases an artist may wish to override how alpha blended
+objects are sorted in the scene. In Gamebryo (when using the
+NiAlphaAccumulator, which is enabled by most applications and
+Gamebryo tools), alpha blended objects are rendered after all of
+the opaque objects have been rendered, and the alpha-blended
+objects are drawn sorted from back to front when rendered. Since
+this sorting order is likely to change as the camera moves
+through the world, visual pops or other anomalies may be seen in
+the alpha blended objects in some cases. This is especially true
+in the cases where several alpha blended objects are layered on
+top of each other, as in hair or terrain. Please see the samples
+documentation, <a href="Sort_Adjust_Nodes.htm">Sort Adjust
+Nodes</a> for Max file examples of this.</p>
+
+<p>To specify an NiSortAdjustNode, create a new dummy node and
+edit the User-Defined Properties for the new dummy node to
+contain the text "NiSortAdjustNode = XXXXXX". The string,
+"XXXXXX", should be one of the following options listed in the
+sections below.</p>
+
+<h3>SORTING_OFF</h3>
+
+<p>When the string value is SORTING_OFF, the resulting
+NiSortAdjustNode turns off sorting for all of the child geometry
+objects of the node. Children will be blended into the scene the
+order they are stored in the parent node. This is very effective
+for artists to control the blending of layers of hair or terrain
+textures. Almost all NiSortAdjustNodes inserted into a scene
+graph will use this mode, as it gives the artist direct control
+over the sorting of the objects under the node</p>
+
+<p>Note that an NiSortAdjustNode set to SORTING_OFF will override
+any NiSortAdjustNodes below it, as discussed below under
+SORTING_INHERIT.</p>
+
+<h3>SORTING_INHERIT</h3>
+
+<p>When the string value is SORTING_INHERIT, the NiSortAdjustNode
+causes its children to inherit the sorting behavior of its parent
+(on or off). Since this flag does not change the behavior of
+sorting as-is, it may seem a strange mode to specify. However,
+this mode will insert an NiSortAdjustNode into the scene during
+export. While the default behavior of this node will be to act
+like any other scene graph node, the programmer has the ability
+to find this NiSortAdjustNode from within the application code,
+and can change it to SORTING_OFF as needed. This mode is normally
+useful only in conjunction with special application code</p>
+
+<p>Note that this mode is <em>not</em> equivalent to turning
+sorting back on - if this NiSortAdjust node is a child (either
+immediate or deep down in the tree) of a another NiSortAdjustNode
+that is set to SORTING_OFF, then the children of this
+SORTING_INHERIT node will also have sorting turned off. As a
+result, it is rarely useful to nest NiSortAdjustNodes.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Camera Code</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Camera Code</h1>
+
+<p>The <span class="NDLSystemFont">CubeMapCamera</span> object is
+derived from <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderStep.htm">NiRenderStep</a></span>
+so that it can easily be used in the Gamebryo <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a>. As such, it does the bulk of its work
+in its <span class="NDLSystemFont">PerformRendering</span>
+function.</p>
+
+<h2>Create</h2>
+
+<p>This function sets all of the values that will be needed to
+render the cube map faces later:</p>
+
+<p><b>How to render:</b> A camera is created and set to a
+90-degree (total) field of view, which is the correct field of
+view for a cube map face (as an entire 360 degree circle will be
+covered by four cube faces).</p>
+
+<p><b>What to render to:</b> The given renderer and rendered cube
+map object are used as the target. The given renderer and the
+given rendered cube map are stored for later use</p>
+
+<p><b>What to render:</b> The given scene graph object is cached
+for later culling and rendering.</p>
+
+<p><b>Where to render from:</b> The given scene graph reference
+object is saved, so that its world transform may be queried later
+as the camera position.</p>
+
+<p><b>How often to render:</b> The number of cube faces that
+should be rendered per frame is stored. A full redraw of the cube
+map would require six renderings per frame, but this is often too
+expensive in practice, so applications may choose to re-render
+only a subset each frame. Rendering more cube faces per frame
+will result in each rendered cube face being more up-to-date, but
+can lower application performance.</p>
+
+<p>An array of render target groups is also created. One render
+target group per cube face is created. These will be used later
+when rendering the cube faces.</p>
+
+<h2>PerformRendering</h2>
+
+<p><span class="NDLSystemFont">PerformRendering</span> is the
+most important function in the <span class=
+"NDLSystemFont">CubeMapCamera</span> class. It is called each
+frame by the frame rendering system to update some subset of the
+cube faces in an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span>.
+It handles positioning and aiming a camera that represents the
+particular cube face, as well as culling and rendering the cube
+map scene from the view of that camera. The class keeps track of
+the last cube map face that was rendered, so that if the number
+of cube faces rendered in a frame is fewer than the entire cube
+map, the function will resume where it left off in the previous
+call, to ensure that the most out-of-date faces are always the
+next to be rendered.</p>
+
+<p>Outside of the loop, the function sets the left-right swap on
+the renderer, as cube map faces are left-handed as viewed from
+the center of the cube map (i.e. the camera location). It also
+moves the camera so that it is centered about the reference
+object.</p>
+
+<p>For each face that is to be rendered in a given call, the
+camera is rotated to face the correct direction and up vector for
+that cube face (assuming that the cube map is in world space) and
+is updated. Then, the current cube face is set in the cube map
+and the render target group that represents that cube face is
+opened as the current render target (clearing in the process).
+Finally, the scene is culled and the face is rendered using
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDrawSceneUtility.htm">NiDrawScene</a></span>.</p>
+
+<p>After all faces are rendered, the renderer is set back to
+normal right-handed rendering and the main screen is set as the
+render target.</p>
+
+<h2>Get/SetCamerasPerUpdate</h2>
+
+<p>Retrieves and sets the number of cube faces that a call to
+<span class="NDLSystemFont">RenderFaces</span> will update. The
+minimum number of faces to render is one per frame, and rendering
+six per frame will result in the entire cube map being rendered
+each frame.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

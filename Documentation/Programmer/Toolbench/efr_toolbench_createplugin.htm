@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a Plug-in Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a Plug-in Overview</h1>
+
+<p>There are many important steps involved in creating a plug-in
+for Toolbench. This document is intended to outline the most
+common steps involved in creating a plug-in.</p>
+
+<h2>Create a new Visual Studio project</h2>
+
+<p>Start by creating a new Visual Studio 2008 C# class library
+project. The project can build directly into a subdirectory under
+the Toolbench/Plugins folder or can be copied to that location as
+a post-build step. The plug-in project will need references to
+various Toolbench assemblies. These assemblies are copied into a
+local References folder during a pre-build step. This allows us
+to use the correct assemblies for the current build (Debug,
+Release, Shipping). Below is our pre-build step:</p>
+
+<pre>
+if not exist $(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Emergent.Toolbench.dll goto failure
+
+if not exist "$(SolutionDir)References" mkdir "$(SolutionDir)References"
+
+copy /Y $(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Emergent.Toolbench.dll "$(SolutionDir)References"
+copy /Y $(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\Emergent.Toolbench.UI\Emergent.Toolbench.UI.dll "$(SolutionDir)References"
+copy /Y $(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\Emergent.Toolbench.UI.Workbench\Emergent.Toolbench.UI.Workbench.dll "$(SolutionDir)References"
+    
+:failure
+</pre>
+
+<p>Use the Add Reference dialog to browse for the copied assemblies.
+This will establish relative paths that can be shared with other developers.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                When specifying references to Toolbench plug-in
+                assemblies, the Copy Local property should be set
+                to False on the referenced assembly.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Next, add a new file to the project called "plugin.xml". This
+is our <a href=
+"efr_toolbench_highlevel.htm#PluginManifest">plug-in
+manifest.</a> Below is the source xml code in the plug-in.xml
+file.</p>
+
+<pre>
+      &lt;?xml version="1.0" encoding="utf-8" ?&gt;
+        &lt;plugin
+          xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+          name="MyPlugin"
+          id="MyCompany.Plugins.MyPlugin"
+          version="1.0.0.0"
+          provider="MyCompany"
+          class="MyCompany.MyPlugin.Plugin"&gt;
+
+          &lt;requires&gt;
+            &lt;import plugin="Emergent.Toolbench.UI.Workbench"/&gt;
+          &lt;/requires&gt;
+
+          &lt;runtime&gt;MyCompany.Plugins.MyPlugin.dll&lt;/runtime&gt;
+
+        &lt;/plugin&gt;
+      
+</pre>
+
+<p>Finally, create a post-build step to copy our built plug-in
+assembly and plug-in manifest file to the Toolbench plug-ins
+directory. Below is our post-build step.</p>
+
+<pre>
+if not exist "$(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\$(TargetName)" mkdir "$(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\$(TargetName)"
+  
+copy /Y "$(TargetPath)" "$(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\$(TargetName)"
+copy /Y "$(ProjectDir)\plugin.xml" "$(EMERGENT_PATH)\SDK\Win32\Bin\VC90\$(ConfigurationName)\Plugins\$(TargetName)"
+</pre>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                If your plug-in includes icons specified in the
+                manifest file for things like menus and toolbars,
+                these should be copied in the post-build step as
+                well.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Creating the plug-in entry point</h2>
+
+<p>As mentioned in the xml comments in our plug-in manifest, we
+have specified an <a href="efr_toolbench_highlevel.htm">entry
+point class</a> called MyCompany.MyPlugin.Plugin. We need to
+create the referenced class. Therefore, create a new C# source
+file called MyPlugin.cs. Below is the source code for our plug-in
+entry point.</p>
+
+<pre>
+    namespace MyCompany.MyPlugin 
+    { 
+        public class Plugin : PluginBase 
+        { 
+            private static IPluginDescriptor m_descriptor; 
+            private static IPluginResources m_resources; 
+            
+            public override void Start() 
+            { 
+                m_descriptor = Descriptor; 
+                m_resources = Resources; 
+                
+                // Display a log message to show our plug-in got loaded.
+                Logger.Info("Hello from my new custom plug-in!!!!"); 
+            } 
+            
+            public static IPluginDescriptor StaticDescriptor 
+            { 
+                get { return m_descriptor; } 
+            } 
+            
+            public static IPluginResources StaticResources 
+            { 
+                get { return m_resources; } 
+            } 
+        } 
+    }
+    
+</pre>
+
+<p>Now that we have our plug-in entry point defined, build the
+project. Your plug-in and plug-in manifest should be in the
+Toolbench plug-ins folder. In order to test our new plug-in, fire
+up Toolbench.</p>
+
+<p>Once Toolbench is up and running, open the plug-in browser
+using the View-&gt;Plug-in Browser menu command. Once the plug-in
+browser is visible, scroll down until you see the new plug-in we
+just created. Make sure the Output View is visible and the "Info"
+box is enabled. Double-click our new plug-in and a log message
+should be displayed in the Output View. Below is a screenshot of
+Toolbench after following the steps above.</p>
+
+<div class="FigureContainer">
+    <img src="images/tb_plugin_browser.jpg" width="640" height=
+    "631" alt="tb_plugin_browser (125K)">
+
+    <p class="FigureCaption">Toolbench with our custom
+    plug-in</p>
+</div>
+
+<h2>Adding a custom view</h2>
+
+<p>Next, let's add a view for our custom plug-in. Views are
+stored in Perspectives and automatically managed by Toolbench
+depending on the state of the application, what document is
+currently opened and so forth. See <a href=
+"../../Tools/Toolbench/tb_fundmtls_ui_main.htm#Perspectives">Toolbench
+Perspectives</a> for more information. For the purposes of this
+tutorial, we are going to add a new view to the global
+perspective.</p>
+
+<p>First, let's modify our plug-in manifest file. We need to add
+extensions to a couple extension points that <a href=
+"../../Tools/Toolbench/tb_fundmtls_plugin_architecture.htm#Workbench">
+Workbench</a> exposes in order to add views. Below is the
+resulting manifest file with the changes in bold.</p>
+
+<pre>
+    &lt;xml version="1.0" encoding="utf-8"&gt;
+    &lt;plugin
+      xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"
+      name="MyPlugin"
+      id="MyCompany.Plugins.MyPlugin"
+      version="1.0.0.0"
+      provider="MyCompany"
+      class="MyCompany.MyPlugin.Plugin"&gt;
+
+      <b>
+      &lt;!-- Using the View extension point defined in the Workbench plug-in, add a new view. --&gt;
+      &lt;extension point="Emergent.Toolbench.Workbench.View"&gt;
+        &lt;view id="MyCompany.MyPlugin.MyView"
+              name="My Custom View"
+              class="MyCompany.MyPlugin.MyView"
+              default-dock="DockBottom"/&gt;
+      &lt;/extension&gt;
+
+      &lt;!-- Once we defined a view, we need to map it to a perspective. --&gt;
+      &lt;extension point="Emergent.Toolbench.Workbench.PerspectiveMapping"&gt;
+        &lt;mapping perspectiveId="Emergent.Toolbench.Workbench.GlobalPerspective"&gt;
+          &lt;view id="MyCompany.MyPlugin.MyView"/&gt;
+        &lt;/mapping&gt;
+      &lt;/extension&gt;
+      </b>
+
+      &lt;requires&gt;
+        &lt;import plugin="Emergent.Toolbench.UI.Workbench"/&gt;
+      &lt;/requires&gt;
+
+      &lt;runtime&gt;MyCompany.Plugins.MyPlugin.dll&lt;/runtime&gt;
+
+    &lt;/plugin&gt;
+    
+    
+</pre>
+
+<p>Next, we need to create a new C# class. Note, when we declared
+the extension mapped to the "Emergent.Toolbench.Workbench.View"
+extension point, we assigned the "class" XML attribute to be
+"MyCompany.MyPlugin.MyView". This is class we need to create. It
+is automatically created by Toolbench when an instance of the
+class is required.</p>
+
+<p>We are going to create a .NET Winforms view. First, create a
+new form. By default, Visual Studio creates a class that inherits
+from "System.Windows.Forms.Form". Modify the class to inherit
+from Emergent.Toolbench.UI.Workbench.AbstractView. Note, the form
+still functions correctly in the visual designer. Make sure the
+class is called "MyView" and is in the "MyCompany.MyPlugin"
+namespace.</p>
+
+<p>Build the plug-in and launch Toolbench. Since we added our new
+view to the global perspective it should be docked at the bottom
+of the Toolbench window. See the screenshot below.</p>
+
+<div class="FigureContainer">
+    <img src="images/tb_plugin_customview.png" width="640"
+    height="388" alt="tb_plugin_customview (12K)">
+
+    <p class="FigureCaption">Toolbench with our custom view</p>
+</div>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Windows Presentation Foundation (WPF) is strongly encouraged for developing
+                Toolbench UI. However, WPF controls should be hosted in Forms for compatibility
+                with the docking system.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                If you look at the Output View after loading
+                Toolbench, you'll see the message we logged
+                during our plug-in startup. You'll also notice
+                our plug-in has been loaded, hence the view is
+                visible. Since we mapped our view to the global
+                perspective, the Workbench plug-in automatically
+                causes our plug-in to load since a global view
+                was present.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>
