@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiObject</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiObject</p>
+
+<p class="NDLRefParentage">: public <u><span><a href=
+"NiRefObject.htm">NiRefObject</a></span></u></p>
+
+<p class="NDLRefHeaderFile">&lt;NiObject.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>A class (not strictly abstract, but abstract in practice)
+supporting cloning, streaming, and other basic services used by
+most Gamebryo classes. This class is described at length in the
+<a href=
+"../../Programmer/Object_Systems/Introduction_to_Object_Systems.htm">
+object system documentation</a>. A reference is provided here
+along with links to specific sections of the <a href=
+"../../Programmer/Object_Systems/Introduction_to_Object_Systems.htm">
+object system documentation</a>.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>There are no public constructors for <span class=
+"NDLSystemFont">NiObject</span>. All instances should be created
+via the streaming system creation functions although generally an
+application will create subclasses of <span class=
+"NDLSystemFont">NiObject</span>.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p>Note that unlike some other Gamebryo class references, some of
+the member functions listed below are protected. They are listed
+to provide insight to the user on what methods to override when
+creating subclasses of <span class=
+"NDLSystemFont">NiObject</span>. Protected members will be
+referenced as such in the documentation to avoid
+confusion.</p><a name="Cloning" id="Cloning"></a>
+
+<p class="NDLRefHead2">Cloning</p>
+
+<p>Gamebryo's cloning system provides capabilities for cloning a
+scene graph. For full information on the cloning system, please
+refer to the <a href=
+"../../Programmer/Object_Systems/Cloning_Internals.htm">cloning
+internals documentation.</a></p>
+
+<p class="NDLRefMemberFunction">NiObject* Clone()</p>
+
+<p class="NDLRefMemberDescription">This function should be called
+to create a clone of an <span class=
+"NDLSystemFont">NiObject</span> based object. It will call the
+<span class="NDLSystemFont">CreateClone</span> method and
+<span class="NDLSystemFont">CopyMembers</span> methods listed
+below to insure that proper data is shared versus duplicated.</p>
+
+<p class="NDLRefMemberFunction">NiObject* Clone(<a href=
+"NiCloningProcess.htm">NiCloningProcess</a>&amp; kCloning)</p>
+
+<p class="NDLRefMemberDescription">This function operates exactly
+as <span class="NDLSystemFont">Clone()</span> except that users
+can modify the <span class="NDLSystemFont"><a href=
+"NiCloningProcess.htm">NiCloningProcess</a></span> object before
+it is passes in insuring accurate copying of names in
+multithreaded applications.</p>
+
+<p class="NDLRefMemberFunction">NiObjectPtr CreateDeepCopy()</p>
+
+<p class="NDLRefMemberDescription">Create a full deep copy of the
+<span class="NDLSystemFont">NiObject</span>. No data will be
+shared.</p>
+
+<p class="NDLRefMemberFunction">virtual NiObject* CreateClone
+(<a href="NiCloningProcess.htm">NiCloningProcess</a>&amp;
+kCloning)</p>
+
+<p class="NDLRefMemberDescription">This public member is called
+by the cloning system to create a new object. It is typically a
+small function that calls the null constructor of the derived
+class and <span class="NDLSystemFont">CopyMembers</span>.
+<span class="NDLSystemFont">CreateClone</span> is usually
+declared via the <span class=
+"NDLSystemFont">NiDeclareClone</span> macro.</p>
+
+<p class="NDLRefMemberFunction">NiObject* CreateSharedClone
+(<a href="NiCloningProcess.htm">NiCloningProcess</a>&amp;
+kCloning)</p>
+
+<p class="NDLRefMemberDescription">This public member is called
+by the cloning system to create a clone of an object which may be
+potentially shared amongst objects. The shared object still needs
+to be cloned so that it is not shared with the original object,
+but only needs to be cloned once so that all the new clones can
+share that clone. This member function is a convenience function
+to check if an object has already been cloned. If so, then it
+just returns that clone and will not create another. If it does
+not exist, then this function will do the same thing as
+<span class="NDLSystemFont">CreateClone()</span>.</p>
+
+<p class="NDLRefMemberFunction">void CopyMembers (NiObject*
+pDest, <a href="NiCloningProcess.htm">NiCloningProcess</a>&amp;
+kCloning)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">CopyMembers</span> is a private function that is
+used by the cloning system to copy and share data on a cloned
+object. It is not virtual but should generally be defined in
+subclasses. <span class="NDLSystemFont">CopyMembers</span> is
+usually declared via the <span class=
+"NDLSystemFont">NiDeclareClone</span> macro.</p><a name=
+"Streaming" id="Streaming"></a>
+
+<p class="NDLRefHead2">Streaming</p>
+
+<p>A brief description of each streaming function is provided
+here. Full descriptions of each function can be found in the
+<a href=
+"../../Programmer/Object_Systems/Streaming_Internals.htm">streaming
+internals documentation</a>. These functions are called by the
+streaming system and should not be called by application code.
+They are provided as reference for developers creating streamable
+classes. These functions are usually declared via the
+<span class="NDLSystemFont">NiDeclareStream</span> or
+<span class="NDLSystemFont">NiDeclareAbstractStream</span> macros
+in <span class="NDLSystemFont">NiStreamMacros.h</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual void LoadBinary(<a href=
+"NiStream.htm">NiStream</a>&amp; kStream)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">LoadBinary</span> is called on newly created
+objects to load their data from disk. The order of loaded objects
+should match the order in which objects are saved with
+<span class="NDLSystemFont">SaveBinary</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual void LinkObject(<a href=
+"NiStream.htm">NiStream</a>&amp; kStream)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">LinkObject</span> is called by the streaming
+system to resolve links to other objects once it can be
+guaranteed that all objects have been loaded.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+PostLinkObject(<a href="NiStream.htm">NiStream</a>&amp;
+kStream)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">PostLinkObject</span> is called by the streaming
+system to resolve any tasks that require other objects to be
+correctly linked. It is called by the streaming system after
+<span class="NDLSystemFont">LinkObject</span> has been called on
+all streamed objects.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+RegisterStreamables(<a href="NiStream.htm">NiStream</a>&amp;
+kStream)</p>
+
+<p class="NDLRefMemberDescription">When an object is inserted
+into a stream, it calls register streamables to make sure that
+any contained objects or objects linked in a scene graph are
+streamed as well.</p>
+
+<p class="NDLRefMemberFunction">virtual void SaveBinary(<a href=
+"NiStream.htm">NiStream</a>&amp; kStream)</p>
+
+<p class="NDLRefMemberDescription">The streaming system uses this
+function to save objects to disk. The order of saved objects
+should match the order of loaded objects in <span class=
+"NDLSystemFont">LoadBinary</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool IsEqual(NiObject*
+pkObject)</p>
+
+<p class="NDLRefMemberDescription">The IsEqual function is purely
+for debugging, and the name slightly misleading. See the
+streaming internals documentation.</p>
+
+<p class="NDLRefMemberFunction">static NiObject*
+CreateObject()</p>
+
+<p class="NDLRefMemberDescription">This static function is
+registered by the streaming system to create instances of
+objects. It is a very simple function that returns a new instance
+of the object type.</p><a name="CloningBehavior" id=
+"CloningBehavior"></a>
+
+<p class="NDLRefHead2">CloningBehavior</p>
+
+<p>This enumeration determines the behavior when cloning.</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Enumeration</th>
+
+            <th>Meaning</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLONE_SHARE</span></td>
+
+            <td>Share the original data with the clone.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLONE_COPY</span></td>
+
+            <td>Copy the original data into the clone.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLONE_BLANK_COPY</span></td>
+
+            <td>Create uninitialized data in the clone of the
+            same size as the original.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Commonly Overridden Methods in NiApplication</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Commonly Overridden Methods in NiApplication</h1>
+
+<p>Three <span class="NDLSystemFont"><a href=
+"NiApplication.htm">NiApplication</a></span> virtual functions, <span class=
+"NDLSystemFont">Initialize</span>, <span class=
+"NDLSystemFont">Terminate</span>, and <span class=
+"NDLSystemFont">OnIdle</span>, can be overridden by the application to provide
+specific behavior or to prevent default behavior.</p>
+
+<h2>Initialization</h2>
+
+<p class="NDLRefMemberFunction">virtual bool Initialize()</p>
+
+<p class="NDLRefMemberDescription">The return value indicates success
+(<span class="NDLSystemFont">true</span>) or failure (<span class=
+"NDLSystemFont">false</span>). Common causes of failure include failure to
+create a renderer and failure to create a scene because a file needed by the
+streaming system cannot be found. The default version of <span class=
+"NDLSystemFont">Initialize</span> handles tasks such as renderer creation,
+scene creation, etc. Applications that override <span class=
+"NDLSystemFont">Initialize</span> should call <span class=
+"NDLSystemFont">NiApplication::Initialize</span> first and check to see if that
+call is successful before proceeding. More complicated applications might not
+call the base class <span class="NDLSystemFont">Initialize</span> at all. Such
+applications should consult the source code for <span class=
+"NDLSystemFont">NiApplication::Initialize</span> to make sure they are handling
+all tasks handled by the base-class version.</p>
+
+<p class="NDLRefMemberFunction">virtual bool CreateScene()</p>
+
+<p class="NDLRefMemberDescription">In simple cases, overloading only
+<span class="NDLSystemFont">CreateScene</span> is sufficient. Initialize calls
+<span class="NDLSystemFont">CreateScene</span> as one of several steps.</p>
+
+<p class="NDLRefMemberFunction">virtual bool CreateRenderer()</p>
+
+<p class="NDLRefMemberDescription">The default implementation of <span class=
+"NDLSystemFont">CreateRenderer</span> in <span class=
+"NDLSystemFont">NiApplication</span> uses the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiSettingsDialog/NiSettingsDialog_Introduction.htm">NiSettingsDialog</a></span>
+system to allow users to customize the renderer creation options. Most end-user
+applications will want to implement a different system for selecting and
+creating a renderer.</p>
+
+<h2>Termination</h2>
+
+<p class="NDLRefMemberFunction">virtual void Terminate()</p>
+
+<p class="NDLRefMemberDescription">The default implementation assigns
+<span class="NDLSystemFont">NULL</span> to the smart pointers held by
+<span class="NDLSystemFont">NiApplication</span> to force the final decrement
+on reference counts so that the objects are deleted. To allow objects to be
+deleted in the appropriate order, applications that override <span class=
+"NDLSystemFont">Terminate</span> should delete their own objects before calling
+<span class="NDLSystemFont">NiApplication::Terminate</span>.</p>
+
+<h2>Idle Loop</h2>
+<pre>
+// MeasureTime returns false if the frame rate is over the pre-set limit
+if (!MeasureTime())
+    return;
+ResetFrameTimings();
+
+BeginUpdate();
+UpdateFrame();
+EndUpdate();
+if (m_bUseFrameSystem || m_spRenderer != NULL)
+{
+    BeginFrame();
+    RenderFrame();
+    EndFrame();
+    DisplayFrame();
+    UpdateVisualTrackers();
+}
+UpdateMetrics();
+m_iClicks++;
+if ((m_fAccumTime &gt;= m_fAppEndTime) &amp;&amp; (m_fAppEndTime != NI_INFINITY))
+{
+    QuitApplication();
+}
+</pre>
+
+<p>The <span class="NDLSystemFont">OnIdle</span> method allows the application
+to do real-time work. The default implementation keeps track of system time,
+calls the virtual functions that handle user input, measures the frame rate,
+clears the backbuffer and z-buffer, and renders the scene.</p>
+
+<p>Most applications do not override <span class="NDLSystemFont">OnIdle</span>
+directly but instead override select sub-functions. Most often, the
+<span class="NDLSystemFont">NiApplication</span> version of the function should
+be called by the derived implementation to maintain default functionality.</p>
+
+<p>The functionality of various methods may be different depending on whether
+or not the <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame rendering system</a> is being used (i.e., whether or not the
+bUseFrameSystem constructor parameter is true). See the <a href=
+"NiApplication_and_the_Frame_Rendering_System.htm">NiApplication and the Frame
+Rendering System</a> section for more information about what is different when
+the frame rendering system is enabled.</p>
+
+<p class="NDLRefMemberFunction">virtual void BeginUpdate()</p>
+
+<p class="NDLRefMemberDescription">Begins any update timing. Almost never
+overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void UpdateFrame()</p>
+
+<p class="NDLRefMemberDescription">Updates input and measures frame rate. This
+is the appropriate place to update scene graph nodes and perform any other
+time-varying logic an application requires.</p>
+
+<p class="NDLRefMemberFunction">virtual void EndUpdate()</p>
+
+<p class="NDLRefMemberDescription">Stores the results of update timing. Almost
+never overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void BeginFrame()</p>
+
+<p class="NDLRefMemberDescription">Opens the frame for rendering. This function
+does nothing if the frame rendering system is being used. Almost never
+overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void RenderFrame()</p>
+
+<p class="NDLRefMemberDescription">The operations performed by this function
+vary depending on whether or not the <span class=
+"NDLSystemFont">NiApplication</span> instance is using the frame rendering
+system (i.e., whether or not the <span class=
+"NDLSystemFont">bUseFrameSystem</span> constructor parameter is true).</p>
+
+<p class="NDLRefMemberDescription">If not using the frame rendering system,
+this function first calls <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::BeginUsingDefaultRenderTargetGroup</span>
+to open the rendering frame. It then calls <span class=
+"NDLSystemFont">CullFrame</span> to generate an array of visible geometry and
+<span class="NDLSystemFont">BeginRender</span>. It next renders the array of
+visible geometry, calls <span class="NDLSystemFont">RenderScreenItems</span> to
+render screen elements and screen textures, and calls <span class=
+"NDLSystemFont">EndRender</span>. <span class=
+"NDLSystemFont">RenderVisualTrackers</span> is then called, and the render
+target group is closed.</p>
+
+<p class="NDLRefMemberDescription">If the frame rendering system is used, the
+current sorter for the renderer is set on the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAccumulatorProcessor.htm">NiAccumulatorProcessor</a></span>
+for the main scene, and <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a>::Draw</span> is
+called on <span class="NDLSystemFont">m_spFrame</span>.</p>
+
+<p class="NDLRefMemberDescription">If this function is overridden by a derived
+class, it should retain the proper functionality based on whether or not the
+frame rendering system is being used.</p>
+
+<p class="NDLRefMemberFunction">virtual void CullFrame()</p>
+
+<p class="NDLRefMemberDescription">Culls the default scene, with the default
+camera, storing results into the visible list. This function is not called if
+the frame rendering system is being used. Almost never overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void BeginCull()</p>
+
+<p class="NDLRefMemberDescription">Begins any cull timing. Almost never
+overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void EndCull()</p>
+
+<p class="NDLRefMemberDescription">Stores the results of cull timing. Almost
+never overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual BeginRender()</p>
+
+<p class="NDLRefMemberDescription">Begins any render timing. Almost never
+overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual EndRender()</p>
+
+<p class="NDLRefMemberDescription">Stores the results of render timing. Almost
+never overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void RenderScreenItems()</p>
+
+<p class="NDLRefMemberDescription">Renders screen items. This function is not
+called if the frame rendering system is being used. Most applications will
+override this function to add additional rendering calls. These calls will
+happen after the rendering of the default scene. At the end of the overridden
+function, applications should call <span class=
+"NDLSystemFont">NiApplication::RenderScreenItems()</span> to maintain default
+screen item rendering functionality. The default implementation of this
+function renders all items in the <span class=
+"NDLSystemFont">NiApplication</span> mesh screen elements collection.</p>
+
+<p class="NDLRefMemberFunction">virtual void EndFrame()</p>
+
+<p class="NDLRefMemberDescription">Closes the frame for rendering. This
+function does nothing if the frame rendering system is being used. Almost never
+overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void DisplayFrame()</p>
+
+<p class="NDLRefMemberDescription">Displays the frame. If the frame rendering
+system is being used, <span class="NDLSystemFont">NiRenderFrame::Display</span>
+is called on <span class="NDLSystemFont">m_spFrame</span>. Otherwise,
+<span class="NDLSystemFont">NiRenderer::DisplayFrame</span> is called. Almost
+never overridden.</p>
+
+<p class="NDLRefMemberFunction">virtual void UpdateVisualTrackers()</p>
+
+<p class="NDLRefMemberDescription">Stores any pertinent statistics gathered
+from this frame.</p>
+
+<p class="NDLRefMemberFunction">virtual void UpdateMetrics()</p>
+
+<p class="NDLRefMemberDescription">Updates the <span class=
+"NDLSystemFont"><a href=
+"../../Programmer/NiMetrics/Introduction.htm">NiMetrics</a></span> system
+with information gathered from this frame.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

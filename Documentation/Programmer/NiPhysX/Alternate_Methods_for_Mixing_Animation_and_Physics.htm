@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Alternate Methods for Mixing Animation and Physics</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Alternate Methods for Mixing Animation and Physics</h1>
+
+<h2>Key-frame Guidance</h2>
+
+<p>The other pages in this section describe the use of 
+ Gamebryo's animation system and physics so that the physics input and 
+ key-framed input can be combined through blending to produce the final 
+ motion. While this is a good way to ensure smooth transitions between 
+ different types of control, it is not always the best approach.</p>
+
+<p>Consider a situation in which you want the key-frames 
+ to be a "guide" to the motion, but that physics should always 
+ have the final say. For example, a character that is walking and hits 
+ a log with their feet should stumble and maybe fall, even if the key-frames 
+ say to keep walking as if the log were not there. Blending is not a good 
+ way to achieve this because it is hard to set the blend weights to produce 
+ reasonable motion.</p>
+
+<p>To achieve a more realistic guide behavior, use two 
+ copies of the skeleton. One is key-framed controlled, as usual, and serves 
+ as the reference motion: what you want the character to try to do. The 
+ other skeleton is physically controlled using forces that are derived 
+ from the reference skeleton. These forces try to pull the physics skeleton 
+ into strict alignment with the animated skeleton, but if something prevents 
+ the animation from happening, such as an obstacle, then the forces produce 
+ a decent physical reaction instead. You can also use forces when the character 
+ is falling to push it toward a known resting pose, so that the "get-up" 
+ animation will start correctly.</p>
+
+<p>Gamebryo does not provide any classes to &nbsp;help 
+ with this situation, but it can certainly be arranged. The challenge is 
+ in computing the forces between the reference and the physics skeleton. 
+ They need to be strong to keep physics following the animation, but to 
+ strong and they will produce non-physical motion when the character hits 
+ an obstacle. Most likely, you will need to modify the force strength based 
+ on feedback from the environment. For example, use kinematic control (infinite 
+ force) until the character touches something, then ramp the forces down 
+ and up again while the character responds physically and then recovers. 
+ It is this perceived need for adaptive forces that discourages the Gamebryo 
+ team from providing code to support guided physics control.</p>
+
+<h2>Instant Transitions</h2>
+
+<p>In some cases the blending mechanism may be overkill. 
+ For example, consider a helicopter rotor that can be broken due to a missile 
+ hit. The rotor is animated most of the time, but must transition to physics 
+ when damaged. While this can be easily set up using blending to perform 
+ the transition, it is simpler to just stop animation and start physics 
+ immediately. The most important thing in instant transitions is to set 
+ the initial velocity and angular velocity so that they match, as closely 
+ as possible, the animated velocities at the time of the switch.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

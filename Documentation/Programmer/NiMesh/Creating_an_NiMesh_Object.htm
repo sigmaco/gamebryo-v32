@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating an NiMesh Object</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating an NiMesh Object</h1>
+
+<p>This document is intended to address the most common 
+ method for creating an <span class="NDLSystemFont">NiMesh </span>programmatically. 
+ This document does not address <span class="NDLSystemFont">NiDataStream</span> 
+ creation in detail, but this topic is addressed in the <a href="NiDataStream_Primer.htm">NiDataStream 
+ Primer</a> topic. </p>
+
+<p>The <a href="../../Learn/Demos/Introduction_to_the_MeshCreation_Demo.htm">MeshCreation 
+ Demo</a> provides a working sample of the techniques discussed in this 
+ article.</p>
+
+<a name=Manual_NiMesh_Construction></a><h2>Programmatic NiMesh 
+ Construction</h2>
+
+<p>This section will explore the creation of a single triangle 
+ based mesh with vertex positions, normals, and an index buffer. The resulting 
+ mesh could be further optimized by interleaving the positions and normals; 
+ however, such behavior is beyond the scope of this document. While possible 
+ with code, the <a href="../../Reference/Tool_Plug_ins/Available_Tool_Plug_ins.htm">Finalize 
+ tool plug-in</a> is generally responsible for this level of optimization.</p>
+
+<p>First, a new mesh is created and its primitive type 
+ is set to triangles.</p>
+
+<pre>
+NiMesh* pkMesh = NiNew NiMesh();
+pkMesh-&gt;SetPrimitiveType(NiPrimitiveType::PRIMITIVE_TRIANGLES);
+</pre> 
+
+
+<p>Next, stream and element references need to be created 
+ for each of the desired data streams (positions, normals, and indices). 
+ This is achieved using a method on <span class="NDLSystemFont">NiDataStream</span>.</p>
+
+<pre>
+NiDataStream* pkDataStream = NULL;
+ 
+// Create the element reference.
+pkDataStream = NiDataStream::CreateSingleElementDataStream(
+    NiDataStreamElement::F_FLOAT32_3,   
+    uiNumVerts,
+    NiDataStream::ACCESS_CPU_READ | NiDataStream::ACCESS_GPU_READ | 
+    NiDataStream::ACCESS_CPU_WRITE_STATIC,
+    NiDataStream::USAGE_VERTEX,
+    pkVerts); 
+ 
+NIASSERT(pkDataStream != NULL); 
+ 
+// Create the stream reference and add to the mesh's array of NiStreamRef's. 
+// Note, the data stream created earlier is stored on the stream reference.
+pkMesh-&gt;AddStreamRef(pkDataStream , NiCommonSemantics::POSITION(), 0); 
+</pre>
+
+<p>The above code illustrates the creation of the positions 
+ data stream. The variables containing the data are assumed to already 
+ exist, namely <span class="NDLSystemFont">uiNumVerts</span> and <span class="NDLSystemFont">pkVerts</span>. 
+ <span class="NDLSystemFont">NiDataStream</span> does not take ownership 
+ of pkVerts and it is still the application's responsibility to delete 
+ any data it allocates.</p>
+
+<p>This particular example enables the CPU to have access 
+ to the stream after it is created (<span class="NDLSystemFont">NiDataStream::ACCESS_CPU_READ</span>), 
+ the GPU to have access to the stream for rendering (<span class="NDLSystemFont">NiDataStream::ACCESS_GPU_READ</span>), 
+ and the CPU to only write to the data once (<span class="NDLSystemFont">NiDataStream::ACCESS_CPU_WRITE_STATIC</span>).</p>
+
+<p>The same code could be repeated for creating vertex 
+ normals with the exception of using the <span class="NDLSystemFont">NiCommonSemantics::NORMAL</span> 
+ semantic, however, an alternative method exists to simplify the creation 
+ and addition of a stream to a mesh. Rather than creating a stream and 
+ adding a reference to it in separate calls, a user can simply call <span 
+ class="NDLSystemFont">AddStream</span> on the mesh. An example is provided 
+ below.</p>
+
+<pre>
+pkMesh-&gt;AddStream(
+    NiCommonSemantics::NORMAL(),
+    0,
+    NiDataStreamElement::F_FLOAT32_3,
+    uiNumVerts,
+    NiDataStream::ACCESS_CPU_READ | NiDataStream::ACCESS_GPU_READ |   
+    NiDataStream::ACCESS_CPU_WRITE_STATIC,
+    NiDataStream::USAGE_VERTEX,   
+    pkNormals);
+</pre>
+
+<p>If it is undesirable to pass in the vertex data as a 
+ contiguous array to <span class="NDLSystemFont">AddStream</span> (for example, 
+ because it would require copying data to a temporary buffer), the application 
+ should initialize the NiDataStream object post-creation using an <a href="Data_Stream_Lock_and_Iterator_Objects.htm"><span 
+ class="NDLSystemFont">NiDataStreamElementLock</span> object</a> obtained 
+ from<span class="NDLSystemFont"> NiMesh::AddStreamGetLock</span>. </p>
+
+<p>Now an index buffer must be created in order to reuse 
+ vertices when defining triangles. The following code assumes the CPU side 
+ index buffer variable has already been created with valid values.</p>
+
+<pre>
+pkDataStream = NiDataStream::CreateSingleElementDataStream(
+      NiDataStreamElement::F_UINT16_1,
+      uiNumIndices,
+          NiDataStream::ACCESS_GPU_READ | NiDataStream::ACCESS_CPU_WRITE_STATIC,
+          NiDataStream::USAGE_VERTEX_INDEX,
+      pusIndices);
+   
+NIASSERT(pkDataStream != NULL);
+</pre>
+ 
+<p>Note that this code is almost identical to the code 
+ used to create vertex element data streams. The only difference is the 
+ enumeration <span class="NDLSystemFont">USAGE_VERTEX_INDEX</span> instead 
+ of <span class="NDLSystemFont">USAGE_VERTEX</span>. This tells the <span 
+ class="NDLSystemFont">NiMesh</span> API that the stream represents an index 
+ buffer. Also note, the sample code created a 16-bit index buffer. This 
+ limits the number of vertices to 65,536. This is not an innate limitation 
+ of the <span class="NDLSystemFont">NiMesh </span>API. If more vertices are 
+ required, the index buffer can contain 32-bit indices in which case the 
+ data type would have been <span class="NDLSystemFont">F_UINT32_1</span> 
+ instead of <span class="NDLSystemFont">F_UINT16_1</span>.</p>
+
+<p>The next step is to bind the index buffer stream to 
+ the mesh.</p>
+
+<pre>
+pkMesh-&gt;AddStreamRef(pkDataStream, NiCommonSemantics::INDEX(), 0);
+</pre> 
+
+<p>At this point, the mesh is almost created. The number 
+ of sub-meshes that exist still needs to be defined and the mesh's bounds 
+ need to be re-computed. </p>
+
+<pre>
+pkMesh-&gt;SetSubmeshCount(1);
+pkMesh-&gt;RecomputeBounds(); 
+</pre> 
+
+<p>Since there is a continuous index buffer on the mesh 
+ and no complicated materials or skin partitions, it is only necessary 
+ to have a single sub-mesh. There could be more sub-meshes if there were 
+ additional partitions or if there are several strips in a stripified mesh.</p>
+
+<p>It is also important to note that <span class="NDLSystemFont">RecomputeBounds</span> 
+ uses the <span class="NDLSystemFont">POSITION</span> vertex attribute and 
+ if that stream is absent or is not accessible for a CPU read lock, the 
+ bound computation will fail. In this scenario, it is still possible to 
+ set the bound directly using the <span class="NDLSystemFont">SetModelBound</span> 
+ method.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

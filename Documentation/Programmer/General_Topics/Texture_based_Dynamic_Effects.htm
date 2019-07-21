@@ -1,0 +1,282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Texture-based Dynamic Effects</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Texture-based Dynamic Effects</h1>
+
+<h2>Overview</h2>
+
+<p>The <a href=
+"../../Reference/NiMain/NiDynamicEffect.htm"><span class=
+"NDLSystemFont">NiDynamicEffect</span></a> subclass <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+implements projected multitexturing. These types of effects are
+very powerful tools for creating complex spotlights, light
+shafts, stained-glass window effects, reflective surfaces,
+projected shadows, and other effects. The effects involve
+projecting a texture onto objects in the scene using a projection
+other than the camera view.</p>
+
+<p>As <a href=
+"../../Reference/NiMain/NiDynamicEffect.htm"><span class=
+"NDLSystemFont">NiDynamicEffect</span></a> subclasses, <a href=
+"../../Reference/NiMain/NiTextureEffect.htm"><span class=
+"NDLSystemFont">NiTextureEffect</span></a> objects include
+support for affected node lists and effect switches. As derived
+objects of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>,
+they can be attached to scene graph objects to simulate
+headlights, laser sights, and other effects.</p>
+
+<h2>Texture Effect Type</h2>
+
+<p>The texture type setting in an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+controls the type of visual effect the texture has upon the
+surface appearance of the textured objects in its affected node
+scope list. The possible options include:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">PROJECTED_LIGHT</span> . The
+    set of active projected light <a href=
+    "../../Reference/NiMain/NiTextureEffect.htm"><span class=
+    "NDLSystemFont">NiTextureEffect</span></a> objects sum
+    together along with the static DarkMap multitexture. This sum
+    is multiplied by the base texture of the object. As a result,
+    the overall effect can only darken the base texture, but the
+    lights themselves sum together in a physically realistic
+    manner. Theoretically, there is no limit to the number of
+    projected lights that can be active on an object, but most
+    renderers impose some form of limit (either fixed or
+    performance limited)</li>
+
+    <li><span class="NDLSystemFont">PROJECTED_SHADOW</span> .
+    Each projected shadow <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+    is multiplied by the base texture. As a result, each
+    additional shadow map can only darken the base texture, and
+    overlapping shadows will tend to darken the base object more
+    deeply than disjoint shadows. Theoretically, there is no
+    limit to the number of projected shadows that can be active
+    on an object, but most renderers impose some form of limit
+    (either fixed or performance limited).</li>
+
+    <li><span class="NDLSystemFont">ENVIRONMENT_MAP</span> . The
+    environment map represents the mirror-like reflection of the
+    surrounding environment in the surface of an object. The
+    effect is added to the lit and shadowed base texture. An
+    optional static multitexture, the GlossMap, may be specified
+    to determine which parts of a surface are reflective. This
+    allows complex behavior, such as a surface that is matte in
+    some regions and shiny in others. Only one environment map at
+    a time may be applied to a given surface.</li>
+
+    <li><span class="NDLSystemFont">FOG_MAP</span> . The fog map
+    represents the density (in its alpha channel) and the color
+    (in its color channel) of the fog at a given height and
+    distance from the camera. It is blended onto the final color
+    of the surface, and is capable of making an entire object
+    disappear into the fog. Only one fog map at a time may be
+    applied to a given surface.</li>
+</ul>
+
+<h2>Texture Coordinate Generation</h2>
+
+<p>Dynamic texture coordinate generation is the heart of the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>.
+The automatic dynamic generation of texture coordinates
+determines whether the effect appears to be a spotlight, a
+sunbeam, or the reflection of the surrounding scene. Three
+settings control this behavior: the texture model-space
+projection matrix, the model-space texture projection
+translation, and the texture coordinate generation type.</p>
+
+<p>The texture coordinate generation type controls the basic
+source texture coordinates and the type of transform applied:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WORLD_PARALLEL</span>: This
+    mode takes as its inputs the world-space object vertices,
+    transforms them by the world-space projection matrix and
+    translation, and uses the X and Y components of the output as
+    U and V. This mode tends to create parallel projections for
+    sunbeam/infinite/directional lighting effects.</li>
+
+    <li><span class="NDLSystemFont">WORLD_PERSPECTIVE</span>:
+    This mode takes as its inputs the world-space object
+    vertices, transforms them by the world-space projection
+    matrix and translation, and uses the X/Z and Y/Z components
+    of the output as U and V. This mode tends to create
+    perspective transformations for spotlight or "movie
+    projector" effects.</li>
+
+    <li><span class="NDLSystemFont">SPHERE_MAP</span>: This mode
+    transforms camera-space object normals into texture
+    coordinates using a spherical projection. This is used to
+    create environment-mapping effects.</li>
+
+    <li><span class="NDLSystemFont">NiRenderedCubeMap</span>- and
+    <span class="NDLSystemFont">NiSourceCubeMap</span>-based
+    <span class="NDLSystemFont">NiTextureEffect</span> objects:
+    In this mode, texture coordinates are generated for each
+    affected object by transforming the world-space object-normal
+    vectors directly into the texture as a cube map . this
+    capability is detailed in the <a href=
+    "../Texturing/Introduction_to_Texturing.htm">System Details
+    -- Texturing</a> manual, but is generally used for diffuse
+    environment mapping and projected lights. This mode is only
+    supported for <span class=
+    "NDLSystemFont">NiRenderedCubeMap</span>- and <span class=
+    "NDLSystemFont">NiSourceCubeMap</span>-based <span class=
+    "NDLSystemFont">NiTextureEffect</span> objects on hardware
+    that supports cube mapping.</li>
+
+    <li><span class="NDLSystemFont">SPECULAR_CUBE_MAP</span>: In
+    this mode, texture coordinates are generated for each
+    affected object by transforming the world-space reflection
+    vectors directly into the texture as a cube map this
+    capability is detailed in the <a href=
+    "../Texturing/Introduction_to_Texturing.htm">System Details
+    -- Texturing</a> manual, but is generally used for specular
+    environment mapping and projected lights. This mode is only
+    supported for <span class=
+    "NDLSystemFont">NiRenderedCubeMap</span>- and <span class=
+    "NDLSystemFont">NiSourceCubeMap</span>-based <span class=
+    "NDLSystemFont">NiTextureEffect</span> objects on hardware
+    that supports cube mapping.</li>
+</ul>
+
+<p>Note that the world transforms of an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+affect the generation of texture coordinates in <span class=
+"NDLSystemFont">WORLD_PARALLEL</span> and <span class=
+"NDLSystemFont">WORLD_PERSPECTIVE</span> mode. The specified
+model projection matrix and translation specify a mapping from
+the model-space of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+into texture space. The world scale, rotate and translate
+transforms of the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+are used to transform the respective model-space transformations
+that map world-space vertices into texture space.</p>
+
+<h2>Other Documentation and Examples</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+class is detailed in the <a href=
+"../Texturing/Introduction_to_Texturing.htm">System Details
+Texturing</a> manual, one of the Programmer's Guide sections. The
+Texturing manual includes discussion of how to configure common
+texture transform matrices, as well as how to use the texture
+filter, clamping, and texture type settings to create various
+common effects. It also details the multitexture pipeline itself,
+including the placement of each type of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>
+in the pipeline.</p>
+
+<p>The <a href=
+"../../Learn/Demos/StandardMaterial_Demo_Overview.htm">StandardMaterial</a>
+demo demonstrates several examples of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>-based
+effects in both code and artwork.</p>
+
+<h2>Fogging</h2>
+
+<p>Fog, also known as haze or "depth cueing", is conceptually
+related to lighting, but is functionally independent in Gamebryo.
+Fog is a rendering effect available on some rendering systems
+that causes objects to gradually fade to a single "fog color" as
+they get further away from the camera's position. This has the
+practical effect of making distant objects appear "hazy", and is
+often used to make a close-in far clipping plane appear less
+jarring (as objects will fade into invisibility instead of being
+abruptly clipped).</p>
+
+<p>There are three modes for fog in Gamebryo; two use the classic
+"fog increases with distance from the camera" method of fogging,
+while the third allows the application to specify any fog value
+at any vertex. Fog is controlled in Gamebryo by the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiFogProperty.htm">NiFogProperty</a></span>
+rendering property described later in this chapter.</p>
+
+<p>Depth-based fog in Gamebryo is modified with a single
+parameter that is related to the nearest distance from the camera
+at which objects begin to be faded to the fog color. Objects
+always attain the full fog color at the far plane. Currently, the
+Direct3D renderers support fogging that is linear with respect to
+Z value. Some platforms also support "range squared" fog. Please
+see the platform renderer documentation for more details on each
+renderer's capabilities. Range squared fog is more accurate (as
+it is dependent on view position, not orientation), but is more
+expensive to compute.</p>
+
+<p>Note that the depth parameter is independent of actual near
+and far plane values. A depth value of <span class=
+"NDLSystemFont">0.0</span> indicates that there is no fogging
+(<span class="NDLSystemFont">0.0</span> should never actually be
+used as a fog depth), while a depth of <span class=
+"NDLSystemFont">1.0</span> indicates that fogging should start at
+the near plane. Values between <span class=
+"NDLSystemFont">0.0</span> and <span class=
+"NDLSystemFont">1.0</span> will linearly interpolate the near
+fogging distance between the near and far planes.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image014.jpg" width="438" height="135" alt=
+    "Depth-based Fog (Linear Fog) (9K)">
+
+    <p class="NDLFigureCaption">Depth-based Fog (Linear Fog)</p>
+</div>
+
+<p>While most applications will want 100% fogging at the far
+plane, some renderers can support fogging to less than 100% at
+the far plane when using range- or z-based fogging. This maximum
+fog value can be set using <span class=
+"NDLSystemFont">NiRenderer::SetMaxFogValue</span>. See the
+<span class="NDLSystemFont">NiMain</span> Class Reference
+manual's section on <a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a> for
+details on this feature, and how to determine if a renderer can
+support it.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

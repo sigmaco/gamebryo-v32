@@ -1,0 +1,583 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Attribute Sections</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Attribute Sections</h1>
+
+<p>The NSF files allows for declaring 'attributes' the 
+ shader will utilize in the shader constant maps it defines. There are 
+ two types of attribute lists. The first is 'global' that are attributes 
+ which can be considered global to the scene. Light colors, positions, 
+ and directions are good examples of what you would declare as global to 
+ the scene. Global attributes contained in NSF/NSB files will get automatically 
+ registered with the shader factory upon loading. The application can then 
+ update these values via a call to <span class="NDLSystemFont">NiD3DShaderFactory::UpdateGlobalShaderConstant</span>.</p>
+
+<p>The second type is the per-object attributes that are 
+ attached to geometry via the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ interface. These types of attributes expose the main component of the 
+ data-driven approach to shaders taken in the Gamebryo engine. If the shader 
+ author takes care when designing their shaders, the same <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShader</a></span> 
+ instance can be used on multiple objects, yet still achieve a look that 
+ is unique on a per-object basis.</p>
+
+<p>The <span class="NDLSystemFont">Attribute</span> and
+ <span class="NDLSystemFont">Global_Attribute</span>
+ sections should occur no more than once in a shader. An
+ <span class="NDLSystemFont">Attribute</span> or
+ <span class="NDLSystemFont">Global_Attribute</span>
+ section will like this:</p>
+
+<pre>
+Attributes
+{
+    [Attribute declaration]
+    ...
+}
+ 
+Global_Attributes
+{
+    [Attribute declaration]
+    ...
+}
+</pre>
+
+<p>The declaration of an attribute takes the following form:</p>
+
+<pre>
+AttributeType  AttributeName  Artist/Hidden  InitialValue  &lt;OptionalRange&gt;
+</pre>
+
+ 
+
+<h2>AttributeType Values</h2>
+
+<p>The <span class="NDLSystemFont">AttributeType</span> 
+ defines the type of data the attribute represents. The following values 
+ are allowed:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                AttributeType
+            </th>
+            <th>
+                Data Format
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Bool</span> 
+            </td>
+            <td>
+                Boolean value. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_UInt</span> 
+            </td>
+            <td>
+                Unsigned integer value. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Float</span> 
+            </td>
+            <td>
+                Float value. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Point2</span> 
+            </td>
+            <td>
+                2 floats (x,y). 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Point3</span> 
+            </td>
+            <td>
+                3 floats (x,y,z) - <span class="NDLSystemFont">NiPoint3</span> equivalent. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Point4</span> 
+            </td>
+            <td>
+                4 floats (x,y,z,w). 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Matrix3</span> 
+            </td>
+            <td>
+                3x3 matrix - <span class="NDLSystemFont">NiMatrix3</span> equivalent. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Transform</span> 
+            </td>
+            <td>
+                4x4 matrix. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Color</span> 
+            </td>
+            <td>
+                Color value - can be (r,g,b) or (r,g,b,a). 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Attrib_Texture</span>
+            </td>
+            <td>
+                Texture - <span class="NDLSystemFont">NiTexturingProperty::ShaderMap</span> index. 
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>AttributeName</h2>
+
+<p>The <span class="NDLSystemFont">AttributeName</span> 
+ is the name by which the attribute is accessed. The name cannot contain 
+ anything except alphanumeric characters and underscores. The name should 
+ also be limited to less than 32 characters, but it is not a requirement.</p>
+
+<h2>Reserved Keywords</h2>
+
+<p>The following is a list of all known shader attribute 
+ names that may potentially cause issues with the art pipeline integration:</p>
+
+<pre>
+True        False       On          Off         Pi
+E           Red         Green       Blue        White
+Black       Orange      Yellow      Brown       Gray
+X_axis      Y_axis      Z_axis      Undefined   Unsupplied
+Ok          Dontcollect
+</pre>
+
+<p>Additionally, most common programming language keywords will be problematic for art pipeline integration.</p>
+
+<h2>Artist/Hidden</h2>
+
+<p>The <span class="NDLSystemFont">Artist/Hidden</span> 
+ field determines whether the attribute is exposed to the artist in the 
+ art pipeline. If it is exposed, it is considered 'artist tweakable'. [NOTE: 
+ Global attributes should not be considered artist tweakable. There are 
+ not stored as part of the scene when it is exported. They must be managed 
+ programmatically via the <span class="NDLSystemFont">NiD3DShaderFactory::UpdateGlobalShaderConstant</span> 
+ function.] There are two values allowed for this field, as you might expect. 
+ There are as follows:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Artist/Hidden
+            </th>
+            <th>
+                Meaning
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Artist</span>
+            </td>
+            <td>
+                Attribute exposed to artist for tweaking. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">Hidden</span>
+            </td>
+            <td>
+                Attribute is not exposed to artist.
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>InitialValue</h2>
+
+<p>The initial value section of an attribute declaration defines the value
+ to which the attribute is initially set. In the case of a hidden attribute,
+ this value is typically the only value the attribute will ever have. The
+ format of the initial value data depends on the attribute data type. The
+ chart below defines what is expected depending on the data type:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                AttributeType
+            </th>
+            <th>
+                Initial Value Format
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Bool 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">true</span> or <span class="NDLSystemFont">false</span>. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_UInt 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">unsigned int</span> - ie, 1024 or 32 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Float 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">float</span> value - ie, 0.5 or -12.632 (do NOT place a trailing 'f' on the end) 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Point2 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span> - ie, 1.2,2.65 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Point3 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span>,
+		<span class="NDLSystemFont">float</span> - ie, 1.0,2.0,3.0 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Point4 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span>,
+		<span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span> - ie, 1.0,2.0,3.0,4.0 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Matrix3 
+                </span>
+            </td>
+            <td>
+                9 comma-separated <span class="NDLSystemFont">float</span>'s - ie, 1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Transform 
+                </span>
+            </td>
+            <td>
+                16 comma-separated <span class="NDLSystemFont">float</span>'s 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Color 
+                </span>
+            </td>
+            <td>
+                Two variations:<br>
+                <span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span>,
+		<span class="NDLSystemFont">float</span> - represents r,g,b<br>
+                <span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span>,
+		<span class="NDLSystemFont">float</span>, <span class="NDLSystemFont">float</span> - represents r,g,b,a 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                Attrib_Texture 
+                </span>
+            </td>
+            <td>
+                <span class="NDLSystemFont">unsigned int</span> - represents the index of the
+		<span class="NDLSystemFont">NiTexturingProperty::ShaderMap</span> on the object. 
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>OptionalRange</h2>
+
+<p>The optional range section of an attribute declaration 
+ allows for the shader author to place limits on the values that the artist 
+ can tweak. The following table defines which attribute types support ranges, 
+ and the format the ranges require in the file:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+	<tr>
+	    <th>
+		AttributeType
+	    </th>
+	    <th>
+		Range Format
+	    </th>
+	</tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Bool 
+                </span>
+            </td>
+            <td>
+		Range not supported. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_UInt 
+                </span>
+            </td>
+            <td>
+		<span class="NDLSystemFont">[ unsigned int unsigned int ]</span><br>
+		example: <span class="NDLSystemFont">[0 1024]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Float 
+                </span>
+            </td>
+            <td>
+		<span class="NDLSystemFont">[ float float ]</span><br>
+		example: <span class="NDLSystemFont">[0.0 1.0]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Point2 
+                </span>
+            </td>
+            <td>
+		<span class="NDLSystemFont">[( float, float ) ( float, float )]</span><br>
+		example: <span class="NDLSystemFont">[(0.0,0.0) (1.0,1.0)]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Point3 
+                </span>
+            </td>
+            <td>
+		<span class="NDLSystemFont">[( float, float, float ) ( float, float, float )]</span><br>
+		example: <span class="NDLSystemFont">[(0.0,0.0,0.0) (1.0,1.0,1.0)]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Point4 
+                </span>
+            </td>
+            <td>
+		<span class="NDLSystemFont">[( float, float, float, float ) ( float, float, float, float )]</span><br>
+		example: <span class="NDLSystemFont">[(0.0,0.0,0.0,0.0) (1.0,1.0,1.0,1.0)]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Matrix3 
+                </span>
+            </td>
+            <td>
+		Range not supported. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Transform 
+                </span>
+            </td>
+            <td>
+		Range not supported. 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Color 
+                </span>
+            </td>
+            <td>
+		Two variations:<br>
+		<span class="NDLSystemFont">[( float, float, float ) ( float, float, float )]</span><br>
+		example: <span class="NDLSystemFont">[(0.0,0.0,0.0) (1.0,1.0,1.0)]</span><br>
+		<span class="NDLSystemFont">[( float, float, float, float ) ( float, float, float, float )]</span><br>
+		example: <span class="NDLSystemFont">[(0.0,0.0,0.0,0.0) (1.0,1.0,1.0,1.0)]</span> 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+		Attrib_Texture 
+                </span>
+            </td>
+            <td>
+		Not an actual range, the range section for a texture can supply
+		a default texture image to use. This value can be a quoted
+		string (to allow for spaces in the path), or an unquoted
+		string.<br>
+		example: <span class="NDLSystemFont">"DX9 Textures\Image00.bmp"</span>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Array Attributes</h2>
+
+<p>Global attributes additionally support arrays with the 
+ form:</p>
+
+<pre>
+AttributeType  AttributeName[ArraySize]   Artist/Hidden  InitialValue
+</pre>
+
+<p>A limited set of attribute types are supported for array parameters.&nbsp; 
+ These are:</p>
+
+<pre>
+Attrib_Float
+Attrib_Point2
+Attrib_Point3
+Attrib_Point4
+Attrib_Color
+</pre>
+
+<h2>Examples</h2>
+
+<p>The following shows an example snippet of a per-object 
+ attribute table, defining one of each attribute type (NOTE: The multiple-line 
+ formatting is not required. It is displayed this way for easier reading. 
+ It is valid to place everything on the same line for a single attribute, 
+ or to break each entry into multiple lines.):</p>
+
+<pre>
+Attributes
+{
+    Attrib_Bool        TestBool       Artist  true
+    Attrib_UInt        TestUInt       Hidden  1024    [0  2048]
+    Attrib_Float       TestFloat      Artist  0.65    [0.0 1.0]
+    Attrib_Point2      TestPoint2     Artist
+        0.0,0.5        [(0.0,0.0) (1.0,1.0)]
+    Attrib_Point3      TestPoint3     Artist
+        0.1,0.2,0.3    [(0.0,0.0,0.0) (1.0,1.0,1.0)]
+    Attrib_Point4      TestPoint4     Artist  0.1,0.2,0.3,0.4
+        [(0.0,0.0,0.0,1.0) (1.0,1.0,1.0,1.0)]
+    Attrib_Matrix3     TestMatrix3    Artist
+        0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9
+    Attrib_Transform
+        TestTransform
+        Artist
+        0.1,0.2,0.3,0.4,
+        0.5,0.6,0.7,0.8,
+        0.9,1.0,1.1,1.2,
+        1.3,1.4,1.5,1.6
+    Attrib_Color       TestColor      Artist  1.0,0.2,0.4
+        [(0.0,0.0,0.0) (1.0,1.0,1.0)]
+    Attrib_Color       TestColor2     Artist  0.0,0.2,0.4,0.8
+        [(0.0,0.0,0.0,0.0) (1.0,1.0,1.0,1.0)]
+    Attrib_Texture     TestTexture    Artist  0    "DefaultTextures\Image000.bmp"
+}
+</pre>
+
+<p>The following shows an example snippet of a global attribute
+ table containing an array attribute:</p>
+
+<pre>
+Global_Attributes
+{
+    Attrib_Point4 TestArrayPoint4[5] Hidden 0.0,0.0,0.0,0.0
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

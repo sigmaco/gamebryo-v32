@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Specifying Streams</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Specifying Streams</h1>
+
+<p>A Stream specifies the data contained in an input buffer 
+ or the location in memory of an output buffer. The definition of a stream 
+ includes the type of an element in the buffer along with the total number 
+ of elements contained in the stream. The address of the data buffer can 
+ be aligned or unaligned with respect to the underlying platform. A stream 
+ shared between two or more tasks defines connections between those tasks. 
+ In this respect, streams also provide the connectivity information between 
+ tasks. This information is then used for scheduling such that the execution 
+ of a given task only occurs after all of the tasks it depends on have 
+ completed. This process ensures that all of the data for a task is available 
+ prior to execution of that task. Streams may contain per vertex data, 
+ particles, or any other type of desired data. Optimal data alignment issues 
+ as well as stream segmentation are handled internally by Floodgate.</p>
+
+<p>The <span class="NDLSystemFont">NiFloodgate</span> library 
+ provides the <a href="../../Reference/NiFloodgate/NiSPStream.htm"><span 
+ class="NDLSystemFont">NiSPStream</span></a> class to define Streams. Generally, 
+ however, applications will use the <a href="../../Reference/NiFloodgate/NiTSPStream.htm"><span 
+ class="NDLSystemFont">NiTSPStream</span></a> template class instead. <span 
+ class="NDLSystemFont">NiTSPStream</span> provides a simplified constructor 
+ based on the type of data the stream will contain.</p>
+
+<p>The <span class="NDLSystemFont">NiFloodgate</span> library 
+ also provides the <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPDataStream.htm">NiSPDataStream</a></span> 
+ interface which enables <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span> 
+ instances from the <span class="NDLSystemFont">NiMesh</span> library to 
+ be used directly as inputs and outputs to Floodgate. When <span class="NDLSystemFont">NiDataStream</span> 
+ subclasses are used by Floodgate they are automatically locked and unlocked 
+ internally in order to access the data contained within the stream. In 
+ this way, the <span class="NDLSystemFont">NiDataStream</span> objects contained 
+ within an <span class="NDLSystemFont">NiMesh</span> can be directly specified 
+ on <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPTask.htm">NiSPTask</a></span> 
+ objects and operated on by kernels.</p>
+
+<h2>Setup and Initialization</h2>
+
+<p>The next step in our application is to specify our streams. 
+ First, we initialize our buffers, which we declared in the Setup step. 
+ For this sample application, we will set our input buffers to contain 
+ the values 0 to 255. We will simply clear our output buffer through the 
+ call to memset. The code then shows how instances of <span class="NDLSystemFont">NiTSPStream</span> 
+ are initialized from those existing buffers. Note that <span class="NDLSystemFont">NiSPTStream</span> 
+ initialization could also be performed from within a constructor or statically 
+ if desired. In this example, for simplicity, the streams will be declared 
+ inside the <span class="NDLSystemFont">UpdateFrame</span> method.</p>
+
+<h3>Source Code</h3>
+
+
+<pre>
+//---------------------------------------------------------------------------
+bool MyApplication::UpdateFrame()
+{
+    // Update base class
+    NiApplication::UpdateFrame();
+
+	// Initialize data buffers
+    for (NiUInt32 i = 0; i < 256; i++)
+    {
+        auiInputBuffer1[i] = i;
+        auiInputBuffer2[i] = i;
+    }
+    memset(auiOutputBuffer1, 0, sizeof(auiOutputBuffer1));
+    memset(auiOutputBuffer2, 0, sizeof(auiOutputBuffer2));
+
+    // Initialize streams
+    NiTSPStream&lt;NiUInt32&gt; kStream0(auiInputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream1(auiInputBuffer2, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream2(auiOutputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream3(auiOutputBuffer2, 256);
+
+	...;
+}
+//---------------------------------------------------------------------------
+</pre>
+
+
+<p>The next step is <a href="Floodgate_Specifying_Fixed_Inputs.htm">specifying 
+ fixed inputs</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiEnvironment Object</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+
+
+  <h1>
+    NiEnvironment Object
+  </h1>
+  <p>
+    The following documentation will be useful for users who wish to use an 
+    alternative to the Gameframework EnvironmentService as well as users wishing to 
+    create their own EnvironmentService in order to benefit from customized blend 
+    stages and sky types as those are not yet supported by the current tools.
+  </p>
+  <h2>
+    Creating an NiEnvironment Object Programatically
+  </h2>
+  <p>
+    First, create the environment:
+  </p>
+  <pre>
+ m_spEnvironment = NiNew NiEnvironment();
+</pre>
+  <p>
+    Next create the atmosphere and the sky:
+  </p>
+<pre>
+// Create a sky and an atmosphere
+pkEnvironment-&gt;CreateAtmosphere();
+NiSky* pkSky = pkEnvironment-&gt;CreateSkyDome();
+</pre>
+  <p>
+    <span class="NDLSystemFont">NiEnvironment</span> relies on a fog property. For 
+    best effect, this property should also be used with all other objects.
+  </p>
+<pre>
+// Attach the global fog property to the sky
+pkEnvironment-&gt;CreateFogProperty();
+</pre>
+  <p>
+    Now we can set the fog blending stage:</p>
+<pre>
+NiSkyFogBlendStage* pkFogStage = NiNew NiSkyFogBlendStage();
+pkFogStage-&gt;SetBlendBiasExponent(3.0f);
+pkFogStage-&gt;SetBlendHorizonBias(1.0f);
+pkSky-&gt;SetBlendStage(4, pkFogStage);
+</pre>
+  <p>
+    For the scattering calculations to take place, a sun needs to be set to the 
+    environment. This should be provided by a directional light loaded in the scene:
+  </p>
+  <pre>
+// Extract the sun from the sunlight entity and apply it to the sky NiObject* pkObject;
+m_spSunlights-&gt;GetEntityAt(0)-&gt;GetPropertyData(&quot;Scene Root Pointer&quot;, pkObject, 0);
+pkEnvironment-&gt;SetSun(NiDynamicCast(NiDirectionalLight, pkObject));
+pkEnvironment-&gt;UpdateEffects();
+pkEnvironment-&gt;UpdateProperties();
+pkEnvironment-&gt;Update(0.0f);
+</pre>
+  <p>
+    This should create a basic environment object, complete with a default sky 
+    effect.
+  </p>
+  <h2>
+    Environment Configuration
+  </h2>
+  <p>
+    Most of the environment configuration occurs through its child objects, however 
+    a few options exist on the Environment object itself that require explanation. 
+    The following table lists these options and how they affect the sky effect.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Option
+        </th>
+        <th>
+          Default value
+        </th>
+        <th>
+          Usage
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <b>Auto Calculate Fog Color</b>
+        </td>
+        <td>
+          true
+        </td>
+        <td>
+          When enabled and using the NiRenderFrame rendering method, this option will cause the 
+          NiEnvironment to calculate the current color of the horizon in the direction of 
+          the camera, and apply that color to the attached fog property.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Auto Set Background Color</b>
+        </td>
+        <td>
+          true
+        </td>
+        <td>
+          When enabled and using the NiRenderFrame rendering method, this option will cause the 
+          NiEnvironment to automatically set the renderer background color to the fog 
+          color of the attached fog property.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Sun Elevation angle</b>
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          An angle in degrees defining the rotation around the world's x axis of the sun's 
+          direction.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Sun Azimuth Angle</b>
+        </td>
+        <td>
+          0
+        </td>
+        <td>
+          An angle in degrees defining the rotation around the world's z axis of the sun's 
+          direction
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h2>
+    Updating the Environment
+  </h2>
+  <p>
+    Before using a <span class="NDLSystemFont">NiEnvironment</span> object for the 
+    first time and after any changes to the settings, the object must be updated. 
+    For convenience, the 
+    <span class="NDLSystemFont">NiEnvironment</span> object is a subclass of <span class="NDLSystemFont">
+    NiNode</span>, and as such, can be attached to a scene and hence updated 
+    automatically with the rest of the scene.
+  </p>
+  <p>
+    Alternatively, the environment can be updated directly using the following 
+    syntax:
+  </p>
+<pre>
+m_spEnvironment-&gt;Update(0.0f);
+</pre>
+  <h2>
+    How to render the Environment
+  </h2>
+  <p>
+    Rendering the environment is not a hard task, but there are a couple of ways to 
+    achieve it. The choice of which method to use is dependent upon what rendering 
+    method your application uses. For this reason, two methods will be described 
+    here, one for applications using the <span class="NDLSystemFont">NiRenderFrame</span> 
+    rendering method, and a guide to rendering under other custom rendering 
+    methods.The EnvironementService implements the 
+    <span class="NDLSystemFont">IRenderServiceDelegate</span> interface which allows 
+    it to catch surface changes and therefore add a custom render click to the frame 
+    system in use. (See Environment Game Framework for more details).
+  </p>
+  <h3>
+    With the NiRenderFrame system
+  </h3>
+  <p>
+    This method is by far the simplest. The <span class="NDLSystemFont">
+    NiEnvironment</span> object provides a simple function that will create a 
+    special <span class="NDLSystemFont">NiRenderClick</span> object to render the 
+    sky to the current render target. The main configuration subtleties behind this 
+    generated render click are as follows:
+  </p>
+  <ul>
+    <li>The <span class="NDLSystemFont">NiEnvironment</span> is the only scene 
+      rendered by the render click. </li>
+    <li>The render click will clear the current frame buffer. </li>
+    <li>The scene camera's translation information will be completely ignored during 
+      rendering, leaving only the rotation of the camera to affect the rendering of 
+      the sky. </li>
+    <li>The render click will automatically handle calculation of fog values if that 
+      has been configured on the <span class="NDLSystemFont">NiEnvironment</span> 
+      instance. </li>
+  </ul>
+  <p>
+    To use this method, simply create the appropriate render click by calling the 
+    CreateSkyRenderClick function of <span class="NDLSystemFont">NiEnvironment</span> 
+    with the relevant scene camera as shown here. Note that this camera can be the 
+    actual camera used to render the main scene and that this is the recommended 
+    usage.
+  </p>
+<pre>
+// Request the appropriate render click for environment rendering
+NiRenderClick* pkSkyRenderClick = m_spEnvironment-&gt;CreateSkyRenderClick(m_spCamera);</pre>
+  <p>
+    ThThis render click should then be added to the main render step, though it must 
+    be added to the beginning of the main render step, otherwise it would clear any 
+    previously rendered objects from the buffer. This may be achieved through the 
+    following code.
+  </p>
+<pre>
+pkMainRenderStep-&gt;RemoveAllRenderClicks();
+
+// Attach the sky render clickpkMainRenderStep-&gt;AppendRenderClick(pkSkyRenderClick);
+// Now attach the entity scene render click
+pkMainRenderStep-&gt;AppendRenderClick(pkViewClick);
+</pre>
+  <p>
+    When the scene is rendered now, the sky will first be rendered and then any 
+    scene objects will be rendered over the top. It is important to note that the 
+    main scene render click must be configured not to clear the frame buffer 
+    otherwise the sky will be cleared before displayed on the screen. This is not 
+    the only method of rendering the sky, but it is by far the simplest.
+  </p>
+  <h3>
+    Without the NiRenderFrame System
+  </h3>
+  <p>
+    WhWhen not using <span class="NDLSystemFont">NiRenderFrame</span>, the application will 
+    dictate the order of rendering, and so a definitive guide to rendering the 
+    environment cannot be provided. However, the following guidelines should be 
+    considered in order to achieve a painless <span class="NDLSystemFont">
+    NiEnvironment</span> experience.
+  </p>
+  <ul>
+    <li>The <span class="NDLSystemFont">NiEnvironment</span> object is suitable for 
+      use as the root scene node of the environment scene when culling. </li>
+    <li>Modify the camera's coordinates to the world space origin when culling the
+      <span class="NDLSystemFont">NiEnvironment</span> scene. </li>
+    <li>Render the environment to the frame buffer before any other objects. Whilst 
+      this may not be the fastest way to render, it should minimize the number of 
+      artifacts that may occur due to transparent objects. li>
+    <li>AuAutomatic fog adjustments configured on the <span class="NDLSystemFont">
+      NiEnvironment</span> object will not be carried out unless explicitly coded into 
+      the applications rendering system. This is implemented using the manual 
+      calculation functions available on the <span class="NDLSystemFont">NiAtmosphere</span> 
+      object. </li>
+  </ul>
+  <p>
+    With the above considerations taken into account, rendering should be a simple 
+    process to implement.
+  </p>
+  
+    <span class="NDLHeadingRelatedTopic">Related Topics</span>
+    <ul>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiEnvironment/Introduction_to_NiEnvironment_Class_Reference.htm">NiEnvironment</a></span></li>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span></li>
+    </ul>
+  
+</body>
+</html>

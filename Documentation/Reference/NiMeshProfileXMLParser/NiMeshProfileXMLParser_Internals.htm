@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiMeshProfileXMLParser Internals</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiMeshProfileXMLParser Internals</h1>
+
+<p>The <span class="NDLSystemFont">NiMeshProfileXMLParser</span>
+library is an internal use only library. Its primary function is
+to parse XML based representations of a mesh profile into the
+in-memory mesh profiles that are used by the <span class=
+"NDLSystemFont">NiMeshProfileProcessor</span> library. The
+details of how this is done should not concern most developers,
+however, the following high level documentation is provided in
+the event that a developer requires a better understanding of
+this library's internal data structures and operations.</p>
+
+<p>The <span class="NDLSystemFont">NiMeshProfileXMLParser</span>
+library is library that converts mesh profiles stored as XML
+files to an <span class="NDLSystemFont"><a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+NiOpProfile</a></span> object. This is done in four stages. The
+first stage is the simple XML parsing of the text. The second
+stage is the conversion from the XML nodes to an appropriate
+<span class="NDLSystemFont">NiMeshProfile</span> object. The
+third is the compilation of these <span class=
+"NDLSystemFont">NiMeshProfile</span> objects into the renderer
+specific mesh profiles. The fourth and final stage is the
+conversion of the <span class=
+"NDLSystemFont">NiMeshProfile</span> object to an <span class=
+"NDLSystemFont"><a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+NiOpProfile</a></span> object.</p>
+
+<p><span class="NDLSystemFont">NiMeshProfileComponent</span>
+stores a single component data for the parent element. This
+component contains a type which is best known as x, y, z, w.
+Components can be <a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+remapped</a> and <a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+clamped</a> to provide a way of altering the data or simply
+validating the ranges of the data. The components can be linked
+to other components to perform <a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+swizzle or merge</a> operations.</p>
+
+<p><span class="NDLSystemFont">NiMeshProfileElement</span> stores
+one to four <span class=
+"NDLSystemFont">NiMeshProfileComponent</span> objects. The
+element also stores the semantic name and index which is used to
+throughout the <span class="NDLSystemFont">NiDataStream</span>
+system to reference data streams. Elements store the data
+necessary to build up the operational nodes to handle <a href=
+"../NiMeshProfileProcessor/Introduction_to_NiMeshProfileProcessor.htm">
+format, rename, swizzle and merge</a> changes.</p>
+
+<p><span class="NDLSystemFont">NiMeshProfileStream</span> stores
+an array of <span class=
+"NDLSystemFont">NiMeshProfileElement</span> objects. This class
+is used for the finalize streams. These streams not only store
+the <span class="NDLSystemFont">NiMeshProfileElement</span>
+objects but also can specify the access flags and usage for the
+stream. The name of the stream only matters in the context of the
+XML. The name is used to reference streams within the current
+scope of the profile.</p>
+
+<p><span class="NDLSystemFont">NiMeshProfile</span> stores an
+array of <span class="NDLSystemFont">NiMeshProfileStream</span>
+objects for the finalize phase. The profile is the parent object
+that gets directly converted to the <span class=
+"NDLSystemFont">NiOpProfile</span> class. The profile contains
+not just the streams but also the profile's name and description.
+The description is used to give a "real" world explanation of
+what this profile is suppose to do. This is exposed to the
+artists in the DCC tool.</p>
+
+<p><span class="NDLSystemFont">NiMeshProfileGroup</span> stores
+an array of <span class="NDLSystemFont">NiMeshProfile</span>
+objects, one per renderer type. This is the container object that
+organizes the profiles and has simple functions to return a
+profile given an index or a name.</p>
+
+<p>The library is initialized with a parameter specifying a
+directory containing the projects mesh profiles. The parameter
+can contain multiple directories separated by a semi colon ";".
+The default directory
+<em>%EMERGENT_PATH%</em>\Media\ToolPluginsData\MeshProfiles automatically
+gets appended to the path name. This is to insure that the
+Gamebryo Default profile is also included. The library parses all
+the XML files it finds. It then compiles all the parsed data into
+the renderer specific <span class=
+"NDLSystemFont">NiMeshProfile</span> objects.</p>
+
+<p>The compilation of this data is done by fixing up all links.
+This makes sure that if you are linking to an externally declared
+stream, that the stream is included into the final profile. After
+all the links have been fixed up, the references are also fixed
+up. References are simply cloned into the mesh profile object.
+After all the data is compiled together, it is then validated.
+Any invalid profiles are removed from the available profile list.
+The check for validation simply makes sure that the profile
+contains at least one finalization stream. This, however, does
+not mean that there were not any parsing or compilation errors.
+You can verify your profiles by using the <a href=
+"../../Tools/MeshProfileCompiler/MeshProfileCompiler_Intro.htm">
+MeshProfileCompiler</a> tool. For help in authoring mesh profiles
+check out the <a href=
+"../../Art/Other/Introduction_to_Mesh_Profiles.htm">artist guide
+to the mesh profile system</a>.</p>
+
+<p>The conversion of the <span class=
+"NDLSystemFont">NiMeshProfile</span> object to the <span class=
+"NDLSystemFont">NiOpProfile</span> object begins first by copying
+the name and description from the <span class=
+"NDLSystemFont">NiMeshProfile</span> object. The streams are
+converted by iterating through each stream and through each
+element and finally through each component. The first operation
+node to be created is the <span class=
+"NDLSystemFont">NiOpStart</span>. This operational node is
+initialized with the semantic and index given from the
+<span class="NDLSystemFont">NiMeshProfileElement</span> object.
+Iterating through all the components we detect if a clamp or a
+remap needs to take place. It is important to note that the clamp
+operation is always done before the remap operation. After this
+takes place, the swizzle and merge operation is created by the
+first component. The swizzle and merge operation is initialized
+with the expected number of components and the new semantic name
+given by the <span class=
+"NDLSystemFont">NiMeshProfileElement</span> object. After all the
+components have been processed and pushed into the swizzle and
+merge node, the swizzle and merge node links with the cast
+convert node if a format is required. The format is given from
+the <span class="NDLSystemFont">NiMeshProfileElement</span>
+object. If a format is not required it simply links to the
+terminator node. The terminator node is the last operational node
+and is initialized with the access flag and usage type for the
+given element of the data stream.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

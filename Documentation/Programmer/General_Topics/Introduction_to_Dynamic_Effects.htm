@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Introduction to Dynamic Effects</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Introduction to Dynamic Effects</h1>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+objects represent localized and global visual phenomena such as
+lighting, fogging, reflection, and shadowing. <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+objects represent both the geometry and the scope of effect. As
+a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>,
+these effect objects reside in the scene graph in order to
+localize and orient them in the game world. As will be seen,
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+objects also have a unique connection to other scene graph
+objects as well scoping. Scoping is the binding between a
+dynamic effect and the sections of the scene graph it
+affects.</p>
+
+<h2>Transforms</h2>
+
+<p>In order to allow effects to be "attached" to objects in the
+scene and to move with those objects, the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+class is a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>.
+The position and orientation of an effect is specified in the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+object's model coordinate system. Thus, an effect's position and
+orientation are transformed by its model-to-world
+transformation.</p>
+
+<h2>Scoping</h2>
+
+<p>An <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+object's "scope", or the sections of the scene graph that it
+affects are completely independent of the effect's parent-child
+relationship. They are capable of affecting any set of subtrees
+in a scene graph, even the subtree that contains the effect
+itself. Objects that are to be affected by a dynamic effect are
+registered with that effect using the <span class=
+"NDLSystemFont">AttachAffectedNode</span> method. This method
+causes the effect to affect the entire subtree rooted at the
+given object. This complete independence of effect positioning
+and scoping is important to avoid "overloading" the concept of
+parent-child in the scene graph. Any number of objects may be
+added to an effect's scope (or <em>affected object</em>) list.</p>
+
+<h2>Updating and Scope</h2>
+
+<p>To increase overall application performance, a system similar
+to the <span class="NDLSystemFont">NiAVObject::Update</span>
+function must be called by the application when <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+scoping changes are made. To update the effects that affect a
+given node, use <span class=
+"NDLSystemFont">NiAVObject::UpdateEffects</span>. <span class=
+"NDLSystemFont">UpdateEffects</span> must be called (before the
+next rendering call) on an object "O" (or any of its ancestors)
+when any of the following occurs:</p>
+
+<ul>
+    <li>A scene graph rooted at O is initially created.</li>
+
+    <li>O is added or removed from the affected object list of an
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>.</li>
+
+    <li>O is detached from or attached as a child of a parent
+    object "P".</li>
+</ul>
+
+<p>Note that applications do <b>not</b> need to call <span class=
+"NDLSystemFont">UpdateEffects</span> if <em>only</em> the settings
+or transforms of a given effect are changed (e.g. the ambient
+color of a point light is changed). If the settings of an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+that includes O in its affected object list are changed
+<em>and</em> one of the aforementioned cases holds true, then
+<span class="NDLSystemFont">UpdateEffects</span> must be
+called.</p>
+
+<p>Note that the call to <span class=
+"NDLSystemFont">UpdateEffects</span> is not made upon the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>,
+but rather the object that the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+includes in its scope list (or previously affected, in the case
+of detaching an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>).
+In general, <span class="NDLSystemFont">UpdateEffects</span> is
+not called on an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+object, since <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+are not visible geometry and cannot have children. Thus, adding
+an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+to the affected object list of another <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+will tend not to have any effect.</p>
+
+<p>For optimal performance, these calls to <span class=
+"NDLSystemFont">UpdateEffects</span> should be "batched" in the
+same way that calls to <span class="NDLSystemFont">Update</span>
+are batched. If the application will be adding and removing
+numerous nodes in a given subtree to and from numerous
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicEffect.htm">NiDynamicEffect</a></span>
+objects, it should make all of the add/remove calls, and then
+make a single call to <span class=
+"NDLSystemFont">UpdateEffects</span> at the top of the subtree.
+If it is necessary to make individual add/remove effect calls,
+the return value indicates whether the add/delete was actually
+needed. If true is returned, <span class=
+"NDLSystemFont">UpdateEffects</span> should be called, otherwise
+<span class="NDLSystemFont">UpdateEffects</span> is not
+needed.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

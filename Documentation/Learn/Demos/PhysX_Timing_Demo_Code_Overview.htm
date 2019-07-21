@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Timing Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Timing Demo Code Overview</h1>
+
+<p>This section details the functionality of the most significant
+member functions in the <span class=
+"NDLSystemFont">PhysXTiming</span> class that implements this
+demo. Most of the functions in this class are for toggling the
+various settings available from the menu options. While they
+provide useful examples of how to set these parameters, we do not
+go into details here. This demo also uses a version of the
+<span class="NDLSystemFont">NiMenu</span> system.</p>
+
+<h2>PhysXTiming::CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> is possibly the
+simplest form for a function that loads a PhysX-enabled NIF file
+and instantiates some PhysX from it. The NIF file in this case
+was created in Max. We enable one optimization by looping over
+all of the destinations in the <a href=
+"../../Reference/NiPhysX/NiPhysXProp.htm"><span class=
+"NDLSystemFont">NiPhysXProp</span></a> object and enable sleep
+optimization. This prevents updating of the scene graph when the
+actor is sleeping, which is safe provided no parent of the actor
+in the scene graph in moving.</p>
+
+<h2>PhysXTiming::UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> is designed to
+support both synchronous and asynchronous simulation from the
+same loop. The most important consideration in its design is the
+PhysX requirement that almost all PhysX SDK function calls happen
+outside the <span class=
+"NDLSystemFont">simulate/fetchResults</span> pair. In this case,
+all application-level SDK calls originate from the on-screen menu
+system. Hence, for each case, synchronous and asynchronous, we
+provide an opportunity to do a pre-input update and a post-input
+update. The pre-input update must make certain that we are
+outside of <span class=
+"NDLSystemFont">simulate/fetchResults</span> by the time the
+function returns, so that we know it is safe to use the menuing
+system.</p>
+
+<p>This function also implements a brief pause in simulation
+after reset. This is an alternative to a time step limiter to
+prevent very large time steps being passed to the physics on the
+first application frame.</p>
+
+<h2>PhysXTiming::UpdatePreInputSync</h2>
+
+<p><span class="NDLSystemFont">UpdatePreInputSync</span> does
+nothing. Because we are in synchronous simulation mode, there is
+no simulation going on outside of the <span class=
+"NDLSystemFont">UpdateFrame</span> function and we know we are
+not inside a <span class=
+"NDLSystemFont">simulate/fetchResults</span> block.</p>
+
+<h2>PhysXTiming::UpdatePostInputSync</h2>
+
+<p><span class="NDLSystemFont">UpdatePostInputSync</span>
+performs the synchronous physics update. The only thing of
+interest is that it optionally does the scene graph update before
+or after the PhysX update. We place this code in the post-input
+function because we want it to execute if the input system
+changed the simulation to synchronous during this frame.</p>
+
+<h2>PhysXTiming::UpdatePreInputAsync</h2>
+
+<p><span class="NDLSystemFont">UpdatePreInputAsync</span>
+performs the first part of an asynchronous update, which means
+calling <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::FetchResults</a></span>
+and then updating the destinations (pushing state from PhysX to
+Gamebryo). If we are doing the scene graph update after the
+physics, we do it now. Note also that we update <span class=
+"NDLSystemFont">m_fSimTime</span> now, when the simulation has
+actually run to that time.</p>
+
+<h2>PhysXTiming::UpdatePostInputAsync</h2>
+
+<p><span class="NDLSystemFont">UpdatePostInputAsync</span> gets
+the next asynchronous simulation step started. We set the target
+simulation time according to the last frame step, update the
+scene graph if needed, update sources, and call simulate. This
+simulation step will go on while the rendering is happening.</p>
+
+<h2>PhysXTiming::ToggleSynchronous()</h2>
+
+<p>The <span class="NDLSystemFont">ToggleSynchronous</span>
+function switches between synchronous simulation (physics is
+executed, then rendering) and asynchronous simulation (physics
+and rendering occur in parallel). It is very important to keep
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object appraised of the simulation update style, via the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::SetAsynchronousSimulation</a></span>
+function.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

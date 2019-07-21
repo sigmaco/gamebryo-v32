@@ -1,0 +1,365 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Streaming</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+  <h1>
+    NiTerrain Streaming</h1>
+  <p>
+    The terrain engine loads data from a disk using an internal multithreaded streaming
+    system. This section of the documentation provides a basic outline on how this system
+    works.<br>
+  </p>
+  <h2>
+    How Streaming works
+  </h2>
+  <p>
+    The streaming system is broken up into tasks. Each task represents a job to perform
+    upon a specific sector within a terrain. Only one task may be executing for a particular
+    sector at a time.</p>
+  <p>
+    Tasks are submitted to the terrain streaming manager. The manager then initializes
+    the streaming pipeline to execute the task. Each task goes through a series of stages
+    of execution depending upon what type of task it is.</p>
+  <p>
+    The types of tasks and the stages they go through are listed in the following table.
+    A few stages have special restrictions on their execution, these are also listed
+    in the table below.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Task type
+        </th>
+        <th>
+          Execution pipeline stages
+        </th>
+        <th>
+          Stage description
+        </th>
+        <th>
+          Execution notes
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+          Loading/Rebuilding
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Preloading
+        </td>
+        <td>
+          Load any required data to perform the task<br>
+          from disk.
+        </td>
+        <td>
+          Only a single thread may be executing a preload<br>
+          task at any one time. This minimizes contention for<br>
+          the storage device.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Loading
+        </td>
+        <td>
+          The raw data from disk is decompressed into a manipulatable format.
+        </td>
+        <td>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Building Heights
+        </td>
+        <td>
+          The heightmap is copied into memory and converted from 16bit heightmap into a floats
+        </td>
+        <td>
+          A number of threads may execute this stage
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Building Lighting
+        </td>
+        <td>
+          If lighting is not stored in the file, the necessary data is built on the fly in
+          this stage
+        </td>
+        <td>
+          A number of threads may execute this stage
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Building Maps
+        </td>
+        <td>
+          Textures are loaded/generated or sub divided in this stage.
+        </td>
+        <td>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Locking
+        </td>
+        <td>
+          Streams are locked.
+        </td>
+        <td>
+          Only the renderer thread will execute this stage.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Populating
+        </td>
+        <td>
+          Streams and data structures are updated.
+        </td>
+        <td>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Unlocking
+        </td>
+        <td>
+          Streams are unlocked.
+        </td>
+        <td>
+          Only the renderer thread will execute this stage.
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+          Unloading
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+        <td bgcolor="rgb(207, 226, 243)" style="background-color: #cccccc">
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Locking
+        </td>
+        <td>
+          Streams are locked.
+        </td>
+        <td>
+          Only the renderer thread will execute this stage.
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Unloading
+        </td>
+        <td>
+          Streams and data structures are updated/unloaded.
+        </td>
+        <td>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          Unlocking
+        </td>
+        <td>
+          Streams are unlocked.
+        </td>
+        <td>
+          Only the renderer thread will execute this stage.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <br>
+        </td>
+        <td>
+          Removing
+        </td>
+        <td>
+          A sector is completely removed from the terrain.
+        </td>
+        <td>
+          Only the renderer thread will execute this stage.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Transitions between different stages in the pipeline may be reported to a listener
+    object if required.</p>
+  <p>
+    Once a task has completed going through all the stages of its execution it is considered
+    complete, removed from the streaming manager, and its resources are freed for the
+    next task to begin execution.</p>
+  <h2>
+    Monitoring Streaming
+  </h2>
+  <p>
+    Whilst the streaming system does not support an explicit method of querying the
+    progress of the streaming tasks, the following set of functions allow an application
+    to detect various states that the streaming system is in.</p>
+  <h3 class="NDLSystemFont">
+    void NiTerrainStreamingManager::WaitForAllTasksCompleted();
+  </h3>
+  <p>
+    Use this function to pause the calling thread until the streaming system becomes
+    idle.</p>
+  <h3 class="NDLSystemFont">
+    bool NiTerrainStreamingManager::PollSectorStreamingStatus(NiTerrainSector* pkSector);
+  </h3>
+  <p>
+    Use this function to query if the streaming system is currently operating upon a
+    particular sector object.</p>
+  <h3 class="NDLSystemFont">
+    bool NiTerrainStreamingManager::PollStreamingStatus();
+  </h3>
+  <p>
+    Use this function to query if the streaming system is currently active and executing
+    any tasks.</p>
+  <h3 class="NDLSystemFont">
+    Listener* NiTerrainStreamingManager::SetListener(Listener* pkListener);
+  </h3>
+  <p>
+    This function can be used to setup a listener object to listen to further events
+    during the execution of individual tasks in the system. Further information on configuring
+    this functionality can be found in the next section under 'setting listeners'.</p>
+  <h2>
+    Configuring the Streaming
+  </h2>
+  <p>
+    Whilst the streaming system is fairly closed from the developer, there are a few
+    points through which the execution of the streaming can be customized and monitored.
+    The following sections each outline one of these extension points.<br>
+  </p>
+  <h3>
+    Setting Listeners
+  </h3>
+  <p>
+    The streaming system supports a listener object to allow reporting and expose loading
+    events to the application.</p>
+  <p>
+    Events that are trackable on the streaming manager include:</p>
+  <ul>
+    <li>Tasks beginning execution. </li>
+    <li>Tasks progressing through the individual stages of execution. </li>
+    <li>Tasks finishing execution. </li>
+  </ul>
+  <p>
+    In order to set the system to use a specific streaming listener object, code similar
+    to the following may be used:</p>
+    
+<pre>NiTerrain* pkTerrain = GetTerrain();
+NiTerrainStreamingPerformanceListener* pkListener = EE_NEW NiTerrainStreamingPerformanceListener(
+    "TerrainPerformanceData.csv");
+pkTerrain-&gt;GetStreamingManager()-&gt;SetListener(pkListener);</pre>
+  <p>
+    When developing a resource listener, it is important to recognize that the streaming
+    manager operates in a multithreaded environment. Developers should be aware of the
+    caveats in multithreaded environments and take necessary precautions in the development
+    of their listener object to avoid corruption of their application. Developers should
+    also take notice that the listener object implements the NiPointer interface virtually,
+    and as a result, the IncRefCount and DecRefCount must be implemented manually, or
+    explicitly referred to a NiRefObject implementation.</p>
+  <p>
+    Please refer to <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainStreamingManager.htm">
+    NiTerrainStreamingManager</a></span> class reference documentation for further information on the
+    listener interface.</p>
+  <h3>
+    Setting the Number of Threads
+  </h3>
+  <p>
+    The streaming manager is a threaded environment and uses a pool of threads to execute
+    the streaming tasks that are requested. The size of this thread pool may be configured
+    externally, and can be done through the following code:</p>
+    
+  <pre>NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;GetStreamingManager()-&gt;SetNumWorkers(8);</pre>
+  <p>
+    It is worth noting, that by setting the number of workers to 0, all the threaded
+    features of the streaming system are disabled, and the process of loading from disk
+    becomes synchronous.</p>
+  <p>
+    The default number of workers for the streaming system is 8.</p>
+  <h3>
+    Configuring Different Storage Methods
+  </h3>
+  <p>
+    The terrain storage system is quite flexible in what it allows the developer to 
+    customize in terms of file format, and loading data alongside the terrain. 
+    Please refer to <a href="NiTerrain_Storage.htm">Terrain Storage</a> for more information.</p>
+  <h3>
+    Configuring Automatic Streaming of Sectors
+  </h3>
+  <p>
+    The terrain engine supports a &quot;sector selector&quot; object for the implementation of 
+    an algorithm that automatically selects which sectors should be loaded, when and 
+    to what level of detail. Please refer to <a href="NiTerrain_Paging.htm">Terrain 
+    Paging</a> for more information.</p>
+</body>
+</html>

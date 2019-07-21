@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::SmallObjectAllocator</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">efd::SmallObjectAllocator</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="efd__IAllocator.htm">efd::IAllocator</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;SmallObjectAllocator.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classefd_1_1_small_object_allocator.gif" alt="Inheritance graph for efd::SmallObjectAllocator"/>
+  <p class="FigureCaption">Inheritance graph for efd::SmallObjectAllocator</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">A platform-independent class to support pooling of small allocations. </p>
+<p class="NDLNormal">This allocator is based on the SmallObjectAlloctor described by Alexei Alexandrescu in Modern C++ Design. The latest code for Loki (the codebase containing the <span class="NDLSystemFont">SmallObjectAllocator</span>) may be found at  The licensing information for this class may be found in the Third Party Code section of the documentation. Also of importance is the fact that allocation thread safety responsibility is passed onto the <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span> objects.</p>
+<p class="NDLNormal">
+<p class="NDLNormal">All sizes from 1 to EE_MAX_SMALL_OBJECT_SIZE will receive their own internal allocation pool. This approach helps conserve memory, since this class is a small object allocator. The current track of Alexandrescu's code enforces alignment restrictions that bloat the size for small object allocations. Please see the alignment note which follows for more justification for this design decision. Also note that the size of an allocation must be known at deallocation time. Absence of this knowledge will currently make it impossible to delete the allocation. Please see "Modern C++ Design" by Andrei Alexandrescu for strategies that enable the deallocator to know how large the allocation was without storing a size per instance.</p>
+<p class="NDLNormal">Allocations for a given size are only guaranteed to be aligned if the size of the request itself is aligned. For example, all 8-byte allocations will be aligned to at least a 4-byte boundary, since the beginning of a pool is aligned to EE_MEM_ALIGNMENT_DEFAULT. However, 7-byte allocations are not guaranteed to be aligned. This scheme works in practice for classes, since the class size will be a multiple of the largest alignment requirement for the members of the class.</p>The <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span> class is used by <span class="NDLSystemFont">SmallObjectAllocator</span> internally for allocation management. <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span> allocates memory of a particular size from an internal pool of memory chunks. When no more chunks have open slots, a new chunk will be allocated. Note that each <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span> has a critical section that manages its various chunks. This approach can improve memory performance in a multi-threaded environment. </p>
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classefd_1_1_small_object_allocator_1acc1f853c4052e195a1a86c6095f721b1"></a>
+<p class="NDLRefMemberFunction">SmallObjectAllocator(size_t stChunkSize = 25600)</p>
+<p class="NDLRefMemberDescription">Creates a <span class="NDLSystemFont">SmallObjectAllocator</span> object with a <span class="NDLSystemFont"><a href="efd__set.htm">set</a></span> of pools up to EE_MAX_SMALL_OBJECT_SIZE. </p>
+<p class="NDLRefMemberDetailedDescription">Each pool, once it receives a request for memory for the first time, will allocate space for 256 entries or however many entries can fit into EE_DEFAULT_CHUNK_SIZE, whichever is less.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">stChunkSize</span></td>
+    <td>Chunk size (default is EE_DEFAULT_CHUNK_SIZE). </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_small_object_allocator_1a812a2040d19992c5be64e155446e4b60"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span>*  GetFixedAllocatorForSize(size_t stNumBytes)</p>
+<p class="NDLRefMemberDescription">Returns the <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span> for the given input byte size. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">stNumBytes</span></td>
+    <td>Input number of bytes to specify the <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span>. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Pointer to <span class="NDLSystemFont"><a href="efd__FixedSizeAllocator.htm">FixedSizeAllocator</a></span>. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="methods_defined_by_iallocator."></a>
+<p class="NDLRefHead1">Methods defined by IAllocator.</p>
+
+
+<a name="classefd_1_1_small_object_allocator_1a5a5acc84096acd5ed4d4670f93832135"></a>
+<p class="NDLRefMemberFunction">virtual void*  Allocate(<br/>size_t& stSizeInBytes, <br/>size_t& stAlignment, <br/><span class="NDLSystemFont"><a href="efd__MemHint.htm">MemHint</a></span> kHint, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad9c81f78b405eb346c527c73002e5382">MemEventType</a></span> eEventType, <br/>const char* pcFile, <br/>int iLine, <br/>const char* pcFunction)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1ac7fba8ab045fe5245228e9bc0740145c"></a>
+<p class="NDLRefMemberFunction">virtual void  Deallocate(<br/>void* pvMemory, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad9c81f78b405eb346c527c73002e5382">MemEventType</a></span> eEventType, <br/>size_t stSizeInBytes)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1afbc726db92240dcf4d1011e1eea0bd77"></a>
+<p class="NDLRefMemberFunction">virtual void*  Reallocate(<br/>void* pvMemory, <br/>size_t& stSizeInBytes, <br/>size_t& stAlignment, <br/><span class="NDLSystemFont"><a href="efd__MemHint.htm">MemHint</a></span> kHint, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad9c81f78b405eb346c527c73002e5382">MemEventType</a></span> eEventType, <br/>size_t stSizeCurrent, <br/>const char* pcFile, <br/>int iLine, <br/>const char* pcFunction)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a4212356c6c98ec1eb85f89401c7dd970"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  TrackAllocate(<br/>const void *const  pvMemory, <br/>size_t stSizeInBytes, <br/><span class="NDLSystemFont"><a href="efd__MemHint.htm">MemHint</a></span> kHint, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad9c81f78b405eb346c527c73002e5382">MemEventType</a></span> eEventType, <br/>const char* pcFile, <br/>int iLine, <br/>const char* pcFunction)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a22353b60b74f30bda234dbb5effd95bd"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  TrackDeallocate(<br/>const void *const  pvMemory, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad9c81f78b405eb346c527c73002e5382">MemEventType</a></span> eEventType)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1add7fb530a0f8589e87324cbade57c448"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  SetMarker(<br/>const char* pcMarkerType, <br/>const char* pcClassifier, <br/>const char* pcString)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1ae184548d5de9f1fdd8b0e3b798f9b49e"></a>
+<p class="NDLRefMemberFunction">virtual void  Initialize()</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a78596080ec267ea03c0efcf6fbc0bb61"></a>
+<p class="NDLRefMemberFunction">virtual void  Shutdown()</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1afb475506c8d79b194d173d83694f2b76"></a>
+<p class="NDLRefMemberFunction">virtual void  PerThreadInit()</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a300221e31938a97841d15f7416a71eb6"></a>
+<p class="NDLRefMemberFunction">virtual void  PerThreadShutdown()</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a4fc87e426f2665d4b0f857586ff5950d"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  VerifyAddress(const void* pvMemory)</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+
+<a name="classefd_1_1_small_object_allocator_1a4565cc40b5f573cda8e71e82278a7f06"></a>
+<p class="NDLRefMemberFunction">virtual void  CreateMemoryLogHandler()</p>
+<p class="NDLRefMemberDescription">Empty function implemented to complete the <span class="NDLSystemFont"><a href="efd__IAllocator.htm">IAllocator</a></span> interface. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">SmallObjectAllocator</span> does not perform any memory logging. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

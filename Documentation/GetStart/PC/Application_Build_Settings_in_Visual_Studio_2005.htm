@@ -1,0 +1,430 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Application Build Settings in Visual Studio 2005</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PC" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Application Build Settings in Visual Studio 2005</h1>
+
+<h2>Gamebryo LightSpeed</h2>
+
+<p>Gamebryo LightSpeed requires that the include and library
+paths in Visual Studio 2005 are correctly configured in order to
+compile. The directories to the current version of the DirectX
+SDK must be added to the standard include and library paths
+<em>before</em> the Microsoft Visual C++
+directories in the include and library files lists. If they are
+not listed before the default paths, then Visual Studio may find
+older and incompatible versions of header or library files, which
+will cause the compilation to fail. The installation process for
+the DirectX SDK should cause these paths to be
+set appropriately, but it is important to double check these
+settings.</p>
+
+<p>You can confirm that these paths are set by selecting
+"Tools-&gt;Options..." from the menu bar, opening the folder
+labeled "Projects and Solutions" and selecting the "VC++
+Directories..." sub-category. From there, confirm that the
+DirectX SDK paths are at the top for both the
+"Include files" and "Library files" groups from the "Show
+directories for" dropdown.</p>
+
+<p>At the time of the release of this version of Gamebryo, the
+February 2010 DX SDK is current.</p>
+
+<h2>Link Settings</h2>
+
+<p>This section covers the items configured in the project link
+settings. To access this dialog, select
+"Project-&gt;Properties..." from the Visual Studio menu bar, and
+opening the "Configuration Properties" subtree. It is important
+to note that these settings must be configured individually for
+each build configuration the project uses.</p>
+
+<p>The following libraries should be linked in with any Gamebryo
+application:</p>
+
+<p><span class="NDLSystemFont">efd.lib NiMesh.lib NiFloodgate.lib
+NiMain.lib NiSystem.lib</span></p>
+
+<p>To do so, go to the project properties dialog, click the
+"Linker" folder and select the "Input" sub-category. Add the five
+libraries to the "Additional Dependencies" field. If the
+application uses other optional Gamebryo libraries, they will
+need to be added as well. The default set of libraries that
+Visual Studio automatically links with do not need to be
+specified.</p>
+
+<p>To allow the linker to locate the Gamebryo libraries, open the
+project properties dialog, click the "Linker" folder, and select
+the "General" subcategory. The "Additional Library Directories"
+field should contain the path to the Gamebryo library folder that
+corresponds to your current build configuration. Each of the
+project's build configurations should have a different setting
+for "Additional Library Directories". The available build
+configurations and their corresponding libraries are listed in
+<a href="Gamebryo_Build_Configurations.htm">Gamebryo Build
+Configurations</a>.</p>
+
+<p>For example, to set the appropriate library path for a "Win32
+Release" configuration, set the "Additional Library Directories"
+field to "<span class=
+"NDLSystemFont">$(EMERGENT_PATH)\sdk\Win32\Lib\VC80\Release</span>".</p>
+
+<h2>Linking the Game Framework</h2>
+
+<p>In order to use the Game Framework entity and simulator
+subsystems, you need to add additional link dependencies to your
+project. The "Additional Dependencies" settings of applications
+using the Game Framework should also include:</p>
+
+<p><span class="NDLSystemFont">efdNetwork.lib egf.lib
+egfLua.lib</span></p>
+
+<h2>Linking Core Runtime Services</h2>
+
+<p>The Core Runtime Services depend on Game Framework libraries
+as well as select Core Runtime libraries. In all cases the above
+libraries listed for Game Framework must be included. Additional
+Core Runtime libraries may also be required depending on the
+service. See the Core Runtime Services reference documentation
+for the link requirements for individual Core Runtime Services.
+For example, the egmAnimation service requires the NiAnimation
+library.</p>
+
+<h2>Linking the Renderers</h2>
+
+<p>In addition to the above build settings, the "Additional
+Dependencies" setting should include the desired D3D renderer 
+libraries:</p>
+
+<p><span class="NDLSystemFont">NiDX9Renderer.lib
+NiD3D10Renderer.lib ecrD3D11Renderer.lib</span></p>
+
+<p>Alternatively, an application based on the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span> library, found in the <span class=
+"NDLSystemFont">Tools</span> directory of the shipment, may
+automatically link in the renderer libraries it needs using the
+pragma capabilities of Visual C++. Applications will need to define
+or undefine certain preprocessor macros depending on which renderers
+they want to support. Refer to the documentation on
+<a href="../../Reference/NiApplication/Usage_of_NiApplication_in_Gamebryo.htm">linking 
+in the renderers your application needs</a> in 
+NiApplication.</p>
+
+<h2>Linking the Miles Sound Module</h2>
+
+<p>In addition to the above build settings, the "Additional
+Dependencies" setting of applications using the Miles Sound
+version of the Gamebryo <span class=
+"NDLSystemFont">NiAudio</span> library should include:</p>
+
+<p><span class="NDLSystemFont">NiAudio.lib mss32.lib</span></p>
+
+<p>Any application that needs to use <span class=
+"NDLSystemFont">NiAudio</span> and/or load NIF files containing
+<span class="NDLSystemFont">NiAudio</span> based objects will
+need to include and link the <span class=
+"NDLSystemFont">NiAudio</span> Miles sound library. The easiest
+way to add this support is to use Visual C++ pragmas in the main
+source file:</p>
+
+<pre>
+#include &lt;NiAudio.h&gt;
+#pragma comment(lib,"NiAudio.lib")
+#pragma comment(lib,"mss32.lib")
+</pre>
+
+<h2>Linking the PhysX Modules</h2>
+
+<p>Before you can build or link any PhysX-enabled Gamebryo
+libraries or applications, you must define the environment
+variable <span class="NDLSystemFont">PHYSXINSTALLPATH</span> to
+point to the root of your PhysX SDK installation.</p>
+
+<p>In addition to the above build settings, the "Additional
+Dependencies" setting of applications using the <span class=
+"NDLSystemFont">NiPhysX</span> library should include:</p>
+
+<p><span class="NDLSystemFont">efdPhysX.lib NiPhysX.lib
+PhysXLoader.lib</span></p>
+
+<p>For DLL configurations use the appropriate compiler/version
+tag in the Gamebryo names, e.g. <span class=
+"NDLSystemFont">efdPhysX$(GB_DLL_Suffix).lib</span> <span class=
+"NDLSystemFont">NiPhysX$(GB_DLL_Suffix).lib</span>. The
+<span class="NDLSystemFont">NiPhysXFluid</span> and <span class=
+"NDLSystemFont">NiPhysXParticle</span> libraries depend on
+<span class="NDLSystemFont">NiPhysX</span>.</p>
+
+<p>You must also add <span class=
+"NDLSystemFont">$(PHYSXINSTALLPATH)\SDKs\lib\win32\</span> to the
+"Additional Library Directories".</p>
+
+<h2>Linking Other Modules</h2>
+
+<p>The remaining core Gamebryo libraries (<span class=
+"NDLSystemFont">NiAnimation</span>, <span class=
+"NDLSystemFont">NiPortal</span>, etc.) do not have dependencies
+on non-Gamebryo libraries.</p>
+
+<h2>C/C++ Settings</h2>
+
+<p>The following sections cover the settings that need to be
+configured in the project's C/C++ settings. To access this
+dialog, select "Project-&gt;Settings..." from the menu bar, then
+click the folder labeled "C/C++". It is important to note that
+these settings will need to be set individually for each build
+configuration of the project.</p>
+
+<h3>C/C++ General</h3>
+
+<p>For Debug build configurations, the "Debug Information Format"
+setting for your project should be set to "Program Database for
+Edit and Continue".</p>
+
+<p>The "Additional Include Directories" field should list the
+path of the Gamebryo include directory. This path is
+"$(EMERGENT_PATH)\sdk\Win32\Include". In addition, you'll need to
+include the path STLPort. This path is
+"$(EMERGENT_PATH)\Source\3rdParty\STLPort\Package"</p>
+
+<p>If using PhysX libraries, also add
+$(PHYSXINSTALLPATH)\SDKs\PhysXLoader\include\,
+$(PHYSXINSTALLPATH)\SDKs\Cooking\include\,
+$(PHYSXINSTALLPATH)\SDKs\Physics\include\,
+$(PHYSXINSTALLPATH)\SDKs\Foundation\include\, and
+$(PHYSXINSTALLPATH)\SDKs\Core\include\.</p>
+
+<p>"Detect 64-bit Portability Issues" should be set to "No".</p>
+
+<h3>C/C++ Preprocessor Definitions</h3>
+
+<p>In addition to the standard preprocessor definitions
+associated with a Win32 application</p>
+
+<p><span class="NDLSystemFont">WIN32, NDEBUG or _DEBUG,
+_WINDOWS</span></p>
+
+<p>Gamebryo applications must also define</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Configuration</th>
+
+            <th>Defines</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>All</td>
+
+            <td>STRICT, EE_PLATFORM_WIN32, EE_COMPILER_VC80,
+            EE_GAMEBRYO_VERSION=32
+            </td>
+        </tr>
+
+        <tr>
+            <td>Debug</td>
+
+            <td>EE_CONFIG_DEBUG, EE_EFD_CONFIG_DEBUG,
+            NIDEBUG</td>
+        </tr>
+
+        <tr>
+            <td>DebugDLL</td>
+
+            <td>EE_CONFIG_DEBUG, EE_EFD_CONFIG_DEBUG, NIDEBUG,
+            EE_DYNAMIC_BEHAVIOR_LOAD</td>
+        </tr>
+
+        <tr>
+            <td>Release</td>
+
+            <td>EE_CONFIG_RELEASE, EE_EFD_CONFIG_RELEASE,
+            NIRELEASE</td>
+        </tr>
+
+        <tr>
+            <td>ReleaseDLL</td>
+
+            <td>EE_CONFIG_RELEASE, EE_EFD_CONFIG_RELEASE,
+            NIRELEASE, EE_DYNAMIC_BEHAVIOR_LOAD</td>
+        </tr>
+
+        <tr>
+            <td>Shipping</td>
+
+            <td>EE_CONFIG_SHIPPING, EE_EFD_CONFIG_SHIPPING,
+            NISHIPPING, EE_DISABLE_LOGGING</td>
+        </tr>
+
+        <tr>
+            <td>ShippingDLL</td>
+
+            <td>EE_CONFIG_SHIPPING, EE_EFD_CONFIG_SHIPPING,
+            NISHIPPING, EE_DYNAMIC_BEHAVIOR_LOAD,
+            EE_DISABLE_LOGGING</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Applications using PhysX must also define <span class=
+"NDLSystemFont">NOMINMAX</span>.</p>
+
+<p>Whether an application is optimized or unoptimized, and
+whether the application includes Debug symbols or not are options
+independent of the Gamebryo library build configuration. Gamebryo
+includes a "Debug with Release Libs" configuration as an example
+of how to build an unoptimized application with debug symbols
+that is linked with Gamebryo Release libraries. The Gamebryo
+Tutorials and AssetViewer both demonstrate this build
+configuration.</p>
+
+<h3>C/C++ Code Generation and Choosing the Right Set of Runtime
+Libraries</h3>
+
+<p>The core Gamebryo engine does not require exception handling,
+so it is disabled in nearly all Gamebryo project files.</p>
+
+<p>The "Runtime library" setting depends on the build
+configuration you are using. Gamebryo libraries were compiled as
+follows:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Build Configuration</th>
+
+            <th>Use Runtime Library</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Debug</td>
+
+            <td><span class="NDLSystemFont">Debug Multithreaded
+            DLL</span></td>
+        </tr>
+
+        <tr>
+            <td>Release</td>
+
+            <td><span class="NDLSystemFont">Multithreaded
+            DLL</span></td>
+        </tr>
+
+        <tr>
+            <td>Shipping</td>
+
+            <td><span class="NDLSystemFont">Multithreaded
+            DLL</span></td>
+        </tr>
+
+        <tr>
+            <td>DebugDLL</td>
+
+            <td><span class="NDLSystemFont">Debug Multithreaded
+            DLL</span></td>
+        </tr>
+
+        <tr>
+            <td>ReleaseDLL</td>
+
+            <td><span class="NDLSystemFont">Multithreaded
+            DLL</span></td>
+        </tr>
+
+        <tr>
+            <td>ShippingDLL</td>
+
+            <td><span class="NDLSystemFont">Multithreaded
+            DLL</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The "Struct Member Alignment" field should be set to
+"Default".</p>
+
+<h3>C/C++ Language</h3>
+
+<p>Uncheck the option "Enable Run-Time Type Information (RTTI)".
+RTTI does not need to be enabled in applications that use the
+Gamebryo runtime type information macros <a href=
+"../../Programmer/Object_Systems/Run_Time_Type_Information.htm">NiIsExactKindOf</a>,
+<a href=
+"../../Programmer/Object_Systems/Run_Time_Type_Information.htm">NiIsKindOf</a>,
+or <a href=
+"../../Programmer/Object_Systems/Run_Time_Type_Information.htm">NiDynamicCast</a>.
+These macros are independent of the Microsoft RTTI system.</p>
+
+<h3>C/C++ Advanced</h3>
+
+<p>The "Calling Convention" field should be set to "__cdecl".</p>
+
+<h2>Property Sheets</h2>
+
+<p>Gamebryo ships with a number of Property Sheets that serve as
+the basis for most Gamebryo projects. These property sheets may
+be found in:</p>
+
+<p><span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\Build\Win32\VC80\Property
+Sheets</span>.</p>
+
+<p>It is not necessary for a Gamebryo-based application to make
+use of these property sheets, but they can act as an easy way to
+change the default build behavior of Gamebryo projects.</p>
+
+<p>Because of Gamebryo's reliance on property sheets, it may
+appear at first glance that Gamebryo's projects to not actually
+comply with many of the settings described here. In those cases,
+the setting is nearly always contained in the appropriate
+property sheet, rather than in the project file itself.</p>
+
+<h2>Visual C++ Express 2005</h2>
+
+<p>There are a number of difficulties using Visual C++ Express
+with Gamebryo. As such, only the full version of Visual Studio
+2005 is supported.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

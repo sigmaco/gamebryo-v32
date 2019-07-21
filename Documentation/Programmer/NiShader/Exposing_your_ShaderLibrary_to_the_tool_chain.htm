@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Exposing your ShaderLibrary to the tool-chain</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Exposing your ShaderLibrary to the tool-chain </h1>
+
+<p>Having the tool-chain recognize your shader libraries 
+ give you several advantages as a Gamebryo developer. The first advantage 
+ is the ability to stream the shader you wish to apply to an object out 
+ as part of the scene. Provided the proper library is registered with your 
+ application when it runs, the shader will be attached appropriately when 
+ the object is streamed in. To put it another way, developers will not 
+ have to do anything programmatically to attach shaders to objects once 
+ they have written a shader library.</p>
+
+<p>The second advantage is through the exposure of 'tweakable' 
+ attributes that the artist can adjust to make the effect more appealing. 
+ This capability is accomplished through the shader system's usage of <span 
+ class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiExtraData.htm">NiExtraData</a></span> 
+ attached to geometry instances. Your shader can present custom attributes 
+ to assign to an object that is mapped into the shader constant registers. 
+ These values will be exported as part of the object, and can be adjusted 
+ by the artist to allow them the ability to tweak values with an artistic 
+ eye. These attributes can be adjusted as part of an animation cycle, giving 
+ the artist the ability to animate shader effects. </p>
+
+<p>As an example, consider a spell effect on a character 
+ which produces a halo around the model during the casting of the spell. 
+ The shader author can write the shader to render the halo, and expose 
+ the color of the halo to be used as an artist attribute and assign it 
+ an initial color. A parameter that sets the size of the halo is also exposed 
+ as part of this example. When the artist assigns the given shader to an 
+ object, the color and size parameters will be added to the to the Shader 
+ Parameters section of the material editor in their modeling tool. The 
+ artist proceeds to animate the character casting the spell, having the 
+ halo expand by animating the halo size value, and has the color go from 
+ a muted white to a full blown fiery red as the spell reaches its peak. 
+ To end the spell, he has the halo size reduce back to zero, and the color 
+ fades to black. When this character is exported, the shader name and animated 
+ parameters are exported along with him. When the game is played and the 
+ animation on this character is run, the shader will automatically use 
+ the animated parameters to display the effect with no programmer-required 
+ code beyond writing the shader to perform the halo.</p>
+
+<p>A third advantage is that the system allows artists 
+ and designers to preview the objects with EXACTLY the same rendering pipeline 
+ they will see in your game. This approach provides a potentially large 
+ boost to development efficiency, since the artist will not be subjected 
+ to the &quot;model - export - view - repeat&quot; pattern to see shader 
+ effects on an object.</p>
+
+<p>To have the tool-chain recognize your shader library, 
+ you must follow some rules when creating it.</p>
+
+<ul>
+	
+	<li>You must include <span class="NDLSystemFont">NiShaderLibraryInterface.h</span>. This file defines the functions that
+    your library will need to export.</li>
+	
+	<li>You must 
+ implement DLL-builds. The tool-chain will only operate with a DLL build 
+ of a shader library, and this arrangement also allows for the tools to 
+ operate without requiring a recompile when the shader library changes.</li>
+	
+	<li>You must 
+ implement the <span class="NDLSystemFont">LoadShaderLibrary</span> 
+ function - the prototype is located in the <span class="NDLSystemFont">NiShaderLibraryInterface.h</span> 
+ file in <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\Source\CoreRuntime\EngineLibs\NiMain</span>. 
+ (In binary installations: This file can be found in the <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\sdk\Win32\Include</span> 
+ folder.) This function is responsible for creating an instance of the 
+ library and returning it to the caller.</li>
+	
+	<li>Your class 
+ derived from <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiShaderLibrary.htm">NiShaderLibrary</a></span> 
+ must implement the <span class="NDLSystemFont">NiShaderLibrary::GetShaderLibraryDesc</span> 
+ function. This is the function that tells the art tools about the shaders 
+ in the library, so it must return a valid <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiShaderLibraryDesc.htm">NiShaderLibraryDesc</a></span> 
+ object that contains an <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiShaderDesc.htm">NiShaderDesc</a></span> 
+ for every shader the library provides.</li>
+	
+	<li>The output 
+ DLL extension must be of the proper format. For DX9-based builds, the file name for 
+        Shipping builds must end in '<span class="NDLSystemFont">.sl9</span>', so the name should be <span class="NDLSystemFont">*.sl9</span>. 
+        Release builds must be named <span class="NDLSystemFont">*.nl9</span>, and Debug builds must be named <span class="NDLSystemFont">*.dl9</span>.</li>
+	
+	<li>The resulting library must be placed in the proper directory.  By default, this directory is:<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\SDK\Win32\DLL\ShaderLibs\VC#</span></p>
+
+    <p>...where &quot;<span class="NDLSystemFont">VC#</span>&quot; is
+     &quot;<span class="NDLSystemFont">VC80</span>&quot;for libraries built under Visual Studio 2005 
+        and &quot;<span class="NDLSystemFont">VC90</span>&quot;for libraries built under Visual 
+        Studio 2008.
+    </li>
+</ul>
+
+<p>An example of a programmatic shader library 
+ that has been exposed to the tool chain is the <a HREF="../../Learn/Demos/ShaderLibrary.htm">ShaderLibrary</a> 
+ library in the <a HREF="../../Learn/Demos/Overview.htm">ShaderSample</a> 
+ sample.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

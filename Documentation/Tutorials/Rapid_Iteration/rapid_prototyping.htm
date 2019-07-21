@@ -1,0 +1,469 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Rapid Iteration: Game Prototyping</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Rapid Iteration: Game Prototyping</h1>
+
+<p>This example will walk you through the process of using rapid iteration features to prototype
+game play. You will use the Base Game sample application and start with a stripped down set of
+content that provides only limited game play. Then, you will gradually add features in the steps
+below to approximate the functionality in the full Base Game application.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="rapid_single_player.htm">Tutorial Overview</a></li>
+
+    <li>Setting up rapid iteration for:
+
+        <ul>
+            <li><a href="rapid_setting_up_for_pc.htm">Secondary PC Setup</a></li>
+
+            <li><a href=
+            "../../ee_goto.htm#Tutorials/Rapid_Iteration/rapid_setting_up_for_ps3.htm">PS3
+            Setup</a></li>
+
+            <li><a href=
+            "../../ee_goto.htm#Tutorials/Rapid_Iteration/rapid_setting_up_for_xbox360.htm">Xbox 360
+            Setup</a></li>
+        </ul>
+    </li>
+
+    <li><a href="rapid_full_sys_reset.htm">Resetting the Game</a></li>
+
+    <li><a href="rapid_script_change.htm">Script Changes</a></li>
+
+    <li><a href="rapid_nif_kf_change.htm">NIF or KF/KFM File Changes</a></li>
+
+    <li><a href="rapid_flat_model_change.htm">Flat Model Changes</a></li>
+
+    <li><a href="rapid_world_file_change.htm">World File Changes</a></li>
+
+    <li><a href="rapid_texture_change.htm">External Texture Changes</a></li>
+
+    <li><b>Game Prototyping&nbsp;&nbsp;&lt;-- You are here</b></li>
+</ol>
+
+<h2>Initial Conditions</h2>
+
+<ol>
+
+    <li>Make a copy of the <span class="NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media</span>
+    directory to a test location on your hard drive. You will be modifying files in Media then you
+    can replace it with the prestine copy once you have finished this tutorial.</li>
+
+    <li>Confirm that Base Game is built and can run with its usual assets. (Only Release or Debug
+    configurations create a rapid iteration service by default.)</li>
+
+    <li>Open Toolbench, and open the rapid prototyping solution file. By default, this file
+    installs to the following location:
+
+        <p class="indent1"><span class=
+        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\Samples\GameFramework\RapidPrototyping\RapidPrototyping.gsl</span></p>
+    </li>
+
+    <li>Edit the Base Game common configuration file to specify the initial world (<span class=
+    "NDLSystemFont">InitialWorld=urn:emergent-world:RapidPrototyping</span> under the <span class=
+    "NDLSystemFont">[Game]</span> section). By default, this file installs to the following location:
+
+        <p class="indent1"><span class=
+        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Samples\GameFrameworkTechDemos\BaseGame\ConfigCommon.ini</span></p>
+    </li>
+
+    <li>Normally, the game uses LAN broadcast to determine the IP address of the PC on which
+    Toolbench is running. However, if you are testing a console whose IP address is on a different
+    subnet, you must edit the <span class="NDLSystemFont">ConfigCommon.ini</span> file.
+        <pre>
+[AssetWeb]
+UseDefaultChannelMgr=true
+
+[ChannelManager]
+HostName=&lt;IP of Toolbench PC&gt;
+</pre>
+    </li>
+
+    <li>For console testing, manually copy the <span class="NDLSystemFont">RapidPrototyping</span>
+    directory (default location: <span class=
+    "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\Samples\GameFramework\RapidPrototyping\</span>)
+    to the root of your game on the console (<span class="NDLSystemFont"><em>&lt;Game
+    root&gt;</em>\Media\Samples\GameFramework\RapidPrototyping\</span>).</li>
+
+    <li>Copy the version of <span class="NDLSystemFont">ConfigCommon.ini</span> from the Media
+    directory into the base directory of <span class="NDLSystemFont"><em>&lt;Game
+    root&gt;</em></span>.</li>
+
+    <li>Run Base Game to verify that the stripped down game now appears. Base Game should contain
+    no trigger rings on the floor and no ability to open the first door.</li>
+</ol>
+
+<h2>Adding the Triggers</h2>
+
+<p>First, you will use Toolbench to add triggers for opening the doors in the first and second
+rooms of the game.</p>
+
+<ol>
+    <li>Create the <span class="NDLSystemFont">RpDoorTrigger</span> model.
+
+        <ol>
+            <li>Open <span class="NDLSystemFont">RapidPrototyping.emtproj</span> in the Game
+            Solution View.</li>
+
+            <li>In the EMT Project Explorer, "Contents" pane, right-click and select
+            <span class="NDLGUILabel">Add &gt; New Model</span> from the context menu. Name the new
+            model "<span class="NDLSystemFont">RpDoorTrigger</span>".</li>
+
+            <li>Mix-in <span class="NDLSystemFont">StandardModelLibrary.Mesh</span> and
+            <span class="NDLSystemFont">BaseGame.CollideExecuteRemote</span> by dragging these
+            models from the EMT Project Explorer to the graphical diagram of your new model. Drop the
+            mix-in models in the area <em>above</em> your model.</li>
+
+            <li>In the Entity Model Editor, override the following properties:
+
+                <ul>
+                    <li>
+                        <span class="NDLGUILabel">Mesh.NifAsset</span>=TriggerProxy
+
+                        <p class="indent2">(Browse to <span class=
+                        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\Samples\Graphics\TriggerProxy.nif</span>)</p>
+                    </li>
+
+                    <li><span class="NDLGUILabel">PhysXShape.ShapeDimensions</span>=50,1,1</li>
+                </ul>
+            </li>
+         </ol>
+    </li>
+
+    <li>Save your EMT content by clicking the Save Content toolbar button.</li>
+
+    <li>Switch to World Builder by double-clicking the <span class=
+    "NDLSystemFont">RapidPrototyping.block</span> file in the Game Solution View. In World Builder,
+    you will use your newly created model to add a trigger in the first room.
+
+        <ol>
+            <li>From the Palette view in World Builder, drag and drop an <span class=
+            "NDLSystemFont">RpDoorTrigger</span> model into the first room.</li>
+
+            <li>In World Builder's Entity Editor (not the Entity Model Editor from EMT!), override
+            the following properties:
+
+                <ul>
+                    <li><span class="NDLGUILabel">Placeable.Position</span>=0,0,0</li>
+
+                    <li><span class="NDLGUILabel">Placeable.Scale</span>=1.5</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.RemoteEntity</span>=Door0</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.OnEnterBehaviors</span>=(BgAvatar,
+                    OnOpenClose)</li>
+                </ul>
+            </li>
+        </ol>
+    </li>
+
+    <li>Save Content.</li>
+
+    <li>Switch over to your running instance of Base Game and test the new trigger.
+
+        <ol>
+            <li>Walk the avatar to the trigger and verify that the door opens.</li>
+
+            <li>Wait about 10 seconds and verify that the door will close again.</li>
+
+            <li>Re-open the door and walk your avatar through to the second room</li>
+        </ol>
+    </li>
+
+    <li>Next, we will add a trigger to open the door in the second room.
+
+        <ol>
+            <li>Drag and drop an <span class="NDLSystemFont">RpDoorTrigger</span> in the second
+            room and override the following properties:
+
+                <ul>
+                    <li><span class="NDLGUILabel">Placeable.Position</span>=1600,200,0</li>
+
+                    <li><span class="NDLGUILabel">Placeable.Scale</span>=1.5</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.RemoteEntity</span>=Door1</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.OnEnterBehaviors</span>=(BgAvatar,
+                    OnOpen)</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.OnStayBehaviors</span>=(BgAvatar,
+                    OnOpen)</li>
+
+                    <li><span class=
+                    "NDLGUILabel">RemoteBehaviorResponse.OnLeaveBehaviors</span>=(BgAvatar,
+                    OnClose)</li>
+
+                    <li><span class="NDLGUILabel">PhysXTrigger.TriggerOnStay</span>=True</li>
+                </ul>
+            </li>
+        </ol>
+    </li>
+
+    <li>Save Content.</li>
+
+    <li>Switch back to your running Base Game and test the trigger. Verify that the second door
+    opens when you enter the trigger and closes when you leave it.</li>
+</ol>
+
+<h2>Adding Some Props</h2>
+
+<p>Now we will add some props to the game. We'll add a Box in the second room and the Treasure
+Chest in the third room.</p>
+
+<ol>
+    <li>Create a model for the TreasureChest.
+
+        <ol>
+            <li><span class="NDLGUILabel">Add &gt; New Model</span>. Name the model <span class=
+            "NDLSystemFont">RpChest</span>.</li>
+
+            <li>Mix-in <span class="NDLSystemFont">StandardModelLibrary.Actor</span>, <span class=
+            "NDLSystemFont">BaseGame.TriggeredAnimation</span>, and <span class=
+            "NDLSystemFont">BaseGame.CollideExecuteLocal</span>.</li>
+
+            <li>Override the following properties:
+
+                <ul>
+                    <li>
+                        <span class="NDLGUILabel">Actor.KfmAsset</span>=TreasureChest
+
+                        <p class="indent2">(Browse to <span class=
+                        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\Samples\Graphics\TreasureChest.kfm</span>)</p>
+                    </li>
+
+                    <li><span class=
+                    "NDLGUILabel">CollideExecuteLocal.CollisionBehaviors</span>=(BgAvatar,
+                    OpenChest)</li>
+                </ul>
+            </li>
+
+            <li>Add a behavior to RpChest and call it OpenChest.</li>
+
+            <li>Edit OpenChest and add the following code
+                <pre>
+-- Behavior
+function OpenChest(self, params)
+    local ostrm = ParameterList.ParameterList()
+    ostrm:PutString("AnimationName", "Opening")
+    self:SendEvent("TriggerAnimation", ostrm)
+end
+</pre>
+            </li>
+        </ol>
+    </li>
+
+    <li>Save the new model content.</li>
+
+    <li>Switch to World Builder and add props.
+
+        <ol>
+            <li>Drag and drop a <span class="NDLSystemFont">BgBox</span> in the corner of the
+            second room and override the Placeable.Position property (<span class=
+            "NDLGUILabel">Placeable.Position</span>=620,350,0)</li>
+
+            <li>Next, we will update the trigger to open the door in the second room when the box
+            is dropped in the trigger. Select the <span class="NDLSystemFont">RpDoorTrigger</span>
+            in the second room and add the following: <span class=
+            "NDLGUILabel">RemoteBehaviorResponse.OnStayBehaviors</span>=(BgBox, OnOpen).</li>
+        </ol>
+    </li>
+
+    <li>Save Content.</li>
+
+    <li>Drag and drop a <span class="NDLSystemFont">RpChest</span> in the corner of the third room
+    and override the following properties:
+
+        <ul>
+            <li><span class="NDLGUILabel">Placeable.Position</span>=1100,1700,0</li>
+
+            <li><span class="NDLGUILabel">Placeable.Rotation</span>=0,0,135</li>
+
+            <li><span class="NDLGUILabel">Placeable.Scale</span>=0.75</li>
+
+            <li><span class="NDLGUILabel">Actor.InitialSequence</span>=Close</li>
+
+            <li><span class="NDLGUILabel">PhysXShape.ShapeDimensions</span>=250,0,0</li>
+        </ul>
+    </li>
+
+    <li>Save the new block content.</li>
+
+    <li>Switch to Base Game and view the new props. Verify that there is a box in the corner of the
+    second room and a treasure chest in the corner of the third room.</li>
+
+    <li>Try to pick up the box (using the 'N' key or the 'B' button on the console) and move it
+    (drop it using the 'M' key or the 'A' button on the console) to the trigger in the second room.
+    Now, the second door remains open and you can walk into the third room.</li>
+</ol>
+
+<h2>Adding Non-player AI Characters</h2>
+
+<p>Finally, we will add some NPCs to the game.</p>
+
+<ol>
+    <li>Switch to World Builder.</li>
+
+    <li>Reset the Game by selecting <span class="NDLGUILabel">Game &gt; Reset</span> from the World
+    Builder menu. Verify that your running Base Game instance resets. The Avatar should have
+    returned to the first room.</li>
+
+    <li>Place AI actors into the world.
+
+        <ol>
+            <li>Drag and drop three BgAIJacks into the third room.</li>
+
+            <li>Save Content and verify that Base Game shows the new actors in the third room.</li>
+        </ol>
+    </li>
+
+    <li>Add waypoints for the AI actors to walk between.
+
+        <ol>
+            <li>From World Builder, pause the simulation by selecting <span class=
+            "NDLGUILabel">Game &gt; Pause</span>.</li>
+
+            <li>Open <span class="NDLSystemFont">RapidPrototyping.emtproj</span> in EMT.</li>
+
+            <li>Create a new model and name it RpWaypoint.</li>
+            
+            <li>Mix in the StandardModelLibrary.Mesh and the BaseGame.Waypoint.</li>
+            
+            <li>Select a NIF file to represent the waypoint:</li>
+
+                <ul>
+                    <li>
+                        <span class="NDLGUILabel">Property</span>=NifAsset
+
+                        <p class="indent2">(Browse to <span class=
+                        "NDLSystemFont"><em>%EMERGENT_PATH%</em>\Media\Samples\Graphics\TriggerProxy_Target.nif</span>)</p>
+                    </li>
+
+                    <li>Click <span class="NDLGUILabel">OK</span>.</li>
+                </ul>
+            </li>
+
+            <li>Override the following properties on the newly created <span class="NDLSystemFont">
+                RpWaypoint</span> model:
+
+                <ul>
+                    <li><span class="NDLGUILabel">Placeable.Scale</span>=0.5</li>
+
+                    <li><span class="NDLGUILabel">PhysXShape.ShapeDimensions</span>=50,1,1</li>
+                </ul>
+            </li>
+        </ol>
+    </li>
+
+    <li>Save Content.</li>
+
+    <li>Switch to World Builder.</li>
+
+    <li>Place three of your new preset models named <span class=
+    "NDLSystemFont">RpWaypoint</span> on each side of the third room (for a total of six),
+    similar to what you would see in the full version of Base Game.</li>
+
+    <li>Override the FirstWaypoint property on AI actors, and the NextWaypoint property on each waypoint.
+        <ol>
+            <li>Link each pair of waypoints to each other by overriding their NextWaypoint
+            property.
+                <p class="indent1">For example, if RpWaypoint0 and RpWaypoint1 are across from
+                each other, then you would set the set the NextWaypoint property of RpWaypoint0 to
+                RpWaypoint1, and set the NextWaypoint property of RpWaypoint1 to RpWaypoint0.
+                This will cause a waypoint following AI that reaches one of these waypoints to
+                walk back and forth between them.</p>
+            </li>
+            <li>Override the NextWaypoint property of each of the BgAIJacks to point to one of
+            the waypoints in the waypoint pairs that you set up in the previous step.
+
+                <p class="indent1">Following from the example above, if you want BgAIJack0 to
+                walk between RpWaypoint0 and RpWaypoint1, then you would set its NextWaypoint
+                property to either one of those two waypoints.</p>
+            </li>
+        </ol>
+    </li>
+
+    <li>Save Content.</li>
+
+    <li>Resume the game by selecting <span class="NDLGUILabel">Game &gt; Pause</span> from the
+    menu. The NPCs should now move repeatedly between their two targets.</li>
+
+    <li>Navigate your avatar to the third room and reach the Treasure. Verify that the treasure
+    chest entity opens when you reach it.</li>
+</ol>
+
+<h2>Moving on...</h2>
+
+<p>This concludes the rapid iteration tutorial. You have learned that you can make changes to the
+game assets and see the changes reflected in the game almost immediately. You have also learned
+that you can create a simple game prototype using these rapid iteration features without making any
+code changes.</p>
+
+<p>The full <a href="../Base_Game/base_game_demo.htm">Base Game demo</a> contains all of the
+functionality that you explored in this tutorial, plus a lot more. It expands the world by creating
+additional models in EMT and adding these to the world in World Builder. It has computer controlled
+Jack characters that try to prevent your avatar from completing its mission. We add a Walkable
+service that determines the areas where entities can walk; thus preventing you from walking through
+walls. It adds puzzles by using entity properties and scripted behaviors to change entities in the
+world without requiring recompilation of the C++ source code. It also uses GameStateService to load
+the LightSpeed splash screen and implement the block file load state before starting the game
+play.</p>
+
+<p>Further still, you can check out Kickstart, a project from Emergent Labs. Kickstart extends Gamebryo
+LightSpeed by providing libraries, tools, and game samples that are designed to support your rapid
+prototyping needs and reduce the time that it takes you to create a first playable. Kickstart
+demonstrates Gamebryo LightSpeed best practices, provides samples that are easy to follow and
+update, and includes useful library code in both C++ and scripting languages.</p>
+
+<p>Visit the Kickstart Project at the following location:</p>
+
+<p><a href="https://pulse.emergent.net/wiki/index.php/Kickstart" target=
+"_blank">https://pulse.emergent.net/wiki/index.php/Kickstart</a></p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/AssetRuntimeService/asset_runtime_overview.htm">Asset
+    Infrastructure Overview</a></li>
+
+    <li><a href="../../Tools/Toolbench/tb_intro.htm">Toolbench Introduction</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

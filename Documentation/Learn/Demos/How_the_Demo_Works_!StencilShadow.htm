@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How the StencilShadow Demo Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How the StencilShadow Demo Works</h1>
+
+<p>The following sections describe how the <span class=
+"NDLSystemFont">StencilShadow</span> sample creates the shadow
+effect using the stencil buffer and an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object. The method and code are detailed function-by-function:</p>
+
+<h2>The Stencil Buffer Shadow "Trick"</h2>
+
+<p>This form of shadowing relies on a stencil buffer and an
+important geometric observation: A point is inside a simple,
+closed polyhedron if and only if any ray from the point to
+infinity intersects the polyhedron an odd number of times. In
+most cases (i.e. when the camera is not in the polyhedron), this
+is equivalent to saying that there are an odd number of polygons
+between the eye-point and the point being tested.</p>
+
+<p>The stencil buffer may be used to accelerate this test in
+hardware. Here is how the shadow works:</p>
+
+<ul>
+    <li>Clear the stencil, depth and back buffers</li>
+
+    <li>Draw the basic scene to the frame buffer with depth
+    buffering on and stencil buffering off</li>
+
+    <li>Draw the volume that encloses the shadow as a closed,
+    double-sided polyhedron (the "Shadow Volume") with depth
+    buffering set to read only and stencil buffering set to
+    increment the stencil buffer whenever a pixel passed the z
+    buffer test. This polygon should be alpha blended&mdash;it
+    can even be completely translucent. The stencil buffer will
+    still be written for a translucent pixel, as long as alpha
+    testing is not enabled.</li>
+
+    <li>Now, the back buffer contains the main scene, and the
+    stencil buffer contains odd values for all main scene objects
+    that fall inside of the shadow volume.</li>
+
+    <li>Finally, draw a screen-space rectangle (<span class=
+    "NDLSystemFont">NiMeshScreenElements</span> ), the "Shadow
+    Overlay", that covers the entire screen. Use alpha blending
+    to make the rectangle darken anything it covers. Set the
+    stencil buffer to write the pixel color only where the
+    stencil buffer is odd (i.e. the stencil buffer value is equal
+    to 1 when a mask of 0x00000001 is used).</li>
+</ul>
+
+<p>The scene is now darkened at any visible pixels that represent
+points inside of the shadow volume.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

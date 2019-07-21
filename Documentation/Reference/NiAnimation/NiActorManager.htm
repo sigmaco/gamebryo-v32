@@ -1,0 +1,1021 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiActorManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiActorManager</p>
+
+<p class="NDLRefParentage">: public <a href=
+"../../Reference/NiMain/NiRefObject.htm">NiRefObject</a>, public
+<a href=
+"NiSequenceData.htm#Callback_Objects">NiSequenceData::ActivationCallback</a>,
+public <a href=
+"NiControllerSequence.htm#TextKeyCallback">NiControllerSequence::TextKeyCallback</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiActorManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiActorManager</span> implements a
+simple state machine and event notification system that is
+intended to be used with KFM files saved from the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Gamebryo
+Animation Tool</a>. The static <span class=
+"NDLSystemFont">Create</span> function is provided with either a
+KFM file name or a pointer to an already loaded <span class=
+"NDLSystemFont"><a href="NiKFMTool.htm">NiKFMTool</a></span>
+object. The <span class="NDLSystemFont">NiActorManager</span>
+then takes care of loading the NIF and KF files referenced by the
+KFM file and setting up the necessary animation state machine and
+transition information. The root node of the NIF file that was
+loaded can be retrieved with <span class=
+"NDLSystemFont">GetNIFRoot</span> for placement in the overall
+scene graph, and the target of the <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> may be
+retrieved with <span class="NDLSystemFont">GetActorRoot</span>.
+Sequences on the actor may be driven by a single call each to
+<span class="NDLSystemFont">SetTargetAnimation</span>.
+<span class="NDLSystemFont">NiActorManager</span> takes care of
+determining how to transition to the target sequence and making
+the appropriate calls to the actor's <span class=
+"NDLSystemFont">NiControllerManager</span>. Sequences can also be
+activated and deactivated separately from the internal state
+machine by calls to <span class=
+"NDLSystemFont">ActivateSequence</span> and <span class=
+"NDLSystemFont">DeactivateSequence</span>. Sequences activated by
+either method will receive callbacks for any <a href=
+"NiActorManager.htm#Event_Types">events</a> that have been
+registered. The transition to the target animation will begin
+during the next actor manager update.</p>
+
+<p>Gamebryo utilizes two classes to represent animated sequences.
+<span class="NDLSystemFont"><a href=
+"NiSequenceData.htm">NiSequenceData</a></span> objects are stored
+in KF files and contain the shareable, heavyweight data of
+exported animation sequences. These are referenced by the KFM
+file and automatically loaded upon creation of the <span class=
+"NDLSystemFont">NiActorManager</span>. <span class=
+"NDLSystemFont"><a href=
+"NiControllerSequence.htm">NiControllerSequence</a></span>
+objects are temporary runtime entities created upon sequence
+activation. These lighter weight objects maintain instance-based
+state to play back the animated sequence on a particular actor.
+The <span class="NDLSystemFont">ANIM_COMPLETED</span> event
+signals when an active sequence has completed its playback or
+been aborted. Upon receiving this event the application should
+release any references held on the associated <span class=
+"NDLSystemFont">NiControllerSequence</span>.</p>
+
+<p>All sequences are referenced by unique sequence IDs, which
+were assigned in the Gamebryo Animation Tool. A header file is
+saved out along with the KFM file from the Gamebryo Animation
+Tool that contains enumerations for all the sequence IDs in that
+particular KFM file so that they can be easily referenced in
+code. Callback functions can be assigned for events via a base
+<span class="NDLSystemFont"><a href=
+"NiActorManager.htm#Callback_Objects">CallbackObject</a></span>
+class. There are also functions that allow for querying the next
+time a particular event will occur, if that next event time can
+be predicted from the current state of the system. <span class=
+"NDLSystemFont">NiActorManager</span> is the class that is used
+"under the hood" in the Gamebryo Animation Tool and the Gamebryo
+Asset Viewer, and it is intended to be used, at least as a
+starting point, for driving the actors in a Gamebryo
+application.</p>
+
+<p>Additional information regarding <span class=
+"NDLSystemFont">NiActorManager</span> as well as a typical usage
+pattern can be found in <a href=
+"NiActorManager_An_Easier_Way_to_Control_Animations.htm">NiActorManager&mdash;An
+Easier Way to Control Animations</a>.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>The constructor for <span class=
+"NDLSystemFont">NiActorManager</span> is a protected function.
+<span class="NDLSystemFont">NiActorManager</span> should instead
+be created using one of two static <span class=
+"NDLSystemFont">Create</span> functions:</p>
+
+<p class="NDLRefMemberFunction">static NiActorManager*
+Create(const char* pcKFMFilename, bool bCumulativeAnimations =
+false, bool bLoadFilesFromDisk = true, <a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a>* pkStream =
+NULL, <a href="NiPoseBinding.htm">NiPoseBinding</a>*
+pkPoseBinding = NULL)</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">Create</span> function takes the full path and
+name of the KFM file and returns a newly constructed <span class=
+"NDLSystemFont">NiActorManager</span> pointer. <span class=
+"NDLSystemFont">bCumulativeAnimations</span> indicates whether or
+not the <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> created
+should be set to accumulate transformations (see the <a href=
+"NiControllerManager.htm#Transformation_Accumulation">notes</a>
+in <span class="NDLSystemFont">NiControllerManager</span> for
+more details about accumulating transformations). <span class=
+"NDLSystemFont">bLoadFilesFromDisk</span> indicates whether or
+not to load the NIF and KF files specified in the KFM file from
+disk. The NIF file and sequences can be loaded from disk or
+changed after the <span class=
+"NDLSystemFont">NiActorManager</span> is created with the
+<span class="NDLSystemFont">ReloadNIFFile</span>, <span class=
+"NDLSystemFont">ChangeNIFRoot</span>, <span class=
+"NDLSystemFont">LoadSequenceData</span>, and <span class=
+"NDLSystemFont">ChangeSequenceData</span> functions. <span class=
+"NDLSystemFont">pkStream</span> is an optional pointer to the
+<span class="NDLSystemFont">NiStream</span> object to use when
+streaming the NIF and KF files from disk. If <span class=
+"NDLSystemFont">pkStream</span> is <span class=
+"NDLSystemFont">NULL</span>, a new <span class=
+"NDLSystemFont">NiStream</span> object is created and deleted
+within the <span class="NDLSystemFont">Create</span> function.
+<span class="NDLSystemFont">pkPoseBinding</span> specifies the
+pose binding for use with the underlying controller manager. This
+parameter may be <span class="NDLSystemFont">NULL</span>, in
+which case, a new <span class="NDLSystemFont"><a href=
+"NiPoseBinding.htm">NiPoseBinding</a></span> is created for the
+manager. There must be a unique <span class=
+"NDLSystemFont">NiPoseBinding</span> for each unique character
+template in an application. Characters utilizing the same 3D
+model and associated set of animation sequences may share a
+single <span class="NDLSystemFont">NiPoseBinding</span> as a
+memory and performance optimization. For example, the baby
+lenguins in the <a href=
+"../../Learn/FullDemos/Lenguins_on_Ice_Overview.htm">Lenguins on
+Ice</a> demo reuse a single <span class=
+"NDLSystemFont">NiPoseBinding</span> since they are all clones of
+a template actor. On the other hand, the lenguin momma has a
+separate <span class="NDLSystemFont">NiPoseBinding</span> since
+this actor uses a different 3D model as well as a different set
+of sequences than the babies.</p>
+
+<p>The <span class="NDLSystemFont">Create</span> method returns
+the new actor manager, or NULL if there was an error loading the
+KFM file or <span class= "NDLSystemFont">bLoadFilesFromDisk</span>
+is true and there were errors loading associated files.
+</p>
+
+<p class="NDLRefMemberFunction">static NiActorManager*
+Create(<a href="NiKFMTool.htm">NiKFMTool</a>* pkKFMTool, const
+char* pcKFMFilePath, bool bCumulativeAnimations = false, bool
+bLoadFilesFromDisk = true, <a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a>* pkStream =
+NULL, <a href="NiPoseBinding.htm">NiPoseBinding</a>*
+pkPoseBinding = NULL)</p>
+
+<p class="NDLRefMemberDescription">This <span class=
+"NDLSystemFont">Create</span> function takes a pointer to an
+already created <span class="NDLSystemFont">NiKFMTool</span>
+object along with the full path of the KFM file that was loaded.
+The path should include the terminating backslash and may
+optionally include the KFM file name. The other function
+parameters are identical to the first <span class=
+"NDLSystemFont">Create</span> function.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">NiActorManager* Clone(<a href=
+"../../Reference/NiMain/NiCloningProcess.htm">NiCloningProcess</a>*
+pkCloningProcess = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function creates a clone
+of the <span class="NDLSystemFont">NiActorManager</span> and all
+its contents. This function is not the same as <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm#Cloning">NiObject::Clone</a></span>,
+since <span class="NDLSystemFont">NiActorManager</span> does not
+inherit from <span class="NDLSystemFont">NiObject</span>. It does
+use <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm#Cloning">NiObject::Clone</a></span>,
+however, to clone its actor scene graph and its <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span>. The
+destination actor automatically shares the <span class=
+"NDLSystemFont">NiPoseBinding</span> of the source actor. There
+is no need to call <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObjectNET.htm#Cloning">NiObjectNET::SetDefaultCopyType</a></span>
+when using this function, as the function itself takes care of
+setting the default <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObjectNET.htm#Cloning">NiObjectNET::CopyType</a></span>
+to the proper value when cloning its members, restoring it to its
+original value when the cloning operation is complete.</p>
+
+<p><span class="NDLSystemFont">Clone</span> will fail if the
+actor root scene graph is <span class="NDLSystemFont">NULL</span>.
+The undocumented <span class="NDLSystemFont">CloneOnlyAnimation</span>
+method is robust to such cases but requires the NIF to be reloaded
+for the clone. See the header file for more information.</p>
+
+<p class="NDLRefMemberFunction">bool ReloadNIFFile(<a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a>* pkStream =
+NULL, bool bLoadNIFFile = true, <a href=
+"NiPoseBinding.htm">NiPoseBinding</a>* pkPoseBinding = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function reloads the NIF
+file using the info stored in the NiKFMTool object. <span class=
+"NDLSystemFont">pkStream</span> is a pointer to the <span class=
+"NDLSystemFont">NiStream</span> object to use when loading the
+NIF file. If <span class="NDLSystemFont">pkStream</span> is NULL,
+a new <span class="NDLSystemFont">NiStream</span> object is
+created and deleted within this function. If <span class=
+"NDLSystemFont">bLoadNIFFile</span> is false, the NIF root will
+be loaded directly from the provided <span class=
+"NDLSystemFont">pkStream</span> object without loading a NIF file
+from disk. <span class="NDLSystemFont">pkStream</span> cannot be
+NULL if <span class="NDLSystemFont">bLoadNIFFile</span> is false.
+After the new NIF file has been loaded, all existing sequences
+are re-assigned to the new <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span>, and the
+old scene graph is released. If any errors occur, this function
+will return <span class="NDLSystemFont">false</span>. See the
+<span class="NDLSystemFont"><a href=
+"NiActorManager.htm#Constructors">Create</a></span> function for
+a description of the <span class=
+"NDLSystemFont">pkPoseBinding</span> parameter.</p>
+
+<p class="NDLRefMemberFunction">bool ReloadKFFile(const char*
+pcFile)</p>
+
+<p class="NDLRefMemberDescription">Reloads a KF file from disk
+and processes each sequence in the file. If the sequence name
+already exists, the old sequence is replaced by the one from the
+KF file. If the sequence name does not exist, the sequence is
+added. <span class="NDLSystemFont">True</span> is returned when
+the sequence was successfully loaded and added, otherwise
+<span class="NDLSystemFont">false</span>.
+</p>
+
+<p class="NDLRefMemberFunction">bool ChangeNIFRoot(<a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+pkNIFRoot, <a href="NiPoseBinding.htm">NiPoseBinding</a>*
+pkPoseBinding = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function changes the NIF
+root and actor root that are being used for the <span class=
+"NDLSystemFont">NiActorManager</span>. This function does the
+same thing as <span class="NDLSystemFont">ReloadNIFFile</span>
+but does not require the root objects to reside in an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a></span> object
+or to be loaded from disk.
+This function will return <span class="NDLSystemFont">false</span>
+if any errors occur; otherwise, it returns <span class="NDLSystemFont">true</span>.
+See the <span class=
+"NDLSystemFont"><a href=
+"NiActorManager.htm#Constructors">Create</a></span> function for
+a description of the <span class=
+"NDLSystemFont">pkPoseBinding</span> parameter.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_load_sequences" id=
+"Functions_to_load_sequences"></a>bool LoadSequenceData(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID,
+bool bLoadKFFile = true, <a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a>* pkStream =
+NULL)</p>
+
+<p class="NDLRefMemberDescription">This function loads the
+specified sequence (i.e. <a href=
+"NiSequenceData.htm"><span class="NDLSystemFont">NiSequenceData</span></a>)
+using the KF filename and index stored in the <span class=
+"NDLSystemFont"><a href="NiKFMTool.htm">NiKFMTool</a></span>
+class for the specified sequence ID. If <span class=
+"NDLSystemFont">bLoadKFFile</span> is <span class=
+"NDLSystemFont">false</span>, the sequence will be loaded
+directly from the provided <span class=
+"NDLSystemFont">pkStream</span> without loading the KF file from
+disk. In this case, <span class="NDLSystemFont">pkStream</span>
+cannot be <span class="NDLSystemFont">NULL</span> and must
+contain a loaded KF file. If <span class=
+"NDLSystemFont">bLoadKFFile</span> is <span class=
+"NDLSystemFont">true</span>, the provided <span class=
+"NDLSystemFont">pkStream</span> will be used to load the KF file
+from disk. If <span class="NDLSystemFont">pkStream</span> is
+NULL, a new <span class="NDLSystemFont">NiStream</span> object
+will be created and deleted within this function. If any errors
+occur, this function will return <span class=
+"NDLSystemFont">false</span>. This function will fail if the
+<span class="NDLSystemFont">NiActorManager</span> does not
+contain a NIF root.</p>
+
+<p class="NDLRefMemberFunction">bool LoadAllSequenceData(<a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a>* pkStream =
+NULL)</p>
+
+<p class="NDLRefMemberDescription">Loads all the sequences (i.e.
+<a href="NiSequenceData.htm"><span class=
+"NDLSystemFont">NiSequenceData</span></a> objects) stored in the
+NiKFMTool object. <span class="NDLSystemFont">pkStream</span> is
+a pointer to the <span class="NDLSystemFont">NiStream</span>
+object to use when loading the NIF file. If <span class=
+"NDLSystemFont">pkStream</span> is NULL, a new <span class=
+"NDLSystemFont">NiStream</span> object is created and deleted
+within this function. This function is equivalent to calling
+<span class="NDLSystemFont">LoadSequenceData</span> on each
+sequence individually, except that it always loads the sequences
+from file. The function returns false if any file failed to load
+or any sequence could not be added; otherwise, it returns
+true.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_change_sequences" id=
+"Functions_to_change_sequences"></a>bool
+ChangeSequenceData(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID,
+<a href="NiSequenceData.htm">NiSequenceData</a>* pkSeqData)</p>
+
+<p class="NDLRefMemberDescription">This function changes the
+<a href="NiSequenceData.htm"><span class=
+"NDLSystemFont">NiSequenceData</span></a> that is used for the
+specified sequence ID. This function does the same thing as
+<span class="NDLSystemFont">LoadSequenceData</span> but does not
+require the <span class="NDLSystemFont">NiSequenceData</span>
+object to reside in an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiStream.htm">NiStream</a></span> object
+or to be loaded from disk. This function will fail if the
+<span class="NDLSystemFont">NiActorManager</span> does not
+contain a NIF root.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_unload_sequences" id=
+"Functions_to_unload_sequences"></a>void
+UnloadSequenceData(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID)</p>
+
+<p class="NDLRefMemberDescription">This function unloads the
+specified sequence (i.e. <a href=
+"NiSequenceData.htm"><span class="NDLSystemFont">NiSequenceData</span></a>)
+from the actor manager, removing it from the <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> in the
+process. If there is no other smart pointer referencing the
+corresponding <span class="NDLSystemFont">NiSequenceData</span>,
+it will be deleted.</p>
+
+<p class="NDLRefMemberFunction"><a name="Functions_to_update" id=
+"Functions_to_update"></a>void Update(float fTime)</p>
+
+<p class="NDLRefMemberDescription">This function updates the
+internal state machine. It must be called periodically (usually
+every frame) with the current time to update the state of
+animations. Note: this function does not call <span class=
+"NDLSystemFont">Update</span> on the scene graph that it
+references. It only updates the internal state machine.
+<span class="NDLSystemFont">Update</span> should be called on
+that scene graph after this <span class=
+"NDLSystemFont">Update</span> call.</p>
+
+<p class="NDLRefMemberFunction">float GetLastUpdateTime(float
+fTime)</p>
+
+<p class="NDLRefMemberDescription">This function returns the last
+time that the actor manager was updated.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a>
+GetTargetAnimation() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+currently set target sequence's ID. If no target sequence has
+been set, it returns <span class=
+"NDLSystemFont">INVALID_SEQUENCE_ID</span>.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_set_target_animation" id=
+"Functions_to_set_target_animation"></a>bool
+SetTargetAnimation(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID)</p>
+
+<p class="NDLRefMemberDescription">This function sets the target
+sequence to the one identified by the specified sequence ID. The
+specified target sequence is not necessarily activated
+immediately. <span class="NDLSystemFont">NiActorManager</span>
+uses its state machine to determine how to transition to the
+target sequence. If a transition is currently in progress, the
+transition will complete before the target sequence is activated.
+If <span class="NDLSystemFont">eSequenceID</span> is not a valid
+sequence ID, this function returns <span class=
+"NDLSystemFont">false</span>.</p>
+
+<p class="NDLRefMemberFunction"><a name="Functions_to_reset" id=
+"Functions_to_reset"></a>void Reset()</p>
+
+<p class="NDLRefMemberDescription">This function deactivates all
+animations and returns the state machine to its initial
+state.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_get_current_animation" id=
+"Functions_to_get_current_animation"></a><a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a>
+GetCurAnimation() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the ID
+of the currently animating sequence. If no sequence is currently
+active, it returns <span class=
+"NDLSystemFont">INVALID_SEQUENCE_ID</span>.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Transition_States">TransitionState</a>
+GetTransitionState() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+current transition state of the <span class=
+"NDLSystemFont">NiActorManager</span>. See the notes below for an
+explanation of the <span class="NDLSystemFont"><a href=
+"NiActorManager.htm#Transition_States">TransitionState</a></span>
+enumerated type.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a>
+GetNextAnimation() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the next
+sequence that the <span class=
+"NDLSystemFont">NiActorManager</span> is scheduled to activate.
+If there is no next sequence scheduled, it returns <span class=
+"NDLSystemFont">INVALID_SEQUENCE_ID</span>.</p>
+
+<p class="NDLRefMemberFunction">void SetCallbackObject(<a href=
+"NiActorManager.htm#Callback_Objects">CallbackObject</a>*
+pkCallbackObject)</p>
+
+<p class="NDLRefMemberDescription">This function sets the
+<span class="NDLSystemFont">CallbackObject</span> instance to use
+for notification of events. The pointer passed in may be
+<span class="NDLSystemFont">NULL</span> to clear the callback
+object. See the <a href=
+"NiActorManager.htm#Callback_Objects">notes</a> below for the
+class reference for <span class=
+"NDLSystemFont">CallbackObject</span>, along with a description
+of how it should be used.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Callback_Objects">CallbackObject</a>*
+GetCallbackObject() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+<span class="NDLSystemFont">CallbackObject</span> instance that
+is currently being used for notification of events. If no
+<span class="NDLSystemFont">CallbackObject</span> instance has
+been set, it returns <span class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_get_NIF_root" id=
+"Functions_to_get_NIF_root"></a><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+GetNIFRoot() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the root
+of the NIF file that was loaded during the <span class=
+"NDLSystemFont">Create</span> function. <span class=
+"NDLSystemFont">GetNIFRoot</span> is most useful for obtaining a
+pointer to the actor scene graph to store in the main scene graph
+after the <span class="NDLSystemFont">NiActorManager</span> has
+been created. The object returned here might not be the object to
+which the <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> is
+attached. To get that object, use the <span class=
+"NDLSystemFont">GetActorRoot</span> function.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+GetActorRoot() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+target of the <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span> for the
+actor.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont"><a href="NiKFMTool.htm">NiKFMTool</a></span>*
+GetKFMTool() const</p>
+
+<p class="NDLRefMemberDescription">This function returns a
+pointer to the <span class="NDLSystemFont">NiKFMTool</span>
+object owned by the <span class=
+"NDLSystemFont">NiActorManager</span>. The <span class=
+"NDLSystemFont">NiKFMTool</span> object holds all the data
+necessary to drive the state machine and to load NIF and KF
+files. <span class="NDLSystemFont">NiKFMTool</span> objects are
+shared between clones of <span class=
+"NDLSystemFont">NiActorManager</span>, so be aware of this when
+editing its data.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont"><a name="Functions_to_get_controller_manager" id=
+"Functions_to_get_controller_manager"></a><a href=
+"NiControllerManager.htm">NiControllerManager</a></span>*
+GetControllerManager() const</p>
+
+<p class="NDLRefMemberDescription">This function returns a
+pointer to the <span class=
+"NDLSystemFont">NiControllerManager</span> object owned by the
+actor.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont"><a href=
+"NiSkinningLODController.htm">NiSkinningLODController</a></span>*
+GetSkinningLODController() const</p>
+
+<p class="NDLRefMemberDescription">This function returns a
+pointer to the optional <span class=
+"NDLSystemFont">NiSkinningLODController</span> object belonging
+to this actor. If no <span class=
+"NDLSystemFont">NiSkinningLODController</span> exists for this
+actor, it returns <span class="NDLSystemFont">NULL</span>. This
+function is a convenience function for getting a pointer to the
+<span class="NDLSystemFont">NiSkinningLODController</span> object
+in order to switch bone LODs. The <span class=
+"NDLSystemFont">NiSkinningLODController</span> object is actually
+stored on the actor root in the scene graph.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_retrieve_sequences" id=
+"Functions_to_retrieve_sequences"></a><a href=
+"NiSequenceData.htm">NiSequenceData</a>* GetSequenceData(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID)
+const</p>
+
+<p class="NDLRefMemberDescription">This function returns a
+pointer to the <span class="NDLSystemFont">NiSequenceData</span>
+object that corresponds to the specified sequence ID.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_get_active_sequence" id=
+"Functions_to_get_active_sequence"></a><a href=
+"NiControllerSequence.htm">NiControllerSequence</a>*
+GetActiveSequence(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID,
+bool bCheckExtraSequences, bool bCheckStateSequences) const</p>
+
+<p class="NDLRefMemberDescription">This function returns a
+pointer to the <span class=
+"NDLSystemFont">NiControllerSequence</span> object that
+corresponds to an actively playing animation at the specified
+sequence ID. If <span class=
+"NDLSystemFont">bCheckExtraSequences</span> is true, the function
+searches for a matching sequence that was activated via
+<span class="NDLSystemFont">ActivateSequence</span>. If
+<span class="NDLSystemFont">bCheckStateSequences</span> is true,
+the function searches for a matching sequence that was activated
+due to <span class="NDLSystemFont">SetTargetAnimation</span>.
+<span class="NDLSystemFont">NULL</span> is returned if there is
+no match.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a>
+GetSequenceID(<a href=
+"NiControllerSequence.htm">NiControllerSequence</a>* pkSequence,
+bool bCheckExtraSequences, bool bCheckStateSequences) const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+sequence ID corresponding to the specified active sequence. If
+<span class="NDLSystemFont">bCheckExtraSequences</span> is true,
+the function checks if the sequence was activated via
+<span class="NDLSystemFont">ActivateSequence</span>. If
+<span class="NDLSystemFont">bCheckStateSequences</span> is true,
+the function checks if the sequence was activated due to
+<span class="NDLSystemFont">SetTargetAnimation</span>.
+<span class="NDLSystemFont">INVALID_SEQUENCE_ID</span> is
+returned if there is no match.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+GetAccumRoot() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+accumulation root of the actor. The accumulation root may be the
+same as the target of the <span class=
+"NDLSystemFont">NiControllerManager</span>. See this <a href=
+"NiControllerManager.htm#Transformation_Accumulation">section</a>
+in the <span class="NDLSystemFont">NiControllerManager</span>
+documentation for more information about transformation
+accumulation.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a>
+FindSequenceID(const char* pcName) const</p>
+
+<p class="NDLRefMemberDescription">This function finds an
+<span class="NDLSystemFont"><a href=
+"NiSequenceData.htm">NiSequenceData</a></span> by name and
+returns its sequence ID. If there are more than one sequence with
+a given name, only the first will be returned. If there are no
+sequences with that name, then <span class=
+"NDLSystemFont">INVALID_SEQUENCE_ID</span> is returned. Because
+this function is slow, it is preferable to use the enumeration in
+the .h file that is automatically created with each KFM file.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_register_callbacks" id=
+"Functions_to_register_callbacks"></a>bool
+RegisterCallback(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, <a href="NiTextKeyMatch.htm">NiTextKeyMatch</a>*
+pkMatchObject = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function registers a
+callback for the specified event type and animation (indicated by
+<span class="NDLSystemFont">eEventType</span> and <span class=
+"NDLSystemFont">eSequenceID</span>). If <span class=
+"NDLSystemFont">eEventType</span> is <span class=
+"NDLSystemFont">TEXT_KEY_EVENT</span>, <span class=
+"NDLSystemFont">pkMatchObject</span> is the user's <span class=
+"NDLSystemFont"><a href=
+"NiTextKeyMatch.htm">NiTextKeyMatch</a></span> object or derived
+object that will be responsible for matching the text key for
+that event. Any callback that has already been registered with
+the specified <span class="NDLSystemFont">NiTextKeyMatch</span>
+object will be unregistered by this function. Callbacks can be
+registered for all animations at once by specifying a sequence ID
+of <span class="NDLSystemFont">ANY_SEQUENCE_ID</span>. Note,
+however, that there is a possible performance and memory overhead
+associated with each sequence ID that is registered, so only
+specify <span class="NDLSystemFont">ANY_SEQUENCE_ID</span> if you
+actually do plan to handle that event for every sequence ID.</p>
+
+<p class="NDLRefMemberFunction">bool RegisterCallback(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kTextKey)</p>
+
+<p class="NDLRefMemberDescription">This version of <span class=
+"NDLSystemFont">RegisterCallback</span> behaves exactly as the
+preceding except that the user need only pass in a text key
+string which will be used for that event. Internally,
+<span class="NDLSystemFont">NiActorManager</span> simply creates
+a default <span class="NDLSystemFont">NiTextKeyMatch</span>
+object from this string. Any callback that has already been
+registered for the specified text key will be unregistered by
+this function.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_unregister_callbacks" id=
+"Functions_to_unregister_callbacks"></a>void
+UnregisterCallback(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, <a href="NiTextKeyMatch.htm">NiTextKeyMatch</a>*
+pkMatchObject = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function removes any
+registered callback for the specified event type, sequence ID,
+and/or <span class="NDLSystemFont"><a href=
+"NiTextKeyMatch.htm">NiTextKeyMatch</a></span> object. This
+function only looks for an exact match for the <span class=
+"NDLSystemFont">NiTextKeyMatch</span> pointer, not for the text
+key that it matches. To remove a callback for a particular text
+key, use the second version of this function.</p>
+
+<p class="NDLRefMemberFunction">void UnregisterCallback(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kTextKey)</p>
+
+<p class="NDLRefMemberDescription">This function removes any
+registered callback for the specified event type, sequence ID,
+and/or text key.</p>
+
+<p class="NDLRefMemberFunction">void
+ClearAllRegisteredCallbacks()</p>
+
+<p class="NDLRefMemberDescription">This function removes all
+callbacks that have been registered.</p>
+
+<p class="NDLRefMemberFunction">void
+CopyCallbacks(NiActorManager* pkSource)</p>
+
+<p class="NDLRefMemberDescription">This function copies all of
+the registered callbacks from a different actor manager into this
+one. It clears the set of existing callbacks prior to doing this
+copy.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_get_next_event_time" id=
+"Functions_to_get_next_event_time"></a>float
+GetNextEventTime(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, <a href="NiTextKeyMatch.htm">NiTextKeyMatch</a>*
+pkMatchObject = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function returns the time
+of the next specified event for the specified animation and/or
+text key. If the time of the next event cannot be predicted, it
+returns <span class="NDLSystemFont">INVALID_TIME</span>. This
+function always returns <span class=
+"NDLSystemFont">INVALID_TIME</span> for <span class=
+"NDLSystemFont">ANIM_COMPLETED</span> events.</p>
+
+<p class="NDLRefMemberFunction">float GetNextEventTime(<a href=
+"NiActorManager.htm#Event_Types">EventType</a> eEventType,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eSequenceID, const <a href=
+"../../Reference/NiMain/NiFixedString.htm">NiFixedString</a>&amp;
+kTextKey)</p>
+
+<p class="NDLRefMemberDescription">This function returns the time
+of the next specified event for the specified animation and/or
+text key. If the time of the next event cannot be predicted, it
+returns <span class="NDLSystemFont">INVALID_TIME</span>. This
+version of <span class="NDLSystemFont">GetNextEventTime</span>
+will construct a default <span class="NDLSystemFont"><a href=
+"NiTextKeyMatch.htm">NiTextKeyMatch</a></span> object from
+<span class="NDLSystemFont">kTextKey</span> if <span class=
+"NDLSystemFont">eEventType</span> is <span class=
+"NDLSystemFont">TEXT_KEY_EVENT</span>. This function always
+returns <span class="NDLSystemFont">INVALID_TIME</span> for
+<span class="NDLSystemFont">ANIM_COMPLETED</span> events.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont"><a name="Functions_to_activate_sequences" id=
+"Functions_to_activate_sequences"></a><a href=
+"NiControllerSequence.htm">NiControllerSequence</a>*
+ActivateSequence(<a href=
+"NiActorManager.htm#Sequence_IDs">SequenceID</a> eSequenceID, int
+iPriority = 0, float fWeight = 1.0f, float fEaseInTime = 0.0f,
+<a href="NiActorManager.htm#Sequence_IDs">SequenceID</a>
+eTimeSyncSeqID = <a href=
+"NiKFMTool.htm">NiKFMTool</a>::SYNC_SEQUENCE_ID_NONE, float
+fFrequency = SEQUENCE_DATA_FREQUENCY, float fStartFrame =
+0.0f, bool bAdditiveBlend = false, float fAdditiveRefFrame = 0.0f)</span></p>
+
+<p class="NDLRefMemberDescription">This function activates a
+sequence separately from the internal state machine. This is
+useful for layering other sequences on top of a base sequence
+that is controlled by the state machine. As with sequences
+activated with SetTargetAnimation, callbacks are available for
+these sequences. The function parameters are the same as those
+for <span class=
+"NDLSystemFont">NiControllerManager::ActivateSequence</span>
+except for <span class="NDLSystemFont">eTimeSyncSeqID</span>,
+which identifies the sequence with which to synchronize, if there
+is one. See the documentation for <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm#Functions_for_activating_sequences">NiControllerManager::ActivateSequence</a></span>
+for more information about these parameters. This function
+returns the newly created <span class="NDLSystemFont"><a href=
+"NiControllerSequence.htm">NiControllerSequence</a></span> upon
+successful activation, and NULL otherwise.</p>
+
+<p class="NDLRefMemberFunction"><a name=
+"Functions_to_deactivate_sequences" id=
+"Functions_to_deactivate_sequences"></a>bool
+DeactivateSequence(SequenceID eSequenceID, float fEaseOutTime =
+0.0f)</p>
+
+<p class="NDLRefMemberDescription">This function deactivates a
+sequence that was activated separately from the internal state
+machine. It will return false if the specified sequence was not
+activated by a call to <span class=
+"NDLSystemFont">ActivateSequence</span>. <span class=
+"NDLSystemFont">fEaseOutTime</span> is the same parameter as
+<span class=
+"NDLSystemFont">NiControllerManager::DeactivateSequence</span>.
+See the documentation for <span class="NDLSystemFont"><a href=
+"NiControllerManager.htm#Functions_for_deactivating_sequences">NiControllerManager::DeactivateSequence</a></span>
+for more information regarding it. If any errors occur, this
+function returns false.</p>
+
+<p class="NDLRefMemberFunction">void
+RefreshControllerManager()</p>
+
+<p class="NDLRefMemberDescription">This function refreshes the
+internal pointer that the actor manager has to its <span class=
+"NDLSystemFont"><a href=
+"NiControllerManager.htm">NiControllerManager</a></span>. This
+function is useful when you programmatically change the
+<span class="NDLSystemFont">NiControllerManager</span> object to
+a different one and need the <span class=
+"NDLSystemFont">NiActorManager</span> to reflect that change.</p>
+
+<p class="NDLRefMemberFunction">bool IsPaused() const</p>
+<p class="NDLRefMemberDescription">This function returns true if this actor manager is paused</p>
+
+<p class="NDLRefMemberFunction">void SetPaused(bool bIsPaused)</p>
+<p class="NDLRefMemberDescription">This function pauses and unpauses the actor manager.  Pausing an actor manager will cause future updates to not take effect.  The actor should still be updated while it is paused.  Once unpaused, the actor manager will continue to animate and throw text keys as if no time had passed.</p> 
+
+<p class="NDLRefHead1">Notes</p><a name="Callback_Objects" id=
+"Callback_Objects"></a>
+
+<p class="NDLRefHead2">Callback Objects</p>
+
+<p>Callbacks are performed via a user-supplied instance of the
+<span class="NDLSystemFont">NiActorManager::CallbackObject</span>
+class, whose definition appears below.</p>
+<pre>
+class NIANIMATION_ENTRY CallbackObject
+{
+public:
+    virtual ~CallbackObject() {};
+    virtual void AnimActivated(NiActorManager* pkManager,
+        SequenceID eSequenceID, NiControllerSequence* pkSeq, float fEventTime) = 0;
+    virtual void AnimDeactivated(NiActorManager* pkManager,
+        SequenceID eSequenceID, NiControllerSequence* pkSeq, float fEventTime) = 0;
+    virtual void AnimCompleted(NiActorManager* pkManager,
+        SequenceID eSequenceID, NiControllerSequence* pkSeq, float fEventTime) = 0;
+    virtual void TextKeyEvent(NiActorManager* pkManager,
+        SequenceID eSequenceID, const NiFixedString&amp; kTextKey,
+        const NiTextKeyMatch* pkMatchObject,
+        float fCurrentTime, float fEventTime) = 0;
+    virtual void EndOfSequence(NiActorManager* pkManager,
+        SequenceID eSequenceID, NiControllerSequence* pkSeq, float fEventTime) = 0;
+};
+</pre>
+
+<p>An application that wishes to process callbacks must derive a
+class from <span class="NDLSystemFont">CallbackObject</span> and
+override the pure virtual functions. Since the only members of
+<span class="NDLSystemFont">CallbackObject</span> are pure
+virtual functions, it is safe to use multiple inheritance to
+derive the subclass. There can be only one <span class=
+"NDLSystemFont">CallbackObject</span> instance for each
+<span class="NDLSystemFont">NiActorManager</span>, so callbacks
+for all event types must be handled in the same <span class=
+"NDLSystemFont">CallbackObject</span>-derived class.</p><a name=
+"Sequence_IDs" id="Sequence_IDs"></a>
+
+<p class="NDLRefHead2">Sequence IDs</p>
+
+<p>A sequence ID is a unique identifier for an animation
+sequence. The <span class="NDLSystemFont">SequenceID</span> type
+is simply a <span class="NDLSystemFont">typedef</span> of
+<span class="NDLSystemFont">unsigned int</span>.</p>
+
+<p><span class="NDLSystemFont">INVALID_SEQUENCE_ID</span> and
+<span class="NDLSystemFont">ANY_SEQUENCE_ID</span> can be used on
+certain methods in place of actual sequence IDs.</p><a name=
+"Event_Types" id="Event_Types"></a>
+
+<p class="NDLRefHead2">Event Types</p>
+
+<p><span class="NDLSystemFont">EventType</span> is an enumerated type
+that defines the type of a particular event. It can have the
+following values:</p>
+
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th><span class="NDLSystemFont">EventType</span></th>
+
+            <th>Definition</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ANIM_ACTIVATED</span></td>
+
+            <td>The sequence was just activated in the
+            <span class=
+            "NDLSystemFont">NiControllerManager</span>. This
+            event is raised when the sequence becomes fully
+            active, after it is done transitioning from another
+            sequence or easing in.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ANIM_DEACTIVATED</span></td>
+
+            <td>The sequence was just deactivated in the
+            <span class=
+            "NDLSystemFont">NiControllerManager</span>. If the
+            sequence is transitioning to another sequence as
+            directed by the internal state machine, this event is
+            raised when the sequence is no longer fully active
+            (when the transition to the other sequence begins).
+            If there is no transition to another sequence, this
+            event is raised when the sequence becomes fully
+            inactive, after it is done easing out.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ANIM_COMPLETED</span></td>
+
+            <td>The sequence has completed its playback or been
+            aborted. The sequence is no longer active and has no
+            visible effect on the scene graph. Applications
+            should release any references held on the associated
+            <span class="NDLSystemFont"><a href=
+            "NiControllerSequence.htm">NiControllerSequence</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">TEXT_KEY_EVENT</span></td>
+
+            <td>A text key specified in the sequence was just
+            passed.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">END_OF_SEQUENCE</span></td>
+
+            <td>The end of the sequence was reached. This is
+            equivalent to a <span class=
+            "NDLSystemFont">TEXT_KEY_EVENT</span> for the string
+            <span class="NDLSystemFont">"end"</span>.</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="Transition_States" id="Transition_States"></a><p class="NDLRefHead2">Transition States</p>
+
+<p><span class="NDLSystemFont">TransitionState</span> is an
+enumerated type that indicates how the <span class=
+"NDLSystemFont">NiActorManager</span> is currently transitioning
+between sequences. It can have the following values:</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th><span class=
+            "NDLSystemFont">TransitionState</span></th>
+
+            <th>Definition</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NO_TRANSITION</span></td>
+
+            <td>No transition is occurring.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">BLENDING</span></td>
+
+            <td>A <a href=
+            "NiControllerManager.htm#Blend_Transitions">blend
+            transition</a> is in process.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">MORPHING</span></td>
+
+            <td>A <a href=
+            "NiControllerManager.htm#Morph_Transitions">morph
+            transition</a> is in process.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CROSSFADING</span></td>
+
+            <td>A <a href=
+            "NiControllerManager.htm#Cross_Fade_Transitions">cross
+            fade transition</a> is in process.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best Practices for Working with Built-in API Functions</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Best Practices for Working with Built-in API Functions</h1>
+
+<p>Emergent recommends the following best practices when you are working with built-in API functions:</p>
+
+<ul>
+    <li>Given any type, the SWIG-generated bindings will make certain assumptions about whether the
+    parameter is an input argument, an output argument, or an input-output argument. Given a type
+    T, it will be treated as follows:</li>
+</ul>
+
+<div class="indent1">
+    <table>
+        <thead>
+            <tr>
+                <th>Typename</th>
+
+                <th>Treated as</th>
+
+                <th>Notes</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>T</td>
+
+                <td>Input</td>
+
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>const T&amp;</td>
+
+                <td>Input</td>
+
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>const T*</td>
+
+                <td>Input</td>
+
+                <td>Pointer must NOT be NULL</td>
+            </tr>
+
+            <tr>
+                <td>T*</td>
+
+                <td>Output</td>
+
+                <td>Pointer must NOT be NULL</td>
+            </tr>
+
+            <tr>
+                <td>T&amp;</td>
+
+                <td>Input-Output</td>
+
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="indent1">The one exception to the argument type rules above is <span class=
+"NDLSystemFont">efd::ParameterList</span>. <span class="NDLSystemFont">efd::ParameterList*</span> is
+treated as a basic type for the purpose of these rules, not <span class=
+"NDLSystemFont">efd::ParameterList</span> itself. For example, this means that "<span class=
+"NDLSystemFont">efd::ParameterList*</span>" is treated as a plain ParameterList Input argument and
+"<span class="NDLSystemFont">efd::ParameterList*&amp;</span>" is treated as an in-out <span class=
+"NDLSystemFont">efd::ParameterList</span> parameter. One additional special case, for convenience
+"<span class="NDLSystemFont">efd::ParameterList&amp;</span>" is also treated as an in-out
+parameter.</p>
+
+<ul>
+    <li>The BehaviorAPI namespace defines functions that are wrapped by SWIG and are made available
+    in scripting languages. This exposes a rich set of features to the scripting runtimes. SWIG
+    will bind these functions to the script engine by creating a _wrap file and exposing an
+    initialization function. This initialization function must be executed after the runtime is
+    created but before any scripts are executed.</li>
+
+    <li>When BehaviorAPI is included in a dynamic module/DLL, the initialization function is
+    specified in the <span class="NDLSystemFont">config.ini</span> (or equivalent) file and loaded
+    during script runtime startup. The configuration section for the dynamic library binding looks
+    like this:<br>
+        <br>
+        <b>Python:</b>
+        <pre>
+[ScriptEngine.Python]
+LoadBuiltin#=egfPython!init_BehaviorAPI
+</pre><b>Lua:</b>
+        <pre>
+[ScriptEngine.Lua]
+LoadBuiltin#=egfLua!luaopen_BehaviorAPI
+</pre>
+    </li>
+
+    <li>When BehaviorAPI is included as part of a static library, initialization is still required
+    but it is not driven by the configuration file. Instead, the application must tell the
+    scripting runtime to call the initialization function as part of the runtime startup sequence.
+    This is done by calling the runtimes AddStaticBuiltinInitFunction from main. It looks something
+    like this:<br>
+        <br>
+        <b>Python: main.cpp</b>
+        <pre>
+extern "C" void init_BehaviorAPI();
+//...
+SchedulerPython::AddStaticBuiltinInitFunction(init_BehaviorAPI);
+</pre><b>Lua: main.cpp</b>
+        <pre>
+extern "C" void luaopen_BehaviorAPI(lua_State *);
+//...
+SchedulerLua::AddStaticBuiltinInitFunction(luaopen_BehaviorAPI);
+</pre>
+    </li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_overview.htm">Built-in API overview</a></li>
+
+    <li><a href="builtin_features.htm">Built-in API features</a></li>
+
+    <li><a href="builtin_how_work.htm">How custom built-in API functions work</a></li>
+
+    <li><a href="builtin_limitations.htm">Built-in API limitations</a></li>
+
+    <li><a href="builtin_reqs.htm">Requirements for working with built-in API functions</a></li>
+
+    <li><a href="builtin_using.htm">Using built-in API functions</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

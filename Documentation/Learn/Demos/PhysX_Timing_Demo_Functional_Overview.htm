@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Timing Demo Functional Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Timing Demo Functional Overview</h1>
+
+<p>The interesting aspects of this demo are, of course, the
+update structure. By adjusting the menu setting, you can see the
+artifacts that arise due to various loop structures. The effects
+are more obvious than normal if you limit the "frame rate" of the
+PhysX or the application frame rate.</p>
+
+<h2>Two Timelines</h2>
+
+<p>When thinking about update timing and the various artifacts
+that arise, it is simplest to consider Gamebryo and PhysX as
+moving along parallel time tracks. Gamebryo's time is advanced by
+a call to <span class="NDLSystemFont">Update</span> on the scene
+graph, which moves the state of the system from the previous time
+to the time given as the argument to <span class=
+"NDLSystemFont">Update</span>. PhysX time is advanced by a call
+to <span class="NDLSystemFont">FetchResults</span> that returns
+true (i.e. the fetch happened), which advances the available
+PhysX state to the time given in the preceding <span class=
+"NDLSystemFont">Simulate</span> call.</p>
+
+<p>Things are not quite so simple, because the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+class, if fixed step timing is enabled, forces the PhysX
+<span class="NDLSystemFont">simulate</span> calls to use times
+that fall at fixed intervals. The time that was used for the most
+recent <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::FetchResults</a></span>
+is available with <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene::GetPrevFetchTime</a></span>.</p>
+
+<p>The update functions in the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm#update_functions_for_sources_and_destinations">
+NiPhysXScene</a></span> class, <span class=
+"NDLSystemFont">UpdateSources</span> and <span class=
+"NDLSystemFont">UpdateDestinations</span>, move state from the
+Gamebryo time-line to the PhysX time-line, and vice versa. When
+these functions are called, they either use state from the latest
+time that a time-line is in, or they interpolate between the two
+latest states.</p>
+
+<h2>Scene Graph Second Simulation</h2>
+
+<div class="FigureContainer">
+    <img src="images/Limited_PhysX.jpg" width="515" height="400"
+    alt="Limited_PhysX (64K)">
+	    <p class="FigureCaption">PhysX Timing demo: Limit PhysX
+    rate</p>
+</div>
+
+<p>When you limit the PhysX frame rate, the first thing you might
+notice is that the debug geometry for the paddle lags behind the
+rendered geometry, as shown in the image above. In this loop
+structure, we <span class="NDLSystemFont">UpdateSources</span>,
+<span class="NDLSystemFont">Simulate</span>, <span class=
+"NDLSystemFont">FetchResults</span>, <span class=
+"NDLSystemFont">UpdateDestinations</span> and then <span class=
+"NDLSystemFont">Update</span> the scene graph. The lag in debug
+geometry indicates that PhysX thinks that the paddle is farther
+back in time than the rendering does. This is expected because
+<span class="NDLSystemFont">UpdateSources</span> is called before
+<span class="NDLSystemFont">Update</span> on the scene graph, and
+hence is pushing the previous frame's paddle state to PhysX. By
+the time the scene is rendered, <span class=
+"NDLSystemFont">Update</span> has been called and the actual
+paddle geometry is farther forward in time.</p>
+
+<h2>Scene Graph First Simulation</h2>
+
+<div class="FigureContainer">
+    <img src="images/Update_pre_PhysX.jpg" width="515" height=
+    "400" alt="Update_pre_PhysX (57K)">
+	    <p class="FigureCaption">PhysX Timing demo: Update scene
+    graph before calling <span class=
+    "NDLSystemFont">UpdateSources</span></p>
+</div>
+
+<p>One way to more closely match the PhysX motion to the rendered
+geometry is to update the scene graph before calling <span class=
+"NDLSystemFont">UpdateSources</span>. But now, the ball debug
+geometry and renderings do not match. This is because the call to
+<span class="NDLSystemFont">UpdateDestinations</span> is setting
+a transformation in the scene graph, but with no <span class=
+"NDLSystemFont">Update</span> before rendering that
+transformation is not correctly applied to the ball geometry.</p>
+
+<p>If it is possible to completely partition the scene graph
+between sources (kinematic actors) and destinations (dynamic
+actors), you might be able to reduce artifacts by updating the
+kinematic actors before the simulate call, and then the dynamic
+actors after.</p>
+
+<h2>Interpolation</h2>
+
+<div class="FigureContainer">
+    <img src="images/Limited_PhysX_with_Interp.jpg" width="515"
+    height="400" alt="Limited_PhysX_with_Interp (61K)">
+	    <p class="FigureCaption">PhysX Timing demo: Interpolation</p>
+</div>
+
+<p>Interpolation can be used to smooth out the PhysX motion when
+the PhysX frame rate is lower than the rendering frame rate. This
+does not reduce artifacts due to timing mismatches, but it does
+make the rendered motion appear somewhat smoother.</p>
+
+<h2>Asynchronous Simulation</h2>
+
+<p>Asynchronous simulation has about the same effect as doing a
+scene graph update before simulation is called. If you un-roll an
+asynchronous loop, you will see that it looks quite like a Scene
+Graph First Simulation. The rendering is now happening before the
+<span class="NDLSystemFont">FetchResults</span>, but in Scene
+Graph First Simulation the ordering of rendering and <span class=
+"NDLSystemFont">FetchResults</span> does not matter because the
+state from <span class="NDLSystemFont">FetchResults</span> was
+not being updated to the scene graph before rendering.</p>
+
+<h2>Extrapolating</h2>
+
+<p>Extrapolation in this context means predicting what will
+happen in the future. Other Gamebryo-PhysX demo use extrapolation
+with asynchronous simulation to make it behave like Scene Graph
+Second timing. To extrapolate, pass a future time to the
+<span class="NDLSystemFont">Simulate</span> call. Specifically,
+guess what the next frame time will be and use that. If working
+with near-constant frame rates, this can be a very effective
+strategy.</p>
+
+<h2>Conclusion</h2>
+
+<p>There are many timing variants possible, and this demo has not
+explored all of them. Experiment, making use of debug geometry to
+estimate the artifacts your simulation produces. Note, however,
+that in an interactive environment you cannot achieve perfect
+synchronization of PhysX with gameplay because it takes time to
+compute PhysX and you cannot know what the player will do while
+that computation is proceeding.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Macros in Shaders</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Macros in Shaders</h1>
+
+<h2>General</h2>
+
+<p>This documentation describes how to use 
+macros to control behavior of shader program code. The shader program compilers
+can process #ifdef statements with user-defined macros, similar to the C preprocessor. &nbsp;
+Gamebryo's NiRenderer class provides an API to set, remove, and query shader macro definitions and creation flags. 
+ When a macro is added, it gets defined for any shader to which it is applicable 
+ and which is compiled after the macro was added. Macros are useful for 
+ conditional compiling to support different platforms and/or video cards, 
+ to disable/enable some features on different videos, for passing system-dependent 
+ constants without occupying a constant register, giving names to constant 
+ registers, defining system-specific functions, passing some generated 
+ pieces of code, etc. Macros must be defined before the target shader program 
+ is compiled because macros defined after compilation of a shader will 
+ not affect its execution.</p>
+
+<p>Macro definitions are stored in tables, which define 
+ their scope. There are three types of macro definitions:</p>
+
+<ul>
+<li>Global&mdash;These macros are stored in one global table and applied to all shader programs.</li>
+<li>Per-Type&mdash;Applied only to shaders with a specific file extension. They are stored in a number of tables; one per shader type. The shader program type is specified with a string containing the filename extension (see below).</li>
+<li>Per-File&mdash;Applied only to the shader which is currently compiled. These definitions are highest priority and override any others.</li>
+</ul>
+
+
+<p>Shader creation flags are 32-bit unsigned integers, 
+ which are passed to the shader compiler. Like macros, they can be global, 
+ per-type, and per-file. &nbsp;They 
+ can be combined with the OR operator to define the same definition at 
+ multiple levels.</p>
+
+<h2>Shader program type identification strings</h2>
+
+<p>When using per-type macros, the type of shader program 
+ is identified by a case-insensitive string constant, which is typically 
+ the shader program file extension. &nbsp;This 
+ can be given with or without a dot in front, so "Asm" is equivalent to 
+ &nbsp;".asm". 
+ When a macro definition is added for a new shader program type, a corresponding 
+ macro definition table is created. If an unknown shader program type is 
+ specified in one of the remove/query value functions, they will fail by 
+ returning false, a NULL iterator, or a zero count.</p>
+
+<h2>Name and expression rules and formatting</h2>
+
+<p>Macro definition names use the standard C identifier 
+ name rules. &nbsp;They 
+ are case-sensitive, cannot be a null or empty string, and cannot contain 
+ spaces or special characters other than the underscore character. Extra 
+ spaces or tabs before or after macro name may compile and work correctly, 
+ but it is not recommended to use them, because this may lead to problems 
+ when scope of macro is determined.</p>
+
+<p>Macro expressions also use standard C syntax, however 
+ their value must be able to execute in the target shader language as well. 
+ &nbsp;Invalid 
+ macro definition names or values can cause shader compilation errors.</p>
+
+<h2>Macro definition name conflicts</h2>
+
+<p>Macros in a particular table must have unique names. 
+ &nbsp;Defining 
+ a new macro with the same name as one that already exist will automatically 
+ overwrite the previous value of the existing macro. In different tables, 
+ name conflicts are resolved by the scope hierarchy. Per-file macros override 
+ any similarly-named global or per-type macros, and per-type macros override 
+ global macros.</p>
+
+<h2>Interface</h2>
+
+<p>Most of the functions dealing with the use of shader 
+ macro definitions and creation flags are members of the <a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a> 
+ class. The rest are compiler-specific functions (Build***MacroList) which 
+ are members of the <a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a> 
+ derived classes such as <a href="../../Reference/NiDX9Renderer/NiDX9Renderer.htm">NiDX9Renderer</a>, 
+ <a href="../../Reference/NiD3D10Renderer/NiD3D10Renderer.htm">NiD3D10Renderer</a>, 
+ <a href="../../Reference/ecrD3D11Renderer/ecr__D3D11Renderer.htm">ecr::D3D11Renderer</a>, 
+ <a href="../../ee_goto.htm#Reference/NiXenonRenderer/NiXenonRenderer.htm">NiXenonRenderer</a>, 
+ <a href="../../ee_goto.htm#Reference/NiPS3Renderer/NiPS3Renderer.htm">NiPS3Renderer</a>, and so on.</p>
+
+<h2>Deprecated functions</h2>
+
+<p>The following functions are deprecated and usage of 
+ them should be avoided:</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramCreator::GetUniversalShaderCreationFlags()</span></p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramCreator::SetUniversalShaderCreationFlags()</span></p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramCreator***::GetShaderCreationFlags()</span></p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramCreator***::SetShaderCreationFlags()</span></p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramFactory::GetUniversalShaderCreationFlags()</span></p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">Ni***ShaderProgramFactory::SetUniversalShaderCreationFlags()</span></p>
+
+<p>Instead of them, use new <a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a> 
+ shader creation flags methods. These methods are changed to be wrappers 
+ to new ones for compatibility.</p>
+
+<h2>Macro definition tables in compiler-specific format</h2>
+
+<p>Each renderer has Build***MacroList methods with 
+ the following syntax:</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">const &lt;macro_type&gt;* 
+ Build***MacroList(pcFileType, &lt;macro_type&gt;* pkUserMacros)</span></p>
+
+<p>Where &lt;macro_type&gt; is type of macro definitions 
+ for specific compiler (D3DXMACRO* for D3D9 / Xenon, D3D_SHADER_MACRO 
+ for D3D10 / D3D11, char** for CG).</p>
+
+<h2>Current limitations</h2>
+
+<p>Currently per-file macros are supported only for D3D10 and D3D11. 
+ The other 
+ renderers' shader creation methods do not have an interface to take per-file 
+ macro lists.</p>
+
+<p>On the PS3, macros are not supported with the DynamicCgCompiler. LibCGC must be enabled for macros to work on the PS3.</p>
+
+<h2>Examples</h2>
+
+<pre>
+NiRenderer* pkRenderer = NiRenderer::GetRenderer();
+
+// Define a global "Win32" macro with no value
+
+pkRenderer->AddGlobalMacro("Win32", "");
+
+// Define a global macro "DX9" with value 1
+
+pkRenderer->AddGlobalMacro("DX9", "1");
+
+// Delete a macro
+
+if (bD3D10RendererActive)
+{
+    pkRenderer->RemoveGlobalMacro("DX9");
+    pkRenderer->RemoveMacro("Cg", "PS3");
+}
+
+// Define a macro for asm shaders
+
+pkRenderer->AddMacro(".ASM", "CV_WORLDVIEWPROJ_0", "0");
+
+// Define a macro for Cg shaders
+
+pkRenderer->AddMacro("cg", "CG_WORLDVIEWPROJ_0", "C0");
+
+// Define a macro for both HLSL and FX shaders
+
+pkRenderer->AddMacro("fx", "DX10", "true");
+
+// Get the value of a macro
+
+const char* pcSM = 
+    pkRenderer->GetMacroValue("Hlsl", "ShaderModel");
+
+// Check for the presence of a macro
+
+if (pkRenderer->IsMacro("asm", "UseNormalMaps"))
+{ ... }
+
+// Get the number of macros
+
+NiUInt32 uiHLSLMacroCount = pkRenderer->GetMacroCount("asm");
+
+// Iterate through HLSL macros
+
+NiMacrosIterator kIter = pkRenderer->GetFirstMacro("hlsl");
+while (kIter)
+{
+    NiFixedString kName;
+    NiFixedString kValue;
+    pkRenderer->GetNextMacro("hlsl", kIter, kName, kValue);
+    // do something...
+}
+
+// Set shader creation flags for HLSL shaders
+
+ pkRenderer->SetShaderCreationFlags(
+    "hlsl",
+    D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY);
+
+// Get global shader creation flags
+
+NiUInt32 uiFlags = 
+    pkRenderer->GetGlobalShaderCreationFlags();
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

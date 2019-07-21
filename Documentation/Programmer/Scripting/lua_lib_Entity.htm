@@ -1,0 +1,882 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Entity (proxy)</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">Entity (proxy)</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>The Entity Lua module contains methods for interacting directly with Entities in Lua. Lua Entities
+	are wrapped in a proxy Lua object that exposed Entity-specific attributes, properties, and behaviors
+	directly without the need to call BehaviorAPI methods.</p>
+
+<p> An instance of an Entity proxy is created
+	any time an Entity or EntityID crosses from C++ to Lua.  This includes the return values from
+	BehaviorAPI calls like CreateEntity and CreateEntityAndWait, as well as any EntityRef properties
+	associated with other entities.</p>
+	
+<p>Existing Lua-bound functions that take EntityID values as parameters will continue to work without
+modification. The Lua Entity proxy object will automatically convert to the appropriate type at
+runtime. This means you do not need to change existing Lua bindings to work with Lua Entity proxy
+objects.</p>
+
+<p class="NDLRefHead1">Attributes</p>
+
+<!-- ========================================================================================== -->
+<p class="NDLRefMemberFunction">ID</p>
+
+<p class="NDLRefMemberDescription">The ID attribute on an Entity proxy object maps directly to
+the Entity's runtime ID, a 64-bit unsigned integer. If the proxy is invalid, this will be 0.</p>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">self.ID</pre>
+</p>
+
+<p class="NDLRefHead1">Constants</p>
+
+<!-- ========================================================================================== -->
+<p class="NDLRefMemberFunction">InvalidEntity</p>
+
+<p class="NDLRefMemberDescription">A constant representing an Invalid entity. If an entity ID is
+passed to Lua that is invalid or NULL, the proxy is assigned this value.</p>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if otherEntity == Entity.InvalidEntity then ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<p class="NDLRefMemberFunction">PropertyResult Constants</p>
+
+<p class="NDLRefMemberDescription">A set of static integers representing the result of
+a property operation. One of these values is returned to Lua after such an operation.</p>
+
+<table>
+<thead>
+<th>Constant</th><th>Description</th>
+</thead>
+<tbody>
+<tr><td>PropertyResult_OK</td><td>The operation was successful.</td></tr>
+<tr><td>PropertyResult_TypeMismatch</td><td>The value you attempted to set doesn't match the property type.</td></tr>
+<tr><td>PropertyResult_NoDefaultValue</td><td>The property does not have a default value.</td></tr>
+<tr><td>PropertyResult_PropertyNotFound</td><td>The property was not found.</td></tr>
+<tr><td>PropertyResult_DefaultValueAlreadySet</td><td>The property default value is already set. This is here to
+indicate that the property dirty flag did not change.</td></tr>
+<tr><td>PropertyResult_UnknownPropertyType</td><td>The property exists but the runtime does not know about the property type.</td></tr>
+<tr><td>PropertyResult_ModelNotFound</td><td>The model that defined the property was not found.</td></tr>
+<tr><td>PropertyResult_PropertyNotScalar</td><td>You attempted to assign a scalar value to an associative array property.</td></tr>
+<tr><td>PropertyResult_PropertyNotAssociativeArray</td><td>You attempted to assign an associative array value to a scalar property.</td></tr>
+<tr><td>PropertyResult_KeyNotFound</td><td>The key into an associative array property was not found.</td></tr>
+<tr><td>PropertyResult_ReadOnlyError</td><td>You attempted to change the value of a read-only property.</td></tr>
+<tr><td>PropertyResult_EntityNotOwned</td><td>You attempted to change the value of a property for a replicated entity.</td></tr>
+<tr><td>PropertyResult_UnknownError</td><td>An unexplained error ocurred when attempting the operation.</td></tr>
+<tr><td>PropertyResult_EntityNotFound</td><td>The entity you are attempting to access was not bound.</td></tr>
+</tbody>
+</table>
+
+<!-- ========================================================================================== -->
+<p class="NDLRefHead1">Property Bindings</p>
+
+<p class="NDLRefMemberDescription">Entity properties are bound directly to the Lua Entity proxy object.
+This means you can access and change property values directly against the proxy without having to make
+BehaviorAPI calls.  The PropertyResult value for these operations are not returned directly. Instead,
+the "Emergent.PropertyResult" global variable is set to the PropertyResult of the last property operation.
+If you have any doubts about whether a direct property operation against an Entity proxy was successful, check
+this global variable.</p>
+
+<p class="NDLRefMemberDescription">For example, if an entity has property 'Position' defined as a Point3 value, you can set/get it as follows:
+
+<pre style="margin-left:60px;margin-right:60px">local position = self.Position    -- Entity['Position'] also works.
+print(tostring(position))         -- calls Point3's __tostring metamethod.
+
+local newPosition = Point3.Point3(1,2,3)
+self.Position = newPosition       -- Could also pass a table { 1, 2, 3 }
+print(tostring(entity.Position))  -- prints 'Point3(1, 2, 3)'
+</pre></p>
+
+<p class="NDLRefMemberDescription">Associative array properties are also bound using this proxy. Once again you can
+    get/set/erase array entries without making BehaviorAPI function calls. For example, if
+    an entity has a list property named 'Nicknames' defined as a list of strings, you can
+    manipulate it as follows:
+
+<pre style="margin-left:60px;margin-right:60px">local nicknames = self.Nicknames  -- 'table' with __index and __newindex methods.
+
+-- check to see if the operation was successful
+if Entity.PropertyResult ~= Entity.PropertyResult_OK then 
+    -- do something...
+end
+
+print(tostring(nicknames))        -- prints out something like 'Array Nicknames[10]'
+print(tostring(nicknames[0]))     -- prints the nickname a position 0.
+
+nicknames[0] = "Enlightened"      -- updates the array value at index 0.
+print(tostring(nicknames[0]))     -- prints 'Enlightened'
+
+local keys = nicknames:Keys()     -- Obtain all the keys for this associative array.
+
+for _, key in pairs(keys) do
+	-- print out all the array values
+	print("Nicknames["..key.."] = " .. tostring(nicknames[key]))
+end
+
+nicknames[0] = nil                -- Remove the key and value from index 0.
+</pre></p>
+
+<!-- ========================================================================================== -->
+<p class="NDLRefHead1">Member Functions</p>
+
+<a name="EntityProxyClone" id="EntityProxyClone"></a>
+
+<p class="NDLRefMemberFunction">Entity Clone()</p><div class="ReferenceTable">
+
+<p class="NDLRefMemberDescription">Create a clone of this EntityProxy object. Note: this does
+not clone the underlying C++ Entity instance, only the proxy.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">Entity</span></td>
+                <td>An clone of the Entity Lua proxy.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyOperatorEqual" id="EntityProxyOperatorEqual"></a>
+
+<p class="NDLRefMemberFunction">boolean ==</p>
+
+<p class="NDLRefMemberDescription">Compare two proxy objects to determine if they represent
+the same C++ Entity instance.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the two objects represent the same C++ entity.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self == otherEntity then...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyIsBound" id="EntityProxyIsBound"></a>
+
+<p class="NDLRefMemberFunction">boolean IsBound()</p>
+
+<p class="NDLRefMemberDescription">Determines if the Entity proxy is bound to a C++ entity.
+Proxy objects are bound only for Entities that are available to the Scheduler.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True Entity is bound to this proxy.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self:IsBound() then...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyGetPrivateCategoryID" id="EntityProxyGetPrivateCategoryID"></a>
+
+<p class="NDLRefMemberFunction">UInt64 GetPrivateCatID()</p>
+
+<p class="NDLRefMemberDescription">Get the private Category ID for the entity bound to this proxy.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">UInt64</span></td>
+                <td>The private category for the entity, or 0 if the entity is not bound.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local privateCat = self:GetPrivateCatID()</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyContainsProperty" id="EntityProxyContainsProperty"></a>
+
+<p class="NDLRefMemberFunction">boolean ContainsProperty(<br/>
+string propertyName)</p>
+
+<p class="NDLRefMemberDescription">Determine if the Entity represented by this proxy has the property
+with the given name.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">propertyName</span></td>
+                <td>Name of the property to look for.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity has the property.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self:ContainsProperty("Position") then ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyContainsPropertyWithKey" id="EntityProxyContainsPropertyWithKey"></a>
+
+<p class="NDLRefMemberFunction">boolean ContainsPropertyWithKey(<br/>
+string propertyName,<br/>
+string keyName)</p>
+
+<p class="NDLRefMemberDescription">Determine if the Entity has a value for an associative array
+named propertyName with key keyName.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">propertyName</span></td>
+                <td>Name of the property to look for.</td>
+            </tr>
+            <tr>
+                <td><span class="NDLSystemFont">keyName</span></td>
+                <td>Key to search for</td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity has the named property and that property contains a value for key.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self:ContainsPropertyWithKey("Limbs", "Arm") then ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyContainsBehavior" id="EntityProxyContainsBehavior"></a>
+
+<p class="NDLRefMemberFunction">boolean ContainsBehavior(<br/>
+string behaviorName)</p>
+
+<p class="NDLRefMemberDescription">Determine if the Entity has a behavior with the given name.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">behaviorName</span></td>
+                <td>Name of the behavior to look for.</td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity has the named behavior.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self:ContainsBehavior("Attack") then ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyContainsMixin" id="EntityProxyContainsMixin"></a>
+
+<p class="NDLRefMemberFunction">boolean ContainsMixin(<br/>
+string mixinName)</p>
+
+<p class="NDLRefMemberDescription">Determine if the Entity mixes in the given model.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">modelName</span></td>
+                <td>Name of the mixin to look for.</td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity has mixed in the given model.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">if self:ContainsMixin("Nameable") then ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyGetModelName" id="EntityProxyGetModelName"></a>
+
+<p class="NDLRefMemberFunction">string GetModelName()</p>
+
+<p class="NDLRefMemberDescription">Get the model name for this entity.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">string</span></td>
+                <td>The name of the model for this entity, or nil if the Entity is not bound.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">print ("ModelName: " .. self:GetModelName())</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyGetPropertyNames" id="EntityProxyGetPropertyNames"></a>
+
+<p class="NDLRefMemberFunction">table GetPropertyNames()</p>
+
+<p class="NDLRefMemberDescription">Get all the property names associated with this entity.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">table</span></td>
+                <td>A Lua table containing the names of all the entity properties.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local propNames = self:GetPropertyNames()
+for _, name in pairs(propNames) do ...</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyResetProperty" id="EntityProxyResetProperty"></a>
+
+<p class="NDLRefMemberFunction">PropertyResult ResetProperty(<br/>
+string propertyName)</p>
+
+<p class="NDLRefMemberDescription">Reset the property to its default value.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">propertyName</span></td>
+                <td>Name of the property to reset.</td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">Entity.PropertyResult</span></td>
+                <td>The result of the operation.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local result = self:ResetProperty("Position")</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyEnterWorld" id="EntityProxyEnterWorld"></a>
+
+<p class="NDLRefMemberFunction">boolean EnterWorld()</p>
+
+<p class="NDLRefMemberDescription">Request that the Entity enters the world.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity successfully entered the world.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local result = self:EnterWorld()</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyExitWorld" id="EntityProxyExitWorld"></a>
+
+<p class="NDLRefMemberFunction">boolean ExitWorld()</p>
+
+<p class="NDLRefMemberDescription">Request that the Entity exits the world.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+			
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if the Entity successfully exited the world.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local result = self:ExitWorld()</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxySendEvent" id="EntityProxySendEvent"></a>
+
+<p class="NDLRefMemberFunction">boolean SendEvent(<br/>
+string behaviorName,<br/>
+ParameterList args = nil,<br/>
+string callbackBehavior = nil,<br/>
+number delay = 0.0)</p>
+
+<p class="NDLRefMemberDescription">Send an event to the entity.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">behaviorName</span></td>
+                <td>The name of the behavior to call.</td>
+            </tr>
+            <tr>
+                <td><span class="NDLSystemFont">args</span></td>
+                <td>A ParameterList containing arguments to pass to the behavior. (default: nil)</td>
+            </tr>
+            <tr>
+                <td><span class="NDLSystemFont">callbackBehavior</span></td>
+                <td>The name of the callback behavior to invoked if the receiving entity replies.</td>
+            </tr>
+            <tr>
+                <td><span class="NDLSystemFont">delay</span></td>
+                <td>The delay, in seconds, to wait before sending the event.</td>
+            </tr>				
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">boolean</span></td>
+                <td>True if a valid event was generated and sent. This does not guarantee the event is delivered.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">local result = self:SendEvent("TakeDamage")</pre>
+</p>
+
+<!-- ========================================================================================== -->
+<a name="EntityProxyToString" id="EntityProxyToString"></a>
+
+<p class="NDLRefMemberFunction">string tostring()</p>
+
+<p class="NDLRefMemberDescription">Generate a user-friendly string representing this entity.</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">none</span></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Return Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">string</span></td>
+                <td>A human-readable representation of this entity. For example, "Entity(0x10000000000000f3)"</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">Usage:
+<pre style="margin-left:60px;margin-right:60px">print ("Entity : " .. tostring(self)</pre>
+</p>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Understanding System Service Priorities and Dependencies</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Understanding System Service Priorities and Dependencies</h1>
+
+<p>As described in the <a href="system_service_overview.htm">System services overview</a>
+documentation every frame each system service has one <span class="NDLSystemFont">
+efd::ISystemService</span> method invoked based on the state of that particular service. Further as
+outlined in the <a href="system_service_features.htm">System service features</a> documentation the
+order in which these methods are invoked on different services is controlled by a combination of
+priority and dependencies. In this documentation topic we will examine the interaction of priority
+and dependency using a detailed example. For the purpose of this example, we will be examining a
+process with the following services:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Service Name</th><th>Priority</th><th>Dependent services</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>A</td><td>1000</td><td>B, C, D</td>
+        </tr>
+        <tr>
+            <td>B</td><td>2000</td><td>C</td>
+        </tr>
+        <tr>
+            <td>C</td><td>1500</td><td><em>none</em></td>
+        </tr>
+        <tr>
+            <td>D</td><td>2500</td><td><em>none</em></td>
+        </tr>
+        <tr>
+            <td>E</td><td>500</td><td><em>none</em></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The dependencies listed in the table above can be constructed into a dependency diagram in order
+to easily visualize the service relationships:</p>
+<div class="NDLFigureContainer">
+    <img src="./images/DependencyGraph.png" width="333" height="297" alt="Dependency graph for
+        example services"/>
+    <p class="NDLFigureCaption">Dependency graph for example services</p>
+</div>
+<p>The Service Manager guarantees that all services are initialized before any service that depends
+on them, so in our example service C must be initialized before service B and service B must be
+initialized before service A. The other thing to notice is that not all services have any
+restrictions with regard to other services, in our example service E could be initialized at any
+point and service D could be initialized before or after B and C so long as it precedes service A.
+In order to make service initialization order a bit more deterministic, the service manager applies
+two heuristics when generating the topological order for the dependency graph:</p>
+<ul>
+    <li>First, services with a deeper depth in the dependency graph are initialized before services
+    with a lower depth. This heuristic helps ensure commonly depended upon services are initialized
+    first just in case some services have neglected to express their proper dependencies. In our
+    example, service C is at a depth of three so it will be initialized first (notice the deepest
+    possible path determined the depth for the service). Services B and D are at depth two so they
+    will be initialized next. And services A and E are at depth one so they will be initialized
+    last.</li>
+    <li>Second, services at the same depth in the dependency graph are sorted by their service
+    priorities. This heuristic is completely arbitrary and is used simply to ensure a more well
+    defined order of initialization. As with ticking, a higher priority will be initialized before a
+    lower priority for those items at the same depth. In our example, D (priority 2500) will
+    initialize before B (priority 2000) and A (priority 1000) will initialize before E (priority
+    500).</li>
+</ul>
+<p>If two services have the same depth and the same priority then it is undefined what order they
+will be initialized relative to each other. So based on the dependencies, priority and heuristics we
+have the following results for our example:</p>
+<table>
+    <tbody>
+        <tr>
+            <td>Dependency Order:</td><td>C, D, B, A, E</td>
+        </tr>
+        <tr>
+            <td>Priority Order:</td><td>D, B, C, A, E</td>
+        </tr>
+    </tbody>
+</table>
+<p>Lets examine what will happen frame-by-frame for our example services when ServiceManager::Run
+is called. In order to understand this we will need to know something about the behavior of the
+OnInit, OnTick and OnShutdown methods for each of our services. Lets assume these methods behave as
+described in the following table:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Service Name</th>
+            <th>OnInit behavior</th>
+            <th>OnTick behavior</th>
+            <th>OnShutdown behavior</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>A</td>
+            <td>Requires two calls to complete</td>
+            <td>Runs forever</td>
+            <td>Always completes in one call</td>
+        </tr>
+        <tr>
+            <td>B</td>
+            <td>Always completes in one call</td>
+            <td>Runs forever</td>
+            <td>Always completes in one call</td>
+        </tr>
+        <tr>
+            <td>C</td>
+            <td>Always completes in one call</td>
+            <td>Always completes in one call</td>
+            <td>Always completes in one call</td>
+        </tr>
+        <tr>
+            <td>D</td>
+            <td>Requires two calls to complete</td>
+            <td>Runs forever</td>
+            <td>Always completes in one call</td>
+        </tr>
+        <tr>
+            <td>E</td>
+            <td>Always completes in one call</td>
+            <td>Runs forever</td>
+            <td>Requires two calls to complete</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The result will be the following first few frames of our application:</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/MethodCallOrder.png" width="770" height="398" alt="Method invocation order
+        during initialization seperated by frame"/>
+    <p class="NDLFigureCaption">Method invocation order during initialization separated by frame</p>
+</div>
+
+<p>Important details concerning this result:</p>
+<ul>
+    <li>OnInit will be called in dependency order.</li>
+    <li>Because C::OnInit finished in a single call, D::OnInit was also called on the first frame.
+        </li>
+    <li>Even though B does not depend on D, when D::OnInit returned a pending result in the first
+        frame no more initialization was performed on that frame. Once the initialization order is
+        computed services are initialized one at a time in that order.</li>
+    <li>On the second frame, initialization continued in the initialization order. D::OnInit
+        was called and finished, so then B::OnInit was called which also finished and finally
+        A::OnInit was called but returned pending thus stopping the initialization for this frame.
+        </li>
+    <li>Since C has already completed its initialization it has C::OnTick called during the second
+        frame even though other services are still pending initialization.</li>
+    <li>The OnTick calls for a frame do not start until the OnInit calls for the frame are
+        completed.</li>
+    <li>Initialization continues in the third frame with A::OnInit and then E::OnInit both
+        completing in initialization order.</li>
+    <li>Frame three finishes with D::OnTick and B::OnTick being called in priority order. D has a
+        higher priority so it is called before B.</li>
+    <li>Note that C::OnTick is not called in the third and subsequent frames because it returned
+        complete when it was first called.</li>
+    <li>By frame 4 all services are initialized so they each simply have OnTick called in priority
+        order.</li>
+    <li>Subsequent frames will be the same as frame 4 until application shutdown begins.</li>
+</ul>
+
+<p>The procedure for dealing with process shutdown is very similar. Lets assume that on the ninth
+frame the ServiceManager::Shutdown method is called. Given what we know about our services, the
+result will be the following:</p>
+<div class="NDLFigureContainer">
+    <img src="./images/ShutdownOrder.png" width="746" height="398" alt="Method invocation order
+        during shutdown seperated by frame"/>
+    <p class="NDLFigureCaption">Method invocation order during shutdown separated by frame</p>
+</div>
+<p>Important details concerning this result:</p>
+<ul>
+    <li>Even though ServiceManager::Shutdown was called on frame nine, that frame continues as
+        normal.</li>
+    <li>Starting on frame ten OnShutdown will be called in reverse Dependency Order.</li>
+    <li>Because E::OnShutdown returns pending, remaining services are ticked in their normal
+        priority order.</li>
+    <li>During application shutdown, the OnTick calls for a frame do not start until the OnShutdown
+        calls for the frame are completed. This may seem counter-intuitive at first, but the
+        OnShutdown calls must be made first in order to determine which services will complete their
+        shutdown and which services will still require an OnTick call.</li>
+    <li>On frame eleven, all services complete OnShutdown in reverse dependency order. This will
+        end the ServiceManager::Run call and typically lead to process termination.</li>
+</ul>
+
+<!-- todo: review: should we add a section describing what happens when services are added or
+    removed at run-time? -->
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+    <li><a href="system_service_overview.htm">System services overview</a></li>
+    <li><a href="system_service_features.htm">System service features</a></li>
+    <li><a href="system_service_how_work.htm">How system services work</a></li>
+    <li><a href="system_service_limitations.htm">System service limitations</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the Emergent Game
+        Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_best_practice.htm">Best practices for working with system services
+        </a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="system_service_reference.htm">System service reference</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+    <li><a href="../../Reference/efd/efd__ConfigManager.htm">efd::ConfigManager</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_config_mgr.htm">ConfigManager Quick
+        Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

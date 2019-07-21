@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime RTTI Details</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime RTTI Details</h1>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                This topic applies only to the Core Runtime
+                subsystem. RTTI is also implemented in the
+                Foundation subsystem. The Foundation RTTI
+                implementation is used by all Foundation and Game
+                Framework code, including the Core Runtime
+                Services that are implemented in the <span class=
+                "NDLSystemFont">ecr</span> namespace. The
+                Foundation RTTI system offers the following
+                features that are not supported in the Core
+                Runtime implementation:
+
+                <ul>
+                    <li>multiple inheritance</li>
+
+                    <li>use of integer IDs instead of
+                    strings</li>
+                </ul>For additional details, see <a href=
+                "../Foundation/foundation_rtti.htm">Foundation
+                RTTI</a>.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>While most applications will only use <span class=
+"NDLSystemFont">RTTI</span> via <span class=
+"NDLSystemFont">NiIsKindOf</span>, <span class=
+"NDLSystemFont">NiIsExactKindOf</span> and <span class=
+"NDLSystemFont">NiDynamicCast</span>, applications creating their
+own subclasses may find an understanding of the details of the
+internals of <span class="NDLSystemFont">RTTI</span> useful. Of
+these advanced applications, most will simply want to add
+<span class="NDLSystemFont">RTTI</span> to their own class. For
+this class of developer, the following section will show all that
+is needed. For a more complete understanding of <span class=
+"NDLSystemFont">RTTI</span>, see the Internals section below.</p>
+
+<h2>Implementing RTTI in an Application Class</h2>
+
+<p>Applications that derive their own subclasses of <span class=
+"NDLSystemFont">NiObject</span>-derived bases can extend
+<span class="NDLSystemFont">RTTI</span> to include their own
+class very easily. For example, if an application created their
+own subclass of <span class="NDLSystemFont">NiAVObject</span>,
+<span class="NDLSystemFont">NiNewClass</span>, they would do the
+following:</p>
+
+<pre>
+// NiNewClass.h
+class NiNewClass : public NiAVObject 
+{
+    NiDeclareRTTI;
+    // &lt;other stuff&gt;
+};
+
+// NiNewClass.cpp
+NiImplementRTTI(NiNewClass, NiAVObject);
+</pre>
+
+<h2>RTTI Internals</h2>
+
+<p>Macros are used to simplify the implementation of <span class=
+"NDLSystemFont">RTTI</span>. The macro <span class=
+"NDLSystemFont">NiDeclareRootRTTI</span> is placed in the class
+definition for <span class="NDLSystemFont">NiObject</span>.
+<span class="NDLSystemFont">NiDeclareRootRTTI</span> declares a
+static <span class="NDLSystemFont">RTTI</span> data member and
+provides an internal interface for testing class type at run
+time. All <span class="NDLSystemFont">NiObject</span> -derived
+classes use the macro <span class=
+"NDLSystemFont">NiDeclareRTTI</span> in their class definitions.
+<span class="NDLSystemFont">NiDeclareRTTI</span> just declares a
+static <span class="NDLSystemFont">RTTI</span> data member and
+accessor. As the static data has the same name in a derived class
+as it does in a base class, the static data in the derived class
+hides that of the base class. The <span class=
+"NDLSystemFont">NiDeclareRTTI</span> macro therefore also
+declares a virtual function whose job it is to return the address
+of the class's static <span class="NDLSystemFont">RTTI</span>
+member, a unique value per class. Since <span class=
+"NDLSystemFont">NiDeclareRTTI</span> declares a static data
+member, the source file that defines the class's member functions
+should contain a definition for that static member. <span class=
+"NDLSystemFont">NiObject</span> requires the macro <span class=
+"NDLSystemFont">NiImplementRootRTTI(rootclassname)</span> to be
+placed in its source file. The macro <span class=
+"NDLSystemFont">NiImplementRTTI(classname, baseclassname)</span>
+defines the storage and should be placed in a source file for any
+<span class="NDLSystemFont">NiObject</span>-derived class.</p>
+
+<p>The following code shows how <span class=
+"NDLSystemFont">NiObject</span> is set up and how derived classes
+are set up.</p>
+
+<pre>
+// NiObject.h
+class NiObject : public NiRefObject
+{
+    NiDeclareRootRTTI(NiObject);
+    // &lt;other NiObject stuff goes here&gt;
+};
+ 
+// NiObject.cpp
+NiImplementRootRTTI(NiObject);
+ 
+// NiObjectNET.h
+class NiObjectNET : public NiObject
+{
+    NiDeclareRTTI;
+    // &lt;other NiObjectNET stuff goes here&gt;
+};
+ 
+// NiObjectNET.cpp
+NiImplementRTTI(NiObjectNET, NiObject);
+ 
+// NiAVObject.h
+class NiAVObject : public NiObjectNET 
+{
+    NiDeclareRTTI;
+    // &lt;other stuff&gt;
+};
+ 
+// NiAVObject.cpp
+NiImplementRTTI(NiAVObject, NiObjectNET);
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

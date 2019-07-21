@@ -1,0 +1,262 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Reference Counting and Smart Pointers</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Reference Counting and Smart Pointers</h1>
+
+<p>All Gamebryo objects that are subclasses of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ are reference-counted. This means that the object has the ability to store 
+ a count of the number of pointers that refer to it. Code that requires 
+ long-term references to any such object must declare a reference, releasing 
+ that reference when the code is finished with the object. Under 
+ such a system, objects delete themselves when the last reference is released 
+ (in other words, the reference count is zero). With manual reference counting systems, this can be somewhat tedious&mdash;Gamebryo alleviates this tedium  via the use of so-called "smart pointers".</p>
+
+<p>Note that instances of reference counted types such 
+ as <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ subclasses <em>must</em> be allocated on the heap using new, rather than 
+ as static objects or stack objects (local variables). This is necessary 
+ because if the reference count of an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ falls to zero, that object will be deleted&mdash;and deletion of stack or 
+ static objects will generate memory faults and crashes.</p>
+
+<h2>Smart Pointers</h2>
+
+<p>Reference counting is made semi-automatic in Gamebryo 
+ through the use of smart pointers. These are implemented via <span class="NDLSystemFont">NiPointer</span>; 
+ a template class that has overloaded operators that make instances of 
+ the type appear to act as standard pointers. However, smart pointers automatically 
+ increment and decrement the reference counts of objects to which they 
+ point, making it unnecessary for applications to ever call the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ reference count functions directly. For example, if a smart pointer object 
+ is declared as a local variable in a function and the pointer is assigned 
+ to point to an object A, then A's reference count will be incremented 
+ at the time the assignment is made. When the function returns, the local 
+ smart pointer will be destroyed (as it goes out of scope), and A's reference 
+ count will be decremented by one.</p>
+
+<p>By convention, every Gamebryo class that is derived 
+ from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span> 
+ has a convenience declaration of a smart pointer to that type, which is 
+ the type name with "<span class="NDLSystemFont">Ptr</span>" 
+ appended (<span class="NDLSystemFont">NiNodePtr</span>, 
+ <span class="NDLSystemFont">NiTriShapePtr</span>, and so on).</p>
+
+<p>A simple example:</p>
+
+
+<pre>
+NiNodePtr spParent = &lt;some node&gt;;
+NiNodePtr spChild = NiNew NiNode;  
+// spChild points to new object. Reference count is 1.
+ 
+spParent-&gt;AttachChild(spChild);  
+// Reference count of object pointed to by spChild is now 
+// 2, since NiNode objects use smart pointers to refer their
+// children.
+ 
+spParent-&gt;DetachChild(spChild);  
+// Reference count of object pointed to by spChild decreases 
+// to 1.
+ 
+spChild = 0;  
+// Reference count of object decreases to 0. Object is 
+// deleted.
+</pre>
+
+<p>The notes below discuss issues to be aware of with smart 
+ pointers.</p>
+
+<ul>
+	
+	<li>Any application pointer 
+ to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span>-derived 
+ object that persists across calls to code that could eliminate a smart 
+ pointer reference to the object should be a smart pointer. For example, 
+ if you detach a child <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ from its parent <span class="NDLSystemFont">NiNode</span>, 
+ and you do not want the child to be deleted when the parent removes its 
+ smart pointer reference to the child, the pointer to the child in your 
+ code should be a smart pointer.</li>
+	
+	<li>Cycles are possible 
+ when using smart pointers. Therefore, it is extremely important to examine 
+ scenarios where cycles could potentially occur when designing with smart 
+ pointers. For example, take the following scene graph layout:</li>
+</ul>
+
+<pre class="indent1">
+"Grand-Parent" NiNode
+       |
+"Parent" NiNode
+       |
+"Child" NiNode  -  NiTimeController that points to "Parent" NiNode
+</pre>
+
+<p>If the NiTimeController were to store a 
+ smart pointer to the "Parent" NiNode, normal scene graph deletion 
+ would not occur when the application released the "Grand-Parent" 
+ NiNode. A cycle, or loop, has been formed between "Parent" and 
+ "Child" through the time controller and the memory will never 
+ be deleted. In this case, a designer should either not use a smart pointer 
+ or should provide reasonable policy for how to attach the time controller 
+ to prevent this scenario.</p>
+
+<ul>
+	
+	<li><em>Never 
+ </em>call <span class="NDLSystemFont">delete</span>
+ on a smart pointer. THIS IS EXTREMELY IMPORTANT. This is the only major 
+ behavior deviation between pointers to standard heap objects and smart 
+ pointers to reference counted objects. Calling <span class="NDLSystemFont">delete</span> on a smart pointer 
+ will, of course, cause the object to which the smart pointer points to 
+ be deleted, no matter what its reference count might be. If an application 
+ wishes to release a reference to an object that is pointed to by a smart 
+ pointer (before that smart pointer is automatically destroyed by going 
+ out of scope), it should assign <span class="NDLSystemFont">0</span> 
+ to the pointer. This will ensure that the object to which the smart pointer 
+ points will not be destroyed until the reference count falls to zero.</li>
+	
+	<li>Similarly, never call 
+ <span class="NDLSystemFont">delete</span> on a regular pointer 
+ to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span>, 
+ as it may also delete the object prematurely.</li>
+	
+	<li>In order to differentiate 
+ between pointers and smart pointers, Gamebryo uses the '<span class="NDLSystemFont">pk</span>' prefix for regular pointers 
+ to class objects (<em>for example,</em> <span class="NDLSystemFont">pkObject</span>), 
+ and the '<span class="NDLSystemFont">sp</span>' prefix for 
+ smart pointers (<em>for example,</em> <span class="NDLSystemFont">spObject</span>).</li>
+	
+	<li>As mentioned above 
+ in the discussion of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRefObject.htm">NiRefObject</a></span><span class="NDLSystemFont">s</span>, a smart pointer should only 
+ point to an object that was allocated dynamically on the heap. A smart 
+ pointer should never point to an object that is on the stack (<em>in other words,</em> 
+ a local variable). A smart pointer should never point to a statically 
+ defined object.</li>
+	
+	<li>It is a common mistake 
+ for new users to defensively use smart pointers throughout the codebase 
+ and never use regular pointers. This can often manifest in performance 
+ decrease when smart pointers are passed up and down the stack, incrementing 
+ and decrementing the reference count as the stack frame changes. In most 
+ cases, it is safe to simply pass regular pointers as function arguments, 
+ since the calling context has a reference to the object. If needed, a 
+ user can pass "const &amp;" smart pointer objects as arguments. 
+ This will point out the assumption that the calling context has a smart 
+ pointer reference to the object, but does not incur the overhead of the 
+ stack frame incrementing and decrementing the reference count.</li>
+	
+	<li>If a function takes 
+ a smart pointer as an argument, a regular pointer should not be passed 
+ via that argument if there are no other smart pointer references to the 
+ object. If you do so, the object to which the regular pointer points will 
+ be destroyed. The problem is the following:
+	
+	<ul>
+		
+		<li>An object is dynamically 
+ allocated to the regular pointer <span class="NDLSystemFont">pkObject</span>. 
+ The object has a reference count of <span class="NDLSystemFont">0</span>.</li>
+		
+		<li>To pass <span class="NDLSystemFont">pkObject</span> through a smart 
+ pointer input parameter, the compiler generates an implicit call to the 
+ smart pointer constructor to convert <span class="NDLSystemFont">pkObject</span> 
+ to a temporary smart pointer, increasing the object's reference count 
+ to <span class="NDLSystemFont">1</span>.</li>
+		
+		<li>The temporary smart 
+ pointer is copied into a local smart pointer in the scope of the called 
+ function via a call to the smart pointer copy constructor, increasing 
+ the object's reference count to <span class="NDLSystemFont">2</span>.</li>
+		
+		<li>When the called 
+ function returns, the local smart pointer is destroyed, decreasing the 
+ object's reference count to <span class="NDLSystemFont">1</span>.</li>
+		
+		<li>The temporary smart 
+ pointer is then destroyed in the calling function, decreasing the object's 
+ reference count to <span class="NDLSystemFont">0</span>, 
+ which causes the object to be de-allocated.</li>
+	</ul>
+	
+	</li>
+	
+	<li>Smart pointers are 
+ not required when dealing with reference-counted objects. Smart pointers 
+ are simply a convenience. <span class="NDLSystemFont">NiRefObject</span> 
+ objects include the functions IncRefCount and <span class="NDLSystemFont">DecRefCount</span>, 
+ which add and release references directly. The smart pointer system is 
+ simply a wrapper around these calls. Applications can mix smart pointers 
+ with manual reference count modification.</li>
+</ul>
+
+<p class="indent1">This example assumes no optimization. The 
+ compiler may optimize out the copy constructor call, but the end result 
+ is the same.</p>
+
+<ul>
+	
+	<li>If a function returns 
+ a smart pointer type, and there are no other smart pointer references 
+ to the returned object, callers must not assign the return value directly 
+ to a regular pointer, or the returned pointer may point to a destroyed 
+ object. The reason for this is similar to the case just described, where 
+ it is risky to pass a regular pointer as an argument to a function which 
+ declares the argument as a smart pointer.</li>
+</ul>
+	
+	<p class="indent1">Function prototype: </p>
+	
+	<p class="indent1"><span class="NDLSystemFont">NiObjectPtr Func();</span></p>
+	
+	<p class="indent1">Safe call: </p>
+	
+	<p class="indent1"><span class="NDLSystemFont">NiObjectPtr spReturned = Func();</span></p>
+	
+	<p class="indent1">Risky call: </p>
+	
+	<p class="indent1"><span class="NDLSystemFont">NiObject* pkReturned = Func();</span></p>
+
+<p>The smart pointer system provides a macro for defining a smart pointer type,
+<span class="NDLSystemFont">NiSmartPointer</span>(classname). An example is:</p>
+
+<p><span class="NDLSystemFont">NiSmartPointer(NiNode);</span></p>
+
+<p>The macro expands to</p>
+
+<pre>
+class NiNode;
+typedef NiPointer&lt;NiNode&gt; NiNodePtr;
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

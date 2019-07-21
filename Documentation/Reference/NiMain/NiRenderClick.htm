@@ -1,0 +1,303 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiRenderClick</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiRenderClick</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiRefObject.htm">NiRefObject</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiRenderClick.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is the abstract base class for render clicks. It
+contains a pure virtual <span class=
+"NDLSystemFont">PerformRendering</span> function in which derived
+classes can perform their custom rendering. <span class=
+"NDLSystemFont">NiRenderClick</span> holds pointers to a render
+click validator, a render target group, a viewport, and the clear
+mode for the renderer, which are all used during its <span class=
+"NDLSystemFont">Render</span> function. In addition, pre- and
+post-processing callbacks can be registered, which are invoked at
+the very beginning and very end of the <span class=
+"NDLSystemFont">Render</span> function, respectively.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiRenderClick()</p>
+
+<p class="NDLRefMemberDescription">The sole constructor for this
+class initializes the stored viewport to (0, 1, 1, 0), the clear
+mode to <span class="NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>::CLEAR_NONE</span>, the active
+state to true, and the name to "Render Click". It also sets the
+validator and render target group pointers to be null, indicating
+that the default render target group will be used.</p>
+
+<p class="NDLRefHead1">Supported Virtual Functions</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+GetNumObjectsDrawn() const = 0;</p>
+
+<p class="NDLRefMemberFunction">virtual float GetCullTime() const
+= 0;</p>
+
+<p class="NDLRefMemberFunction">virtual float GetRenderTime()
+const = 0;</p>
+
+<p class="NDLRefMemberDescription">These pure virtual functions
+return rendering statistics about the most recent frame. Each
+derived class must track these statistics and return the
+appropriate values from these functions.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+PerformRendering(unsigned int uiFrameID) = 0</p>
+
+<p class="NDLRefMemberDescription">This pure virtual function can
+be overridden by derived classes to perform custom rendering. It
+is called during the <span class="NDLSystemFont">Render</span>
+function after the pre-processing callback has been invoked and
+the render target group has been properly opened. The frame ID
+passed into this function directly corresponds to the frame ID
+returned from the <span class="NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>::GetFrameID</span> function.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void SetName(const <a href=
+"NiFixedString.htm">NiFixedString</a>&amp; kName)</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiFixedString.htm">NiFixedString</a>&amp; GetName() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the name of the render click. The name defaults to "Render
+Click".</p>
+
+<p class="NDLRefMemberFunction">void Render(unsigned int
+uiFrameID)</p>
+
+<p class="NDLRefMemberDescription">This function first invokes
+the pre-processing callback and then calls <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> on the
+renderer for the stored render target group. <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> is only called
+if the stored render target group is not already open. The
+renderer is instructed to clear its buffers using the clear mode
+stored. Once the render target group is active, <span class=
+"NDLSystemFont">PerformRendering</span> is called with the
+current frame ID (obtained using <span class=
+"NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>::GetFrameID</span>). When that
+function returns, the post-processing callback is invoked.</p>
+
+<p class="NDLRefMemberFunction">bool
+ShouldPerformRendering(unsigned int uiFrameID)</p>
+
+<p class="NDLRefMemberDescription">This function uses the stored
+render click validator and the active state of the render click
+to determine whether or not this render click should have
+<span class="NDLSystemFont">Render</span> called on it. If
+<span class="NDLSystemFont">GetActive</span> returns false, this
+function always returns false and does not even invoke the render
+click validator. If <span class="NDLSystemFont">GetActive</span>
+returns true, this function returns the result of calling
+<span class="NDLSystemFont">ValidateClick</span> on the
+validator.</p>
+
+<p class="NDLRefMemberFunction">void SetValidator(<a href=
+"NiRenderClickValidator.htm">NiRenderClickValidator</a>*
+pkValidator)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRenderClickValidator.htm">NiRenderClickValidator</a>*
+GetValidator() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the render click validator to use in the <span class=
+"NDLSystemFont">ShouldPerformRendering</span> function.</p>
+
+<p class="NDLRefMemberFunction">void
+SetRenderTargetGroup(<a href="NiRenderTargetGroup.htm">NiRenderTargetGroup</a>*
+pkRenderTargetGroup)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>*
+GetRenderTargetGroup() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the render target group that should be used during rendering.</p>
+
+<p class="NDLRefMemberFunction">void SetClearAllBuffers(bool
+bClearAllBuffers)</p>
+
+<p class="NDLRefMemberFunction">void SetClearColorBuffers(bool
+bClearBuffers)</p>
+
+<p class="NDLRefMemberFunction">bool GetClearColorBuffers()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetClearDepthBuffer(bool
+bClearBuffer)</p>
+
+<p class="NDLRefMemberFunction">bool GetClearDepthBuffer()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetClearStencilBuffer(bool
+bClearBuffer)</p>
+
+<p class="NDLRefMemberFunction">bool GetClearStencilBuffer()
+const</p>
+
+<p class="NDLRefMemberDescription">These functions specify the
+buffer clear state that will be specified to the renderer when
+the render target group is activated in the <span class=
+"NDLSystemFont">Render</span> function.</p>
+
+<p class="NDLRefMemberFunction">void
+RequestClearAllBuffersOnce()</p>
+
+<p class="NDLRefMemberFunction">void
+RequestClearColorBuffersOnce()</p>
+
+<p class="NDLRefMemberFunction">void
+RequestClearDepthBufferOnce()</p>
+
+<p class="NDLRefMemberFunction">void
+RequestClearStencilBufferOnce()</p>
+
+<p class="NDLRefMemberDescription">These functions specify a
+buffer clear state that should be applied the next time that the
+<span class="NDLSystemFont">Render</span> method is called, and
+only the next time. If any of these methods are called, they will
+override the state provided by the SetClear... family for a
+single call, and then have no further effect.</p>
+
+<p class="NDLRefMemberDescription">This is typically useful when
+doing full screen effects that have a guard border expected to be
+a specific value. On creation or after a device DX9 reset, the
+video memory can be random.</p>
+
+<p class="NDLRefMemberFunction">void SetViewport(const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; kViewport)</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; GetViewport() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the viewport to use for the render click. Derived classes can
+make use of this viewport value to render to the appropriate
+section of the screen.</p>
+
+<p class="NDLRefMemberFunction">void SetActive(bool bActive)</p>
+
+<p class="NDLRefMemberFunction">bool GetActive() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the active state for the render click. If the state is set to be
+inactive, <span class=
+"NDLSystemFont">ShouldPerformRendering</span> will always return
+false.</p>
+
+<p class="NDLRefMemberFunction">void SetBackgroundColor(const
+NiColorA&amp; kColor)</p>
+
+<p class="NDLRefMemberFunction">void
+GetBackgroundColor(NiColorA&amp; kColor)</p>
+
+<p class="NDLRefMemberFunction">void
+SetUseRendererBackgroundColor(bool bUseRendererBG)</p>
+
+<p class="NDLRefMemberFunction">bool
+GetUseRendererBackgroundColor()</p>
+
+<p class="NDLRefMemberFunction">void
+SetPersistBackgroundColorToRenderer(bool bPersist)</p>
+
+<p class="NDLRefMemberFunction">bool
+GetPersistBackgroundColorToRenderer()</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the color with which the render target is cleared.</p>
+
+<p class="NDLRefMemberFunction">void
+SetPreProcessingCallbackFunc(<a href=
+"NiRenderClick.htm#Callback">Callback</a> pfnCallback, void*
+pvCallbackData = NULL)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRenderClick.htm#Callback">Callback</a>
+GetPreProcessingCallbackFunc() const</p>
+
+<p class="NDLRefMemberFunction">void*
+GetPreProcessingCallbackFuncData() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the pre-processing callback function pointer and data. This
+callback is invoked at the very beginning of the Render
+function.</p>
+
+<p class="NDLRefMemberFunction">void
+SetPostProcessingCallbackFunc(<a href=
+"NiRenderClick.htm#Callback">Callback</a> pfnCallback, void*
+pvCallbackData = NULL)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRenderClick.htm#Callback">Callback</a>
+GetPostProcessingCallbackFunc() const</p>
+
+<p class="NDLRefMemberFunction">void*
+GetPostProcessingCallbackFuncData() const</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the post-processing callback function pointer and data. This
+callback is invoked at the very end of the Render function.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Callback" id="Callback"></a><p class="NDLRefHead2">Callback</p>
+
+<p class="NDLRefMemberFunction">typedef bool
+(*Callback)(NiRenderClick* pkCurrentRenderClick, void*
+pvCallbackData)</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">Callback</span> type defines a callback function
+signature that can be used for pre- and post-processing callback
+function pointers. It takes pointers to the current render click
+and the stored data for the callback.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

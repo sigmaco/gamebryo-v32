@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Querying Terrain Metadata</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+  <h1>
+    Querying Terrain Metadata</h1>
+  <p>
+    Once meta-data has been applied to a section of terrain by painting a material,
+    details on that painted area's metadata can be retrieved through the 
+    <span class="NDLSystemFont"><a href="../../Reference/NiTerrain/NiTerrain.htm">NiTerrain</a></span> object.
+    Several methods for retrieving metadata are provided depending on how the user wishes
+    to use the data.
+  </p>
+  <ul>
+    <li>The first method returns a list of metadata objects, one for each active surface
+      at the particular point containing its relevant metadata, this is called weighted
+      metadata.<br>
+    </li>
+    <li>The second performs automatic blending of material metadata values according to
+      their opacity a the query point. </li>
+    <li>The final method allows a visitor object to be prescribed that will visit all
+      the materials at a particular point on the terrain allowing custom metadata queries
+      to be developed that don't require blending or copying of data.<br>
+    </li>
+  </ul>
+  <p>
+    The following sections describe how to query the terrain using these methods. For
+    further information on how to use the metadata interfaces, please consult the class
+    reference documentation.
+  </p>
+  <p>
+    An example of the metadata system in use is available in the "MangledMetal" demo.
+    In this demo, the terrain meta-data is used to determine what areas on the terrain
+    are 'walkable' by the player.
+  </p>
+  <h2>
+    Querying Weighted Metadata
+  </h2>
+  <p>
+  When retrieving weighted metadata, all of the materials that have a non-zero weight
+  will return their metadata values with a corresponding weight (equal to the materials
+  layer mask opacity at that point). This gives the application control over how to
+  handle interpolating between different values at different weights. Weighted metadata
+  is queried through the following interface exposed on the 
+    <span class="NDLSystemFont">NiTerrain</span> object:
+  </p>
+<pre>
+bool NiTerrain::GetMetaData(NiRay&amp; kRay, NiTFixedStringMap&lt;NiMetaData&gt;&amp; kMetaData) const;
+</pre>
+  <p>
+    The above function performs an intersection between the supplied ray and the terrain,
+    then returns a map of surface names to their metadata objects. The user may then
+    use this list to determine what surfaces exist at the intersection point of the
+    terrain and query the metadata related to each surface.</p>
+  <p>
+    In the event that the user has already performed a ray-cast intersection on the
+    terrain and wishes to avoid the cost of a second ray cast, the following function
+    may be used to pass the ray cast results straight into the function to query the
+    metadata.</p>
+  <pre>
+void NiTerrain::GetMetaData(const NiPoint3&amp; kIntersectionPt, const NiTerrainCell *pkLeaf,
+    NiTFixedStringMap&lt;NiMetaData&gt;&amp; kMetaData) const;
+</pre>
+  <h2>
+    Querying Blended Metadata
+  </h2>
+  <p>
+    When retrieving blended meta data, the interactor performs automatic blending of
+    material metadata values according to their opacity at the query point. In the case
+    of blending values between two materials, if the data type of the metadata is not
+    a "blended" type, then the value from the most visible material will be returned.
+    If the data type of the metadata is blend-able, such as a INT_BLENDED or FLOAT_BLENDED,
+    then the value will be weighted according to the visibility of each material and
+    the weighted sum is returned. This method is convenient for blending between values
+    such as the number of grass blades to appear on the surface of the terrain.</p>
+<pre>
+bool NiTerrain::GetBlendedMetaData(NiRay&amp; kRay, NiTFixedStringMap&lt;NiMetaData&gt;&amp; 
+    kMetaData, NiMetaData&amp; kBlendedMetaData) const;
+</pre>
+  <p>
+    The above function performs an intersection between the supplied ray and the terrain,
+    then returns a map of surface names to their metadata objects and a final 'blendedMetaData'
+    object that represents the result of blending all the relevant surfaces together.
+    The following table outlines the behaviour of the blending functionality when it
+    encounters the different key types:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Data type
+        </th>
+        <th>
+          Action
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          FLOAT_BLENDED
+        </td>
+        <td>
+          A weighted sum of all the data values is taken. (Material1Value * Material1Opacity
+          + Material2Value * Material2Opaticy + ... + MaterialNValue * MaterialNOpacity)
+        </td>
+      </tr>
+      <tr>
+        <td>
+          INTEGER_BLENDED
+        </td>
+        <td>
+          Same as <span class="NDLSystemFont">FLOAT_BLENDED</span> with the result being truncated
+          to an integer.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          FLOAT
+        </td>
+        <td>
+          The value corresponding to the most visible material is chosen.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          INTEGER
+        </td>
+        <td>
+          The value corresponding to the most visible material is chosen.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          STRING
+        </td>
+        <td>
+          The value corresponding to the most visible material is chosen.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Like querying weighted metadata, another function exists if the user wishes to bypass
+    the terrain intersection with the results from a previously executed intersection.
+    This function has the following signature:<br>
+  </p>
+<pre>
+void NiTerrain::GetBlendedMetaData(const NiPoint3&amp; kIntersectionPt, const NiTerrainCell *pkLeaf,
+    NiTFixedStringMap&lt;NiMetaData&gt;&amp; kMetaData, NiMetaData&amp; kBlendedMetaData) const;
+</pre>
+  <h2>
+    Querying metadata with a visitor
+  </h2>
+  <p>
+    The final method of querying the metadata of the terrain allows custom algorithms
+    to be used to determine the outcome of the query. This functionality is provided
+    through the exposure of a visitor class. Like the other methods, a ray-cast intersection
+    must first be cast against the terrain, then the following function must be called:<br>
+  </p>
+<pre>
+void QueryMetaData(const NiPoint3&amp; kIntersectionPt, const NiTerrainCellLeaf *pkLeaf,
+        MetaDataVisitor* pkVisitor) const;
+</pre>
+  <p>
+    The above function visits each surface at the intersection point and passes the
+    surface and surface weight information to the visitor object as it finds a surface.
+    The user may then process this information as they wish allowing custom metadata
+    queries to be designed.<br>
+  </p>
+  <p>
+    Please consult the class reference for more details on the MetaDataVisitor class.</p>
+  <h2>
+    Usage Example</h2>
+  <p>
+    In the example below, an NiRay is created and used to query a pre-defined terrain
+    (<span class="NDLSystemFont">pkTerrain</span>) for metadata in front of where a
+    pre-defined camera (<span class="NDLSystemFont">pkCamera</span>) is looking.</p>
+  <p>
+    First, we must create the ray:</p>
+<pre>
+NiPoint3 kDirection = pkCamera-&gt;GetWorldDirection();
+NiPoint3 kOrigin = pkCamera-&gt;GetWorldTranslate();
+float fMaxLength = FLT_MAX;
+NiRay kRay = NiRay(kOrigin, kDirection, fMaxLength);
+</pre>
+  <p>
+    Now query the terrain for metadata. We will use the blended method, since we do
+    not want to handle multiple metadata entries ourselves.</p>
+<pre>
+NiTFixedStringMap&lt;NiMetaData&gt; kMetaData;
+NiMetaData kBlendedMetaData;
+pkTerrain-&gt;GetInteractor()-&gt;GetBlendedMetaData(kRay, kMetaData, kBlendedMetaData);
+</pre>
+  <p>
+    kMetaData map will now contain a set of all metadata entries that occurred at the
+    intersection point (including duplicates). kBlendedMetaData contains blended metadata
+    information, each key existing only once.</p>
+</body>
+</html>

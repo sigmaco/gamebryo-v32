@@ -1,0 +1,400 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Materials and Masks</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>
+    NiTerrain Materials and Masks
+  </h1>
+  <h2>
+    Introduction
+  </h2>
+  <p>The terrain engine allows materials to be painted on a terrain sector through the Toolbench 
+  World Builder tools. This allows the terrain to be 'painted' to look like grass, rock, snow, sand, 
+  and so on. Materials are used to define the look of a particular section of the terrain and can 
+  specify additional user defined meta-data information (such as how a particular type of grass 
+  should sound underfoot). Vertex and pixel shaders are automatically generated depending on the 
+  texture map configuration for each material applied to the terrain. Each material may contain the 
+  following specified types of textures:</p>
+  <ul>
+    <li>Diffuse texture</li>
+    <li>Detail texture</li>
+    <li>Normal mapping texture</li>
+    <li>Parallax mapping texture</li>
+    <li>Distribution mask</li>
+    <li>Specular texture</li>
+  </ul>
+  
+  <p>Each of these textures are described in detail in the section on the use of textures in terrain
+   materials.</p>
+  
+  <p>Materials may also store useful information to describe the material. This data can be used to 
+  describe many things on the terrain. In particular, the following use cases have proven 
+  useful:</p>
+  
+  <ul>
+    <li>Specifying certain materials as 'walkable' or not, such that queries to the terrain can 
+    determine if a character can walk on that section of the terrain or not.</li>
+    <li>Specifying physical properties of the terrain for physics simulations (see the PhysX terrain 
+    integration).</li>
+    <li>Specifying vegetation coverage information for instanced geometry.</li>
+  </ul>
+ 
+  <p>The application of meta data on the terrain is discussed in the corresponding section of this 
+  documentation.</p>
+  <h3>
+    Naming Convention
+  </h3>
+  <p>It is worth noting, that the terrain engine documentation and code sometimes refers to both 
+  'Materials' and 'Surfaces' interchangeably. Here, we make the distinction that the name 'surface' 
+  is used when dealing with code and the runtime, whilst when dealing with tools and documentation, 
+  the name 'material' is used though there is actually no difference in meaning intended and the 
+  same objects are being referred to.</p>
+  <h3>
+    <a id=_Blending_8583267977864713_187 name=_Blending_8583267977864713_187></a> Blending
+  </h3>
+  <p>Each surface having been applied to a terrain sector has an associated 'visibility mask', which 
+  dictates the coverage of the surface over the terrain. The blend mask is a gray-scale visibility 
+  mask stored in an 8-bit format and is stored as a part of a 4 channel blend mask texture for each 
+  terrain cell. At runtime the terrain shader uses this texture to blend the various maps together 
+  and perform lighting calculations. As stated above, distribution masks from each layer, if 
+  available, are also modulated with the visibility mask of a given layer.</p>
+
+  <p>When painting materials in Toolbench, the masks are modified thereby changing which materials 
+  are visible on the terrain. The masks are automatically normalized such that at any given point on 
+  the terrain, the sum of the mask values is equal to 1.0. In some cases, such as when no material 
+  is applied to the terrain, the shader will also blend in a magenta color to bring the sum to 
+  1.</p>
+  <h2>
+    Textures
+  </h2>
+  <p>Each terrain material may specify a single texture for each of the following texture 
+  'slots'.</p>
+  <ul>
+    <li><b>Diffuse (Base) texture</b></li>
+    <ul>
+      A 3 channel texture representing the diffuse color of a particular material. It
+      is expected that every material used on the terrain has one of these textures.</ul>
+    <li><b>Detail texture</b></li>
+    <ul>
+      A single channel texture used when tiling to help overcome the emergence of visible
+      patterns in the material.</ul>
+    <li><b>Normal texture</b></li>
+    <ul>
+      A 3 channel texture representing the tangent space normal map for the surface.</ul>
+    <li><b>Parallax texture</b></li>
+    <ul>
+      A single channel texture used to simulate heightfield displacement when rendering.</ul>
+    <li><b>Specular texture</b></li>
+    <ul>
+      A 3 channel texture representing the specular color of a material.</ul>
+    <li><b>Distribution texture mask</b></li>
+    <ul>
+      A single channel texture used to modulate the main blend mask of the material to
+      achieve high detail blends between materials.</ul>
+  </ul>
+  <p>On shader model 2.0 cards, the normal map and parallax map are disabled when generating the 
+  shaders for that platform. This is done to minimize the performance impacts of normal maps and 
+  parallax maps on older hardware and to prevent artifacts appearing when using combinations of 
+  materials that aren't supported on older hardware due to the complexity of the shaders.<br>
+  </p>
+
+  <h2>
+    Texturing Examples
+  </h2>
+  <p>The following sections attempt to identify the effect of each texture slot available on a 
+  material to illustrate their effect on the appearance of the terrain through some basic use 
+  cases.</p>
+  <h3>
+    Using the Diffuse Texture
+  </h3>
+  <p>The diffuse texture being the most simple form of texture mapping available in the terrain 
+  engine, this texture simply applies a tiled image to the surface of the terrain. The number of 
+  times this texture is tiled across a single sector can be adjusted manually in the definition of 
+  the surface or through the tools provided. This can be seen in the following images:</p>
+  
+    <table>
+      <tbody>
+        <tr>
+          <td style="text-align: center">
+            <div class="FigureContainer">
+              <img alt="Without diffuse texture" src="images/diffusewithout.png" style="WIDTH:320px; 
+                HEIGHT:268.04px">
+              <p class="FigureCaption">
+                Without diffuse texture</p>
+            </div>
+          </td>
+          <td style="text-align: center">
+            <div class="FigureContainer">
+              <img alt="With diffuse texture" src="images/diffusewith.png" style="WIDTH:320px; 
+                HEIGHT:268.04px">
+              <p class="FigureCaption">
+                With diffuse texture</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  <h3>
+    Using the Detail Texture
+  </h3>
+  <p>A detail texture may be assigned to a surface to help alleviate the tiling effect of the 
+  diffuse texture when viewed from long distances. The detail texture is modulated with the diffuse 
+  texture to help eliminate patterns that may emerge in the tiling. Like the diffuse texture, the 
+  detail map may be configured to tile a specific number of times across a terrain.</p>
+  <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without detail texture" src="images/detailwithout.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              Without detail texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With detail texture" src="images/detailwith.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With detail texture</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+    
+
+  <h3>
+    Using the Normal Texture
+  </h3>
+  <p>A normal texture allows the user to provide detailed lighting information for a surface at 
+  close ranges. This provides much higher quality lighting and a sense of texture to a surface.</p>
+  <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without normal texture" src="images/normalwithout.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              Without normal texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With normal texture" src="images/normalwith.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With normal texture</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <h3>
+    Using the Parallax Texture
+  </h3>
+  <p>A further extension of normal mapping, parallax textures allow the surface to have a 
+  displacement map to be defined, giving the surface a sense of 3D shaping when the user moves 
+  around the surface of the terrain. The screenshots below unfortunately do not show this effect 
+  particularly well, as the effect is more pronounced as the camera pans across a scene. The amount 
+  of displacement defined by the parallax texture is now configurable through the surface and the 
+  tools provided.</p>
+  
+  <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without parallax texture" src="images/parallexwithout.png" style="width: 
+              320px; height: 268.04px">
+            <p class="FigureCaption">
+              Without parallax texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With parallax texture" src="images/parallexwith.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With parallax texture</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <h3>
+    Using the Specular Texture
+  </h3>
+  <p>The specular texture allows the definition of specular lighting colors on a per pixel basis at 
+  close range, and a glossiness factor for long range. The specular power and intensity to use for 
+  each surface may be assigned though the surface or the provided tools. Note: Specular textures are 
+  an expensive feature of the terrain, their use is recommended in moderation.</p>
+  
+ <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without specular texture" src="images/specwithout.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              Without specular texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With specular texture" src="images/specwith.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With specular texture</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <h3>
+    Using the Distribution Texture Mask
+  </h3>
+  <p>The distribution texture mask is a cheap method of improving detail when blending between two 
+  different surfaces. Instead of blending linearly between the two surfaces, the distribution 
+  texture provides a mask over which black areas will blend out before white areas. Ultimately 
+  allowing other surfaces to show through another surface even though a low resolution blend mask 
+  may be used. The following images demonstrate the changes in the blending effects that may be 
+  achieved.</p>
+  
+   <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without distribution texture" src="images/distwithout.png" style="width: 
+              320px; height: 268.04px">
+            <p class="FigureCaption">
+              Without distribution texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With distribution texture" src="images/distwith.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With distribution texture</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>One effect made possible by the distribution texture, is the overlay of parts of surface upon 
+  another. In the following images, pieces of wheat are overlaid upon a rocky area.</p>
+  
+  <table>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="Without distribution texture" src="images/dist2without.png" style="width: 
+              320px; height: 268.04px">
+            <p class="FigureCaption">
+              Without distribution texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+          <div class="FigureContainer">
+            <img alt="With distribution texture" src="images/dist2with.png" style="width: 320px;
+              height: 268.04px">
+            <p class="FigureCaption">
+              With distribution texture</p>
+          </div>
+        </td>
+        <td style="text-align: center">
+        <div class="FigureContainer">
+          <img alt="Creating paths of wheat on rock" src="images/dist2rockpath.png" style="width: 
+            320px; height: 268.04px">
+          <p class="FigureCaption">
+            Creating paths of wheat on rock</p>
+        </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <p>The distribution strength factor used in the above images is 50. Note: values above 255 do not 
+  have any more effect than the value 255.</p>
+  
+
+<h2>Material Packages</h2>
+  <p>Materials are generally organized into a set of packages. Each 'material package' may contain a 
+  number of surfaces and are responsible for the allocation/de-allocation of surface resources. 
+  Packages are independent of any specific terrain, and allow a set of materials to be grouped 
+  together for reuse in multiple scenes.</p>
+  <h3>
+    Storage
+  </h3>
+  <p>
+  	Material packages are now stored in XML files with the extension "tmpkg". These files store the configuration data of each
+  	material and the list of textures that make up each texture slot of the materials. A second file is also stored with the extension "tmpkgb". This 
+  	second file format is binary, and stores compiled versions of the terrain material textures to be sent to the video card. The "tmpkgb" file is optional
+  	and is always regenerated when saving material packages from the tools. If the tmpkgb file is not available at runtime, then the textures will be generated
+  	at runtime and may cause a performance decrease during loading. 
+  </p>
+
+<h2>The Surface Library</h2>
+  <p>
+  	The NiTerrainSurfaceLibrary class is used to organise and coordinate the loading and saving of all material packages and their surfaces to make them ready for use by an NiTerrain.
+  	Every NiTerrain has a reference to a NiTerrainSurfaceLibrary and if one is not assigned to it, it will automatically create a new one for itself. By assigning the same Surface 
+  	Libraries to multiple	terrain objects, the texture data for the surfaces that are used is shared. 
+  </p>
+  <p>
+  	For information on the interface provided by the NiTerrainSurfaceLibrary class, please consult it's class documentation in the <span class="NDLSystemFont">
+      <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">NiTerrain</a></span> library.
+  </p>
+
+
+<h2>Metadata</h2>
+  <p>See <a href="NiTerrain_Meta_Data_System.htm">NiTerrain Metadata System</a> for details 
+  regarding metadata in materials.</p>
+
+<h2>Limitations</h2>
+
+<p>Currently, each terrain cell may have a maximum of 4 materials applied to it (a maximum of 4 
+layer masks). Though a sector may have a large number of cells, and hence each sector supports the 
+use of a moderate number of materials simultaneously.<br>
+</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

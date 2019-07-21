@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Reflection Map</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Reflection Map</h1>
+
+<p>Much like the Blinn standard shader, Gamebryo supports an environmental
+reflection map slot.</p>
+
+<p>Environment maps are r,g,b maps that are added to the base texture to
+simulate mirror-like reflection of the environment surrounding the mapped
+object. Often used with a gloss map, this effect can be very striking, giving a
+very realistic impression of a mirrored object.</p>
+
+<p>Although any form of texture coordinate mapping may be used with environment
+maps, Gamebryo environment maps use sphere mapping or cube mapping as their
+texture coordinate generation method. This fact is because the pixels in an
+environment map generally represent the color seen in a given direction in
+camera space, not at a given position. As a result, environment maps should be
+mapped using a method that maps direction vectors, rather than positions into
+the map.</p>
+
+<p>An object may have only one environment map applied at a time. Currently, if
+more than one environment map is applied to the same object, any one of the
+environment maps may be used. Applications should not depend upon any
+particular behavior in this case, and should avoid it whenever
+possible.</p>
+
+<a name="Spherical_Environment_Map" id="Spherical_Environment_Map"></a><h2>Spherical Environment Map</h2>
+
+<h3>Introduction</h3>
+
+<p>In general, environment maps are designed to represent the light coming from
+the scene in each world-space direction. Note that by default, sphere mapping
+currently maps from world space, not camera The benefit of such a switch is
+that it allows applications with moving cameras to use an environment map that
+is "locked" in world space. As the camera moves around the environment-mapped
+object, the reflection changes correctly, without any intervention from the
+application. Each pixel represents a different direction in space. Since
+environment maps are added to the base texture, applications must be careful
+not to use extremely bright images for their environment maps, except in the
+few pixels that represent directions of specular highlights.</p>
+
+<p>However, some renderers may supply additional functions that allow
+applications to switch the sphere-mapping behavior from world-space to
+camera-space. See the renderer documentation for details on the support (or
+lack thereof) for this feature.</p>
+
+<p>With world-space diffuse sphere mapping enabled (as is the default in most
+renderers), the sphere map image is oriented as follows in the model space of
+the <span class="NDLSystemFont">NiTextureEffect</span> object created by the
+exporter.</p>
+
+<p>The exporter will align the <span class=
+"NDLSystemFont">NiTextureEffect</span> to the model's coordinate system so that
+when a camera is looking directly at the model and aligned with its axes, the
+2D texture for the environment map will match up with the world-space axes of
+the model. This is illustrated in the image below:</p>
+
+<div class="FigureContainer">
+    <img src="images/sphericalenvmap.jpg" width="486" height="383" alt=
+    "sphericalenvmap (16K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Please see the <a href=
+"../../Programmer/Texturing/World_Space_Environment_Mapping.htm">programmer
+documentation</a> on spherical environment maps for more detail</p>
+
+<h3>How to Apply</h3>
+
+<p>When a standard <a href="Bitmap_Texture.htm">Bitmap Texture</a> is added to
+the Reflection Map slot, it will be used as a spherical environment map. An
+artist may want to "spherize" the map to make maximum usage of the reflection.
+Note that Gamebryo represents these environment maps as separate objects,
+called <span class="NDLSystemFont">NiTextureEffects.</span> The exporter will
+generally place these objects at the root of the scene graph.</p>
+
+<p>This map can also be specified using a <a href="Environment_Maps.htm">light
+source</a>.</p>
+
+<a name="Cubic_Environment_Maps" id="Cubic_Environment_Maps"></a><h2>Cubic Environment Map</h2>
+
+<h3>Introduction</h3>
+
+<p>Cube maps are form of texture map that maps 3D unit vectors into colors.
+They avoid many of the problems that occur with sphere
+maps&mdash;discontinuities, inability to render to them, etc. However, they are
+only supported on some platforms and hardware and are by no means
+universal.</p>
+
+<p>The basic concept of a cube map is a unit cube with six sides, centered at
+the origin. Each face of the cube can be thought of as a 2x2 unit square, lying
+in each of the following planes: X=1, X=.1, Y=1, Y=.1, Z=1, Z=.1. Each cube
+face is a square texture that represents a 90-degree field-of-view image shot
+from the origin, facing out in the given direction. Put together, these six
+images form a one-to-one mapping of directions to texels. The figure below
+shows how the cube faces may be visualized in the world-space Max coordinate
+system:</p>
+
+<div class="FigureContainer">
+    <img src="images/MaxCubeMaps.gif" width="528" height="248" alt=
+    "MaxCubeMaps (3K)"> <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Because each of the faces is square, flat and represents a 90-degree field
+of view, it is very easy to use these textures in such a way that the cube map
+can represent an entire scene as viewed from a given point at a given time.
+Please see the <a href="../../Programmer/Texturing/Cube_Maps.htm">programmer
+documentation</a> on cube maps for more detail</p>
+
+<p>Note that Gamebryo represents these environment maps as separate objects,
+called <span class="NDLSystemFont">NiTextureEffects.</span> The exporter will
+generally place these objects at the root of the scene graph.</p>
+
+<h3>How to Apply</h3>
+
+<a name="DDS_Cube_Map_Files" id="DDS_Cube_Map_Files"></a><h4>DDS Cube Map Files</h4>
+
+<p>When a DDS file containing a cube map <a href="Bitmap_Texture.htm">Bitmap
+Texture</a> is added to the Reflection Map slot, it will be used as a cubic
+environment map. It is important to note the differences in coordinate axes
+between DirectX and 3ds Max. The figure below shows how the cube faces may be
+visualized in the world-space DirectX coordinate system:</p>
+
+<div class="FigureContainer">
+    <img src="images/image030.gif" width="527" height="247" alt=
+    "image030 (4K)"> <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<a name="Reflection_Refraction_Maps" id="Reflection_Refraction_Maps"></a><h4>Reflection/Refraction Maps</h4>
+
+<p>The Reflection/Refraction map can be used to create an environment map. The
+cube map can only be exported if it was created from a file. However, Max will
+happily generate a cube map with the correct faces and names for you using the
+UI in the Render Cubic Map Files group. The "Use Environment Map" flag in the
+Source group has been overloaded by the exporter. Turning this checkbox on will
+generate a texture effect with a specular cube map. Turning it off will
+generate a diffuse cube map.</p>
+
+<p>The figure below shows how the cube faces are specified in the
+Reflection/Refraction Map relative to the Max coordinate system. Note that the
+orientations for the faces are from the perspective of an observer standing
+outside the cube looking at the center of the cube.</p>
+
+<div class="FigureContainer">
+    <img src="images/ReflectionMapCubeMaps.gif" width="528" height="248" alt=
+    "ReflectionMapCubeMaps (3K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>The images below are screenshots of the Reflect/Refract map in the diffuse
+cube map state and the resulting Gamebryo render. Please see the sample,
+<a href="Inside_MadLab_Cube_Map.htm">Inside MadLab Cube Map.max</a>, for more
+details.</p>
+
+<div class="FigureContainer">
+    <img src="images/InsideMadLabCubeMapReflectMap.jpg" width="360" height=
+    "488" alt="InsideMadLabCubeMapReflectMap (73K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<div class="FigureContainer">
+    <img src="images/InsideMadLabCubeMap.jpg" width="321" height="250" alt=
+    "InsideMadLabCubeMap (36K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Load Balancing Between Execution Units</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Load Balancing Between Execution Units</h1>
+
+<p>Prior to the advent of hardware assisted transform and 
+ lighting, game profiling was primarily an issue of CPU efficiency and 
+ core system resources. Once GPUs began to assume more functionality, it 
+ became critical to balance the amount of work done on each. When developing 
+ an application with shader-driven assets, load balancing between execution 
+ units can become an even greater issue than before. While GPU limited 
+ applications were generally either vertex engine limited (transform bound) 
+ or pixel engine limited (fill rate bound), shaders and shader programs 
+ provide a much more flexible way to balance between the two types of GPU 
+ constraints. Applications should consider ways to make sure the CPU and 
+ GPU are working to their full potential. </p>
+
+<p>The following suggestions are primarily aimed at applications 
+ that rely heavily on pixel and vertex shader programs. Note also, that 
+ these discussions are simplified. Bottlenecks can also occur in a number 
+ of places not mentioned herein. Developers who run into bottlenecks with 
+ shaders are encouraged to check the developer sites of major hardware 
+ vendors for more in-depth optimization tips.</p>
+
+<h2>Determining the Bottleneck</h2>
+
+<p>Determining precisely where your application is limited 
+ can be a difficult task on PC based platforms. Profiling the CPU is fairly 
+ simple using various commercially available profilers. Determining GPU 
+ bottlenecks is somewhat more difficult and must be approached in a roundabout 
+ manner. The general approach is to add or remove computation to one phase 
+ of the pipeline and determine the overall effect on the frame rate. Note 
+ also, that these are not the only places where your application could 
+ be bottlenecked. They are just the most common. For more information on 
+ performance profiling in general, please refer to the <a href="../General_Topics/Profiling_Overview.htm">profiling 
+ documentation</a>. On PC, you can additionally get more information from 
+ some tools such as NVPerfHUD as explained in <a href="../General_Topics/SwapBuffers_Slowdowns.htm">our 
+ documentation.</a></p>
+
+<p>To test for vertex engine limited applications, you 
+ can try adding vertex engine complexity or try decreasing the number of 
+ textures applied. Duplicating calculations in vertex shaders can increase 
+ vertex engine complexity. If the frame rate decreases as you add complexity, 
+ the application is likely vertex engine bound. </p>
+
+<p>To test for pixel engine limited applications, you can 
+ try decreasing the render window resolution or try adding additional pixel 
+ engine complexity. If decreasing the size of the render window increases 
+ the frame rate, it is likely that your application is bound, at least 
+ some part of the time, in the pixel engine. If the frame rate remains 
+ constant, you are more likely bound in the vertex engine or CPU. If adding 
+ additional pixel engine complexity, such as extraneous instructions in 
+ pixel shaders, affects the frame rate, then it is likely that the application 
+ is pixel engine bound.</p>
+
+<h2>Options for CPU Bound Applications</h2>
+
+<p>With programmable shaders, applications can begin to 
+ offload certain calculations onto the GPU. Use this to your advantage. 
+ Consider using shaders for traditional CPU activities like morphing. Also, 
+ using shaders can optimize CPU usage by reducing the number of function 
+ calls and by reducing bus utilization. For example, the default, fixed 
+ function pipeline uses four bones per partition when executing hardware 
+ assisted skinning. This results in extra partitions and extra calls to 
+ the associated DirectX methods for rendering. A custom shader with more 
+ bones per partition would reduce to fewer partitions resulting in fewer 
+ calls to DirectX.</p>
+
+<h2>Options for Vertex Engine Bound Applications</h2>
+
+<p>Vertex engine bound applications can gain performance 
+ by caching calculations on the CPU or by caching calculations in textures 
+ for use in the pixel engine. Applications with multipass effects on complex 
+ models are very likely to be vertex engine limited. For objects with several 
+ passes that are skinned, software skinning can be more efficient than 
+ hardware skinning. An application should determine this by analyzing available 
+ CPU time and GPU restrictions. With software skinning, the skinning calculations 
+ are executed once on the CPU and cached for GPU use. Hardware assisted 
+ skinning would repeat these calculations in the fixed function pipeline 
+ or vertex shader for each pass. </p>
+
+<p>Another way to ease the burden on the vertex engine 
+ is to cache calculations in textures and use those textures in the pixel 
+ engine. For example, you could use a normal map and perform lighting calculations 
+ per pixel in a pixel shader instead of per vertex in a vertex shader. 
+ This approach would remove the need to pass the normals through the vertex 
+ shader and would eliminate any lighting code from the vertex engine. Additionally, 
+ model tessellation could possibly be reduced since the normal information 
+ in the normal map would account for some of the detail. This decrease 
+ in the number of vertices would further decrease the burden on the vertex 
+ engine.</p>
+
+<h2>Options for Pixel Engine Bound Applications</h2>
+
+<p>Applications that are bound in the pixel engine are 
+ typically the most difficult to address without somewhat modifying the 
+ look of an application. First, consider moving calculations up to the 
+ vertex engine and let the graphics hardware interpolate the results during 
+ rasterization. This optimization can be difficult if the information used 
+ in the pixel engine is sampled from a texture since most graphics hardware 
+ has no way to sample a texture in the vertex engine. Also, calculations 
+ that do not vary linearly across a triangle will produce odd visual results 
+ if they are moved back into the vertex engine and interpolated.</p>
+
+<p>Modern graphics hardware is designed to optimize at 
+ the pixel level by rejecting pixels based on their z-buffer value at the 
+ top of the pixel pipeline. This optimization works best when objects are 
+ drawn in a roughly front to back order. Consider writing a sorter that 
+ does this if you are pixel engine bound. Also, the use of the <span class="NDLSystemFont">texkill 
+ </span>or <span class="NDLSystemFont">texdepth</span> instructions 
+ in pixel shader programs can force the graphics hardware to turn off pixel 
+ rejection at the top of the pipeline. Consider usage of these instructions 
+ very carefully. Very heavily pixel engine bound applications may benefit 
+ from a two pass rendering algorithm where the first pass writes the z-buffer 
+ and subsequent passes only test against that value.</p>
+
+<p>Pixel engine bound applications may also have texture 
+ bandwidth issues. Decreasing texture size or filtering modes can address 
+ these issues. Consider decreasing texture resolution where possible and 
+ consider turning off trilinear filtering where not absolutely necessary. 
+ Often, textures other than base maps do not need trilinear filtering enabled. 
+ Developers should try disabling trilinear filtering on certain textures 
+ to obtain a balance between performance and appearance.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creation of a D3D10Renderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creation of an NiD3D10Renderer</h1>
+
+<p>Construction of an <span class=
+"NDLSystemFont">NiD3D10Renderer</span> is accomplished using an
+initialization structure, <span class=
+"NDLSystemFont">NiD3D10Renderer::CreateParameters</span>. The
+structure is designed to be initialized with appropriate default
+values, so creating a new <span class=
+"NDLSystemFont">NiD3D10Renderer</span> object can be as simple as
+possible:</p>
+<pre>
+NiD3D10Renderer::CreateParameters kCreate;
+NiD3D10RendererPtr spD3D10Renderer;
+bool bSuccess = NiD3D10Renderer::Create(kCreate, spD3D10Renderer);
+</pre>
+
+<p>This will construct a renderer using the default arguments,
+described below. A D3D10 device will be created, but without a
+default swap chain.</p>
+
+<p>Most applications will want to create a renderer with a swap
+chain to draw to a specific window. To set up the <span class=
+"NDLSystemFont">NiD3D10Renderer::CreateParameters</span>
+structure to handle this situation, an application can pass the
+window handle into the <span class=
+"NDLSystemFont">CreateParameters</span> constructor:</p>
+<pre>
+
+NiD3D10Renderer::CreateParameters kCreate(hTargetWnd);
+NiD3D10RendererPtr spD3D10Renderer;
+bool bSuccess = NiD3D10Renderer::Create(kCreate, spD3D10Renderer);
+</pre>
+
+<p>This will construct a renderer containing a D3D10 device and
+default swap chain that will render to the provided window. The
+application will start in windowed mode, and will be set up to
+accept messages from that window. The remaining arguments will be
+the defaults, as described below.</p>
+
+<h2>Advanced NiD3D10Renderer Construction</h2>
+
+<p>After creating an <span class=
+"NDLSystemFont">NiD3D10Renderer::CreateParameters</span> object,
+an application can alter the values in the object before calling
+<span class="NDLSystemFont">NiD3D10Renderer::Create</span> in
+order to have more control over the construction of the renderer,
+the D3D10 device, and the default swap chain.</p>
+
+<p>The structure of <span class=
+"NDLSystemFont">NiD3D10Renderer::CreateParameters</span> is
+defined as follows:</p>
+<pre>
+struct NID3D10RENDERER_ENTRY CreationParameters
+{
+    CreationParameters();
+    CreationParameters(HWND hWnd);
+ 
+    unsigned int m_uiAdapterIndex;
+    unsigned int m_uiOutputIndex;
+    DriverType m_eDriverType;
+    unsigned int m_uiCreateFlags;
+    bool m_bCreateSwapChain;
+    bool m_bCreateDepthStencilBuffer;
+    bool m_bAssociateWithWindow;
+    unsigned int m_uiWindowAssociationFlags;
+ 
+    DXGI_FORMAT m_eDepthStencilFormat;
+ 
+    DXGI_SWAP_CHAIN_DESC m_kSwapChain;
+};
+</pre>
+
+<p>The member variables are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">unsigned int
+    m_uiAdapterIndex</span>: This indicates which adapter to use
+    to create the D3D10 device. The adapter index can be obtained
+    from the <span class="NDLSystemFont"><a href=
+    "NiD3D10AdapterDesc.htm">NiD3D10AdapterDesc</a></span>. The
+    default value is 0.</li>
+
+    <li><span class="NDLSystemFont">unsigned int
+    m_uiOutputIndex</span>: This indicates which output to use to
+    create the default swap chain, if one will be created. The
+    output index can be obtained from the <span class=
+    "NDLSystemFont"><a href=
+    "NiD3D10OutputDesc.htm">NiD3D10OutputDesc</a></span>. The
+    default value is 0.</li>
+
+    <li><span class="NDLSystemFont">NiD3D10Renderer::DriverType
+    m_eDriverType</span>: This controls what type of D3D10 device
+    will be created: hardware-accelerated, reference, or NULL.
+    The valid values for this enumeration are described <a href=
+    "#DriverType">below</a>. The default value is <span class=
+    "NDLSystemFont">DRIVER_HARDWARE</span>.</li>
+
+    <li><span class="NDLSystemFont">unsigned int
+    m_uiCreateFlags</span>: This variable contains the flags that
+    will be passed into the D3D10CreateDevice function as the
+    <span class="NDLSystemFont">Flags</span> parameter. The valid
+    flags that can be used are described <a href=
+    "#CreateDeviceFlags">below</a>. The default value for Debug
+    build configurations is <span class=
+    "NDLSystemFont">CREATE_DEVICE_DEBUG |
+    CREATE_DEVICE_SINGLETHREADED</span>, while the default value
+    for the Release and Shipping build configurations is
+    <span class=
+    "NDLSystemFont">CREATE_DEVICE_SINGLETHREADED</span>.</li>
+
+    <li><span class="NDLSystemFont">bool
+    m_bCreateSwapChain</span>: This controls whether or not a
+    default swap chain is created with the D3D10 device. If one
+    is not created, then the application will be responsible for
+    creating a swap chain itself. The default value is
+    <span class="NDLSystemFont">true</span> if an <span class=
+    "NDLSystemFont">hWnd</span> is provided to the <span class=
+    "NDLSystemFont">CreationParameters</span> constructor, and
+    <span class="NDLSystemFont">false</span> otherwise.</li>
+
+    <li><span class="NDLSystemFont">bool
+    m_bCreateDepthStencilBuffer</span>: This controls whether or
+    not the default swap chain that is constructed will have a
+    depth/stencil buffer created for it as well. This parameter
+    is ignored if <span class=
+    "NDLSystemFont">m_bCreateSwapChain</span> is <span class=
+    "NDLSystemFont">false</span>. The default value of this
+    variable is <span class="NDLSystemFont">true</span>.</li>
+
+    <li><span class="NDLSystemFont">bool
+    m_bAssociateWithWindow</span>: This controls whether or not
+    the <span class="NDLSystemFont">NiD3D10Renderer</span>
+    constructor calls <span class=
+    "NDLSystemFont">IDXGIFactory::MakeWindowAssociation</span>
+    using the provided window (which is passed in through
+    <span class="NDLSystemFont">m_kSwapChain</span>). This allows
+    the renderer to receive <span class=
+    "NDLSystemFont">WM_SIZE</span> messages from that window. The
+    default value is <span class="NDLSystemFont">true</span> if
+    an <span class="NDLSystemFont">hWnd</span> is provided to the
+    <span class="NDLSystemFont">CreationParameters</span>
+    constructor, and <span class="NDLSystemFont">false</span>
+    otherwise.</li>
+
+    <li><span class="NDLSystemFont">unsigned int
+    m_uiWindowAssociationFlags</span>: This is the set of flags
+    that the renderer will pass to the <span class=
+    "NDLSystemFont">IDXGIFactory::MakeWindowAssociation</span>
+    function if <span class=
+    "NDLSystemFont">m_bAssociateWithWindow</span> is <span class=
+    "NDLSystemFont">true</span>. The valid flags that can be used
+    are described <a href=
+    "#WindowAssociationFlags">below</a>.</li>
+
+    <li><span class="NDLSystemFont">DXGI_FORMAT
+    m_eDepthStencilFormat</span>: This is the format that will be
+    used to create the depth/stencil buffer, if <span class=
+    "NDLSystemFont">m_bCreateSwapChain</span> and <span class=
+    "NDLSystemFont">m_bCreateDepthStencilBuffer</span> are
+    <span class="NDLSystemFont">true</span>. If the provided
+    value is not capable of being used, because it is not
+    compatible with the hardware or the backbuffer, then the
+    renderer will automatically select a compatible format. The
+    default value for this variable is <span class=
+    "NDLSystemFont">DXGI_FORMAT_UNKNOWN</span>.</li>
+
+    <li>
+        <span class="NDLSystemFont">DXGI_SWAP_CHAIN_DESC
+        m_kSwapChain</span>: This is a D3D10 structure that
+        describes how the initial swap chain should be created.
+        This variable is ignored if <span class=
+        "NDLSystemFont">m_bCreateSwapChain</span> is <span class=
+        "NDLSystemFont">false</span>. The members of this
+        structure are fully described in the D3D10 documentation,
+        but here is an overview:
+
+        <ul>
+            <li>
+                <span class="NDLSystemFont">DXGI_MODE_DESC
+                BufferDesc</span>: This is a D3D10 structure that
+                describes how the backbuffer should be created.
+                The members of this structure are fully described
+                in the D3D10 documentation, but here is an
+                overview:
+
+                <ul>
+                    <li><span class="NDLSystemFont">UINT
+                    Width</span>: Width of the buffer. The
+                    default value is the window's width if an
+                    <span class="NDLSystemFont">hWnd</span> is
+                    provided to the <span class=
+                    "NDLSystemFont">CreationParameters</span>
+                    constructor, and 640 otherwise.</li>
+
+                    <li><span class="NDLSystemFont">UINT
+                    Height</span>: Height of the buffer. The
+                    default value is the window's height if an
+                    <span class="NDLSystemFont">hWnd</span> is
+                    provided to the <span class=
+                    "NDLSystemFont">CreationParameters</span>
+                    constructor, and 480 otherwise.</li>
+
+                    <li><span class="NDLSystemFont">DXGI_RATIONAL
+                    RefreshRate</span>: A D3D10 structure
+                    describing the refresh rate of the monitor in
+                    Hz. The default value is 60 for the numerator
+                    and 1 for the denominator.</li>
+
+                    <li><span class="NDLSystemFont">DXGI_FORMAT
+                    Format</span>: Format of the backbuffer. The
+                    default value is <span class=
+                    "NDLSystemFont">DXGI_FORMAT_R8G8B8A8_UNORM</span>.</li>
+
+                    <li><span class=
+                    "NDLSystemFont">DXGI_MODE_SCANLINE_ORDER
+                    ScanlineOrdering</span>: A D3D10 enumeration
+                    describing the scanline ordering of the
+                    monitor. The possible enumerations are
+                    described in the D3D10 documentation under
+                    <span class=
+                    "NDLSystemFont">DXGI_MODE_SCANLINE_ORDER</span>.
+                    The default value is <span class=
+                    "NDLSystemFont">DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE</span>.</li>
+
+                    <li><span class=
+                    "NDLSystemFont">DXGI_MODE_SCALING
+                    Scaling</span>: A D3D10 enumeration
+                    describing how the backbuffer image is scaled
+                    to fit the monitor. The possible enumerations
+                    are described in the D3D10 documentation
+                    under <span class=
+                    "NDLSystemFont">DXGI_MODE_SCALING</span>. The
+                    default value is <span class=
+                    "NDLSystemFont">DXGI_MODE_SCALING_UNSPECIFIED</span>.</li>
+                </ul>
+            </li>
+
+            <li><span class="NDLSystemFont">DXGI_SAMPLE_DESC
+            SampleDesc</span>: This is a D3D10 structure that
+            describes the multisampling parameters that should be
+            used to create the backbuffer. The default value is 1
+            for the multisample count and 0 for the multisample
+            quality. Note that when MSAA is enabled, Gamebryo
+            will ignore the <span class=
+            "NDLSystemFont">CREATE_DEVICE_SWITCH_TO_REF</span>
+            flag in the <span class=
+            "NDLSystemFont">m_uiCreateFlags</span> parameter.
+            This is due to the fact that the Switch-to-Reference
+            layer does not work with MSAA.</li>
+
+            <li><span class="NDLSystemFont">DXGI_USAGE
+            BufferUsage</span>: A set of D3D10 flags indicating
+            how the backbuffer should be used. The possible flags
+            are described in the D3D10 documentation under
+            <span class="NDLSystemFont">DXGI_USAGE</span>. The
+            default value is <span class=
+            "NDLSystemFont">DXGI_USAGE_BACK_BUFFER |
+            DXGI_USAGE_RENDER_TARGET_OUTPUT</span>.</li>
+
+            <li><span class="NDLSystemFont">UINT
+            BufferCount</span>: The number of backbuffers in the
+            swap chain. The default value is 1.</li>
+
+            <li><span class="NDLSystemFont">HWND
+            OutputWindow</span>: The window for which this swap
+            chain will be created. The default value is the
+            <span class="NDLSystemFont">hWnd</span> that is
+            provided to the <span class=
+            "NDLSystemFont">CreationParameters</span>
+            constructor, or NULL if no window is provided.</li>
+
+            <li><span class="NDLSystemFont">BOOL Windowed</span>:
+            A Boolean indicating whether or not the window will
+            be displayed in windowed mode or fullscreen mode. The
+            default value is <span class=
+            "NDLSystemFont">true</span> if an <span class=
+            "NDLSystemFont">hWnd</span> is provided to the
+            <span class="NDLSystemFont">CreationParameters</span>
+            constructor, and <span class=
+            "NDLSystemFont">false</span> otherwise.</li>
+
+            <li><span class="NDLSystemFont">DXGI_SWAP_EFFECT
+            SwapEffect</span>: A D3D10 enumeration indicating how
+            a swap chain should handle a swap operation. The
+            possible enumerations are described in the D3D10
+            documentation under <span class=
+            "NDLSystemFont">DXGI_SWAP_EFFECT</span>. The default
+            value is <span class=
+            "NDLSystemFont">DXGI_SWAP_EFEFCT_DISCARD</span>.</li>
+
+            <li><span class="NDLSystemFont">UINT Flags</span>: A
+            set of D3D10 flags indicating how the swap chain
+            should behave. The possible flags are described in
+            the D3D10 documentation under <span class=
+            "NDLSystemFont">DXGI_SWAP_CHAIN_FLAG</span>. The
+            default value if 0.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>At any time before the <span class=
+"NDLSystemFont">CreationParameters</span> structure is passed
+into the <span class=
+"NDLSystemFont">NiD3D10Renderer::Create</span> function, any of
+these parameters can be modified by the application. Though the
+default parameters were specifically designed to give reasonable
+behavior, they should not be construed as the only correct way to
+set up the renderer.</p><a name="DriverType" id="DriverType"></a>
+
+<h2>NiD3D10Renderer::DriverType</h2>
+
+<p>The <span class="NDLSystemFont">DriverType</span> enumeration
+is currently no more than a wrapper around the D3D10 enumeration
+<span class="NDLSystemFont">D3D10_DRIVER_TYPE</span>. The valid
+values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">DRIVER_HARDWARE =
+    D3D10_DRIVER_TYPE_HARDWARE,</span></li>
+
+    <li><span class="NDLSystemFont">DRIVER_REFERENCE =
+    D3D10_DRIVER_TYPE_REFERENCE,</span></li>
+
+    <li><span class="NDLSystemFont">DRIVER_NULL =
+    D3D10_DRIVER_TYPE_NULL</span></li>
+</ul>
+
+<p>Refer to the D3D10 documentation for <span class=
+"NDLSystemFont">D3D10_DRIVER_TYPE</span> for information on what
+each of these values represents. If an application desires, it
+can pass the D3D10 enumerations in wherever a <span class=
+"NDLSystemFont">DriverType</span> is needed with just a simple
+cast.</p><a name="CreateDeviceFlags" id="CreateDeviceFlags"></a>
+
+<h2>NiD3D10Renderer::CreateDeviceFlags</h2>
+
+<p>The <span class="NDLSystemFont">CreateDeviceFlags</span>
+enumeration is currently no more than a wrapper around the D3D10
+enumeration <span class=
+"NDLSystemFont">D3D10_CREATE_DEVICE_FLAG</span>. The valid values
+are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">CREATE_DEVICE_SINGLETHREADED
+    = D3D10_CREATE_DEVICE_SINGLETHREADED,</span></li>
+
+    <li><span class="NDLSystemFont">CREATE_DEVICE_DEBUG =
+    D3D10_CREATE_DEVICE_DEBUG,</span></li>
+
+    <li><span class="NDLSystemFont">CREATE_DEVICE_SWITCH_TO_REF =
+    D3D10_CREATE_DEVICE_SWITCH_TO_REF,</span></li>
+
+    <li><span class=
+    "NDLSystemFont">CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS
+    =
+    D3D10_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS</span></li>
+</ul>
+
+<p>Refer to the D3D10 documentation for <span class=
+"NDLSystemFont">D3D10_CREATE_DEVICE_FLAG</span> for information
+on what each of these values represents. If an application
+desires, it can pass the D3D10 enumerations in wherever a
+<span class="NDLSystemFont">CreateDeviceFlags</span> is
+needed.</p><a name="WindowAssociationFlags" id=
+"WindowAssociationFlags"></a>
+
+<h2>NiD3D10Renderer::WindowAssociationFlags</h2>
+
+<p>The <span class="NDLSystemFont">WindowAssociationFlags</span>
+enumeration is currently no more than a wrapper around the D3D10
+defines that can be passed into the <span class=
+"NDLSystemFont">IDXGIFactory::MakeWindowAssociation</span>
+function. The valid values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WIND_ASN_NO_WINDOW_CHANGES =
+    DXGI_MWA_NO_WINDOW_CHANGES,</span></li>
+
+    <li><span class="NDLSystemFont">WIND_ASN_NO_ALT_ENTER =
+    DXGI_MWA_NO_ALT_ENTER,</span></li>
+
+    <li><span class="NDLSystemFont">WIND_ASN_NO_PRINT_SCREEN =
+    DXGI_MWA_NO_PRINT_SCREEN</span></li>
+</ul>
+
+<p>Refer to the D3D10 documentation for <span class=
+"NDLSystemFont">IDXGIFactory::MakeWindowAssociation</span> for
+information on what each of these values represents. If an
+application desires, it can pass the D3D10 defines in wherever a
+<span class="NDLSystemFont">WindowAssociationFlags</span> is
+needed.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

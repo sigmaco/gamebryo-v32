@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Workflow Creation</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Workflow Creation</h1>
+
+<p>A Workflow coordinates the execution of multiple tasks 
+ via their input and output streams to define a processing timeline. It 
+ consists of two or more tasks, where later tasks are dependent on the 
+ resulting output of earlier tasks. Once created, Workflows are submitted 
+ to the <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiStreamProcessor.htm">NiStreamProcessor</a></span> 
+ object for scheduling and execution.</p>
+
+<p>Workflows provide for functional decomposition by enabling 
+ groups of dependent tasks to be specified and prioritized. The flow of 
+ data from task to task in a workflow is defined by the interconnectivity 
+ of the task streams. The following diagram helps to illustrate this point.</p>
+
+
+<div class="FigureContainer">
+    <img src="./images/Workflow.jpg" width="806" height="338"
+/>
+    <p class="FigureCaption">Workflow consisting of two tasks</p>
+</div>
+
+<p>The <span class="NDLSystemFont">NiFloodgate</span> library 
+ provides the <a href="../../Reference/NiFloodgate/NiSPWorkflow.htm"><span 
+ class="NDLSystemFont">NiSPWorkflow</span></a> class. The red code below 
+ shows how an <span class="NDLSystemFont">NiSPWorkflow</span> is obtained 
+ from the <a href="../../Reference/NiFloodgate/NiStreamProcessor.htm"><span 
+ class="NDLSystemFont">NiStreamProcessor</span></a>. Getting the <span class="NDLSystemFont">NiSPWorkflow</span> 
+ from the <span class="NDLSystemFont">NiStreamProcessor</span> is more efficient 
+ than creating a new <span class="NDLSystemFont">NiSPWorkflow</span> each 
+ time. It is important to store the workflow object in a smart pointer 
+ to prevent the system from unexpected returning it to the free object 
+ pool.</p>
+
+<p>The tasks in a workflow need not always be related. 
+ Adding several unrelated tasks to a workflow can be more efficient and 
+ make better use of resources than having a separate workflow for each 
+ unrelated task.</p>
+
+<h2>Source Code</h2>
+
+<pre>
+//---------------------------------------------------------------------------
+bool MyApplication::UpdateFrame()
+{
+    // Update base class
+    NiApplication::UpdateFrame();
+ 
+    // Initialize data buffers
+    for (NiUInt32 i = 0; i &lt; 256; i++)
+    {
+        auiInputBuffer1[i] = i;
+        auiInputBuffer2[i] = i;
+    }
+    memset(auiOutputBuffer1, 0, sizeof(auiOutputBuffer1));
+    memset(auiOutputBuffer2, 0, sizeof(auiOutputBuffer2));
+ 
+    // Initialize streams
+    NiTSPStream&lt;NiUInt32&gt; kStream0(auiInputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream1(auiInputBuffer2, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream2(auiOutputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream3(auiOutputBuffer2, 256);
+ 
+    // Initialize fixed input
+    NiTSPFixedInput&lt;NiUInt32&gt; kFixedInput(&amp;uiFixedInput, 1);
+ 
+<span class="CodeHighLight">    //Obtain NiSPWorkflow from NiStreamProcessor
+    NiSPWorkflowPtr spWorkflow = NiStreamProcessor::Get()-&gt;GetFreeWorkflow();
+</span>
+    ...;
+}
+//---------------------------------------------------------------------------
+</pre>
+
+<p>Next we demonstrate the <a href="Floodgate_Programming_Kernels.htm">use 
+ and construction of kernels</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

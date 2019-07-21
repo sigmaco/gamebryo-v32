@@ -1,0 +1,407 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Terrain Configuration Options</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>
+    Terrain Configuration Options
+  </h1>
+  <p>The <a href="../../Reference/NiTerrain/NiTerrainConfiguration.htm" 
+      class="NDLSystemFont">NiTerrainConfiguration</a> 
+  class allows the user to define how a terrain stores and renders its geometry. By default it is 
+  set without developer intervention to the best configuration for the platform in use. A 
+  configuration must be set on the terrain before it has been loaded; changes after loading will be 
+  ignored. The configuration is useful in reducing the memory used during runtime, and forcing the 
+  format of the streams to be compatible with fixed function renderers and materials.</p>
+  <h2>
+    NiTerrainConfiguration Options.
+  </h2>
+  <p>There are four different options available in the configuration:</p>
+
+  <ul>
+    <li>
+      Enable tangents
+    </li>
+    <ul>
+      <li>
+        This option gives the developer the opportunity to choose whether to render using a tangent 
+        stream or not. If this option is false, Normal mapping and parallax mapping will be disabled 
+        on the terrain.
+      </li>
+    </ul>
+  </ul>
+  <ul>
+    <li>
+      Enable lighting data compression
+    </li>
+    <ul>
+      <li>
+        This option allows the developer to disable compression of normals and tangents within their 
+        streams. The advantage to setting this value to false, is that the normal and tangent 
+        streams will be compatible with a standard mesh rendering pipeline without use of the 
+        terrain shader.
+      </li>
+    </ul>
+  </ul>
+  <ul>
+    <li>
+      Enable geometry morphing
+    </li>
+    <ul>
+      <li>
+        By enabling geomorphing, extra data will be placed in the position stream to support 
+        morphing of vertices between different levels of detail.
+      </li>
+    </ul>
+  </ul>
+  <ul>
+    <li>
+      Enable low detail normal mapping
+    </li>
+    <ul>
+      <li>
+        This option allows the developer to disable the use of the low detail normal map on the terrain in favor of using per-vertex lighting information to shade the terrain. This option is also useful when using a standard mesh rendering pipeline.<br>
+      </li>
+    </ul>
+  </ul>
+
+  <p>A helper function to determine if a configuration is valid for a the current platform is 
+  supplied and attempts to set an invalid configuration on the terrain will fail.</p>
+  <h3>
+    Applying a Specific Configuration
+  </h3>
+  <p>
+    By default, the configuration is created and set according to the platform the application
+    is currently running on. For all platforms all options are set to true by default.</p>
+  <p>
+    The configuration can be changed to increase performance or allow support for a
+    different shader pipeline, however it is important to note that the configuration
+    should be set before loading a terrain at run time.</p>
+  <p>
+    <i>Example implementation: </i>
+  </p>
+<pre>
+NiTerrainConfiguration kConfig = NiTerrain::GetDefaultConfiguration();
+kConfig.EnableLightingDataCompression(true);
+kConfig.EnableMorphingData(false);
+kConfig.EnableTangentData(true);
+    
+NiTerrain::SetDefaultConfiguration(kConfig);
+</pre>
+  <p>
+    In this case, the result of this configuration will create a terrain that will not
+    be able to use geomorphing but will only use <span class="NDLSystemFont">efd::Point2</span> normals and tangents as
+    the configuration specifies data compression.</p>
+  <p>
+    If there was no compression then <span class="NDLSystemFont">efd::Point3</span> would be used.</p>
+  <p>
+    It is important to note that not using geomorphing will also change the position
+    streams from using <span class="NDLSystemFont">efd::Point4s</span> to using 
+    <span class="NDLSystemFont">efd::Point3s</span>.</p>
+  <h3>
+    Tool Support for NiTerrainConfiguration
+  </h3>
+  <p>
+    The default configuration for the PC is used when running the terrain engine in
+    all the supplied tools. Changing of the configuration is not currently supported.</p>
+  <h3>
+    Table of Configurations
+  </h3>
+  <p>
+    The following table outlines the combinations available in the configuration and
+    their effect on the terrain's appearance and performance.</p>
+  <p>
+    The prefixes "HD" and "LD" in the stream sizes show the sizes for 'High detail'
+    cells and 'Low detail' cells respectively. In general, one third of all the cells
+    in a terrain are low detail cells.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align: center">Morphing enabled</th>
+        <th style="text-align: center">Tangents enabled</th>
+        <th style="text-align: center">Compression enabled</th>
+        <th style="text-align: center">Position Stream Size</th>
+        <th style="text-align: center">Normal Stream Size</th>
+        <th style="text-align: center">Tangent Stream Size</th>
+        <th style="text-align: center">Total Stream Size per Vertex</th>
+        <th style="text-align: center">Platform Default</th>
+        <th style="text-align: center">Memory usage compared to PC default</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          16 bytes
+        </td>
+        <td style="text-align: center">
+          8 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 0 bytes<br>
+          HD: 8 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 24 bytes<br>
+          HD: 32 bytes
+        </td>
+        <td style="text-align: center">
+          PC, PS3,<br>
+          Xenon
+        </td>
+        <td style="text-align: center">
+          100%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          16 bytes
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 0 bytes<br>
+          HD: 12 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 28 bytes<br>
+          HD: 40 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          123%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          16 bytes
+        </td>
+        <td style="text-align: center">
+          8 bytes
+        </td>
+        <td style="text-align: center">
+          0 bytes
+        </td>
+        <td style="text-align: center">
+          24 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          80%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          16 bytes
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          0 bytes
+        </td>
+        <td style="text-align: center">
+          28 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          93%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          8 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 0 bytes<br>
+          HD: 8 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 20 bytes<br>
+          HD: 28 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          87%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 0 bytes<br>
+          HD: 12 bytes
+        </td>
+        <td style="text-align: center">
+          LD: 24 bytes<br>
+          HD: 36 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          110%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          True
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          8 bytes
+        </td>
+        <td style="text-align: center">
+          0 bytes
+        </td>
+        <td style="text-align: center">
+          20 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          67%
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          False
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          12 bytes
+        </td>
+        <td style="text-align: center">
+          0 bytes
+        </td>
+        <td style="text-align: center">
+          24 bytes
+        </td>
+        <td style="text-align: center">
+          
+        </td>
+        <td style="text-align: center">
+          80%
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The number of bytes per vertex shown in this table is not a definitive measure of
+    the amount of memory used by the terrain engine, these values simply represent the
+    amount of data stored in data streams and sent to the video card.</p>
+    
+  <!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

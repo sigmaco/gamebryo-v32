@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Use Cases</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Use Cases</h1>
+
+<p>The following use cases illustrate example situations 
+ in which the frame rendering system might be used.</p>
+
+<a name=StandardSceneRendering></a><h2>Standard Scene Rendering</h2>
+
+<p>An <span class="NDLSystemFont"><a href="../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span> 
+ object is created that holds a pointer to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ scene graph, an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCamera.htm">NiCamera</a></span>, 
+ and an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCullingProcess.htm">NiCullingProcess</a></span>. 
+ This render view is added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ object, whose render target group is set to <span class="NDLSystemFont">NULL</span> 
+ (indicating that it should use the backbuffer) and whose clear flags are 
+ set to clear all buffers. The render click is then added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultClickRenderStep.htm">NiDefaultClickRenderStep</a></span> 
+ object, which is in turn added to an <span class="NDLSystemFont">NiRenderFrame</span>. 
+ All of this is done during application initialization. From then on, in 
+ its idle loop each frame, the application calls <span class="NDLSystemFont">NiRenderFrame::Draw</span>, 
+ followed by <span class="NDLSystemFont">NiRenderFrame::Display</span>, on 
+ the render frame object to cause the scene graph to be culled against 
+ the camera and drawn to the backbuffer.</p>
+
+<h2>Rendered Texture (Security Camera Monitor)</h2>
+
+<p>An <span class="NDLSystemFont"><a href="../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span> 
+ object is created that holds a pointer to the scene to be rendered, an 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCamera.htm">NiCamera</a></span> 
+ that represents the view from the security camera, and an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCullingProcess.htm">NiCullingProcess</a></span>. 
+ A rendered texture is then created that will be mapped to the security 
+ camera monitor, and a render target group is wrapped around that texture.</p>
+
+<p>The render view is added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ object, whose render target group is set to be the one corresponding to 
+ the rendered texture. This render click is set to clear all of its buffers 
+ when rendering.</p>
+
+<p>Another render click is created to represent the scene 
+ viewed from the player camera, as described in the <a href="Frame_Rendering_System_Use_Cases.htm#StandardSceneRendering">Standard 
+ Scene Rendering</a> section. The render target group for this render click 
+ is set to be the backbuffer.</p>
+
+<p>An <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultClickRenderStep.htm">NiDefaultClickRenderStep</a></span> 
+ is created, and the security camera render click is added to it before 
+ the player camera render click. This render step is then added to an <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span> 
+ object.</p>
+
+<p>When <span class="NDLSystemFont">NiRenderFrame::Draw</span> 
+ is called each frame, the first render click will render the scene from 
+ the security camera to a texture, which will then be used on the monitor 
+ geometry when rendering the scene from the player camera. This will all 
+ happen automatically, without any programmatic intervention.</p>
+
+<h2>Full-Screen Post-Processing Effect</h2>
+
+<p>First, a rendered texture is created whose dimensions 
+ match the backbuffer, and a render target group is wrapped around that 
+ texture. Render view and render click objects representing the main scene 
+ are created as described in the <a href="Frame_Rendering_System_Use_Cases.htm#StandardSceneRendering">Standard 
+ Scene Rendering</a> section, except that the render target group set on 
+ the render click is the one associated with the rendered texture.</p>
+
+<p>An <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span> 
+ object is created, which holds a single screen-filling quad. An <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span> 
+ object is created and attached to the screen-filling render view. The 
+ base map for the <span class="NDLSystemFont">NiTexturingProperty</span> 
+ is set to be the rendered texture. An <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSingleShaderMaterial.htm">NiSingleShaderMaterial</a></span> 
+ is also added to the quad with the particular pixel shader that should 
+ be used for the post-processing effect. An <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ object is created to hold the screen-filling render view, and its render 
+ target group is set to use the backbuffer.</p>
+
+<p>Both of these render clicks are added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultClickRenderStep.htm">NiDefaultClickRenderStep</a></span>, 
+ which is then added to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderFrame.htm">NiRenderFrame</a></span>. 
+ The screen-filling quad render click is added after the main scene render 
+ click.</p>
+
+<p>When <span class="NDLSystemFont">NiRenderFrame::Draw</span> 
+ is called each frame, the first render click will render the scene to 
+ a texture. The next render click will render a screen-filling quad using 
+ a shader that makes use of the rendered texture and outputs directly to 
+ the backbuffer.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

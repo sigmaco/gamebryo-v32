@@ -1,0 +1,220 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Block Loading Sequence</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Block Loading Sequence</h1>
+
+<p>The Game Framework transitions through a sequence of steps when it loads a block file. The
+sequence is the same whether you use the "InitialWorld" configuration option from the samples or if
+you load your world programmatically by using the Entity Loader Service (<span class=
+"NDLSystemtFont"><a href="../../Reference/QuickRef_Services/svc_qckref_entity_loader_svc.htm">
+egf::EntityLoaderService</a></span>). Further the timing changes slightly based on whether the
+"auto-enter world" feature, which causes created entities to immediately enter the world when the
+block is loaded, is enabled. It is recommended that auto-enter world not be used as this gives the
+game more control over when the set of entities created in the block become visible. See <a href=
+"../Entities/entity_world_state.htm">Entity In/Out of World State</a> for more details on this
+feature.</p>
+
+<div class="FigureContainer">
+    <img alt="" src="./images/StartupSequence.png" width="589" height="913" />
+
+    <p class="FigureCaption">Flow of control during block loading</p>
+</div>
+
+<h2>Details</h2>
+
+<p>The following are the steps taken during block file load:</p>
+
+<ol>
+    <li>The block file is loaded by the Entity Loader Service.
+
+        <p class="indent1">The Entity Loader Service is responsible for locating and loading the
+        block file. At game startup, this can be accomplished by setting the "Game.InitialWorld"
+        configuration setting. You can also request a block load by calling the <span class=
+        "NDLSystemFont">EntityLoaderService::RequestEntitySetLoad</span>, passing in the asset ID
+        of the block file that you want to load. If a notification of the load result is required,
+        pass a callback category to this method. The callback category is used to send the <span
+        class="NDLSystemFont">egf::EntityLoadResult</span> message, indicating the result of the
+        load request.</p>
+    </li>
+
+    <li>Flat model files are located for entities in the block.
+
+        <p class="indent1">Each entity that is specified in the block file has an associated flat
+        model file. During loading of the block file it is pre-parsed and each referenced flat model
+        is located before the entities are instantiated. This work happens in the <span class=
+        "NDLSystemtFont"><a href="../../Reference/efd/efd__AssetFactoryManager.htm">
+        AssetFactoryManager</a></span> and will be performed on the background thread when
+        background loading in enabled.</p>
+    </li>
+
+    <li>Entities are instantiated and added to the EntityManager (<span class="NDLSystemFont"><a
+        href="../../Reference/QuickRef_Services/svc_qckref_entity_mgr.htm">egf::EntityManager</a>
+        </span>).
+
+        <p class="indent1">Each entity in the block file is instantiated using flat model files
+        located above. If any of the underlying flat model files is missing or cannot be located,
+        the world file load fails and an error message written to the log file.</p>
+
+        <p class="indent1">Each of the entity's properties are set to their initial values here. If
+        the entity has any built-in models, they are also created and initialized.</p>
+    </li>
+
+    <li>Once all entities in the block file have been allocated an <a href=
+        "../../Reference/egf/egf__EntityLoadResult.htm">egf::EntityLoadResult</a> message is sent.
+
+        <p class="indent1">An <span class="NDLSystemFont">egf::EntityLoadResult</span>(with the
+        <span class="NDLSystemFont">elr_Loaded</span> result value) message is
+        sent to the callback category provided in the <span class="NDLSystemFont">
+        EntityLoaderService::RequestEntitySetLoad</span> call. This messages indicates that the 
+        block file was found and parsed successfully and all the entities in the block file were
+        allocated, but may not be initialized and ready for use yet.</p>
+    </li>
+
+    <li>The <span class="NDLSystemFont">OnCreate</span> <a href=
+        "../Behaviors/behavior_reference.htm">lifecycle behavior</a> is called on entities with this
+        behavior.
+
+        <p class="indent1">After the entity is instantiated, it is added to the EntityManager. If
+        the model defines the <span class="NDLSystemFont">OnCreate</span> behavior, the behavior is
+        scheduled to execute on the next tick.</p>
+    </li>
+
+    <li>Entities begin preloading assets.
+
+        <p class="indent1">Some entities may not be valid until certain assets are loaded. An entity
+        indicates this by including the <a href=
+        "../../Reference/QuickRef_Models/StandardModelLibrary__Preloadable.htm">Preloadable</a>
+        mix-in and setting the PreloadAssets property to TRUE before the end of the <span class=
+        "NDLSystemFont">OnCreate</span> lifecycle behavior.</p>
+    </li>
+
+    <li>The Game Framework waits for any required assets that are requested by each entity.
+
+        <p class="indent1">The Game Framework now waits for any required assets to load. The entity
+        is not considered complete until all of its required assets have completed loading. If an
+        asset cannot be found or is not loadable for other reasons, the preloading service should
+        continue loading assets. Preloading is considered a "best effort" service, and entity
+        construction should not be delayed because of errors in preloading.</p>
+        
+        <table class="NDLNoteContainer" width="100%">
+            <tr align="left">
+                <td class="NDLNoteContainerTD">
+                    <p class="NDLHeadingNoteContainer">Note</p>
+
+                    <div class="NDLNote">
+                        Since asset preloading is asynchronous, it is possible for the underlying
+                        entity asset property to change before preload completes. The preloading
+                        system does not detect these changes, and as a result you might preload
+                        assets defined by the previous property value. If you have entity asset
+                        properties that change at runtime, you should ensure the resulting preloaded
+                        asset matches the current property value.
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </li>
+
+    <li>Once all required assets are loaded, the <span class="NDLSystemFont">OnAssetsLoaded</span>
+        <a href="../Behaviors/behavior_reference.htm">lifecycle behavior</a> is called.
+
+        <p class="indent1">The <span class="NDLSystemFont">OnAssetsLoaded</span> lifecycle behavior
+        is called on entities once all assets are preloaded. This behavior is called for all
+        entities, even if the entity did not request preloading (by not mixing in Preloadable or by
+        setting PreloadAssets to FALSE).</p>
+    </li>
+
+    <li>After all the entity's assets are loaded, an <span class="NDLSystemFont"><a href=
+        "../../Reference/QuickRef_Services/svc_qckref_entity_mgr.htm">OwnedEntityAdded</a></span>
+        message is sent.
+
+        <p class="indent1">The <span class="NDLSystemFont">OwnedEntityAdded</span> (<span class=
+        "NDLSystemFont">efd::kMSGID_OwnedEntityAdded</span>) message indicates the entity has
+        completed loading and is available for scheduling. This message is sent to the local message
+        category (<span class="NDLSystemFont">kCAT_LocalMessage</span>).</p>
+    </li>
+
+    <li>If auto-enter world was selected, the <span class="NDLSystemFont">OnEnterWorld</span>
+        <a href="../Behaviors/behavior_reference.htm">lifecycle behavior</a> is called.
+
+        <p class="indent1">If auto-enter world was specified either when this block was loaded or as
+        option was not specified but the global default for auto-enter is in effect, then as soon as
+        the <span class="NDLSystemFont">OnAssetsLoaded</span> lifecycle behavior completes the
+        entity will enter the world. Entities do not render or simulate physics when they are not
+        in the world, but they may still run most behaviors.</p>
+
+        <p class="indent1">An <span class="NDLSystemFont">OwnedEntityEnterWorldMessage</span> (<span
+        class="NDLSystemFont">egf::kMSGID_OwnedEntityEnterWorld</span>) message is sent to the local
+        message category (<span class="NDLSystemFont">kCAT_LocalMessage</span>) when this lifecycle
+        completes.</p>
+    </li>
+    
+
+    <li>Once all entities in the block are loaded the <span class="NDLSystemFont">
+        OnEntitySetFinished</span> <a href="../Behaviors/behavior_reference.htm">lifecycle
+        behavior</a> is called.
+
+        <p class="indent1">The <span class="NDLSystemFont">OnEntitySetFinished</span> lifecycle
+        behavior is called after all the entities in the block are completely initialized. If
+        auto-enter world is active, that means once all <span class="NDLSystemFont">
+        OwnedEntityEnterWorldMessage</span> messages are received, and if auto-enter world is not
+        active that means once all <span class="NDLSystemFont">OwnedEntityAdded</span> messages
+        have been received.</p>
+
+        <p class="indent1">It is worth mentioning that the <span class="NDLSystemFont">
+        OnEntitySetFinished</span> lifecycle behavior is also called in this same order for entities
+        not loaded from a block.</p>
+    </li>
+
+    <li>Once all entities in the block file are loaded an <a href=
+        "../../Reference/egf/egf__EntityLoadResult.htm">egf::EntityLoadResult</a> message is sent.
+
+        <p class="indent1">An <span class="NDLSystemFont">egf::EntityLoadResult</span> message
+        (with the <span class="NDLSystemFont">elr_EntityCreationCompleted</span> result value) is
+        sent to the callback category provided in the <span class="NDLSystemFont">
+        EntityLoaderService::RequestEntitySetLoad</span> call. This messages indicates that all the
+        entities in the block file are now loaded.</p>
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="block_about.htm">About block files</a></li>
+    <li><a href="block_loading.htm">Loading Blocks</a></li>
+    <li><a href="block_options.htm">Block Loading Options</a></li>
+    <li><a href="block_unloading.htm">Managing Loaded Blocks</a></li>
+    <li><a href="block_load_sequence.htm">Block Loading Sequence</a></li>
+    <li><a href="block_best_practice.htm">Block Best Practices</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

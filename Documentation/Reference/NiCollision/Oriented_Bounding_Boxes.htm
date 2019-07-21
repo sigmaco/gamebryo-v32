@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Oriented Bounding Boxes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Oriented Bounding Boxes</h1>
+
+<p>Given a leaf node with geometry (represented as a list 
+ of triangles), an oriented bounding box tree is built by analyzing the 
+ distribution of vertices at each leaf node.</p>
+
+<p>To cover the OBB algorithm in greater technical detail, 
+ it is necessary to present it in mathematical terms. Note: What follows 
+ is a fairly technical discussion.</p>
+
+<p>At the top level, the vertices are fit with a 3D non-circular 
+ Gaussian distribution. The mean of the distribution is used as the center 
+ of the box. The eigenvectors of the covariance matrix are used for the 
+ box axes. The axis lengths are determined by processing the list of vertices 
+ and increasing each axis length as necessary so that the final oriented 
+ box contains all the vertices.</p>
+
+<p>The vertices for the entire leaf node are then partitioned 
+ into two sets based on the information obtained about the OBB. Each subset 
+ is fit with a Gaussian distribution and the corresponding OBBs are built. 
+ The algorithm continues recursively until the OBB tree has leaf nodes, 
+ each representing a triangle of the original scene graph leaf node. Comparison 
+ of two OBB trees is similar to that of <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> objects, but heuristically the 
+ number of comparisons is reduced because of the tighter fit on the geometry. 
+ Moreover, the game engine enables the application to tune OBB collision 
+ detection by specifying how many triangles should be stored in the OBB 
+ tree leaf nodes. One triangle per node gives higher accuracy of intersection 
+ tests, but requires more comparisons between OBBs. More triangles per 
+ node reduce the accuracy of the intersection tests, but generally the 
+ tree comparisons take less time. The engine also allows the application 
+ to specify how many levels into the OBB tree the tests should occur.</p>
+
+<p>The static OBB comparisons are fast in that two boxes 
+ are tested for intersection by projection onto various separating axes. 
+ It can be shown that at most 15 axes are required to determine static 
+ intersections and at most 21 axes are required to determine dynamic intersections, 
+ but on average, very few are needed to determine non-intersection. Surprisingly, 
+ dynamic OBB comparisons require little additional work. The box projections 
+ on a separating axis are intervals. In the static case, two intervals 
+ are tested for overlap. If there is no overlap on a single separating 
+ axis, then the OBBs do not intersect. If there is overlap on all 15 separating 
+ axes, then the OBBs do intersect. In the dynamic case, we simply compute 
+ the intersections of the OBBs for both starting time and final time of 
+ the frame, and determine if, during that time interval, the projected 
+ intervals overlap or not. The velocities of the OBBs are used directly, 
+ in determining such overlap.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

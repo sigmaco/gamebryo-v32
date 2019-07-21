@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Associating Mesh Modifiers with a Mesh</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Associating Mesh Modifiers with a Mesh</h1>
+
+<p>There are two aspects to associating a modifier with 
+ a mesh object. First, the modifier can be added to the list of modifiers 
+ on the mesh using the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#Public_NiMeshModifier_Helper_Methods">NiMesh::AddModifier</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm#Public_NiMeshModifier_Helper_Methods">NiMesh::AddModifierAt</a></span> 
+ functions. In their simplest form, with the <span class="NDLSystemFont">bAttach</span> 
+ argument false, these functions store the modifier as belonging to the 
+ mesh but do not do the work required to prepare the modifier for execution. 
+ Second, the modifier can be <em>attached</em> 
+ to the mesh. Attachment prepares the modifier for execution by setting 
+ pointers into data streams on the mesh. The two processes, adding and 
+ attaching, are separated because it is undesirable to attach a modifier 
+ to a mesh before the streams and other data on the mesh have been finalized 
+ for execution.</p>
+
+<p>In most cases the attachment of modifiers will be transparent 
+ to an application, unless the application is explicitly creating modifiers 
+ in code. The modifier is attached when:</p>
+
+<ul>
+	
+	<li>The modifier is added 
+ to the mesh and the <span class="NDLSystemFont">bAttach</span> argument 
+ is <span class="NDLSystemFont">true</span>.</li>
+	
+	<li>The modifier is streamed 
+ from a NIF file (in the post-link stage of streaming).</li>
+	
+	<li>The modifier is created 
+ as part of back-compatibility conversion from an old asset.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMesh.htm">NiMesh::AttachModifier</a></span> 
+ is explicitly called with the modifier as its argument.</li>
+</ul>
+
+<p>Apart from some housekeeping in <span class="NDLSystemFont">NiMesh::AttachModifier</span>, 
+ &nbsp;the virtual 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier::Attach</a></span> 
+ method is intended to perform the bulk of the work of attachment. Modifier 
+ sub-classes always implement this function.</p>
+
+<p>The modifier can only be attached if the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMeshModifier.htm#Querying_Requirements">NiMeshModifier::AreRequirementMet</a></span> 
+ function returns <span class="NDLSystemFont">true</span>. The <span class="NDLSystemFont">AreRequirementMet 
+ </span>function checks that the modifier can successfully execute on the 
+ mesh. When morph mesh modifiers are changed or attached <span class="NDLSystemFont">CalculateMorphBound 
+ </span>should be called before the next <span class="NDLSystemFont">Update</span> 
+ call.</p>
+
+<h2>NiMeshModifier::Attach</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier::Attach</a></span> 
+ method must be called before the modifier is able to execute. It typically 
+ performs the following actions:</p>
+
+<ul>
+	
+	<li>Set the submit and 
+ complete sync points for the modifier. It is safe to wait until the <span 
+ class="NDLSystemFont">Attach</span> method to set these because the modifier 
+ will never be called to submit tasks before it is attached. It is advantageous 
+ to wait until <span class="NDLSystemFont">Attach</span> so that the mesh 
+ has had all of its modifiers added and all of its parameters set. The 
+ data on the mesh can therefore be used to choose appropriate submission 
+ and completion points. For example, the morphing modifier looks for and 
+ makes use of any skinning modifier on the mesh.</li>
+	
+	<li>Cache pointers to data 
+ on the mesh. For example, look up and store a pointer to a particular 
+ data stream. It is not safe to do this before <span class="NDLSystemFont">Attach</span> 
+ is called because some other process may change the pointer. After <span 
+ class="NDLSystemFont">Attach</span> has been called it is guaranteed that 
+ the mesh's data stream layout will not change again. The modifier will 
+ be detached and re-attached if the data does change.</li>
+	
+	<li>Create Floodgate streams 
+ and tasks. <span class="NDLSystemFont">Attach</span> is the right place 
+ to do this for the reasons outlined above: all data about the mesh is 
+ known and pointers will not change without notification.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">Attach</span> method can 
+ also do any one-off initialization work for the modifier.</p>
+
+<p>The <span class="NDLSystemFont">Attach</span> method must 
+ <b>not</b>
+ add or change data stream 
+ references on the mesh. It is a pre-condition of attachment that the mesh 
+ is in its ready-to-execute state. If one modifier was to add data during 
+ attachment, the pre-condition may be violated for the other modifiers 
+ on the mesh. It is safe to change the data in the stream, but nothing 
+ about the stream itself.</p>
+
+<h2>NiMeshModifier::Detach</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier::Detach</a></span> 
+ method must undo anything done in the <span class="NDLSystemFont">Attach</span> 
+ method, such as releasing pointers and deleting allocated objects. The 
+ sequence of calls <span class="NDLSystemFont">Attach - Detach - Attach</span> 
+ should give identical results to a single <span class="NDLSystemFont">Attach</span> 
+ call, and no leaked memory.</p>
+
+<p>It is safe to assume that <span class="NDLSystemFont">CompleteTasks</span> 
+ has been called on the modifier before <span class="NDLSystemFont">Detach</span> 
+ is called, so there will be no outstanding Floodgate tasks.</p>
+
+<h2>NiMeshModifier::AreRequirementsMet</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm#Querying_Requirements">NiMeshModifier::AreRequirementMet</a></span> 
+ function must be implemented by all modifier classes. It is used to query 
+ the ability of a modifier to execute on a mesh. For example, the mesh 
+ should be checked for all of the data streams required by the modifier, 
+ and that those streams have the necessary format and level of access.</p>
+
+<h2>NiMesh::ResetModifiers</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh::ResetModifiers</a></span> 
+ function should be called for any mesh when the data streams on it are 
+ added, removed or otherwise changed in a way that might invalidate the 
+ data referenced by modifiers on the mesh. It causes all modifiers to be 
+ detached and then attached again.</p>
+
+
+
+<p>The next topic is <a href="Mesh_Modifier_Interactions_with_Tools.htm">Mesh 
+ Modifier Interactions with Tools</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

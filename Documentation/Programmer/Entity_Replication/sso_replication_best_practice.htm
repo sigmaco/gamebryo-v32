@@ -1,0 +1,306 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best Practices for Working with Replication</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Best Practices for working with Replication</h1>
+
+<p>You should plan the entire replication approach needed for your game. You should start by
+establishing how your game will use Replication. Think about how and when entities in your game
+need to communicate changes in their state and how you want to organize that communication.</p>
+
+<p>There are three aspects to optimizing Replication, these are the assignment of properties to
+replication groups, the replication group policies, and the categorization policy. These three
+aspects can be generalized as what data to send, how to send it, and who to send it to.</p>
+
+<a name="ThinkingAboutReplicationGroups" id="ThinkingAboutReplicationGroups"></a><h2>Thinking about Replication Groups</h2>
+
+<p>Replication Groups express patterns or styles of information exchange and not specific sets of
+observers. For example, a group might be used to publish updates to "any observer in the same room"
+but you would not want to use a group for each specific room. Your game might have thousands of
+rooms, each of which is simply a unique category value used with the single "current room"
+replication group. In other words, the replication groups control what data will be replicated and
+using multiple groups allows different subsets of data to be sent to different consumers.
+Replication groups do not control who receives the data.</p>
+
+<p>There are 32 replication groups available and every property for every model can be placed into
+zero or more of these groups. This might seem overwhelming but by using good group assignments it
+should become obvious what model properties belong in what replication groups. The replication
+settings will also inherit from mixed in models so it typically only requires a handful of changes
+to configure the replication groups for your game. Many online games may only need to use one or
+two replication groups. Don't use additional groups if they are not needed, simply using more
+groups alone does not imply better performance. Use the minimum number of groups that allow you to
+send the minimum amount of data to just the consumers that need it.</p>
+
+<p>What replication groups will you need? Consider the following items:</p>
+
+<ul>
+    <li>When are different sets of properties needed: if certain data is only needed under certain
+    conditions then consider placing that data into a group used only when that condition is in
+    effect. For example, you might display very detailed information about the selected entity;
+    rather than adding that information into a group that is widely needed such as "current room"
+    you should place it into a separate group that is only consumed when the selection occurs such
+    as "examination data".</li>
+
+    <li>What subsets of Properties are used by only certain other Entities: for example an AI might
+    exchange data with other nearby AIs of the same type. Create a separate group for this exchange
+    rather than bundling the rarely needed data into another group that goes to a wider set of
+    consumers.</li>
+
+    <li>What subsets of Properties are needed by clients: use separate groups of information that
+    is observed by clients and information only used by the host or server.</li>
+
+    <li>How often must data be updated: if different consumers have different update frequency
+    requirements consider making multiple replication groups that each use a different replication
+    policy even if these groups contain exactly the same properties. For example, radar-tracking
+    missile might need more frequent position updates about the target than would otherwise be
+    sent, rather than updating the rate at which all position updates are sent consider making a
+    separate group for requesting high frequency updates.</li>
+
+    <li>Toolbench suggests default names for some of the replication groups and hides the
+    additional unnamed groups. You should consider renaming these groups to match your specific
+    needs rather than trying to force your game into the suggested patterns. See <a href=
+    "#ChoosingReplicationGroupNames">Choosing Replication Group Names</a> below for details.</li>
+</ul>
+
+<a name="PlanningReplicationGroupPolicies" id="PlanningReplicationGroupPolicies"></a><h2>Planning Your Replication Group Policies</h2>
+
+<p>Each of the 32 replication groups can have a replication group policy attached. You should
+customize these policies to meet your specific needs. The default policy is to send update messages
+every frame that a property changes but this default almost always results in sending many small
+messages, so it is recommended that a rate limit be applied to every group even if a fairly high
+frequency is used.</p>
+
+<p>Consider the following questions when setting replication group policies:</p>
+
+<ul>
+    <li>With what frequency do entities need to update other clients about their changes?
+
+        <ul>
+            <li>The use of predictive contracts can greatly reduce the frequency at which property
+            updates are sent through the network while providing smooth updates on other clients.
+            For example, a rocket traveling in a straight line at constant speed might update it's
+            position on every frame but because other clients can predict how the rocket moves you
+            can avoid sending constant position updates.</li>
+
+            <li>Try to design your game to be tolerant of small timing delays. Relying on absolute
+            synchronization between all clients will not perform well over the Internet.</li>
+
+            <li>Think about the rate of change of the properties. A frequently changing property
+            that updates at a high rate will consume a lot of bandwidth, consider sending updates
+            less frequently to compensate.</li>
+        </ul>
+    </li>
+
+    <li>Are there some groups of entities that need to update more or less frequently?
+
+        <ul>
+            <li>If you are using a geometric decomposition you may wish to update entities close to
+            an observer at a faster rate than you update entities that are far away from the
+            observer. Consider making multiple replication groups that contain the exact same
+            properties but use different policies to adjust the update frequency.</li>
+
+            <li>Some special types of entities might want to update more frequently than normal.
+            For example, a boss monster might want to update frequently even if it is far away so
+            it might use a special replication group with a different policy.</li>
+        </ul>
+    </li>
+
+    <li>Do you need to replicate sensitive or confidential information? What other quality of
+    service concerns should be considered?
+
+        <ul>
+            <li>The replication group policy can change the quality of service used to send
+            replication updates. If you are sending confidential information you should use an
+            encrypted quality of service.</li>
+
+            <li>Replication policies should always use a reliable quality of service but you can
+            use an unordered quality of service if desired.</li>
+
+            <li>Depending on the volume of updates you may benefit from using a compressed quality
+            of service. If a group typically contains a large number of dirty properties then it
+            can benefit more from compression.</li>
+        </ul>
+    </li>
+</ul>
+
+<a name="ChoosingCategorizationPolicies" id="ChoosingCategorizationPolicies"></a><h2>Choosing Categorization Policies</h2>
+
+<p>The categorization policy is where interest management is optimized. Optimizing the balance
+between the number of producers into a category and the number of consumers of that category will
+have the most direct impact on bandwidth consumption and game responsiveness. You must consider
+both the behavior of replication producers and also the behavior of replication consumers. It is
+best to publish into a category that is large enough that producer entities are not constantly
+changing the category being used but is also small enough that you are not sending unnecessary data
+to consumers who have no use for it. Observers will most often subscribe to multiple categories to
+provide seamless visibility across boundaries. Observers should subscribe to a wide enough area so
+they can both render the necessary data but also be prepared for player movement in the face of
+possible network latency.</p>
+
+<p>For most games a simple geometric categorization policy will suffice for the majority of data.
+Common geometric categorization policies include room based, distance based, gridded or hybrid
+approaches that combine these using multiple replication groups. When using a room based
+categorization policy the producer entities simply publish updates into a category based on the
+current room. Observer entities will subscribe to the category for the room they are in and will
+typically also subscribe to the categories for additional nearby rooms. The category for each room
+might be simply set in data or it might be computed from other properties such as position. For a
+distance based categorization policy the category could be defined as "within a certain distance"
+from the entity. You might use a gridding of space and compute the category as a function of
+position or you might lookup a category using a spacial partitioning tree or manually constructed
+volumes. Observer implementations might intersect a sphere or cone representing the area they can
+see and then subscribe to each intersected category. So long as both producers and observers use
+the same algorithm to compute the categories for each replication group the system will work. The
+common element is that producers will publish into a single category based their location and
+observers will subscribe to one or more categories based on which areas they can see.</p>
+
+<p>For non-geometric data, computing a unique category is generally much simpler. For example, you
+could replicate data to all members of the same guild by simply assigning a unique integer to each
+guild and using that value to construct the category. This approach works well for variable groups
+such as adventuring parties, chat channels and game lobbies. This even works well when there may be
+many thousands of group instances. Another approach would be to assign names to each of these
+groups and map those names to categories using the data-driven enumeration system in Foundation.
+This works well in cases where there are a fixed number of valid group names.</p>
+
+<p>For all of the policies suggested above, producing entities will want to change the category
+into which they produce replication updates in response to various state changes for the entity. In
+many cases you may only want to update the subscriptions at some minimum interval to avoid numerous
+rapid changes. For events that occur rarely, such as joining a guild and subscribing to the "guild"
+category, scripts that perform the join operation will likely want to directly change the
+subscriptions. For categorization policies connected to rapidly changing data such as position it
+might be best to only check the category a few times per second or to use triggers to determine
+when the category needs to change. If the area covered by a single category is increased then you
+can also decrease how often you need to consider changing categories.</p>
+
+<p>At the end of the day you have the flexibility to create whatever categorization policy best
+suits your game. Select an approach that meets the needs of your game.</p>
+
+<h2>Computing Categories</h2>
+
+<p>Many of the examples above talk about constructing categories using algorithms or looking up
+integers that are used to construct categories. How exactly does this work? There are several
+categorization methods that have been added to the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__MessageService.htm#">efd::MessageService</a></span> to assist with the
+creation of category values that meet certain requirements. Specifically, the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__MessageService.htm#classefd_1_1_message_service_1ebd209ea8d6bfb26cc0c36f9b1e9cd30">
+GetServicePublicCategory</a></span> method can be very helpful for generating replication
+categories. This function takes two arguments, the <span class="NDLSystemFont">serviceID</span> and
+the <span class="NDLSystemFont">categoryIndex</span>:</p>
+
+<ul>
+    <li><b><span class="NDLSystemFont">serviceID</span></b>: To use the <span class=
+    "NDLSystemFont">GetServicePublicCategory</span> method you should select a <span class=
+    "NDLSystemFont">serviceID</span> value that is unique to both the algorithm being used and also
+    to the replication group on which the category will be set. This parameter is an <span class=
+    "NDLSystemFont">efd::ClassID</span> because the same method is used by system services to
+    generate service-specific categories. As a result you must select a value that does not
+    conflict with other system services being used. It is recommended that the <span class=
+    "NDLSystemFont">EE_DECLARE_EXTERNAL_BASEID</span> macro defined in <span class=
+    "NDLSystemFont">efd/IDs.h</span> be used with a value in the range between <span class=
+    "NDLSystemFont">EE_EXTERNAL_BASEID_MIN</span> (0x06000000) and <span class=
+    "NDLSystemFont">EE_EXTERNAL_BASEID_MAX</span> (0x060fffff) to avoid the possibility of
+    collision. Alternatively you may wish to construct a data-driven enumeration that assigns
+    values from within this same range. This range is reserved for application use and should not
+    conflict with code provided by Emergent or authorized partners. By using a properly selected
+    value you ensure that the generated category will not accidentally conflict with other category
+    usage.</li>
+
+    <li><b><span class="NDLSystemFont">categoryIndex</span></b>: The <span class=
+    "NDLSystemFont">categoryIndex</span> parameter to this method is an arbitrary 32-bit value. The
+    entire 32-bit range is available and values can be assigned through any algorithm you desire.
+    Since a different <span class="NDLSystemFont">serviceID</span> value is used for every
+    replication group you can use the full range of values. Also if you use different <span class=
+    "NDLSystemFont">serviceID</span> values for different algorithms you can avoid category
+    collision errors should we convert to using a different categorization policy. The result is
+    that your implementation has total freedom in computing the <span class=
+    "NDLSystemFont">categoryIndex</span> value.</li>
+</ul>
+
+<a name="ChoosingReplicationGroupNames" id="ChoosingReplicationGroupNames"></a><h2>Choosing Replication Group Names</h2>
+
+<p>Emergent Toolbench contains a default set of replication groups with extremely generic names.
+The names for these default replication groups are simply labels and should be configured to
+represent the categorization policies you have outlined for your game. Choose a name for the group
+that has to do with the method of decomposition of the data and the frequency of update, not the
+destinations, or consumers. It may also make sense to name the group after the classification of
+properties that are assigned to it, for example "Visual" might be used with a group that contains
+properties related to the visual appearance of the entity. A good name is an adjective describing
+the usage pattern or kind of data in the group that will have easily understood meaning for the
+designers when creating models. Also, consider the organization of your replication groups. It may
+be helpful to organize your replication groups in order of frequency of use or to keep blocks of
+similar categories together.</p>
+
+<p>For a description of the default replication group names suggested by Toolbench, see <a href=
+"../../Tools/EntityModelingTool/emt_fundmtls_traits.htm#ReplicationPropertyTraits">Replication
+Property Traits</a>. For more on configuring replication groups, see <a href=
+"sso_replication_config_groups.htm">Configuring Replication Groups</a>.</p>
+
+<a name="TurningOffReplication" id="TurningOffReplication"></a><h2>Turning off Replication</h2>
+
+<p>While all replication policies are universal they can also simply be turned on or off for each
+entity at runtime. It is not necessary or advisable to "clear out" replication group traits from
+the properties of derived models in Toolbench as future models might want to use the inherited
+replication traits. Instead of clearing out all replication traits at edit time, entities that do
+not need to produce replication updates should simply not specify a category at runtime. There is
+no performance cost for specifying edit time replication traits unless a category is specified at
+runtime.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_replication_overview.htm">Replication Overview</a></li>
+
+    <li><a href="sso_replication_prereqs.htm">Replication Prerequisites</a></li>
+
+    <li><a href="sso_replication_requirements.htm">Replication Requirements</a></li>
+
+    <li><a href="sso_replication_how_work.htm">How Replication Works</a></li>
+
+    <li><a href="sso_replication_limitations.htm">Replication Limitations</a></li>
+
+    <li><a href="sso_replication_groups_categories.htm">Understanding Replication Groups and
+    Categories</a></li>
+
+    <li><a href="sso_replication_config_groups.htm">Configuring Replication Groups</a></li>
+
+    <li><a href="sso_replication_troubleshoot.htm">Troubleshooting Replication</a></li>
+
+    <li><a href=
+    "../../Tools/EntityModelingTool/emt_fundmtls_traits.htm#ReplicationPropertyTraits">Replication
+    Property Traits</a></li>
+
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm#ReplicationGroup">Replication
+    Group Configuration Options</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

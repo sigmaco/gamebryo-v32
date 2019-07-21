@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Viewing Meshes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Viewing Meshes</h1>
+
+<p>Rendering involves not just the geometry layout of the scene,
+but also the geometry of the viewer relative to the scene.
+Gamebryo represents the visible scene via the <span class=
+"NDLSystemFont">NiAVObject</span>-based scene graph and the
+viewer via an <span class="NDLSystemFont">NiCamera</span> object.
+An <span class="NDLSystemFont">NiCamera</span> is a subclass of
+<span class="NDLSystemFont">NiAVObject</span>, so it has its own
+set of local transforms, and can inherit parent transforms if it
+is attached in a scene graph hierarchy. The viewer is fixed in
+the camera's model space, and is thus transformed along with the
+camera object. Transforming the camera (either directly or by
+moving a parent node) will transform the viewer accordingly.</p>
+
+<p>Applications may keep a basically unlimited number of cameras,
+either attached to a scene graph or held directly by the
+application with no geometric parent. This allows the application
+to "cut" from camera to camera as desired by chosing different
+cameras from frame to frame. Also, multiple cameras may be used
+within the same frame in order to render to offscreen textures,
+etc.</p>
+
+<p>The section <a href="Cameras.htm">Cameras</a> details the
+exact camera model that Gamebryo uses, including a discussion of
+view frusta and parallel and perspective projections. However,
+the basic view defined by any Gamebryo camera is as follows:</p>
+
+<ul>
+    <li>The center of projection (the viewpoint) is the
+    model-space origin of the <span class=
+    "NDLSystemFont">NiCamera</span></li>
+
+    <li>The projection plane is perpendicular to the model-space
+    X axis of the <span class=
+    "NDLSystemFont">NiCamera</span></li>
+
+    <li>In almost all cases, the camera view direction is
+    centered about the model-space positive X axis of the
+    <span class="NDLSystemFont">NiCamera</span> (the only
+    exception is a perspective camera whose frustum is not
+    symmetric)</li>
+
+    <li>The "up" direction on the screen or in the destination
+    framebuffer is the model-space positive Y axis of the
+    <span class="NDLSystemFont">NiCamera</span></li>
+
+    <li>As a result of the other definitions, the "right"
+    direction on the screen or in the destination framebuffer is
+    the model-space positive Z axis of the <span class=
+    "NDLSystemFont">NiCamera</span></li>
+</ul>
+
+<p>This basic camera orientation is shown in the figure
+below:</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/Viewing.gif" width="480" height="360" alt=
+    "Viewing (3K)"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Mathematically, we can map an <span class=
+"NDLSystemFont">NiRenderObject</span> object G's vertices into a
+camera V's model space described above by concatenating the
+model-to-world matrix of G (we call this G<sub>MW</sub>) with the
+inverse model-to-world (i.e. world-to-model) matrix of V (we call
+this V<sub>MW</sub>). The first matrix transforms the vertex from
+the model space of the geometry into world space, and the second
+matrix transforms the vertex from world space into the model
+space of the camera:</p>
+
+<p><b>View Space = V<sub>MW</sub><sup>-1</sup>G<sub>MW</sub>(G's
+Model Space)</b></p>
+
+<p>Cameras tend to fall into two basic categories with respect to
+the source of their transforms; direct application-controlled
+cameras and animated scene graph-based cameras. The content
+creation tools have the ability to export cameras that are
+located in the scene graph itself. These are most frequently
+animated via keyframes that are exported along with the scene
+graph. These cameras are updated simply by ensuring that the
+scene graph is up to date. The animated transforms applied to the
+camera and its parent hierarchy will position and aim the camera
+as desired by the artist.</p>
+
+<p>Application-driven cameras are updated manually by the
+application, most frequently changing the transforms according to
+user input. Most of the Gamebryo samples include at least one
+application-driven camera. In the case of an application-driven
+camera, it is common for the camera to sit in world space (i.e.
+have no parent). The local transform of the camera defines the
+world transform of the camera in this case. Also, since the
+camera in this case is not a child of the scene graph, the
+application must call <span class="NDLSystemFont">Update</span>
+upon the camera object directly every time the camera's
+transforms are changed.</p>
+
+<p>In either case, it is the responsibility of the application to
+ensure that each active camera has been updated correctly prior
+to culling and rendering each frame, either by calling update
+directly on the camera itself, or by ensuring that the section of
+the main scene graph containing the camera has been updated.</p>
+
+<h2>Setting the View to the Renderer</h2>
+
+<p>Both culling and rendering require the camera view
+information. In the case of culling, the camera is passed
+directly to the culling process object when it is invoked. In the
+case of rendering, the renderer must be informed of the correct
+view prior to rendering any geometry. This is accomplished via a
+pair of functions, both of which are called <span class=
+"NDLSystemFont">NiRenderer::SetCameraData</span>. One of the
+versions of <span class="NDLSystemFont">SetCameraData</span>
+simply takes a camera pointer as its argument, while the other
+takes the view data explicitly. These two functions accomplish
+the same task, but allow applications to pass down view
+information with or without an actual camera object. These
+functions can only be called when the renderer is capable of
+rendering geometry, but they may be called as many times as is
+desired within a single frame or rendering pass. Applications
+should call this function at least once after opening a rendering
+target and before rendering 3D geometry.</p>
+
+<p>An additional function <span class=
+"NDLSystemFont">SetScreenSpaceCameraData</span>, is used only for
+screen-space rendering, and is described in the section <a href=
+"Screen_Space_Rendering.htm">Screen Space Rendering</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

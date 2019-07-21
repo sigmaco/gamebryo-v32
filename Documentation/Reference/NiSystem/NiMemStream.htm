@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiMemStream</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiMemStream</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiBinaryStream.htm">NiBinaryStream</a></p>
+
+<p class="NDLRefParentage">&lt;NiMemStream.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>A platform-independent wrapper class to handle writing to and
+reading from memory streams.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiMemStream(const void* pvBuffer,
+unsigned int uiSize)</p>
+
+<p class="NDLRefMemberDescription">Creates a read-only memory
+stream from <span class="NDLSystemFont">pvBuffer</span> of size
+<span class="NDLSystemFont">uiSize</span>.</p>
+
+<p class="NDLRefMemberFunction">NiMemStream()</p>
+
+<p class="NDLRefMemberDescription">Creates a memory stream that
+can be read from or written to.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static STREAMGROWFUNC
+GetStreamGrowCallback()</p>
+
+<p class="NDLRefMemberFunction">static void
+SetStreamGrowCallback(STREAMGROWFUNC pfnGrow)</p>
+
+<p class="NDLRefMemberDescription">Get and set the callback
+function used by the stream to determine the size of a new buffer
+when the stream must grow. For more information on the
+<span class="NDLSystemFont">STREAMGROWFUNC</span> typedef see the
+notes at the end of this page.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int
+DefaultGrowFunc(unsigned int uiCurrent, unsigned int uiWriteSize,
+unsigned int uiBytesLeft)</p>
+
+<p class="NDLRefMemberDescription">The default callback function
+for growing a stream. It follows the following algorithm:</p>
+
+<div class="indent1">
+    <ol>
+        <li>Double the current stream size.</li>
+
+        <li>If the current stream size exceeds the default limit
+        set by <span class=
+        "NDLSystemFont">SetDefaultGrowSizeLimit</span>, grow the
+        stream by that amount instead.</li>
+
+        <li>Verify that the newly allocated size is large enough.
+        If the selected size is too small based off of
+        <span class="NDLSystemFont">uiWriteSize</span> and
+        <span class="NDLSystemFont">uiBytesLeft</span>, grow the
+        stream by <span class="NDLSystemFont">uiWriteSize</span>
+        - <span class="NDLSystemFont">uiBytesLeft</span>.</li>
+    </ol>
+</div>
+
+<p class="NDLRefMemberDescription">This allocation pattern will
+have exponential growth up to the default limit at which point
+growth of the buffer will be linear. For example, if the limit is
+8MB, a 7MB stream will be doubled to 14MB while a 9MB stream
+would only allocate a new stream of 17MB.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int
+GetDefaultGrowSizeLimit()</p>
+
+<p class="NDLRefMemberFunction">static void
+SetDefaultGrowSizeLimit(unsigned int uiLimit)</p>
+
+<p class="NDLRefMemberDescription">Get the limit in bytes for the
+default callback at which buffer growth changes from exponential
+to linear. This value is initialized to 32MB.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void* Str()</p>
+
+<p class="NDLRefMemberDescription">Retrieves the entire contents
+of the stream as a string. This also has the effect of freezing
+the string.</p>
+
+<p class="NDLRefMemberFunction">void Freeze(bool bFreeze)</p>
+
+<p class="NDLRefMemberDescription">If <span class=
+"NDLSystemFont">bFreeze</span> is true, this function freezes the
+stream, which prevents writing any more data to the stream. If
+<span class="NDLSystemFont">bFreeze</span> if false, the stream
+may again be written to.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetSize() const</p>
+
+<p class="NDLRefMemberDescription">Retrieves the current size of
+the data in the stream.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">STREAMGROWFUNC Typedef</p>
+
+<p><span class="NDLSystemFont">NiMemStream</span> uses a callback
+function to control the rate of growth for an <span class=
+"NDLSystemFont">NiMemStream</span> writing operation. By default,
+the callback is set to <span class=
+"NDLSystemFont">NiMemStream::DefaultGrowFunc</span>. Applications
+can override this behavior by setting a callback of their choice.
+The callback signature is defined as follows:</p>
+
+<p class="NDLRefMemberFunction">typedef unsigned int
+(*STREAMGROWFUNC)(unsigned int uiCurrent, unsigned int
+uiWriteSize, unsigned int uiBytesLeft);</p>
+
+<p>The function is expected to return an unsigned int which is
+the size of the new buffer in bytes. It receives as arguments the
+currently allocated size of the stream, <span class=
+"NDLSystemFont">uiCurrent</span>, the size of the write operation
+that requires stream growth, <span class=
+"NDLSystemFont">uiWriteSize</span>, and the number of unused
+bytes remaining in the currently allocated stream, <span class=
+"NDLSystemFont">uiBytesLeft</span>. At a minimum, the callback
+must return <span class="NDLSystemFont">uiCurrent</span> +
+(<span class="NDLSystemFont">uiWriteSize</span> - <span class=
+"NDLSystemFont">uiBytesLeft</span>). <span class=
+"NDLSystemFont">NiMemStream::MemWrite</span> will assert on this
+minimum in debug builds to avoid buffer overruns.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

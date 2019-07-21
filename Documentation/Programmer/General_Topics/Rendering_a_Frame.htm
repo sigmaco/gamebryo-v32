@@ -1,0 +1,312 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Rendering a Frame</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Rendering a Frame</h1>
+
+<h2>The High-level Process of Rendering</h2>
+
+<p>Rendering is the process used to draw an application's desired
+scene to the screen (or other framebuffer output, such as a
+rendered texture). At its highest level, rendering a scene
+involves:</p>
+
+<ul>
+    <li>Ensuring that the scene objects are placed/animated
+    appropriately for the current situation being simulated by
+    the application</li>
+
+    <li>Setting up the desired view/camera from which the scene
+    will be rendered</li>
+
+    <li>Determining which parts of the scene are visible in the
+    view</li>
+
+    <li>Clearing the output device</li>
+
+    <li>Drawing the visible parts of the scene to the output
+    device</li>
+
+    <li>Displaying the result</li>
+</ul>
+
+<p>Gamebryo is extremely flexible in how it allows applications
+to actually implement the rendering of a frame. Many
+applications will do very few of the steps explicitly, relying
+instead on functions like the global utility function
+<span class="NDLSystemFont">NiDrawScene</span> to handle most of
+the low-level stages. However, in order to explain the overall
+architecture, we will discuss all of the steps in a basic
+pipeline first. The pages that are hyperlinked from here will
+discuss the basics of each step, and then branch off to two other
+cases; the convenience functions that simplify the most common
+rendering cases, and the more advanced examples of manual
+rendering used for complex effects.</p>
+
+<h2>The Objects used for Rendering</h2>
+
+<p>There are several objects that form the basis for rendering,
+either as sources, processes, or destinations. These objects
+will be mentioned briefly in this section, although many of them
+have already been introduced for one reason or another in an
+earlier section.</p>
+
+<p><a href="../../Reference/NiMain/NiAVObject.htm"><span class=
+"NDLSystemFont">NiAVObject</span></a>: This base class for all
+scene graph objects is of interest to us because the hierarchical
+scene graph is the data structure that organizes all of the items
+to be rendered. Applications may have a single, monolithic scene
+graph for their entire 3D world, or they may have several
+independent scene graphs that are to be rendered independently to
+form the visible world.</p>
+
+<p><a href=
+"../../Reference/NiMain/NiRenderObject.htm"><span class=
+"NDLSystemFont">NiRenderObject</span></a>: This base class for
+all renderable scene graph objects and is a subclass of
+<span class="NDLSystemFont">NiAVObject.</span> Culling will
+output a list of these objects, which will then be rendered by
+invoking the abstract <span class=
+"NDLSystemFont">RenderImmediate</span> method. All of the other
+nodes in the scene graph hierarchy exist only for purposes of
+scene grouping and hierarchical animation.</p>
+
+<p><a href="../../Reference/NiMesh/NiMesh.htm"><span class=
+"NDLSystemFont">NiMesh</span></a>: These are actually a subclass
+of <span class="NDLSystemFont">NiRenderObject</span>, but are of
+particular importance here because they are the most common
+derivation used in Gamebryo. Once we move into rendering proper,
+these are the objects we will use.</p>
+
+<p><a href="../../Reference/NiMain/NiCamera.htm"><span class=
+"NDLSystemFont">NiCamera</span></a>: The camera's role in
+rendering is nothing more than to provide the view and projection
+transforms. The camera defines the view of the scene for culling
+and rendering purposes. Note that the camera is not the focal
+point or manager of rendering, and it does not contain links to
+scenes, renderers, etc.</p>
+
+<p><a href=
+"../../Reference/NiMain/NiCullingProcess.htm"><span class=
+"NDLSystemFont">NiCullingProcess</span></a>: The culling process
+is the object responsible for generating a list of visible
+renderable objects, based on a scene graph and a camera.</p>
+
+<p><a href=
+"../../Reference/NiMain/NiAccumulator.htm"><span class="NDLSystemFont">
+NiAccumulator</span></a>: This optional (but extremely common)
+object serves as a final post-processing pass between renderable
+objects and rendering. It is often used to sort the visible
+objects.</p>
+
+<p><a href="../../Reference/NiMain/NiRenderer.htm"><span class=
+"NDLSystemFont">NiRenderer</span></a>: The 3D rendering device
+itself, it is the renderer that is called upon to draw the
+renderable objects to the destination buffer.</p>
+
+<p><a href=
+"../../Reference/NiMain/NiRenderTargetGroup.htm"><span class=
+"NDLSystemFont">NiRenderTargetGroup</span></a>: The final
+destination of the rendered objects - the buffer (or buffers, as
+the "group" refers to the fact that shaders can render to more
+than one pixel buffer simultaneously) of pixels that will be
+drawn by the renderer. There is one "special" render target
+group; the on-screen framebuffer. All applications will write to
+this render target group - other, more advanced applications may
+also render to far more groups for textures, etc.</p>
+
+<h2>Conceptual Dataflow for Rendering</h2>
+
+<p>The basic dataflow of rendering is shown below to give an idea
+of how the various "process" objects (<span class=
+"NDLSystemFont">NiCullingProcess</span>, <span class=
+"NDLSystemFont">NiAccumulator</span>, and <span class=
+"NDLSystemFont">NiRenderer</span>) use and generate the rendering
+"data" objects (<span class="NDLSystemFont">NiAVObject</span>
+objects, <span class="NDLSystemFont">NiRenderObject</span>
+objects, <span class="NDLSystemFont">NiCamera</span>,
+<span class="NDLSystemFont">NiRenderTargetGroup</span>) in order
+to render the scene. The wide, gray-filled objects in the diagram
+are the "process" objects, and the major "data" items that they
+pass between them are the white-filled objects. The data flows
+from the original scene and camera at the top down to the render
+target group at the bottom. Note that some more minor objects are
+a part of this dataflow. However, the basic architecture of how a
+scene graph and a camera turn into rendered pixels is given
+below.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/RenderingDataFlow.gif" width="451" height=
+    "593"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Logical Rendering Steps</h2>
+
+<p>The actual set of steps that must be taken to render a frame
+to the screen is slightly more involved than the high-level
+discussion or dataflow implied, as there are additional steps
+required to inform the renderer of the target and mark the
+beginning and end of rendering. The linked pages below will
+describe the basic functionality used to render common scenes,
+and then discuss advanced forms of each rendering step.</p>
+
+<ol style="list-style: decimal; list-style-type: decimal;" type=
+"1">
+    <li>Prepare the Scene for Rendering
+        
+        <p class="indent1">This step includes several operations that are
+        designed to ensure that all of the leaf geometry objects
+        contain up-to-date rendering information. Cumulatively,
+        we call these processes <a href=
+        "Preparing_a_Scene_for_Rendering.htm">Preparing a
+        Scene for Rendering</a>.</p>
+    </li>
+
+    <li>Define the View
+        
+        <p class="indent1">The camera's view must be updated, as both culling and
+        rendering require a view. The functions used to define
+        the view (as well as a discussion of how viewing works in
+        Gamebryo) may be found in the section <a href=
+        "Viewing_Meshes.htm">Viewing Meshes</a>.</p>
+    </li>
+
+    <li>Collect Visible Objects
+        
+        <p class="indent1">Gamebryo stores its scenes in hierarchical scene
+        graphs including both internal grouping nodes and
+        geometry-bearing leaf nodes. The rendering process only
+        involves flat lists of visible leaf renderable objects. 
+        The process used to collect the visible leaf objects from
+        a hierarchical scene graph into a flat rendering list is
+        called culling, and it is described in the section
+        <a href="Culling_a_Scene_Graph.htm">Culling a Scene Graph
+        into a Visible Array</a>. Note that this step can be
+        done at any time after this point, as long as it is done
+        prior to sorting and rendering the geometry below.</p>
+    </li>
+
+    <li>Begin the Current Frame
+        
+        <p class="indent1">The rendering of a frame truly begins by directing the
+        renderer object to begin the next frame. This process is
+        described in the section <a href="Using_Frames.htm">Using
+        Frames</a>.</p>
+    </li>
+
+    <li>Open the Render Target
+        
+        <p class="indent1">Before we can render objects, we must inform the
+        renderer of the desired destination (or set of pixels on
+        the device) to which the rendering should be done. This
+        step normally involves clearing this target. The
+        destinations are Render Target Groups, and are described
+        in the section <a href=
+        "Using_Render_Target_Groups.htm">Using Render Target
+        Groups</a>.</p>
+    </li>
+
+    <li>Pass the View to the Renderer
+        
+        <p class="indent1">The renderer must be given the camera's view and
+        projection information in order to render from the
+        correct viewpoint. The functions used to define the view
+        (as well as a discussion of how viewing works in
+        Gamebryo) may be found in the section <a href=
+        "Viewing_Meshes.htm">Viewing Meshes</a>.</p>
+    </li>
+
+    <li>Sort and Render the <span class=
+        "NDLSystemFont">NiRenderObject</span> objects
+        
+        <p class="indent1">This extended step involves actually rendering arrays
+        of visible leaf objects to the device. It also includes
+        any sorting or final preprocessing that is to be applied
+        to the objects to be rendered. These steps are described
+        in the section <a href="Rendering_Meshes.htm">Rendering
+        Meshes</a>.</p>
+    </li>
+
+    <li>Close the Render Target
+        
+        <p class="indent1">Once all of the desired renderable objects have been
+        rendered to the device, we must inform the renderer that
+        we have completed all rendering to the current render
+        target. This is described in the section <a href=
+        "Using_Render_Target_Groups.htm">Using Render Target
+        Groups</a>.</p>
+    </li>
+
+    <li>End and Display the Current Frame
+       
+        <p class="indent1">These steps inform the renderer that we have finished
+        all rendering for the current frame and are ready to
+        display it to the screen. This is described in the
+        section <a href="Using_Frames.htm">Using Frames</a>.</p>
+    </li>
+</ol>
+
+<h2>Examples of the Frame Rendering Sequence</h2>
+
+<p>Two examples of the sequence discussed above are the main
+rendering system in the Gamebryo application framework's
+<span class="NDLSystemFont">NiApplication::OnIdle</span> and the
+functions called within (which may be found in <span class=
+"NDLSystemFont">NiApplication.cpp</span>) and in <span class=
+"NDLSystemFont">SimpleApp</span>. <span class=
+"NDLSystemFont">SimpleApp</span> in particular shows most of
+these steps in their most basic form, back-to-back. Note that in
+both cases, the above steps 3, 6 and 7 (culling, passing the view
+to the renderer, and sorting/rendering) are all accomplished via
+the rendering utility functions discussed below.</p>
+
+<h2>Drawing Utility Functions</h2>
+
+<p>Applications that only render a single scene graph to a render
+target each frame and do not need any special behavior beyond
+basic or sorted rendering can often avoid having to take all of
+the above steps explicitly by using the global utility function
+<span class="NDLSystemFont">NiDrawScene</span>. In addition,
+applications that use advanced rendering methods such as culling
+several independent scene graphs into a single visible array
+(i.e. doing stage 3 several times in succession during a single
+rendering pass) or rendering the same visible array several times
+without re-culling (i.e. reusing the result of stage 3 for
+several frames) can also take advantage of the drawing utility
+functions to avoid duplicated code. The section <a href=
+"Drawing_Utility_Functions.htm">Drawing Utility Functions</a>
+details the high level behavior of these functions.</p>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiDevImageConverter</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiDevImageConverter</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiImageConverter.htm">NiImageConverter</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiDevImageConverter.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>The <span class="NDLSystemFont">NiDevImageConverter</span> is
+a subclass of the <span class="NDLSystemFont"><a href=
+"NiImageConverter.htm">NiImageConverter</a></span> that
+implements a much more fully featured conversion system than does
+<span class="NDLSystemFont"><a href=
+"NiImageConverter.htm">NiImageConverter</a></span>. It can filter
+flat images into mipmap pyramids, and can convert from standard
+Gamebryo <a href="NiPixelFormat.htm">pixel formats</a>
+(<span class="NDLSystemFont">PAL8</span>, <span class=
+"NDLSystemFont">PALA8</span>, <span class=
+"NDLSystemFont">RGB24</span>, <span class=
+"NDLSystemFont">RGBA32</span>, etc) to non-standard formats, and
+from non-standard formats to a few standard formats. Note that it
+does not implement a full non-standard to non-standard conversion
+system.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiDevImageConverter()</p>
+
+<p class="NDLRefMemberDescription">Default (and sole)
+constructor. Creates all internal data structures required to
+load and convert images.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+CanReadImageFile(const char* pcFilename) const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class=
+"NDLSystemFont">true</span> if the given filename has an
+extension that is supported by one of the current converter's
+active image file readers, <span class=
+"NDLSystemFont">false</span> otherwise.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+ReadImageFileInfo(const char* pcFilename, <a href=
+"NiPixelFormat.htm">NiPixelFormat</a> &amp;kFmt,
+bool&amp; bMipmap, unsigned int &amp;uiWidth, unsigned int
+&amp;uiHeight, unsigned int&amp; uiFaces)</p>
+
+<p class="NDLRefMemberDescription">This function reads the header
+from the image file represented by the given filename. If the
+file is a valid image file of a format that is supported by the
+image converter (see the notes below for a list of supported
+formats), then the function will return <span class=
+"NDLSystemFont">true</span>. If the function returns true, then
+the <span class="NDLSystemFont">kFmt</span>, <span class=
+"NDLSystemFont">bMipmap</span>, <span class=
+"NDLSystemFont">uiWidth</span> and <span class=
+"NDLSystemFont">uiHeight</span> and <span class=
+"NDLSystemFont">uiFaces</span> parameters will contain the
+destination pixel format of the file, whether or not the file
+contains mipmap levels, width, height, and the number of faces of
+the image respectively.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiPixelData.htm">NiPixelData</a>* ReadImageFile(const char*
+pcFilename, <a href="NiPixelData.htm">NiPixelData</a>*
+pkOptDest)</p>
+
+<p class="NDLRefMemberDescription">This function reads the image
+file represented by the given filename. If the file is a valid
+image file of a format that is supported by the image converter
+(see the notes below for a list of supported formats), then the
+function will return an <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object that contains the
+image data. Otherwise, the function will return <span class=
+"NDLSystemFont">NULL</span>. If the <span class=
+"NDLSystemFont">pkOptDest</span> argument points to a
+non-<span class="NDLSystemFont">NULL</span> <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+object that has the same height and width as the image file, has
+the same number of mipmap levels as the source and matches the
+destination pixel format, it will be used and returned as the
+destination <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object. Otherwise, a new
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object will be
+allocated, used and returned.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+CanConvertPixelData(const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; kSrcFmt,
+const <a href="NiPixelFormat.htm">NiPixelFormat</a>&amp; kDestFmt)
+const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class=
+"NDLSystemFont">true</span> if the image converter can convert
+from the given source format to the given destination format, and
+<span class="NDLSystemFont">false</span> otherwise. See the notes
+section below for a listing of valid conversion formats.</p>
+
+<p class="NDLRefMemberFunction">virtual <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>*
+ConvertPixelData(const <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>&amp; kSrc,
+const <a href="NiPixelFormat.htm">NiPixelFormat</a>&amp; kDestFmt,
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>* pkOptDest,
+bool bMipmap)</p>
+
+<p class="NDLRefMemberDescription">Attempts to convert the given
+source pixel data object into the desired destination format,
+returning the result. If the mipmap flag is <span class=
+"NDLSystemFont">true</span>, then the converter will attempt to
+generate a mipmap pyramid from the source data if it is a flat
+object. If the <span class="NDLSystemFont">pkOptDest</span>
+argument points to a valid <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object, then the
+converter attempts to convert the source data into the given
+object if possible. For details of the conversion process, see
+the notes sections below regarding valid format conversion pairs
+and format conversion steps.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+IsASupportedMipmapGenerationFormat(const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; kSrcFmt) const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class=
+"NDLSystemFont">true</span> if the image converter can generate
+mipmaps for a texture using the given <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+IsAnAlphaSupportedMipmapGenerationFormat(const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; kSrcFmt) const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class=
+"NDLSystemFont">true</span> if the image converter can generate
+mipmaps with alpha for a texture using the given <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+IsANonAlphaSupportedMipmapGenerationFormat(const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; kSrcFmt) const</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">R</span>eturns <span class=
+"NDLSystemFont">true</span> if the image converter can generate
+mipmaps without alpha for a texture using the given <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual <a href=
+"NiPixelData.htm">NiPixelData</a></span>*
+GenerateMipmapLevels(const <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>* pkSrc, <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>*
+pkOptDest)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">GenerateMipmapLevels</span> will filter the 0'th
+(top) level of the source <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object into a mipmap
+pyramid, returning the mipmap pyramid.</p>
+
+<p class="NDLRefMemberDescription">If the incoming pixel format
+is <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::RGB24</a></span> or
+<span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::PAL8</a></span>, then the
+destination format will be <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::RGB24</a></span>. If the
+incoming format is <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::RGBA32</a></span> or
+<span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::PALA8</a></span>, then the
+destination format will be <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat::RGBA32</a></span>. If the
+<span class="NDLSystemFont">pkOptDest</span> argument points to a
+non-<span class="NDLSystemFont">NULL</span> <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+object that has the same height and width as the source, has more
+than one mipmap level, and matches the destination pixel format,
+it will be used and returned as the destination mipmap pyramid. 
+Otherwise, a new object will be allocated, used and returned as
+the destination.</p>
+
+<p class="NDLRefMemberDescription">Note that if the source data
+is passed in as the optional destination (and meets all of the
+requirements), then the 0'th level of the source will be filtered
+into the other levels of the source object in place. This
+approach is useful when applications are modifying pixel data on
+the fly they may modify the top level of the source and let this
+function filter in the other levels.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual <a href=
+"NiPixelData.htm">NiPixelData</a></span>*
+GenerateMipmapPyramidFromFiles(const char* apcFilenames[],
+unsigned int uiNumLevels, const <a href=
+"NiPixelData.htm">NiPixelData</a>* pkSrc = NULL)</p>
+
+<p class="NDLRefMemberDescription">This function generates a
+mipmap pyramid by loading a sequence of "flat" image files, each
+of which is assumed to be a filtered, half-size version of the
+previous file. It allows artists to create a sequence of
+hand-filtered mipmap levels for an image, which may result in
+better-looking mipmaps than can be generated by the box filter
+method used by <span class=
+"NDLSystemFont">GenerateMipmapLevels</span>. The function
+determines the height, width and format of the <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+from the first image file in the array, and determines the number
+of mipmap levels from the <span class=
+"NDLSystemFont">uiNumlevels</span> parameter. It then opens and
+loads the image files associated with each filename in the array
+(which is assumed to have <span class=
+"NDLSystemFont">uiNumLevels</span> elements) into the mipmap
+levels of the <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object. The function
+fails if the size of the <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> read from a given file
+does not match the size of the corresponding mipmap level of the
+destination. The overall pyramid <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+object is returned.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+ConvertPixelDataFormat(<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>&amp; kDest,
+const <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>&amp; kSrc,
+int uiMipmapLevel = 0)</p>
+
+<p class="NDLRefMemberDescription">Attempts to convert the
+specified mipmap level of the source object into the same mipmap
+level of the destination object. Returns <span class=
+"NDLSystemFont">true</span> on success and <span class=
+"NDLSystemFont">false</span> on failure. If the specified mipmap
+level index is 0, then all levels of the pyramid are converted.
+See the notes section below regarding valid conversion formats
+for a list of convertible cases.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual <a href=
+"NiPixelData.htm">NiPixelData</a></span>*
+ConvertForPlatform(Platform ePlatform,
+const <a href="NiTexture__FormatPrefs.htm">NiTexture::FormatPrefs</a>&amp; kPrefs, const <span class=
+"NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>* pkSrc, const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; kDesiredFormat)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">ConvertForPlatform</span> attempts to convert the
+incoming source data into a destination <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+object whose format exactly matches a texture format of the
+specified platform. This function is designed to allow console
+developers to pre-format their data for the destination hardware,
+thus avoiding the need to convert the data from a standard
+Gamebryo format at load time. The format selected is the same
+format that would be selected by the given platform at runtime
+given the source data and format preferences object. See the
+notes section below for a list of supported <span class=
+"NDLSystemFont">Platform</span> enumerations. The function
+returns <span class="NDLSystemFont">NULL</span> if the data
+cannot be converted to a matching format.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont">virtual <a href=
+"NiPixelData.htm">NiPixelData</a></span>* GenerateBumpMap(const
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>&amp; kSrc, const
+<a href="NiPixelFormat.htm">NiPixelFormat</a>&amp; kDestFmt)</p>
+
+<p class="NDLRefMemberDescription">Generates a bump map of the
+given format from the source data. The source data is treated as
+either a grayscale height field (RGB24) or a grayscale height
+field with bump luma values (RGBA32, luma in alpha). Returns
+NULL if the conversion cannot be completed.</p>
+
+<p class="NDLRefMemberFunction">virtual void AddReader(<a href=
+"NiImageReader.htm">NiImageReader</a>* pkReader)</p>
+
+<p class="NDLRefMemberDescription">Associates a new image reader
+with the converter. This function allows applications to add
+application specific image file formats without having to modify
+any Gamebryo source code.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Valid_Image_File_Formats" id="Valid_Image_File_Formats"></a><p class="NDLRefHead2">Valid Image File Formats</p>
+
+<p>The <span class="NDLSystemFont">NiDevImageConverter</span>
+supports the following formats for <span class=
+"NDLSystemFont">ReadImageFileInfo</span> and <span class=
+"NDLSystemFont">ReadImageFile</span>:</p>
+
+<ul>
+    <li>Windows BMP see the <span class="NDLSystemFont"><a href=
+    "NiBMPReader.htm">NiBMPReader</a></span> documentation for
+    details.</li>
+
+    <li>Gamebryo NIF see the <span class="NDLSystemFont"><a href=
+    "NiNIFImageReader.htm">NiNIFImageReader</a></span>
+    documentation for details.</li>
+
+    <li>SGI's INT, INTA, RGB, RGBA see the <span class=
+    "NDLSystemFont"><a href=
+    "NiSGIReader.htm">NiSGIReader</a></span> documentation for
+    details.</li>
+
+    <li><span class="NDLSystemFont">Truevision</span> Targa TGA
+    see the <span class="NDLSystemFont"><a href=
+    "NiTGAReader.htm">NiTGAReader</a></span> documentation for
+    details.</li>
+
+    <li>DirectX Compressed Textures, DDS see the <span class=
+    "NDLSystemFont"><a href=
+    "NiDDSReader.htm">NiDDSReader</a></span> documentation for
+    details. Note that this format is Win32-specific.</li>
+</ul>
+
+<a name="Valid_Format_Conversions" id="Valid_Format_Conversions"></a><p class="NDLRefHead2">Valid Format Conversions</p>
+
+<p>The <span class="NDLSystemFont">NiDevImageConverter</span>
+functions <span class="NDLSystemFont">ConvertPixelData</span> and
+<span class="NDLSystemFont">ConvertPixelDataFormat</span> are
+capable of converting among the following formats. Note that
+<span class="NDLSystemFont">PAL8</span>, <span class=
+"NDLSystemFont">PALA8</span>, <span class=
+"NDLSystemFont">RGB24</span>, <span class=
+"NDLSystemFont">RGBA32</span>, <span class=
+"NDLSystemFont">BUMP16</span>, <span class=
+"NDLSystemFont">BUMPLUMA32</span>, all refer to the NiPixelFormat
+scoped standard format static objects of the same name, and
+<span class="NDLSystemFont">DXT1</span>, <span class=
+"NDLSystemFont">DXT3</span>, <span class=
+"NDLSystemFont">DXT5</span> refer to the compressed formats:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Source Formats</th>
+
+            <th>Valid Destination Formats</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>RGB24, RGBA32</td>
+
+            <td>Any 16 or 32-bit RGB, RGBA, BUMP, or BUMPLUMA
+            format RGB24 or 24-bit BGR (in that order)</td>
+        </tr>
+
+        <tr>
+            <td>PAL8, PALA8</td>
+
+            <td>PALA8, PAL8 Any 16 or 32-bit RGB or RGBA format
+            RGB24 or 24-bit BGR (in that order)</td>
+        </tr>
+
+        <tr>
+            <td>BUMP16, BUMPLUMA32</td>
+
+            <td>Any 16 or 32-bit BUMP or BUMPLUMA format</td>
+        </tr>
+
+        <tr>
+            <td>DXT1, DXT3, DXT5</td>
+
+            <td>Any 16 or 32-bit RGB or RGBA format RGB24 or
+            24-bit BGR (in that order)</td>
+        </tr>
+
+        <tr>
+            <td>Any 16 or 32-bit RGB or RGBA format</td>
+
+            <td>RGB24, RGBA32</td>
+        </tr>
+
+        <tr>
+            <td>24-bit BGR (in that order)</td>
+
+            <td>RGB24, RGBA32</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Note that if the conversion requires that a flat <span class=
+"NDLSystemFont"><a href="NiPixelData.htm">NiPixelData</a></span>
+object be mipmapped, then the source must be one of (<span class=
+"NDLSystemFont">PAL8</span>, <span class=
+"NDLSystemFont">PALA8</span>, <span class=
+"NDLSystemFont">RGB24</span>, <span class=
+"NDLSystemFont">RGBA32</span>, <span class=
+"NDLSystemFont">COMPRESS1</span>, <span class=
+"NDLSystemFont">COMPRESS3</span>, <span class=
+"NDLSystemFont">COMPRESS5</span>), and the destination must be
+one of (Any 16 or 32-bit <span class="NDLSystemFont">RGB</span>
+or <span class="NDLSystemFont">RGBA</span> format, <span class=
+"NDLSystemFont">RGB24</span> or 24-bit <span class=
+"NDLSystemFont">BGR</span>). This set is more restricted because
+the filtering code has restrictions on formats that it can
+filter.</p>
+
+<a name="Format_Data_Conversion_Steps" id="Format_Data_Conversion_Steps"></a><p class="NDLRefHead2">Format/Data Conversion Steps</p>
+
+<p><span class="NDLSystemFont">ConvertPixelData</span> converts
+pixel data from the destination to the source using the following
+steps:</p>
+
+<ul>
+    <li>If the source format is compressed and the destination
+    format is not the same format, then expand the data to
+    <span class="NDLSystemFont">RGBA32</span> and continue with
+    the expanded data. Otherwise, continue with the original
+    source data.</li>
+
+    <li>If the source data is not mipmapped and the mipmapping
+    flag is set to <span class="NDLSystemFont">true</span>, then
+    attempt to filter the source data using <span class=
+    "NDLSystemFont">GenerateMipmapLevels</span>. If the filtering
+    succeeds, continue with the filtered data. If the filtering
+    fails (function could not filter the data), then continue
+    with the data from the previous step.</li>
+
+    <li>If the destination is a Bump-map format, then treat the
+    incoming data (must be RGB or RGBA) as a height field (red
+    component, more red means a higher bump) for the bumps and a
+    glossiness channel (alpha component) and convert it to a
+    gradient Bump-map (<span class="NDLSystemFont">BUMP16</span>
+    or <span class="NDLSystemFont">BUMPLUMA32</span>).</li>
+
+    <li>If the optional destination was supplied, the desired
+    destination format is equal to the optional destination's
+    format and the optional destination object is the same object
+    as the data from the previous step, then return the optional
+    destination object. Otherwise, continue with the data from
+    the last step. This case handles the situation where no
+    conversion was needed and the requested destination was the
+    same object as the source.</li>
+
+    <li>If the optional destination was supplied and the desired
+    destination format is equal to the optional destination's
+    format convert the source into the optional destination
+    directly. Otherwise, continue with the data from the last
+    step</li>
+
+    <li>Create a new <span class="NDLSystemFont"><a href=
+    "NiPixelData.htm">NiPixelData</a></span> object with the
+    desired size and destination format and attempt to convert
+    the data from the last step into this object. Return the
+    object if successful and <span class=
+    "NDLSystemFont">NULL</span> if not.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Customizing the Asset Tagging System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Customizing the Asset Tagging System</h1>
+
+<h2>Customizing Asset Tagging Policies</h2>
+
+<p>The Asset Tagging system is implemented in the Asset
+Controller application. The Asset Controller creates the metadata
+files that are stored in <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-metadata</span>.
+These metadata files specify the tag values and data that are
+required to resolve asset IDs to asset files. How these tags are
+defined and applied is largely configurable, allowing your
+tagging "policy" to be tweaked through a combination of code
+extensions and configuration settings.</p>
+
+<h3>Setting policy via configuration files</h3>
+
+<p>The Asset Web Root directory includes a subdirectory named
+<span class="NDLSystemFont">asset-web-config</span>. Within this
+subdirectory are a set of configuration files with <span class=
+"NDLSystemFont">.ini</span> extensions. These are normal
+configuration files that are read by the Configuration Manager
+(<span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ConfigManager.htm">efd::ConfigManager</a></span>)
+component. They provide a means of setting the policies for
+tagging assets. Each <span class="NDLSystemFont">.ini</span> file
+is specific to an Auto Tagging Extension that is part of the
+Asset Controller application. For example, the settings in
+<span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-config/MimeTagger.ini</span>
+are specific to the "MimeTagger" extension that is implemented in
+<span class="NDLSystemFont">MimeTagger.cpp</span>.</p>
+
+<p>Each configuration file includes comments about what the settings do. The 
+    presence of any <span class=
+"NDLSystemFont">.ini</span> file with the extension&#39;s specific configuration 
+    sections&nbsp; in <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-config</span>
+is what activates the extension. If there are no <span class=
+"NDLSystemFont">.ini</span> files with the specific configuration sections, then the extension will not be
+used when the Asset Controller assigns tags to new assets.</p>
+
+<h3>Asset Tagging Extensions</h3>
+
+<p>The other mechanism for customizing tagging policy is the use
+of C++ extensions to the Asset Controller. These are created as
+simple classes that inherit from <span class=
+"NDLSystemFont"><a href=
+"../../Reference/efd/efd__IAssetTagger.htm">efd::IAssetTagger</a></span>.</p>
+
+<pre>
+class IAssetTagger : public efd::IBase
+{
+public:
+  virtual void GetTagValues(efd::vector&lt;efd::assettagdescriptor&gt;&amp; tags) = 0;
+  virtual void DoTags(const efd::utf8string&amp; assetid, SimpleGraph&amp; triples) = 0;
+};
+</pre>
+
+<p>The tagging extension need only implement the two methods
+above to set tags on new assets as they are discovered by the
+system. When the <span class="NDLSystemFont">DoTags()</span>
+method is called, the tagging extension has access to all of the
+properties of the new asset through its '<span class=
+"NDLSystemFont">assetid</span>'. Using this, the tagging
+extension may choose to set tags on the asset based on its file
+name, path, extension, other tags values, or any other metadata
+about the asset that it can extract.</p>
+
+<h2>Example: Pre-caching graphical assets</h2>
+
+<p>The <span class="NDLSystemFont">SamplePrecacheTagger</span>
+that is provided with the Asset Controller serves well as an
+example of how asset tagging policies might be extended. The
+purpose of this tagging extension is to apply a "Precache" tag
+label to certain assets that should be preloaded by the game
+prior to the entities that will use these assets even being
+created. This is used to push the I/O cost of loading assets into
+an initialization phase to prevent lag during the actual game
+play phase. The assets that will be tagged are identified based
+on the directories in which they are stored. The result is that
+the collection of assets can be queried at runtime using the
+<span class="NDLSystemFont">AssetLocate()</span> API using an
+asset Id of the form "<span class=
+"NDLSystemFont">urn:<em>&lt;asset-type&gt;</em>:Precache</span>".</p>
+
+<p>The extension is implemented in <span class=
+"NDLSystemFont">SamplePrecacheTagger.cpp</span> and built as part
+of the Asset Controller. Normally, the extension would be
+dormant. It is only activated if you place a <span class=
+"NDLSystemFont">SamplePrecacheTagger.ini</span> file in your
+<span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-config/</span>
+directory. The contents of the <span class=
+"NDLSystemFont">.ini</span> file are straightforward. It
+specifies a list of directory names in the "<span class=
+"NDLSystemFont">SamplePrecacheTagger.Directories</span>"
+variable, which are the directories whose assets should be tagged
+with the "Precache" label.</p>
+
+<pre>
+; This configuration file controls the operation of the SamplePrecacheTagger
+; auto-tagging class in the Asset Controller. The tagger will tag scene graph
+; assets with the label "urn:Precache" so that they can be easily identified
+; and preloaded by the run-time
+[SamplePrecacheTagger]
+
+; The preceding "=" is required for the list. Additional directory names may be added here.
+[SamplePrecacheTagger.Directories]
+=Characters
+=FX
+</pre>
+
+<p>With the configuration settings in place, all assets that are
+stored anywhere in the directory tree under either "Characters"
+or "FX" will be tagged with the "Precache" label. As a result,
+they can all be easily located. For example, all of .nif file
+assets can be preloaded by using the "<span class=
+"NDLSystemFont">urn:gamebryo-scenegraph:Precache</span>" asset ID
+to a suitable caching loader.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_organize_assets.htm">Organizing Your Assets</a></li>
+
+    <li><a href="asset_runtime_config.htm">Configuring the Asset
+    Runtime Service</a></li>
+
+    <li><a href="asset_runtime_platform_support.htm">Supporting Multiple Platforms</a></li>
+
+    <li><a href="asset_runtime_deploying_assets.htm">Deploying Assets</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

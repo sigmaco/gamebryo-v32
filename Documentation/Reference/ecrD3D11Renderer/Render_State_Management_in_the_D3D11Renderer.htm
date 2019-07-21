@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Render State Management in the D3D11Renderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Render State Management in the D3D11Renderer</h1>
+
+<p>In D3D11, render states are not set individually. Instead, a
+collection of render states is collected in a structure and used
+to create a D3D11 state object. That state object is then set on
+the device. This system is different than the system used by
+Gamebryo, which treats render states as independent parameters,
+and is much more relaxed about allowing render states from
+previous draw calls to remain intact.</p>
+
+<p>The <span class="NDLSystemFont"><a href=
+"ecr__D3D11Renderer.htm">D3D11Renderer</a></span> reconciles this
+difference by treating render states slightly differently than
+other renderers. First of all, each object that gets drawn has a
+completely defined render state. No render state values from
+previously drawn objects are left on the device. This aligns well
+with the D3D11 concept of state objects, and it prevents
+occasional difficult-to-track-down problems caused by stale
+render states getting applied to objects unexpectedly. It also
+means that applications cannot rely on clever tricks to have one
+shader set a render state that will be used to draw subsequent
+objects, or on setting a render state from application code and
+assuming that the state will not be overwritten by an object
+being rendered. One final ramification is that it is no longer
+necessary for shaders to save a render state before changing it
+and restore a render state when it is done. As a result, no
+shaders in the <span class="NDLSystemFont">D3D11Renderer</span>
+either save or restore render states.</p>
+
+<p>The way the <span class="NDLSystemFont"><a href=
+"ecr__D3D11Renderer.htm">D3D11Renderer</a></span>implements this
+policy is through the <a href=
+"ecr__D3D11RenderStateManager.htm"><span class=
+"NDLSystemFont">D3D11RenderStateManager</span></a>. That class
+accumulates all of the render state changes that take place when
+preparing an object to be drawn. The manager also maintains a set
+of default render states, which an application can override. The
+default render states are used for any render state that isn't
+explicitly specified for an object. Once all the render states
+have been set up and the object is ready to be drawn, the
+<a href="ecr__D3D11RenderStateManager.htm"><span class=
+"NDLSystemFont">D3D11RenderStateManager</span></a> creates the
+D3D11 state groups and sets them on the device. This system
+allows render states to continue to be treated individually while
+preventing problems with stale or undefined render states and
+conforming well with the D3D11 API.</p>
+
+<p>Samplers are a special case in render state management, since
+shader programs refer to samplers by name, while applications
+set the sampler state based on an index. As a result,
+the <a href="ecr__D3D11RenderStateManager.htm"><span class=
+"NDLSystemFont">D3D11RenderStateManager</span></a> will track 
+sampler state through index, since it accumulates state immediately
+before setting it on the device. However, <span class="NDLSystemFont"><a href=
+"ecr__D3D11RenderStateGroup.htm">D3D11RenderStateGroup</a></span> objects
+will track sampler state by name, using <span class="NDLSystemFont"><a href=
+"ecr__D3D11RenderStateGroup__Sampler.htm">D3D11RenderStateGroup::Sampler</a></span>
+objects. The pass is then responsible for mapping the named samplers with the
+sampler indices to set on the device. It does this by providing an indexed array
+of D3D11RenderStateGroup::Sampler pointers to the <a href="ecr__D3D11RenderStateManager.htm"><span class=
+"NDLSystemFont">D3D11RenderStateManager</span></a>
+using <span class="NDLSystemFont">D3D11RenderStateManager::SetSamplerArray</span>
+immediately before updating the render state manager with the render state group.</p>
+
+<p>In the course of rendering with a standard <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShader.htm">NiShader</a></span> object,
+there are a number of places where a render state can be applied.
+Here is a rough outline of the order that render states from
+various sources are applied (and therefore what priority those
+render state sources have, with later states overwriting earlier
+states):</p>
+
+<ul>
+    <li>Default render states from the <a href=
+    "ecr__D3D11RenderStateManager.htm"><span class=
+    "NDLSystemFont">D3D11RenderStateManager</span></a></li>
+
+    <li>For shaders using <span class=
+    "NDLSystemFont">UseNiRenderState</span>, the render states
+    from the <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiProperty.htm">NiProperty</a></span>
+    objects on the geometry</li>
+
+    <li>Render states set on the <span class=
+    "NDLSystemFont"><a href=
+    "ecr__D3D11ShaderCore.htm">D3D11ShaderCore</a></span> object's
+    <span class="NDLSystemFont"><a href=
+    "ecr__D3D11RenderStateGroup.htm">D3D11RenderStateGroup</a></span></li>
+
+    <li>Render states set on the current <span class=
+    "NDLSystemFont"><a href=
+    "ecr__D3D11Pass.htm">D3D11Pass</a></span> object's
+    <span class="NDLSystemFont"><a href=
+    "ecr__D3D11RenderStateGroup.htm">D3D11RenderStateGroup</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

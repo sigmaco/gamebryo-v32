@@ -1,0 +1,230 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Logging, asserts, and debuggers initialization</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Logging, asserts, and debuggers initialization</h1>
+
+<p>In Gamebryo, logging is controlled by the EE_DISABLE_LOGGING macro. By default, this macro is enabled for shipping build configurations. (In other words, logging is turned OFF in shipping builds.) While you are working with a debug or release build configuration, logging is enabled by default. (In other words, logging is turned ON.)</p>
+
+<p>To utilize logging, you need a logger and at least one log destination. Although you could implement your own logger (as long as it conforms to the ILogger interface), the logger (<a href=
+"../../Reference/efd/efd__Logger.htm">efd::Logger</a>)
+that Gamebryo provides is powerful enough for most of your
+needs.</p>
+
+<h2>Relevant Source Code</h2>
+
+<p>The following code snippets demonstrate how to initialize the
+logging system and route all log messages to a single text file
+named after the application name.</p>
+
+<ol>
+    <li>Create an efd::Logger instance, and make it the
+    logger that handles all log messages.
+		
+<pre>
+// The Logger is a special Singleton, not a system service, so it must be created and
+// registered by calling LoggerSingleton::Initialize.
+LoggerPtr logger = EE_NEW Logger();
+efd::LoggerSingleton::Initialize(logger);	
+</pre>
+
+	</li>	
+
+    <li>Open a text file, and make it the default destination for
+    all the log messages.
+		
+<pre>
+// You can specify one or more output handlers for each logging module.  In this case we
+// are simply logging everything to a text file, but we could route different modules to
+// different files or all critical errors to a separate file.  We could also log to other
+// destinations like OutputDebugString or a network socket by using specialized 
+// ILogDestination implementations.
+utf8string strLogFileName(Formatted, "%s.log", g_AppName );
+FileDestinationPtr logDest = EE_NEW FileDestination( "default", strLogFileName,
+    FileDestination::kFileOverwrite );
+logger-&gt;AddDest( logDest, true );
+</pre>
+	
+	<p class="indent1">We recommend that you have the logging system running as early as possible upon system startup. This will help ensure that other services can log messages during their construction and initialization. However, to fully configure the logging system, you need <a href=
+"../../Reference/QuickRef_Services/svc_qckref_config_mgr.htm">ConfigManager</a>
+and optionally <a href=
+"../../Reference/QuickRef_Services/svc_qckref_enum_mgr.htm">EnumManager</a>.</p>
+	</li>
+	
+	<li>Create <a href=
+    "../../Reference/QuickRef_Services/svc_qckref_config_mgr.htm">
+    ConfigManager</a>.
+	
+<pre>
+// The ConfigManager parses options from both the command line (on platforms that have a
+// command line) and from the specified initialization file.  Unlike normal services, the
+// ConfigManager does all of its initialization work during its constructor instead of waiting
+// until OnPreInit.  This ensures that all configuration settings are ready for use by other
+// services during their OnPreInit and/or OnInit methods.
+efd::IConfigManagerPtr spConfigManager = EE_NEW ConfigManager("Config.ini", 0, NULL, false);
+
+// Each service gets registered with the service manager after construction.  This is what
+// allows other services to find this service.  Services are always registered using their
+// unique CLASS_ID, which is also what the Emergent Run Time Type Information (RTTI) system
+// uses for dynamic casting.  The third parameter is a priority; the priority determines the
+// order in which services are initialized and ticked.
+m_spServiceManager-&gt;RegisterSystemService(
+    IConfigManager::CLASS_ID,
+    spConfigManager,
+    ServiceManager::kSysServPrio_ConfigManager);
+</pre>			
+	
+	</li>
+	
+	<li>Create <a href="../../Reference/QuickRef_Services/svc_qckref_enum_mgr.htm">EnumManager</a>.
+
+<pre>
+// The EnumManager is used to load data files that can map common integers into a human
+// readable string name.  While the use of this service is optional, we use it in numerous
+// places such as making log file output more easily read.  It is recommended that this
+// service be used at least when log files are enabled.
+EnumManagerPtr spEnumManager = EE_NEW EnumManager();
+m_spServiceManager-&gt;RegisterSystemService(
+    EnumManager::CLASS_ID,
+    spEnumManager);
+</pre>
+
+	</li>
+	
+	<li>Fully configure the logging system.
+	
+<pre>
+// The Logger::ReadConfig method can use enumerations to support string-based names for
+// configuring logging.  To support this we must configure the EnumManager prior to
+// configuring the logger.
+spEnumManager-&gt;LoadConfigOptions( spConfigManager );
+
+// The logging system can be fully configured via settings in the configuration file.  There
+// are two ways we can tell the logger to use these configuration settings, one is to use
+// the LoggingService which automatically configures the Logger and also provides some options
+/// for easy remote log setting changes.  The other option is to manually call ReadConfig,
+// which is what we are doing here.
+LoggerSingleton::Instance()-&gt;GetLogger()-&gt;ReadConfig(spConfigManager, spEnumManager);
+</pre>	
+	
+	</li>
+	
+</ol>
+
+<a name="logger_config"/>
+<h2>Logger Config settings</h2>
+<p>Log destinations and log levels can be set using the config file.</p>
+<pre>
+; path to the enums directory. Along with EnumManager allows us to specify log modules by name in config file
+[Enum]
+Path = ../../../../../../Media/Enums
+
+[Log]
+; if you add your own log module levels, you need to specify the most derived enum file here.
+; Otherwise only module names specified in efdLogIDs.enum will show up in log output
+ModuleEnum=efdLogIDs
+
+; create a log file, no need to create a log destination in code
+[Log.Destinations.MainGameLog]
+Type = File
+FileName = MainGameLog.log
+FileMode = FileOverwrite
+
+; create a second log file that we will filter different log modules and levels to
+[Log.Destinations.MessageTrace]
+Type = File
+FileName = MessageTrace.log
+FileMode = FileOverwrite
+
+; Create a log destination that calls printf
+[Log.Destinations.TestingPrintf]
+Type = Printf
+
+; Create a DebugOut destination
+[Log.Destinations.TestingDebug]
+Type = DebugOut
+
+; set the default filters for all log destinations
+[Log.Filters]
+; the ALL module is special and is always parsed first. The case of modules is significant.
+ALL = UptoErr3 | UptoLvl2
+; This will lower the log level of the Foundation module to not log Lvl2
+Foundation = UptoErr3 | UptoLvl1
+
+[Log.Filters.MainGameLog]
+; increase the verbosity of ServiceManager for the main game log file only
+ServiceManager = UptoErr3 | UptoLvl3
+
+[Log.Filters.MessageTrace]
+; Send only MessageTrace message to special file
+ALL = None
+MessageTrace = UptoErr3 | UptoLvl1
+
+[Log.Filters.TestingPrintf]
+; Allow the all the default filters but also turn on all levels for the testing module
+Testing = UptoErr3 | UptoLvl3
+
+[Log.Filters.TestingDebug]
+; we want only important messages from the Testing module to go to the Debug console
+; turn off all logs on all levels
+ALL = None
+; enable the Testing module for kERR0, kERR1, kERR2, kERR3
+Testing = UptoErr3
+
+</pre>
+
+<h2>Assertions and debugger</h2>
+
+<p>By default, assertions are enabled for debug build configurations. If you need to enable the assertions for other configurations, define the EE_ENABLE_RELEASE_ASSERT macro. When an assertion failure occurs, the default behavior is to invoke your default debugger. This will make it easy for you to diagnose problems as you encounter them.</p>
+
+<p>To use the Toolbench Script Debugger, your game
+application needs to have the <a href=
+"../../Reference/egf/egf__RapidIterationSystemService.htm">RapidIteration</a>
+service started. See the <a href=
+"../../Tools/Toolbench/tb_intro.htm">Toolbench</a> and <a href=
+"../../Tutorials/Rapid_Iteration/rapid_intro.htm">Rapid
+Iteration</a> sections of the product documentation for more information.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm">Configuration Options Quick Reference</a></li>
+    <li><a href="logging_overview.htm">Logging, asserts, and debuggers overview</a></li>
+    <li><a href="logging_how_work.htm">How logging, asserts, and debuggers work</a></li>
+    <li><a href="logging_best_practice.htm">Best practices for working with logging, asserts, and debuggers</a></li>
+    <li><a href="logging_tuning.htm">Tuning logging, asserts, and debugging performance</a></li>
+    <li><a href="logging_consoles.htm">Console-specific issues for logging, asserts, and debugging</a></li>
+</ul>
+    <!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

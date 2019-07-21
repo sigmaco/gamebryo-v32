@@ -1,0 +1,511 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Converting to Background Asset Loading</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Converting to Background Asset Loading</h1>
+
+<p>Gamebryo LightSpeed 3.1 includes functionality that loads almost all asset classes
+asynchronously using a background thread. This has a significant impact on applications because
+almost every asset loading API follows a request/response model. The application requests an asset
+load in some way. Later, a message is sent back to the application to indicate a successful load or
+the error condition.</p>
+
+<p>The following sections discuss the changes to asset classes since Gamebryo LightSpeed 3.0.</p>
+
+<h2>World Files (.xblock)</h2>
+
+<p>Continue to use the <span class=
+"NDLSystemFont">egf::EntityLoaderService::RequestEntitySetLoad</span> function as you did in
+Gamebryo LightSpeed 3.0 to load world files. The functionality of <span class=
+"NDLSystemFont">RequestEntitySetLoad</span> remains consistent, but the implementation has
+changed.</p>
+
+<p>The <span class="NDLSystemFont">egf::EntityLoaderService</span> now requires the <span class=
+"NDLSystemFont">efd::AssetFactoryManager</span> service to load block files. Block files are loaded
+using the background loader thread. Ensure that you include an instance of the <span class=
+"NDLSystemFont">efd::AssetFactoryManager</span> in your application, either by explicitly
+instantiating and adding an instance to the <span class="NDLSystemFont">efd::ServiceManager</span>,
+or by taking advantage of the instance that is created by the <span class=
+"NDLSystemFont">efd::ServiceAllocator</span>.</p>
+
+<p>You can continue to detect when a block file load completes by subscribing to a category and
+passing this category in the call to <span class=
+"NDLSystemFont">egf::EntityLoaderService::RequestEntitySetLoad</span>. For more details, see
+<a href="../../Programmer/Game_Initialization/game_init_load_assets.htm">Game Initialization: About
+loading assets</a>.</p>
+
+<p>World load operations also load dependent flat model files and Lua behavior scripts.</p>
+
+<h2>Flat Models (.flat)</h2>
+
+<p>When an <span class="NDLSystemFont">efd::AssetFactoryManager</span> service is present, the
+<span class="NDLSystemFont">egf::FlatModelManager</span> no longer precaches flat model file
+locations. The FlatModelManager waits for the AssetFactoryManager to complete initialization before
+completing its own initialization. It then uses the AssetFactoryManager to load requested flat
+model files using the background loader thread.</p>
+
+<p>There are implications to not caching flat model file locations when creating entities
+dynamically or looking up flat model properties at runtime. If the flat model used in these
+operations was not previously loaded, either as part of another load request or explicitly
+preloaded, these operations will fail to find the flat model.</p>
+
+<p>Flat model files will automatically be loaded when loading world files and when creating new
+entities dynamically at runtime (see below). For world file loads, all flat models and Lua behavior
+scripts that are required for all entities in the block file are automatically loaded. For
+dynamically created entities using the <span class=
+"NDLSystemFont">egf::EntityManager::CreateEntity</span> or <span class=
+"NDLSystemFont">BehaviorAPI::CreateEntity</span> / <span class=
+"NDLSystemFont">CreateEntityAndWait</span> functions, flat models and Lua scripts are loaded
+automatically. Dependent flat models are added to the <span class=
+"NDLSystemFont">egf::FlatModelManager</span> by the requesting service. Lua behavior scripts are
+added to the Lua runtime system by SchedulerLua.</p>
+
+<p>If you require access to flat models that are not associated with a loaded block file or
+previously created dynamic entity, you must use the <span class=
+"NDLSystemFont">egf::FlatModelManager::PreloadModel</span> function to preload these files. This
+ensures that the flat model and all of its dependencies are loaded. The PreloadModel function
+allows you to specify a callback category that is notified once the model preload operation
+completes.</p>
+
+<p>The <span class="NDLSystemFont">egf::FlatModelManager::FindOrLoadModel</span> function should
+not be used for this purpose and has been deprecated. This method relies on pre-locating all flat
+model files during initialization to load flat models at runtime. When an AssetFactoryManager
+service is present, use of <span class="NDLSystemFont">FindOrLoadModel</span> may fail for flat
+models not previously loaded.</p>
+
+<p>If your application relies on the <span class="NDLSystemFont">FindOrLoadModel</span> function,
+Emergent recommends that you switch to <span class=
+"NDLSystemFont">egf::FlatModelManager::PreloadModel</span>. If this is not feasible, you can
+precache all of the flat models as before by performing an asset locate operation on
+"urn:emergent-flat-model" and load each located flat model asset using <span class=
+"NDLSystemFont">egf::FlatModelManager::LoadModelFile</span>. Be aware that neither <span class=
+"NDLSystemFont">FindOrLoadModel</span> nor <span class="NDLSystemFont">LoadModelFile</span>
+calculate mix in or Lua behavior script dependencies. You will have to explicitly preload these
+dependencies appropriately.</p>
+
+<h2>Entities</h2>
+
+<p>This section describes changes to the entity loading process.</p>
+
+<h3>Asynchronous entity creation</h3>
+
+<p>Asynchronous entity creation is now fully supported.</p>
+
+<p>Entities found in world files are automatically created when the world is loaded.</p>
+
+<p>To asynchronously create entities at runtime, use the <span class=
+"NDLSystemFont">egf::EntityManager::CreateEntity</span> method from C++, or the <span class=
+"NDLSystemFont">BehaviorAPI::CreateEntity</span> or <span class=
+"NDLSystemFont">BehaviorAPI::CreateEntityAndWait</span> functions from script. These functions use
+the <span class="NDLSystemFont">efd::AssetFactoryManager</span> to load the Entity's flat model and
+Lua behavior scripts in a background thread. Using these methods ensures all preloadable assets are
+loaded and that the Entity OnCreate life cycle behavior is called for the newly created entity.</p>
+
+<h4>Reducing delays when creating entities asynchronously</h4>
+
+<p>Asynchronous entity creation ensures any disk I/O needed to create the entity happens in a
+background thread and not in the main application thread. For time critical or frequently created
+entities the delays introduced by asynchronous creation may not be acceptable. You can reduce this
+delay considerably by implementing the following steps.</p>
+
+<ol>
+    <li>Precache necessary assets.
+
+        <p class="indent1">If your entity relies on particular assets, precache these assets prior
+        to creating the entity. The various system services that load assets support the preloading
+        / precaching of these assets. For example, you can use the <span class=
+        "NDLSystemFont">egmAnimation::AnimationService::cache</span> function to tell the Animation
+        Service to cache a particular animation file. In particular, precache animations, scene
+        graph files, and flat model files.</p>
+    </li>
+
+    <li>Turn off <span class="NDLSystemFont">AssetPreload</span> in your Entity flat model.
+
+        <p class="indent1">The <span class="NDLSystemFont">AssetPreload</span> flag associated with
+        the <span class="NDLSystemFont">Preloadable</span> standard model library model tells the
+        entity creation system to preload any assets asynchronously. This can introduce a delay of
+        several frames as the assets are preloaded. This delay is present even if you precache all
+        of the Entity's assets. You can eliminate this delay by disabling <span class=
+        "NDLSystemFont">AssetPreload</span> in your Entity flat model.</p>
+    </li>
+
+    <li>Avoid using the <span class="NDLSystemFont">OnCreate</span> and <span class=
+    "NDLSystemFont">OnAssetsLoaded</span> script behaviors.
+
+        <p class="indent1">The Entity lifecycle <span class="NDLSystemFont">OnCreate</span> and
+        <span class="NDLSystemFont">OnAssetsLoaded</span> script behaviors are called during the
+        entity creation process. The runtime system requires at least one frame to invoke these
+        behaviors. If you can avoid implementing these functions you can eliminate this delay.</p>
+    </li>
+</ol>
+
+<h3>Synchronous entity instantiation</h3>
+
+<p>Creating entities asynchronously minimizes the runtime performance cost of creating entities.
+There are times, however, when the non-deterministic nature of asynchronous entity creation is
+undesirable. It's not possible to guarantee an entity is fully created because dependent assets may
+still load asynchronously. However, there are steps you can take to make the process more
+deterministic.</p>
+
+<p>First, preload flat models used by dynamically created entities using <span class=
+"NDLSystemFont">egf::FlatModelManager::PreloadModel</span>. This makes the flat model and all of
+its flat model and Lua behavior script dependencies available at runtime. Ideally, do this during
+initialization.</p>
+
+<p>To instantiate your new entity, use the <span class=
+"NDLSystemFont">egf::FlatModelManager::FactoryEntity</span> family of functions. This will return
+an EntityPtr instance. Pass this instance to <span class=
+"NDLSystemFont">egf::EntityManager::AddEntity</span> to make it available to the rest of the
+application. Your new entity may still not be available for behavior invocation; especially if it
+needs to load dependent assets.</p>
+
+<h3>Asynchronous creation versus Synchronous entity instantiation</h3>
+
+<p>Here are some things to consider when deciding between asynchronous entity creation and
+synchronous entity instantiation.</p>
+
+<h4>Asynchronous Entity Creation</h4>
+
+<table>
+    <thead>
+        <tr>
+            <th>Advantages</th>
+
+            <th>Disadvantages</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td width="50%">Dependent flat model and Lua behavior files are loaded
+            automatically.</td>
+
+            <td>Creation will take several frames to complete unless you precache assets
+            manually.</td>
+        </tr>
+
+        <tr>
+            <td>File I/O happens in the background thread.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>Minimal performance impact at runtime.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>When notified that creation is complete, the entity ready to execute
+            behaviors.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>Available from C++ and from scripts.</td>
+
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Use asynchronous entity creation when creating entities where timing is not critical. If a
+several tick delay in the creation of the entity will not affect application performance or
+behavior, asynchronous creation is recommended.</p>
+
+<h4>Synchronous Entity Instantiation</h4>
+
+<table>
+    <thead>
+        <tr>
+            <th>Advantages</th>
+
+            <th>Disadvantages</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td width="50%">Instantiated entity objects are available immediately.</td>
+
+            <td>You must remember to preload flat models required by each entity.</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>You must remember to add the factoried entity to the EntityManager.</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>It still may be several ticks before the entity is fully created and ready to
+            execute behaviors.</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>Not available from scripts.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Synchronous instantiation guarantees that an EntityPtr is available for setting properties; it
+does not, however, guarantee the entity is fully created and ready for simulation. If the
+instantiated entity has other dependent assets, these will be loaded asynchronously which may take
+several additional ticks. Proper preloading of entity flat model files is required to instantiate
+entities synchronously at runtime.</p>
+
+<p>See <a href="../../Programmer/Entities/entity_creating.htm">Creating entities</a> for more
+details.</p>
+
+<h2>Scripts (.lua)</h2>
+
+<p>In Gamebryo LightSpeed 3.0 <span class="NDLSystemFont">egf::SchedulerLua</span> located all
+known Lua script files and added the fully qualified path to each file to the package.path Lua
+global variable. The Lua runtime would search this path for Lua scripts when processing 'require'
+or 'dofile' operations. This had two negative side effects.</p>
+
+<p>The time it took the Lua runtime to find and load a given Lua script was proportional to the
+number of paths appended to package.path. If you had Lua scripts in multiple locations, it could
+take the Lua runtime an unexpected length of time to load it. This search was synchronous in the
+main thread, affecting performance.</p>
+
+<p>SchedulerLua appended the path to all Lua scripts in an asset web to the package.path. This
+meant if you had multiple scripts with the same name in your asset web, only the first script found
+was loaded. This could lead to incorrect or unexpected runtime behavior.</p>
+
+<p>In LightSpeed 3.1 all Lua behavior scripts, and their dependencies, are automatically loaded and
+added to the Lua runtime system when loading World and Flat Model files using the
+AssetFactoryManager. SchedulerLua no longer appends Lua script paths to the Lua package.path global
+variable. Instead, each Lua script is loaded explicitly into the Lua runtime.</p>
+
+<p>If you have Lua scripts that are not Lua Behaviors, you must explicitly preload these scripts
+into the Lua runtime using <span class="NDLSystemFont">SchedulerLua::PreloadModule</span>. The
+PreloadModule function asynchronously loads the script and all of its dependencies into the
+runtime. You can provide a callback category to receive notification when a preload completes.</p>
+
+<p>If you application relies on Lua scripts that are not part of your asset web, consider adding
+them. If this is not desirable, ensure the Lua runtime package.path is set appropriately to locate
+your scripts at runtime. Do note these scripts will continue to use the main thread to load from
+disk.</p>
+
+<p>Asynchronous loading of Lua scripts assumes you will only have one script with a given name in
+your asset web. If you have multiple scripts with the same name, the Lua background loader will
+assert. If each script provides the same functionality, consider moving them to a common location.
+Otherwise, rename one script to prevent name collisions at runtime.</p>
+
+<h2>Scene Graphs (.nif)</h2>
+
+<p>All Gamebryo Scene Graphs loaded by the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_scene_graph_svc.htm">Scene Graph Service</a> are
+asynchronously background loaded. Services wishing to load nif files synchronously must do so
+explicitly. See the <a href="../../Reference/QuickRef_Services/svc_qckref_tool_scene_svc.htm">Tool
+Scene Service</a> for an example (Gizmo files are loaded directly).</p>
+
+<p>Regardless of the method used to initiate a scene graph load, an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/ecr/ecr__SceneGraphAddedMessage.htm">ecr::SceneGraphAddedMessage</a></span>
+message will be sent when a scene graph has been loaded and is ready for use. This is the message
+that applications or custom services should register for when they need notification that a scene
+graph is ready. Note that entities with the Preload model will have their scene graphs loaded
+before the entity notifications are sent out, and in such cases it is sufficient to wait only on
+the entire entity.</p>
+
+<p>The following specific functions lead to scene graph loading and are now potentially
+asynchronous. See the <a href="../../Reference/ecr/ecr__SceneGraphService.htm"><span class=
+"NDLSystemFont">ecr::SceneGraphService</span> class reference documentation</a> for the details of
+return values and messages. Note that some functions will return success immediately if the scene
+graph is cached and does not need to be loaded from media.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+
+            <th>Conversion Required</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">CreateSceneGraphFileName</span></td>
+
+            <td>Now returns true only when the scene graph is cached and immediately available.
+            Otherwise, wait for the <span class="NDLSystemFont">SceneGraphAddedMessage</span>
+            message. There are two versions of this function - both are equally affected.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">RecreateSceneGraph</span></td>
+
+            <td>Now returns true only when the scene graph is cached and immediately available.
+            Otherwise, wait for the <span class="NDLSystemFont">SceneGraphAddedMessage</span>
+            message.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">ReloadAsset</span></td>
+
+            <td>Now returns true only when the scene graph is cached and immediately available.
+            Otherwise, wait for several <span class="NDLSystemFont">SceneGraphAddedMessage</span>
+            messages, one for each entity or handle using the asset.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">Cache</span></td>
+
+            <td>This function now takes additional arguments specifying custom data, a response
+            category, and a vector of handles that will be filled if the requested cache urn is
+            already known about. Otherwise, a <span class="NDLSystemFont"><a href=
+            "../../Reference/ecr/ecr__SceneGraphCacheResponse.htm">ecr::SceneGraphCacheResponse</a></span>
+            message is sent when the assets are available. Cached assets are now tracked with
+            <span class="NDLSystemFont"><a href=
+            "../../Reference/ecr/ecr__SceneGraphCache.htm">ecr::SceneGraphCache::SceneGraphCacheHandle</a></span>
+            objects that are returned by the <span class="NDLSystemFont">Cache</span> function or
+            the response messages. These handles are used with the scene graph cache, available
+            using <span class="NDLSystemFont">ecr::SceneGraphService::GetSceneGraphCache</span>.
+            The handles are also necessary to uncache objects, so must be stored by the application
+            if uncaching of specific assets is required. There remains a function to uncache all
+            objects, regardless of handle.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">CacheSceneGraphFilename</span></td>
+
+            <td>See the discussion of <span class="NDLSystemFont">Cache</span>, immediately
+            above.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">UnCacheHandles</span></td>
+
+            <td>This is the new function required to uncache specific objects.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Animation (.kfm, .kf)</h2>
+
+<p>All Gamebryo Animation files loaded by the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_animation_svc.htm">Animation Service</a> are
+asynchronously background loaded.</p>
+
+<p>Regardless of the method used to initiate an actor load, an <span class="NDLSystemFont"><a href=
+"../../Reference/egmAnimation/egmAnimation__ActorAddedMessage.htm">egmAnimation::ActorAddedMessage</a></span>
+message will be sent when an actor has been loaded and is ready for use. This is the message that
+applications or custom services should register for when they need notification that an actor is
+ready. Note that entities with the Preload model will have their actors loaded before the entity
+notifications are sent out, and in such cases it is sufficient to wait only on the entire
+entity.</p>
+
+<p>There is no way to manually create an actor with the service, except through caching. The
+following cache functions are now asynchronous. See the <a href=
+"../../Reference/egmAnimation/egmAnimation__AnimationService.htm"><span class=
+"NDLSystemFont">egmAnimation::AnimationService</span> class reference documentation</a> for the
+details of return values and messages.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Function</th>
+
+            <th>Conversion Required</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">Cache</span></td>
+
+            <td>This function now takes an additional argument specifying a category for the cache
+            response. An <span class="NDLSystemFont"><a href=
+            "../../Reference/efd/efd__AssetCacheResponse.htm">efd::AssetCacheResponse</a></span>
+            message is sent when the assets are available, or on failure.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">RemoveFromCache</span></td>
+
+            <td>This function now takes an additional argument specifying a category for the cache
+            response. An <span class="NDLSystemFont"><a href=
+            "../../Reference/efd/efd__AssetCacheResponse.htm">efd::AssetCacheResponse</a></span>
+            message is sent when the assets are uncached, or on failure.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Custom Shaders</h2>
+
+<p>The <span class="NDLSystemFont">ShaderService</span> parses and loads every shader located in
+the asset web associated with the shader libraries used by the application. In Gamebryo 3.0, all of
+this would occur over a few <span class="NDLSystemFont">ShaderService::OnInit</span> calls. This
+could result in the <span class="NDLSystemFont">ShaderService</span> spending anywhere from
+hundreds of milliseconds to a few seconds (depending on the number of shaders in the assetweb) in a
+single <span class="NDLSystemFont">OnInit</span> call.</p>
+
+<p>The <span class="NDLSystemFont">ShaderService</span> has been updated to allow an upper bound to
+be placed on the amount of time that can be spent in a single <span class=
+"NDLSystemFont">ShaderService::OnInit</span> call. After parsing or loading a shader in OnInit the
+shader service will see if it has spent more than its allotted amount of time in OnInit. If so, it
+will return <span class="NDLSystemFont">AsyncResults_Pending</span>, so that other services have a
+chance to tick. This allows for other services to do additional work, such as rendering a loading
+screen, while shaders are being loaded by the <span class="NDLSystemFont">ShaderService</span>.</p>
+
+<p>By default the <span class="NDLSystemFont">ShaderService</span> is set to spend a maximum of 10
+milliseconds in <span class="NDLSystemFont">OnInit</span>. This value can be changed by calling
+<span class="NDLSystemFont">ShaderService::SetMaxOnInitTime</span>. Keep in mind that since the
+time spent in <span class="NDLSystemFont">ShaderService::OnInit</span> is evaluated once per shader
+it is possible for more than the maximum allotted amount of time to be spent in <span class=
+"NDLSystemFont">ShaderService::OnInit</span>, depending on how much time it takes to load a single
+shader.</p>
+
+<p>As one might expect uncompiled custom shaders take significantly longer to load than
+pre-compiled shaders. To aid with loading speed shipping titles should always use pre-compiled
+custom shaders.</p>
+
+<h2>Action Maps (.actionmap)</h2>
+
+<p>The loading of action maps is now asynchronous. The load will be initiated with a call to the
+<span class="NDLSystemFont"><a href=
+"../../Reference/ecrInput/ecrInput__InputService.htm">ecrInput::InputService::LoadAllActionMaps</a></span>
+member function. Note that, despite the name, only one action map can be loaded at a time. When the
+load is complete, a <span class="NDLSystemFont"><a href=
+"../../Reference/ecrInput/ecrInput__InputActionMapsLoaded.htm">ecrInput::InputActionMapsLoaded</a></span>
+message is sent on a category that may be queried from the service. The message is send even on
+failure.
+
+<!--kadov_tag{{<placeholder id="footer">}}--></p>
+
+</body>
+
+</html>

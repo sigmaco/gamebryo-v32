@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>General Texturing Considerations</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>General Texturing Considerations</h1>
+
+<p>There are four issues you must keep in mind when adding textures to a
+Gamebryo scene: the texture's dimensions, its aspect ratio, the effect of
+filtering, and its size in VRAM. VRAM is the memory that is actually on the
+graphics card that can be accessed quickly by the rendering hardware. The
+framebuffer (the part of VRAM used to draw and display the screen) and the
+Z-buffer both occupy some portion of VRAM and, thus, reduce the amount of
+memory available for textures.</p>
+
+<p>It is possible to have more textures than will fit in VRAM. In this case,
+the graphics card will fetch the texture from system memory whenever it is
+needed for rendering. This process is much slower than getting a texture from
+VRAM and should be completely avoided on PCI graphics cards. It is not
+necessary to completely avoid overflowing VRAM on AGP graphics cards but
+performance will still degrade, as more textures have to be retrieved from
+system memory. Other than avoiding it entirely (by fitting all textures into
+VRAM) there is little you can do to improve the fetching of textures from
+system memory.</p>
+
+<h2>Texture Cropping/Resizing</h2>
+
+<p>The first texturing issue is the hardware "Power of 2" issue. By default,
+the Gamebryo 3ds max Plug-in will shrink any non-power of two textures to the
+appropriate size using a quick but low-quality resizing technique. This
+technique is fine for prototyping, however it is strongly recommended that you
+resize all images to a power of two before exporting final assets. An exporter
+option is available in the main export dialog to allow the export of
+non-power-of-two textures. With this option checked, mipmapping will not be
+available for non-power-of-two textures. Instead of using trilinear
+interpolation, this texture will use bilinear interpolation. This is described
+more in the Texture Filtering section below.</p>
+
+<h2>Texture Aspect Ratios</h2>
+
+<p>Second, textures in Gamebryo do not need to be square, but extreme aspect
+ratios will fragment VRAM. This fragmenting occurs because odd-shaped textures
+are not as easy to pack together as regularly shaped ones. In general, you
+should only use aspect ratios of less than 8:1. Additionally, you should settle
+on a base set of texture sizes. Textures with the same dimensions are easily
+interchanged in VRAM allowing for quicker VRAM management schemes. Having a lot
+of textures with widely varying sizes will defeat this replacement-based
+texture management.</p>
+
+<h2>Texture Filtering</h2>
+
+<p>The third texturing issue is that pyramidal filtering (also known as
+"mipmapping" or "trilinear interpolation" in Gamebryo) increases the VRAM size
+of a texture by 1.3 times its original VRAM size. When pyramidal filtering (as
+opposed to summed area or none) is enabled a texture must be stored along with
+its filter levels where each level is a quarter the size of the prior level.
+Pyramidal filtering will improve texture aliasing but you should be aware that
+it comes at the cost of some space in VRAM. In other words, pyramidal filtering
+improves visual quality in the scene and should be used in almost all cases,
+but you should be aware that pyramidal filtered textures increase storage
+requirements by a factor of 1.3.</p>
+
+<div class="FigureContainer">
+    <img src="images/image002_05.jpg" width="576" height="118" alt=
+    "Texture filtering (5K)">
+
+    <p class="FigureCaption">Texture filtering</p>
+</div>
+
+<p>There is another useful filtering mode for textures used on surfaces that
+may be viewed nearly perpendicularly. Anisotropic filtering takes additional
+samples in the direction of maximum anisotropy, up to a maximum count. This
+maximum can be adjusted, and will be automatically clamped to what the runtime
+hardware maximum is. If anisotropic filtering isn't supported by hardware, it
+will be treated as trilinear filtering instead.</p>
+
+<p>The image below shows anisotropic filtering at two quality levels compared
+to trilinear filtering. The difference between trilinear and anisotropic
+filtering increases as the gets more acute.</p>
+
+<div class="FigureContainer">
+    <img src="images/ExampleAnisotropicFiltering.jpg" width="632" height="150"
+    alt="Anisotropic filtering (46K)">
+
+    <p class="FigureCaption">Anisotropic filtering</p>
+</div>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Anisotropic filtering can be very expensive, up to N times more
+                expensive than trilinear filtering (where N is the quality /
+                maximum number of samples). It should only be used in places
+                where it will have visible impact, with N set to the smallest
+                number that gives good results.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

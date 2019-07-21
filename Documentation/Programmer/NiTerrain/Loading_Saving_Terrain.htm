@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Loading and Saving Terrain</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+  <h1>
+    Loading and Saving Terrain</h1>
+  <p>
+    The recommended method of loading and saving terrain assets is through using the
+    <span class="NDLSystemFont">
+    <a href="../../Reference/egmTerrain/egmTerrain__TerrainService.htm">egmTerrain::TerrainService</a></span> and its counterpart, 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/egmToolServices/egmToolServices__ToolTerrainService.htm">egmToolServices::ToolTerrainService</a></span>.
+    These classes are designed to handle all the loading and saving requirements in
+    running Toolbench and other Game framework related applications. In the event that
+    a developer needs to manually load and save terrain objects, the following information
+    should help.   </p>
+  <h2>
+    Saving terrain objects
+  </h2>
+  <p>
+    When saving a terrain object there are only a few simple steps to follow.
+  </p>
+  <ol>
+    <li>Make sure the terrain object has the correct archive path configured.<br>
+    </li>
+    <li>Assign the storage policy you wish to use to store the terrain (This step may
+      be ommitted if the default file formats are fine).<br>
+    </li>
+    <li>Call the <span class="NDLSystemFont">NiTerrain::Save function</span>.<br>
+    </li>
+  </ol>
+  <p>
+    The terrain archive path is expected to be a standalone directory within the asset
+    web that is assigned to this specific terrain. No other terrains may be stored within
+    the same archive path.</p>
+  <p>
+    When the save function is called, the terrain object first writes out its terrain
+    configuration data to disk, followed by every sector that is loaded at the time
+    of the save function call.</p>
+  <p>
+    The following code demonstrates manually saving a terrain:</p>
+<pre>
+pTerrain-&gt;SetArchivePath(archivePath.c_str());
+if (!pTerrain-&gt;Save())
+{
+    EE_FAIL("Failed to save terrain");
+}
+</pre>
+  <p>
+    Please consult <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">
+    NiTerrain</a></span> class reference for detailed information on the functions used.
+  </p>
+  <h2>
+    Loading terrain objects
+  </h2>
+  <p>
+    When loading a terrain object, again there are only a few steps to follow.
+  </p>
+  <ol>
+    <li>Create a terrain object </li>
+    <li>Set the terrain object's archive path </li>
+    <li>Configure all the terrain's extensions if necessary (storage policy, custom data
+      policy, resource manager, sector selector, surface library). </li>
+    <li>Call the <span class="NDLSystemFont">NiTerrain::Load function</span>. </li>
+    <li>Call <span class="NDLSystemFont">NiTerrain::Update</span> or 
+      <span class="NDLSystemFont">NiTerrain::UpdateStreaming</span>. </li>
+    <li>Wait for loading to complete
+    	<ul>
+    		<li>Monitor sector loading progress through the NiTerrainStreamingManager available via <span class="NDLSystemFont">NiTerrain::GetStreamingManager()</span></li>
+    		<li>Monitor material loading progress by querying <span class="NDLSystemFont">NiTerrain::GetNumUnresolvedSurfaces</span>, which will return 0 when all materials have loaded</li>
+    	</ul>
+    	</li>
+  </ol>
+  <p>
+    When the load function is called, the terrain object attempts to load the terrain
+    configuration from disk. See the documentation on storage for an idea of what data
+    is stored in the terrain configuration file. To finalize the load process, the
+    user must then call update on the terrain object. This forces the terrain object
+    to update its sector selector and begin streaming sector data from disk.</p>
+  <p>
+    The following code demonstrates manually loading a terrain:</p>
+  
+<pre>
+m_spTerrain = NiNew NiTerrain();
+
+// Set the terrain storage policy
+NiTerrain::StoragePolicy kTerrainStorage;
+kTerrainStorage.m_kOpenSectorRead = &amp;NiTerrainSectorFileRaw::Open;
+kTerrainStorage.m_kOpenSectorWrite = &amp;NiTerrainSectorFile::Open;
+m_spTerrain-&gt;SetStoragePolicy(kTerrainStorage);
+
+m_spTerrain-&gt;SetArchivePath(ConvertMediaFilename("Terrain"));
+
+// Setup how the terrain will select what it will load
+m_pkTerrainPager = NiNew NiTerrainSectorPager(m_spTerrain, m_spCamera);
+m_spTerrain-&gt;SetSectorSelector(m_pkTerrainPager);
+
+// Load terrain
+m_spTerrain-&gt;Load();
+m_spTerrain-&gt;Update(0.0f);
+</pre>
+  <p>
+    Please consult <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">
+    NiTerrain</a></span> class reference for detailed information on the functions used.
+  </p>
+  <p class="NDLHeadingRelatedTopic">
+    Related Topics</p>
+  <ul>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">
+      NiTerrain</a> library.</span></li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPortal</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiPortal</p>
+
+<p class="NDLRefParentage">: public <span><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span></p>
+
+<p class="NDLRefHeaderFile">&lt;NiPortal.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiPortal</span> objects are
+grouping nodes that support aggressive visibility culling. They
+represent flat polygonal regions through which a part of a scene
+graph can be viewed. In other words, portals represent doorways
+and windows in a scene, as well as the objects seen through such
+openings.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiPortal(unsigned short
+usVertices, const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>* pkVertex,
+<a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+pkAdjoiner = 0, bool bActive = true)</p>
+
+<p class="NDLRefMemberDescription">Member-wise constructor. The
+first parameter, <span class="NDLSystemFont">usVertices</span>,
+is the number of vertices defining the portal's polygon.
+<span class="NDLSystemFont">pkVertex</span> is a pointer to an
+array of model-space portal polygon vertices. This vertex array
+data is copied, not used directly. As a result, the array passed
+in may be destroyed immediately following the construction of the
+portal. <span class="NDLSystemFont">pkAdjoiner</span> is a
+pointer to the scene graph that is to be seen through the portal
+(this may be <span class="NDLSystemFont">NULL</span> if the
+adjoiner has not yet been created). <span class=
+"NDLSystemFont">bActive</span> is the initial value of the
+portal's active flag (<span class="NDLSystemFont">false</span> if
+the portal is to be disabled). The active flag allows portals to
+be turned on or off ("closed" or "opened" in door terms).</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+GetAdjoiner() const</p>
+
+<p class="NDLRefMemberFunction">void SetAdjoiner(<a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a>*
+pkAdjoiner)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the adjoiner
+object, which is the root of the scene graph that is to be seen
+through the portal. See the notes below for information regarding
+the behavior of the adjoiner.</p>
+
+<p class="NDLRefMemberFunction">bool GetActive() const</p>
+
+<p class="NDLRefMemberFunction">void SetActive(bool bActive)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the active
+flag for the portal. The portal is "closed" when this flag is set
+to <span class="NDLSystemFont">false</span> and the adjoiner is
+not drawn, even if the portal is in view.</p>
+
+<p class="NDLRefMemberFunction">unsigned short GetVertexCount()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of vertices
+in the portal polygon.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>*
+GetVertices()</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"../../Reference/NiMain/NiPoint3.htm">NiPoint3</a>* GetVertices()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the array of
+model-space vertices that define the portal polygon. The
+non-const version allows the application to manipulate the shape
+of the portal at runtime. See the "Notes" below for issues
+surrounding the real-time modification of portal polygons.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"../../Reference/NiMain/NiBound.htm">NiBound</a>&amp;
+GetModelBound() const</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"../../Reference/NiMain/NiBound.htm">NiBound</a>&amp;
+GetModelBound()</p>
+
+<p class="NDLRefMemberFunction">void SetModelBound(const <a href=
+"../../Reference/NiMain/NiBound.htm">NiBound</a>&amp; kBound)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the model
+bound of the portal. Note that the model bound of a portal need
+only bound the vertices of portal polygon, not the subtree that
+forms the adjoiner. This is true because it is the portal polygon
+that is used to cull the portal, not the adjoining geometry.
+Furthermore, this explains much of the power of portals&mdash;a
+potentially large scene graph can be culled aggressively if there
+is only a small window or doorway connecting the viewer and the
+large scene.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Portal Adjoiners</p>
+
+<p>The relationship between portal and adjoiner is <em>not</em> a
+parent-child relationship&mdash;it is only a culling
+relationship. As a result, the adjoiner inherits no transforms,
+properties or effects from the portal. In most cases in Gamebryo
+scene graphs, the adjoiner to an <span class=
+"NDLSystemFont">NiPortal</span> object is an <span class=
+"NDLSystemFont"><a href="NiRoom.htm">NiRoom</a></span> object.
+Furthermore, Update calls that traverse an <span class=
+"NDLSystemFont">NiPortal</span> object are <em>not</em> passed on
+to the adjoiner, since the relationship is not one of
+parent-child. Note that portals are one-way only. A portal
+represents a way of seeing from the portal's parent scene graph
+into the adjoiner scene graph. The reverse is not implied by a
+single portal. A two-way window or doorway (i.e. anything that is
+not a one-way mirror) requires two independent portals.</p>
+
+<p class="NDLRefHead2">Portal Polygon Shape</p>
+
+<p>Portal polygons are not required to be convex. Vertices may be
+repeated or collinear. Applications should avoid including a
+large number of interior points as a part of the portal polygon,
+however, as each point in a portal polygon does incur some cost
+each time the portal is processed.</p>
+
+<p class="NDLRefHead2">Runtime Modification of Portal
+Polygons</p>
+
+<p>Portal polygon model-space vertices may be changed at runtime
+as desired by the application, but the application must follow a
+procedure very similar to that used to modify vertices of an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a></span>
+object. First, the model-space bound must be updated to bound the
+portal polygon (not the entire adjoiner) either by setting the
+model bound's need update flag to <span class=
+"NDLSystemFont">true</span>, or by updating the model bound
+directly to bound the polygon. Then, <span class=
+"NDLSystemFont">Update</span> must be called upon the portal or
+one of its ancestors.</p>
+
+<p class="NDLRefHead2">Cloning</p>
+
+<p>Cloning is not supported in the <span class=
+"NDLSystemFont">NiPortal</span> class. The definition of cloning
+in this context is somewhat undefined. Unlike a traditional scene
+graph, a portal-enabled scene graph may contain cycles, so
+resolving how to clone the portals and rooms is not
+straightforward. Therefore the Gamebryo <span class=
+"NDLSystemFont">Clone</span> operation will not work with a
+data-set containing any <span class=
+"NDLSystemFont">NiPortal</span> library objects. Applications
+that need to duplicate portal-enabled data-sets should use
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a>::CreateDeepCopy</span>,
+which relies on the streaming system rather than the cloning
+system.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

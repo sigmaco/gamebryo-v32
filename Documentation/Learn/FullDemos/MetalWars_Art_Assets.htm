@@ -1,0 +1,279 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MetalWars Art Assets</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>MetalWars Art Assets</h1>
+
+<p>3ds Max source files for all the assets used in the MetalWars
+sample can be found in the Gamebryo install directory under
+<em>%EMERGENT_PATH%</em>\Samples\GameDemos\MetalWars\Art
+Files.</p>
+
+<h2>Goals</h2>
+
+<p>The MetalWars sample was designed to show the following
+elements:</p>
+
+<ul>
+    <li>Implement advanced lighting
+
+        <ul>
+            <li>High Dynamic Range (HDR) light calculations and
+            rendering</li>
+
+            <li>Light the scene with cubemaps for per-pixel
+            lighting control</li>
+        </ul>
+    </li>
+
+    <li>Unified shader for (almost) everything in the scene,
+    including the characters and buildings.</li>
+
+    <li>Real-time "post process" effects like depth-of-field,
+    night-vision and heat shimmer.</li>
+
+    <li>Advanced animation management including animation
+    layering and blending of multiple animations to create the
+    final pose of the character.</li>
+</ul>
+
+<h2>Advanced Lighting</h2>
+
+<p>MetalWars uses cubemaps as the primary light source. Using
+cubemaps as the primary sources provided exact control of the
+lighting. In addition, with cube maps having twelve "lights" is
+no more expensive then one, so for complex and detailed lighting
+it is a good choice. The cube-maps in MetalWars were static in
+that they were rendered before runtime. They are in .hdr format
+and thus will appear black inside of Max or any application that
+does not support .hdr format.</p>
+
+<p>The shader applied to objects in the scene and the robot finds
+the closest two point lights and adds them to the lighting
+result, thus allowing for dynamic light sources. One of the point
+lights is always the light used for the blaster gun effect --
+this allows for the scene to "blow-out" to white when the blaster
+gun is fired based on dynamic lighting. The application code
+parsed the scene and picked out what additional point light it
+would use on buildings and props as a runtime pre-process. The
+robot was updated every frame to find the closest point light to
+it.</p>
+
+<h2>Shader Breakdown</h2>
+
+<p>The texture components of the shader that create the
+overall results in the scene are as follows:</p>
+
+<p>"Diffuse lighting.hdr" simulates the diffuse lighting of the
+scene by projecting its values onto the geometry.</p>
+
+<ul>
+    <li>Smaller size and blurry to simulate "fuzzy" light
+    bounces</li>
+
+    <li>32 x 32 x 6</li>
+</ul>
+
+<p>"Specular lighting.hdr" simulates reflection and is added onto
+the diffuse lighting value.</p>
+
+<ul>
+    <li>More detailed and larger to simulate a reflected surface
+    or mirror</li>
+
+    <li>128 x 128 x 6</li>
+</ul>
+
+<p>A gloss map was used to define reflective properties. The
+diffuse and specular cube-map was filtered though a gloss map
+with black representing diffuse and white representing pure
+reflection. The resulting lighting was offset by a normal map to
+provide extra geometric detail. Note that the gloss map was
+actually stored in the alpha channel of the normal map to save an
+extra lookup into another texture. Thus all normal maps are 32
+bit .tgas and need alpha.</p>
+
+<p>A Dark Map and vertex colors modulate the result to provide
+extra light, shading, and detail on a per-object basis. A Glow
+Map was used for self illumination. A multiplier on the shader
+rollout determined the final overall brightness while the texture
+map provided the detail color and intensity.</p>
+
+<p>The shader used to define these attributes is
+"GeneralDiffuseSpecular" which can be applied from the drop down
+list of Gamebryo Shaders in Max or Maya. Entries to load the two
+reflect/refract slots and the normal/gloss map slot can be found
+under its attributes. This shader is written in the .fx HLSL
+format.</p>
+
+<p>The shader was generalized enough to cover 90% of the scene. A
+few things were left using the default pipeline, mainly the fire
+effects and the telephone wires as they were morph targets.</p>
+
+<h2>Animation</h2>
+
+<p>The character animations consist of a set of independent
+loops: a walk cycle, a run cycle, and several idle cycles. These
+loops were marked as sequences in 3ds Max using the Gamebryo
+Animation Manager. In order to facilitate smooth morphing between
+walk and run cycles, sequence tags were added to the animation
+tracks. This allows the system to synchronize the footfalls when
+transitioning between the run and walk cycles. Text tags called
+"left" and "right" were created at each footfall for the left and
+right feet, respectively, in both the run and walk cycles. (These
+can be set under the Sequence Tags rollout of the Gamebryo
+<a href=
+"../../Art/Max/Introduction_!Animation_Manager.htm">Animation
+Manager Utility</a> in 3ds Max.)</p>
+
+<p>Having exported the character, it was loaded into the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Animation
+Tool</a> to create the KFM file. The KFM file automatically
+recognized the aforementioned "left" and "right" text keys,
+stretching the animations in time during transitions so that
+footfalls would always match up. These settings can be adjusted
+using the <a href=
+"../../Tools/animation_tool/Transition_View.htm">Transition
+View</a> in the Gamebryo Animation Tool.</p>
+
+<p>Layering was also heavily utilized in MetalWars. For example,
+looking around was achieved by blending two layers, "lookup" and
+"lookdown" on top of an idle animation. This is also true for
+firing when walking or running. Only one fire animation was
+recorded and it was set as an upper body layer to take over the
+torso while the legs play the walk or run animation.</p>
+
+<p>All blending, timing, and layering information was setup with
+the <a href=
+"../../Tools/animation_tool/Introduction_to_Animation_Tool.htm">Animation
+Tool</a> and saved as a Gamebryo .kfm file. The .kfm was accessed
+by the code to call the specific animations and the blending
+routines it stored. The file can be found under
+<em>%EMERGENT_PATH%</em>\Samples\GameDemos\MetalWars\Data\Win32\Killbot.</p>
+
+<h2>Hierarchy</h2>
+
+<p>The file "scene.max" contains the demo's "set", in this case a
+city block. The hierarchy in 3ds Max consists of nine sibling
+branches containing objects, which exports to a Gamebryo scene
+graph with nine main nodes. Each of these nodes contains
+additional structures beneath them, as follows:</p>
+
+<ul>
+    <li>"buildings": This node contains the geometry representing
+    the immediate buildings in the area. All objects under this
+    node support a "see through" shader mode, which is used to
+    make the buildings transparent when they block the camera's
+    view of the robot. This node contains only the rendered
+    geometry, with no additional collision information. The
+    components of each building are grouped together into
+    per-building group nodes. This way the application knows
+    which building is in the way of the camera, and which to use
+    for the "see through" effect.</li>
+
+    <li>"collision": This node contains all of the invisible
+    collision data. The collision objects were placed under a
+    separate node to avoid having to traverse the entire scene
+    graph at runtime in order to find the bounding boxes. In
+    order for the collision system to parse the data properly,
+    the geometric data for each collision box object is grouped
+    under an individual group node.</li>
+
+    <li>"effects": All of the special effects are grouped under
+    this node, including the particle systems and the geometry
+    flagged for the shimmer shader. Sub-node "Shimmer" was used
+    to determine which objects were to be rendered with the
+    shimmer effect.</li>
+
+    <li>"environment objects": this node contained all ground
+    objects, i.e. the street and sidewalks. The land was split
+    into seven pieces so each would get the closest light and
+    allow the ground to be illuminated by seven point (omni)
+    lights.</li>
+
+    <li>"lights": Contains all lights that affect the scene.
+    These lights are animated, changing color and brightness over
+    time. These are the lights that are dynamically assigned to
+    the killbot's shader.</li>
+
+    <li>"Skyline_buildings": contained all buildings on the
+    horizon. These were processed as four or five objects, had no
+    collision and were not assigned additional lights.</li>
+
+    <li>One additional standalone node at the root of the 3ds Max
+    file is a dummy object called "start". This object's location
+    and orientation determine the initial placement of the
+    character, as well as his initial orientation.</li>
+</ul>
+
+<h2>Texture Creation</h2>
+
+<p>HDR textures were created using 3ds Max, HDRShop and
+Photogenics. Per-pixel adjustment of these maps was hard to do as
+no paint programs supported HDR editing easily when the textures
+were initially created. The cube-maps used for lighting were
+completely synthetic and pre-rendered in Max and compiled into a
+DirectX cubemap in .dds format.</p>
+
+<p>The skydome textures are HDR as well, although they are stored
+as 32-bit .tgas. This was done for space savings and for the
+ability to better manipulate 32-bit images. The alpha channel was
+used to multiply the values of the RGB channel. Making the
+horizon bright enough that it bleeds into the buildings on the
+skyline was done by using a close-to-white value in the alpha
+channel. In addition the file name of the texture determined what
+the exact multiplier was. Thus .sky01_hdr005.tga' had a
+multiplier of 5x RGB for each level of grey in the alpha.</p>
+
+<p>Most other textures were 32-bit. Normal map textures were
+appended with an _N so they would be easy to identify. All normal
+map textures also carried the gloss values in their respective
+alpha channels.</p>
+
+<h2>Export</h2>
+
+<p>The default Gamebryo Process Script was modified slightly
+prior to exporting datasets for MetalWars. The "Scene Graph
+Optimization" plug-in was set to disable the merging of sibling
+nodes and to disable the merging of sibling <a href=
+"../../Reference/NiMesh/NiMesh.htm"><span class=
+"NDLSystemFont">NiMesh</span></a> objects that share the same
+material. While these are normally very powerful optimizations,
+the "see through" shader mode used in the application requires
+that each building remain a separate group node. Textures were
+exported internal to the NIF files, and were set to remain as
+"Image Default" format.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

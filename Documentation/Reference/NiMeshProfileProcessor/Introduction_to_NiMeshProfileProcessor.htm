@@ -1,0 +1,539 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Introduction to NiMeshProfileProcessor</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Introduction to NiMeshProfileProcessor</h1>
+
+<p>The <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ library is an internal use only library. The primary function of <span 
+ class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ is to maintain and operate runtime profiles which specify how data-streams 
+ are to be processed at the end of the tool plug-in pipeline (see <a href="../../Art/Other/Introduction_to_the_Gamebryo_Tool_Plug_in_Framework.htm">Introduction 
+ to the Tool Plug-in Framework</a>). Those same profiles can, not only 
+ specify how the data is processed, but also how semantic elements are 
+ interleaved together. The library is utilized by the Gamebryo 
+ Maya exporter in conjunction with the <span class="NDLSystemFont"><a href="../Tool_Plug_ins/Mesh_Finalize.htm">MeshFinalize</a></span> 
+ plug-in. The <span class="NDLSystemFont"><a href="../../Tools/Tool_Plug_in_Batch_Tool/Tool_Plug_in_Batch_Tool_Intro.htm">ToolPluginBatch</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Tools/Tool_Plug_in_Testbed/Introduction_to_the_Gamebryo_Tool_Plug_in_Testbed.htm">ToolPluginTestbed</a></span> 
+ developer tools also make use of the library. </p>
+
+<a name=NiMeshProfileProcessor_Internals></a><h2>NiMeshProfileProcessor Internals</h2>
+
+<p>In general, the specifics to the <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ library need not concern developers, however, in the event that developers 
+ find themselves writing plug-ins for their export process, or creating 
+ new modifiers, or even writing new XML profiles (see <span class="NDLSystemFont"><a 
+ href="../NiMeshProfileXMLParser/Introduction_to_NiMeshProfileXMLParser.htm">NiMeshProfileXMLParser</a></span>), 
+ understanding some basics of the internal workings of <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ may be helpful.</p>
+
+<p>To begin, the library consists of a singleton of the 
+ same name. Exporters and other tools typically begin by initializing the 
+ <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ singleton followed by registering runtime profile objects (<span class="NDLSystemFont">NiOpProfile</span>) 
+ with the system. How those profiles are created does not concern the <span 
+ class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ library, though it should be noted that the Maya exporter and aforementioned 
+ developer tools use the <span class="NDLSystemFont"><a href="../NiMeshProfileXMLParser/Introduction_to_NiMeshProfileXMLParser.htm">NiMeshProfileXMLParser</a></span> 
+ to generate profiles from XML. When the exporter or tool shuts down, that 
+ application is responsible for shutting down the <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ singleton. </p>
+
+<p>The actual profiles (<span class="NDLSystemFont">NiOpProfile</span> 
+ objects) maintained by <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ are treated as static and are accessible at any point during the plug-in 
+ pipeline. This allows individual mesh objects to refer to the same profile. 
+ The way by which a mesh actually refers to a profile is by attaching an 
+ <span class="NDLSystemFont"><a href="../NiMain/NiStringExtraData.htm">NiStringExtraData</a></span> 
+ object to the mesh. The string extra data must have the name "<span 
+ class="NDLSystemFont">MeshProfileName</span>" 
+ and the value of that extra data should specify the name of the profile 
+ that is to be applied. Since all profiles are static and potentially shared 
+ by other mesh, plug-ins should not take liberties to modify them.</p>
+
+<p>The <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ library provides the <span class="NDLSystemFont">Finalize</span> method 
+ for manipulating data streams in the scene (this method, incidentally, 
+ is what the <span class="NDLSystemFont"><a href="../Tool_Plug_ins/Mesh_Finalize.htm">MeshFinalize</a></span> 
+ plug-in wraps). Each mesh in the scene is processed using the specified 
+ mesh profile. Processing entails conversions of data-stream elements from 
+ one format to another, renaming semantics, modifying access and usage 
+ types, merging and swizzing element components, and the like. The <span 
+ class="NDLSystemFont">Finalize</span> method also attempts to accommodate 
+ mesh modifier requirements by making adjustments to the profile (see"<a href="#Merging_Mesh_Modifier_Requirements_into_Profiles">Merging 
+ Mesh Modifier Requirements into Profiles</a>"). Lastly, the 
+ method will attempt to interleave semantic elements (as specified by the 
+ mesh profile) into single data-streams. </p>
+
+<p>To facilitate the <span class="NDLSystemFont">Finalize</span> 
+ method, the <span class="NDLSystemFont">NiOpProfile</span> 
+ contains distinct instructions which are linked together via various derived 
+ operation nodes (<span class="NDLSystemFont">NiOpNodes</span>). 
+ The operation nodes are really nothing more than thin wrappers around 
+ a set of static functions that allow for processing and manipulation of 
+ data streams in interesting and unique ways. By having these thin wrapper 
+ nodes, profiles can chain together operations in any order and with any 
+ degree of complexity that they desire. In practice, the <span class="NDLSystemFont"><a 
+ href="../NiMeshProfileXMLParser/Introduction_to_NiMeshProfileXMLParser.htm">NiMeshProfileXMLParser</a></span>, 
+ ensures a fairly set order of operations. These operations are described 
+ briefly in the "Mesh Profile Operations" section.</p>
+
+<a name=Anatomy_of_a_Runttime_Mesh_Profile></a><h2>Anatomy of a Runtime Mesh Profile</h2>
+
+<p>The important components contained by a runtime mesh 
+ profile are:</p>
+
+<h3>Name</h3>
+
+<p>Each profile has an associated name that must be unique 
+ (per-renderer target). The name is not only what is displayed to tools 
+ and exporters, but is also used to match the attached name-extra from 
+ the mesh to select the appropriate profile.</p>
+
+<h3>Description</h3>
+
+<p>Each profile has a short description which is intended 
+ to be used by the tool or exporter for display purposes.</p>
+
+<h3>Renderer</h3>
+
+<p>A runtime profile may only be associated with a specific 
+ renderer. (An XML representation of a profile, on the other hand, may 
+ allow overlaying renderer differences). For a given renderer, there can 
+ only be one profile of a given "name". Because of hardware differences, 
+ having per-renderer profiles is useful.</p>
+
+<h3>Start and Terminating Operation Nodes</h3>
+
+<p>The key component of a Mesh Profile is how it instructs 
+ the system to manipulate data streams. The <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ provides a number of data stream operations that a Mesh Profile can chained 
+ together via various operation <em>nodes</em>. 
+ Operation nodes are really nothing more than thin wrappers around operations 
+ with the additional benefits of allowing parameters to be set in advance 
+ and providing the ability for the node to be connected to other operation 
+ nodes.</p>
+
+<p>There are two special types of operation nodes that 
+ do not wrap any <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ operation. These are the <em>start</em> 
+ and <em>terminating</em> operation nodes. 
+ The start operation node stores nothing more than a semantic and index. 
+ When it comes time to process a profile, this start node is used to find 
+ the data stream on a mesh that will undergo some set of operations. At 
+ the end of every operation node chain is a terminating node. While the 
+ terminating node does not wrap any specific operation, it does provide 
+ instructions that may further manipulate the data stream. It also provides 
+ information on how the system is to react in the event that the succession 
+ of operations fail for some reason or another (for example, if the starting 
+ data stream could not be found). The specific components of what the terminating 
+ operation node provides are listed below:</p>
+
+<ol>
+	
+	<li><b>Required</b><br>
+	If the terminating node is marked <em>required</em>, 
+ then errors will be generated in the event that the succession of operation 
+ nodes fail to generate a valid data stream. On the other-hand, if <em>
+ not</em> required, no errors will be generated. 
+ It is often the case that profiles will mark data streams as <em>not</em> 
+ required in order to have a single profile serve a larger set of scenarios.</li>
+	
+	<li><b>Data 
+ Stream Access Flags</b><br>
+	The terminating node typically will not involve itself with changing 
+ the data stream access flags of the resulting data stream. In some cases 
+ however, it may be desired to do so and in that case data stream access 
+ can be explicitly specified. When the data stream access flags are explicitly 
+ specified, the resulting data stream (if it can be generated) will be 
+ guaranteed to have <em>at least</em> that 
+ level of access (merging with mesh modifier requirements may <em>increase</em> 
+ access - See <a href="#Merging_Mesh_Modifier_Requirements_into_Profiles">merging 
+ profiles with mesh modifier requirements</a> for more details). </li>
+	
+	<li><b>Usage</b><br>
+	In nearly all cases, the terminating node will not involve itself with 
+ changing the data stream usage setting. However, explicitly setting the 
+ data stream usage can be controlled by the terminating node.</li>
+	
+	<li><b>Strict 
+ Format</b><br>
+	The final format of a data stream ultimately depends on the chain of 
+ operations that are performed on the starting data streams. In some cases, 
+ the final format is not compatible with a mesh modifiers requirements, 
+ but could be compatible if the system were allowed to make a few tweaks 
+ to the chain of operations or possibly by inserting an operation of some 
+ sort. By marking the format as <em>strict</em>, 
+ these tweaks will not be allowed and it can be guaranteed that the format 
+ specified by the profile will be honored. By marking the format as <em>not</em> strict, these small tweaks will 
+ be allowed and offer a greater chance for compatibility with mesh modifier 
+ requirements.</li>
+	
+	<li><b>Stream 
+ ID</b><br>
+	Each terminating node allows for specifying a Stream ID to be associated 
+ with the resulting data stream. Any data streams having the same Stream 
+ ID will be interleaved together. Because of the data stream requirements 
+ imposed by the <span class="NDLSystemFont">NiMeshProfileProcessor</span>, 
+ the Stream ID is only applicable during the <span class="NDLSystemFont">Finalize</span> 
+ stage.</li>
+	
+	<li><b>Strict 
+ Interleave</b><br>
+	When attempting to interleave data streams based on their Stream ID, 
+ failure may result for various reasons (for example - incompatible usage 
+ and access flags, etc.). Additionally, mesh modifier requirements may 
+ place demands on how data streams should be interleaved. By indicating 
+ that strict interleaving is <em>not</em> 
+ required, mesh modifiers will have a greater chance of meeting their interleaving 
+ requirements and errors will not result in cases where data streams can 
+ not be interleaved as specified by the profile. If it is necessary to 
+ enforce interleaving a specific set of data stream elements, then strict 
+ interleave should be used.</li>
+</ol>
+
+<p>As a final note, every profile maintains an independent 
+ array of terminating operation nodes. </p>
+
+<h3>Keep Unspecified Streams</h3>
+
+<p>A Mesh Profile maintains a setting which indicates if 
+ unspecified streams should be kept or not. When a profile specifies that 
+ unspecified streams should be kept, it is ensured that any data streams 
+ that do not participate in operations (haven't been specified by the profile) 
+ will <em>not</em> be removed from the 
+ mesh. Conversely, a Mesh Profile can specify that unspecified streams 
+ should be removed from the final mesh. One note is that streams that are 
+ removed will not be available to satisfy mesh modifier requirements. </p>
+
+<a name=Mesh_Profile_Fragments></a><h2>Mesh Profile Fragments</h2>
+
+<p>Because data streams may or may not be shared between 
+ a set of mesh, special considerations must be made to accommodate for 
+ that fact. Issues that may arise and that must be dealt with are, for 
+ example:</p>
+
+<ul>
+	
+	<li>Attempts to interleave 
+ data streams that have different sharing patterns.</li>
+	
+	<li>Attempts to merge and 
+ swizzle components from data streams that are shared differently.</li>
+	
+	<li>Attempts to process 
+ the same data streams twice because of it being shared by a number of 
+ mesh objects. </li>
+</ul>
+
+<p>To deal with these issues, data streams are organized 
+ into groups based on how they are shared between different mesh. This 
+ is done with the help of <span class="NDLSystemFont"><a href="../NiMeshTools/NiToolPipelineCloneHelper.htm">NiToolPipelineCloneHelper</a></span>. 
+ Each of the groups then receives a portion of the profile and this portion 
+ is referred to as a profile fragment. The profile fragment contains a 
+ subset of the terminating operation nodes from the original profile. How 
+ the subsets are formed is based on what the needs of the starting nodes 
+ are.</p>
+
+<p>By dealing with data stream groups and profile fragments 
+ (as opposed to mesh objects and profiles), it is easier to ensure that 
+ data streams are only processed once. Further, it is easier to detect 
+ when operations such as merge and swizzle and interleaving of data streams 
+ should fail. It should be noted that data stream sharing out of the exporters 
+ may impose restrictions on profiles that wouldn't otherwise be present.</p>
+
+<a name=Mesh_Profile_Operations></a><h2>Mesh Profile Operations</h2>
+
+<p>The heart of the <span class="NDLSystemFont">NiMeshProfileProcessor</span> 
+ system lie in the operations that are used to process data streams. Most 
+ of the operations typically take an <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ as one of the inputs and outputs an <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ having the operational effect. The operations assume that there is only 
+ one semantic element for the underlying data stream (for other assumptions, 
+ see <a href="#Additional_Assumptions_and_Restrictions">Assumptions, Restrictions, 
+ and Requirements on NiDataStreamRef 
+ objects</a>). The following are the available operations for constructing 
+ a profile:</p>
+
+<h3>Remap Values</h3>
+
+<p>The Remap 
+ operation allows for linear remapping 
+ one range of values into another specified range. Inversion of ranges 
+ is supported. Values that fall outside of the source range will also be 
+ remapped by 
+ the same linear function (there is no concept of user defined min/max 
+ clamping within the operation). Automatic min/max 
+ <em>type</em> clamping will occur, however, 
+ to prevent values from being remapped 
+ to a number not representable by the data type. Finally, the remapping 
+ can be applied to all components by default, or if desired, a single component 
+ may be designated.</p>
+
+<h3>Clamp Values</h3>
+
+<p>The Clamp operation allows for clamping values to a 
+ specified min/max 
+ range. Automatic min/max 
+ type clamping will override the specified min/max 
+ range to prevent values from being clamped to a number not representable 
+ by the data type (though, the situations where this would occur are few). 
+ Finally, the clamping can be applied to all components by default, or 
+ if desired, a single component may be designated.</p>
+
+<h3>Cast-Convert</h3>
+
+<p>The Cast-Convert operation allows for the conversion 
+ of one format into another format having the same component count. The 
+ operation takes two additional inputs over the <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ itself. The first input is a <em>type</em> 
+ (<span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm#Public_Types">NiDataStreamElement::Type</a></span>) 
+ designation. The output format will retain the component count of the 
+ source format, but will be changed to the type specified. Hence, the resulting 
+ format can only be one of the known predefined formats. The second additional 
+ input specifies the casting-method that is used to convert the underlying 
+ data (and incidentally, the third method will affect the resulting format). 
+ The three possible casting methods are:</p>
+
+<ol style="list-style: decimal;"
+	type=1>
+	
+	<li>Blind Cast<br>
+	This method instructs a blind-cast of the old value to the new type 
+ without regard to the range of the new data type.</li>
+	
+	<li>Type Clamp Cast<br>
+	This method instructs a cast of the old value to the new type but will 
+ clamp values to the range of the new data type.</li>
+	
+	<li>Normalize Cast<br>
+	This method instructs a cast of the 
+ old value to the new type but will include a built-in remapping 
+ from the range of the source to the range of the destination. In the case 
+ of <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_FLOAT16</a> 
+ </span>and <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_FLOAT32</a></span> 
+ values, the range will be considered <span class="NDLSystemFont">0.0</span> 
+ to <span class="NDLSystemFont">1.0</span>. Finally, if the normalize-cast 
+ method is chosen, one of the predefined normalized formats will be chosen 
+ (if available) for the output format. As an example, given a <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_3</a></span> 
+ formatted data stream, one could specify that the <em>type</em> 
+ be <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_UINT16</a></span> 
+ and the <em>cast-method</em> be normalize-cast. 
+ The resulting format would be <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_NORMUINT16_3</a></span> 
+ and the underlying data would have been remapped 
+ to the <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_UINT16</a></span> 
+ type range.</li>
+	
+	<li>Smart Cast<br>
+	This method instructs that the cast should only occur if there is no 
+ lost of data. For example, going from a T_UINT32 to a T_UINT16 would only 
+ take place if all values in the originating data-stream could be cast 
+ without lost of data. </li>
+</ol>
+
+<h3>Component-Pack</h3>
+
+<p>The Component-Pack operation allows for a special type 
+ of conversion where all the components of a semantic element are packed 
+ into 4 bytes. The actual number of bits allocated for each packed component 
+ depends on the packed format type. The available formats are any of the 
+ predefined packed formats: <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_UINT_10_10_10_L1</a>, 
+ </span><span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_NORMINT_10_10_10_L1</a>, 
+ </span><span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_UINT_10_10_10_2</a>, 
+ </span><span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_NORMINT_10_10_10_2</a>, 
+ </span><span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_NORMINT_11_11_10</a>. 
+ </span>See Mesh Profile Supported Formats for details concerning using 
+ these formats.</p>
+
+<h3>Reinterpret Format</h3>
+
+<p>The Reinterpret-Format operation allows for specifying 
+ how a data stream is to be interpreted without actually changing the data 
+ stream. This operation may be used to slap on a specialized format or 
+ to combine/split up components on an existing format. For example, a stream 
+ having a <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_2</a></span> 
+ format could, in some cases, be reinterpreted as a <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_4</a></span>. 
+ In this case, the overall range would decrease by half as the component 
+ count per item would have double. This points out the fact that some reinterpretations 
+ will fail. For example, reinterpreting a <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_3</a></span> 
+ to a <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_4</a></span> 
+ would only work if the first stream had the proper size to fill the <span 
+ class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_FLOAT32_4</a></span> 
+ request.</p>
+
+<h3>Merge and Swizzle Components</h3>
+
+<p>The Merge-and-Swizzle operation allows for selective 
+ mixing of components from one or more semantic elements. Any component 
+ may be placed into any desired order, may be used more than once, or not 
+ at all. Literal values may also be specified in the operation. For example, 
+ the <span class="NDLSystemFont">R</span> and <span class="NDLSystemFont">G</span> 
+ components may be taken from the <span class="NDLSystemFont">COLOR</span> 
+ element while an X component might be taken from the <span class="NDLSystemFont">POSITION</span> 
+ element. A literal value could also be pushed into the mix. The resulting 
+ data stream would have 4 components and might be specified to merge in 
+ this configuration: [<span class="NDLSystemFont">R, X, G, 
+ 1.0</span>] .</p>
+
+<p>The Merge-and-Swizzle operation is unique in that it 
+ may rely on multiple data streams for constructing the resulting <span 
+ class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span>. 
+ Because of this uniqueness, there are some special restrictions and additional 
+ inputs that are required. The additional inputs are a semantic name and 
+ index specification for the resulting <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span>. 
+ The restrictions are:</p>
+
+<ul>
+	
+	<li>All 
+ inputs must have exactly the same underlying primitive. (ie, 
+ <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_FLOAT32</a></span>, 
+ <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_INT32</a></span>, 
+ <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">T_UINT8</a></span>, 
+ etc.). </li>
+	
+	<li>All inputs must have 
+ exactly the same cloning behavior</li>
+	
+	<li>All inputs must be 
+ shared by the same set of mesh.</li>
+	
+	<li>All inputs must have 
+ exactly the same write access</li>
+	
+	<li>All inputs must have 
+ the same range</li>
+	
+	<li>All inputs must have 
+ the same number of regions and region references</li>
+	
+	<li>All input streams must 
+ have a "standard" format. (Ie - no <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamElement.htm">F_NORMINT_11_11_10</a></span>, 
+ etc.)</li>
+</ul>
+
+<h3>Rename Semantic</h3>
+
+<p>The Rename operation allows for modifying the Semantic 
+ name and Index. The Rename operation is unique in that it does not actually 
+ modify the underlying data stream.</p>
+
+<h3>Interleave</h3>
+
+<p>The interleave functionality is not actually an operation. 
+ It consists of special functionality that only occurs in the Finalize 
+ stage and only after all other operations have been performed. It allows 
+ for specifying that elements should be combined into a single stream. 
+ For example, <span class="NDLSystemFont">POSITION</span> and <span class="NDLSystemFont">NORMAL</span> 
+ may exist as single element streams, but after interleaving, the two elements 
+ (if specified in this manner) would exist within a single stream. If, 
+ for some reason, interleaving is not possible between elements, an error 
+ would result depending on if the elements were specified as strict-interleave 
+ or not. If no error occurs, then the elements would be split and coalesced 
+ with other splits..</p>
+
+<a name=Merging_Mesh_Modifier_Requirements_into_Profiles></a><h2>Merging Mesh Modifier Requirements into Profiles</h2>
+
+<p>During the Finalize stage, mesh modifiers are given 
+ a chance to specify requirements which the profile will attempt to accommodate. 
+ The mesh modifier exposes its requirements via the <span class="NDLSystemFont"><a href="../NiMesh/NiMeshRequirements.htm">NiMeshRequirements</a></span> 
+ data structure and can be retrieved via <span class="NDLSystemFont"><a href="../NiMesh/NiMeshModifier.htm">NiMeshModifier::RetrieveRequirements</a></span> 
+ method. Since profiles may specify fairly complex operations and relationships 
+ between various data streams, the range of accommodations are somewhat 
+ limited. In particular, whether or not a <em>format</em> 
+ change can be accommodated depends first upon whether or not the profile 
+ has specified the format to be strict. Secondly, it depends largely on 
+ the sequence of operations that defines that data stream since various 
+ operations like Merge-and-Swizzle, Cast-Convert, and Reinterpret Format, 
+ can all influence the final format. Other attributes such as <em>access 
+ flags</em> and <em>usage</em> are a 
+ bit more straight forward. Access flags, when merged, always allow for 
+ increases in privileges. Usage can never differ.</p>
+
+<p>The <span class="NDLSystemFont"><a href="../NiMesh/NiMeshRequirements.htm">NiMeshRequirements</a></span> 
+ structure allows mesh modifiers to also specify their interleaving requirements. 
+ In cases where the profile or the modifier request strict-interleaving 
+ between a set of semantics, those sets can not conflict else the merge 
+ will fail.</p>
+
+<p>When modifiers do exist, the specific profile fragment 
+ is manipulated so as not to affect the static profile which may be shared 
+ by other mesh objects. Since the final format of a data stream, its access 
+ flags, and usage can depend on the starting conditions of the data stream 
+ (for example, as passed in via the DCC tool or as manipulated by plug-ins), 
+ merging of requirements can only occur during the <span class="NDLSystemFont">Finalize</span> 
+ stage.</p>
+
+<a name=Additional_Assumptions_and_Restrictions></a><h2>Assumptions, Restrictions, and Requirements on NiDataStreamRef objects</h2>
+
+<p>In order for operations to work smoothly with data streams, 
+ certain restrictions are made by <span class="NDLSystemFont">NiMeshProfileProcessor</span>. 
+ Any developer writing or modifying plug-ins and/or writing mesh modifiers 
+ should familiarize themselves with the following restrictions/requirements:</p>
+
+<ul>
+	
+	<li>All <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ inputs should be valid and contain a non-<span class="NDLSystemFont">NULL</span> 
+ data stream.</li>
+	
+	<li>All <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ inputs are required to have exactly one semantic element that represents 
+ the underlying data stream. This is to say that no elements should be 
+ interleaved together until after the <span class="NDLSystemFont">Finalize</span> 
+ stage has run. <span class="NDLSystemFont">Finalize</span> will, in fact, 
+ de-interleave streams if such are found.</li>
+	
+	<li>All <span class="NDLSystemFont"><a href="../NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ inputs should have their semantic element in one of the known predefined 
+ formats.</li>
+	
+	<li>If a data stream is 
+ shared by more than 1 mesh object, then every other data stream on that 
+ mesh, if also shared by more than 1 mesh, should be shared by the exact 
+ same set of mesh objects.</li>
+</ul>
+
+<h3>Mesh Profile Pipeline Diagram</h3>
+
+<p>The diagram below illustrates the typical path taken 
+ by the mesh profile system within an application. It also illustrates 
+ some of the steps taken by the <span class="NDLSystemFont"><a href="../Tool_Plug_ins/Mesh_Finalize.htm">MeshFinalize</a></span> 
+ plug-in.</p>
+
+<div class="FigureContainer">
+    <img src="./images/MeshProfilePipeline.jpg" width="719" height="897"
+/>
+    <p class="FigureCaption">Mesh profile pipeline</p>
+</div>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

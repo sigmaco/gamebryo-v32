@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Invoking behaviors</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Invoking behaviors</h1>
+
+<p>A Behavior is invoked by specifying which Behavior is wanted and the parameters needed, then
+    transmitting the request to the desired Entity or Entities.</p>
+
+<p>A <a href="../../Reference/efd/efd__ParameterList.htm">ParameterList</a> is created and
+    parameters to the Behavior are added into it. Parameters can be given string names to facilitate
+    easy lookup. The desired Category is used to target the request. Often this Category is point to
+    point and is automatically constructed given an EntityID. Each Entity is automatically
+    subscribed to a Category that matches its EntityID, and this is used as the mechanism to deliver
+    point to point Behavior requests to your desired Entity. The Behavior name and optionally, the
+    Model name are given passed with the parameter list. The request is sent using SendEvent from
+    the BehaviorAPI module.</p>
+
+<p>Every built-in API that takes a behavior name can support a name of the format
+    "ModelName:BehaviorName". Providing the "ModelName:" portion is optional and is not normally
+    needed. Normal behavior invocations act like virtual C++ functions, but when a specific Model
+    name is provided it directly calls the implementation from the given Model. If the specified
+    method is an <a href="behavior_invoke_order.htm">extends-style</a> method even a model-specific
+    Behavior will still be invoked like a normal extends-stlye behavior.</p>
+
+<p>Requests that are sent for non-existent Entities fail silently, or with a warning log message.
+    Replies to requestors that have since been deleted also fail silently.</p>
+
+<h2>Multi-consumer behavior request</h2>
+
+<p>A multi-consumer Behavior Request is one that is sent to a Category that is consumed by multiple
+    Entities. This sort of Behavior request cannot be done with SendAndWait, since it is so hard to
+    ensure that all consumers have finished processing the message. SendWithCallback will
+    immediately invoke the callback Behavior once per receiver without waiting for all receivers to
+    first finish their processing.</p>
+
+<p>When such a Behavior Request arrives, the system considers each Entity that is consuming (in
+    other words subscribed to) the Category it arrives on, and invokes the named Behavior. Entities
+    that do not have that Behavior are silently skipped. This is a particularly useful capability
+    for implementing area-of-effect actions and actions that affect each of a special group of
+    Entities.</p>
+
+<h2>Using CallBehavior()</h2>
+
+<p>The <a href="../../Reference/Namespaces/BehaviorAPI.htm">CallBehavior</a> built-in allows the
+    Entity to call another Behavior on itself as if the Behavior was a method. This includes cases
+    where the called behavior is written in a different language. It can also be used on another
+    Entity as long as they are on the same simulator. CallBehavior takes three parameters: Entity
+    ID, Behavior name and parameter list. Note that CallBehavior does not take a general purpose
+    Category, so it cannot be used for a Multiple consumer situation. CallBehavior currently works
+    only on Behaviors marked with the Immediate trait, and cannot request or allow a time delay. To
+    call a Behavior on an Entity that may exist on another simulator use the SendEvent built-in. For
+    Behaviors that delay or block, use SendAndWaitForReply. This system does not currently provide
+    for returning a ParameterList. Here is an example of CallBehavior in Lua.</p>
+<pre>
+  -- Create a parameter list and add in any parameters
+  local args = ParameterList.ParameterList()
+  args:PutString("Hello, this is an unnamed parameter") 
+  args:PutString("OptionalParameterName", "Paramater Value") 
+
+  -- Call the behavior 
+  BehaviorAPI.CallBehavior(self, "PrintMessage", args)
+</pre>
+
+<h2>Using SendEvent()</h2>
+
+<p><a href="../../Reference/Namespaces/BehaviorAPI.htm">SendEvent</a> sends a message to an Entity
+    to request that it execute a Behavior and to receive an optional callback when the request is
+    completed. It can be used to send to a Category that specifies an Entity or multiple Entities to
+    receive it. The first two parameters are the ID to send to (either EntityID or Category) and the
+    name of the Behavior to execute. The remaining parameters are optional: a parameter list, the
+    name of a callback Behavior, which may be nil, indicating that no callback is desired. If sent
+    to a Category that has more than one subscriber, the callback will be invoked once for each
+    consumer of the request immediately after the Behavior completes execution on each Entity.</p>
+
+<p>The delay parameter to SendEvent is in seconds, and causes the system to queue the Behavior
+    request until that time has elapsed. This is particularly useful for determining when some game
+    designed delay has elapsed without having to continually poll the clock.</p>
+
+<h4>Lua example:</h4>
+<pre>
+  -- Create a parameter list and add in any parameters
+  local args = ParameterList.ParameterList()
+  args:PutString("Hello: this is an unnamed parameter") 
+  args:PutString("OptionalParameterName", "Paramater Value") 
+
+  -- Call the behavior 
+  BehaviorAPI.SendEvent(entityOrCatId, "PrintMessage", args)
+</pre>
+
+<h4>C++ example:</h4>
+<pre>
+// Create a parameter list for the parameters
+efd::ParameterListPtr spParams = EE_NEW efd::ParameterList();
+if (spParams)
+{
+    spParams-&gt;AddParameter(utf8string("Hello from C++!"));
+    // To ensure a specific parameter type, template can be specified. Here a char* string
+    // will be converted to a utf8string when added:
+    spParams-&gt;AddParameter&lt;utf8string&gt;("I will be added as a utf8string");
+    // Named parameters take two args:
+    spParams-&gt;AddParameter("OptionalParameterName", utf8string("Paramater Value"));
+    pCaller-&gt;SendEvent(m_ target, "TestModel", "PrintMessage", spParams);
+}
+</pre>
+
+<h4>Lua example using a callback and delay:</h4>
+<pre>
+  -- Create a parameter list and add in any parameters
+  local args = ParameterList.ParameterList()
+  args:PutString("Hello: this is an unnamed parameter") 
+  args:PutString("OptionalParameterName", "Paramater Value") 
+
+  -- Send event to invoke the behavior. It will begin to execute after 5 seconds from now.
+  BehaviorAPI.SendEvent(entityOrCatId, "PrintMessage", args, "PrintMessageCallback", 5.0)
+</pre>
+
+<h2>Using SendAndWaitForReply()</h2>
+
+<p>When the script needs to call a behavior and block until the behavior finishes it should call
+    <a href="../../Reference/Namespaces/BehaviorAPI.htm">SendAndWaitForReply</a>. This method will
+    send an event and block the execution of the caller until the called behavior finishes and a
+    reply is received. The semantics of SendAndWaitForReplay are undefined if the Category used has
+    more than one subscriber.</p>
+
+<p>SendAndWaitForReply returns the parameter list passed into SendReply by the target Entity. The
+    built-in takes an optional delay parameter which causes the target to execute the requested
+    Behavior only after that many seconds have elapsed. Here is a Lua example:</p>
+<pre>
+  -- Create a parameter list and add in any parameters
+  local args = ParameterList.ParameterList()
+  args:PutString("Hello: this is an unnamed parameter") 
+  args:PutString("OptionalParameterName", "Paramater Value") 
+
+  -- Call the behavior and block until it finished
+  local reply = BehaviorAPI.SendAndWaitForReply(entityID, "PrintMessage", args)
+  BehaviorAPI.LogMessage(1, "This will not log until PrintMessage finishes")
+</pre>
+
+<h2>Using SendReply()</h2>
+
+<p>When a Behavior is going to be invoked from a SendAndWaitForReply or from a SendEvent with a
+    callback, the SendReply method allows it to control the reply that is returned to the caller. It
+    is not required and if it is omitted, then the default reply is returned to the called. But, by
+    calling it at the end of the method the Behavior can pass back to the caller whatever parameter
+    values it wishes.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Breakpoints will not be hit in script behaviors called with
+                BehaviorApi.CallBehavior. In many cases BehaviorAPI.SendAndWaitForReply can be used
+                instead.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="behavior_creating.htm">Creating behaviors</a></li>
+
+    <li><a href="behavior_modifying.htm">Modifying behaviors</a></li>
+
+    <li><a href="behavior_removing.htm">Removing behaviors</a></li>
+
+    <li><a href="behavior_debug_lua.htm">Debugging Lua behaviors in real-time</a></li>
+
+    <li><a href="behavior_passing_values_between.htm">Passing values between scripted
+    behaviors</a></li>
+
+    <li><a href="behavior_removing_from_simulator.htm">Removing scripted behavior entities from the
+    simulator</a></li>
+
+    <li><a href="behavior_using_traits.htm">Using behavior traits</a></li>
+
+    <li><a href="behavior_invoke_order.htm">Behavior invocation order</a></li>
+
+    <li><a href="../../Reference/Namespaces/BehaviorAPI.htm">Behavior API Built-in
+    reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

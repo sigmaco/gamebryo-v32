@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best Practices for Working with the Asset Infrastructure</title>
+
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Best Practices for Working with the Asset Infrastructure</h1>
+
+<p>Emergent recommends the following best practices when you are working with the Asset
+Infrastructure.</p>
+
+<h2>Rapid Content Development on PC/Windows</h2>
+
+<p>When you develop your game content on PC/Windows, you run the Toolbench application. Toolbench
+runs the Asset Controller. If you want to see the changes that you make to your content as soon as
+possible, include the Rapid Iteration Service in your game. You can observe many of the changes to
+your content while the game is running.</p>
+
+<p>For more information about adding the Rapid Iteration Service to your game, see <a href=
+"../../Tutorials/Hello_World/hello_world_tutorial_more_services.htm">Hello World: Adding More Game
+Framework Services</a>.</p>
+
+<p>With Toolbench, Asset Controller, and your game all running on the same PC, you can make content
+changes directly to the files that are stored in your Asset Web Root location (as referenced by the
+game solution file loaded in Toolbench). You should also configure the running game to point to
+this Asset Web Root location. The game will receive notification messages from the Asset Controller
+as content files change. With the exception of a few restrictions, your game will reload changed
+content files, and you will see the changes immediately.</p>
+
+<p>It is also possible to configure the system to have the game and tools running on different
+machines. This requires you to follow deployment prerequisites similar to when you are developing
+on a console.</p>
+
+<h2>Rapid Content Development on Game Consoles</h2>
+
+<p>Rapid content development on a game console works pretty much the same as the PC/Windows. The
+difference is that the game itself runs on the console. You will have to perform some setup and
+configuration for the console and your assets.</p>
+
+<p>As in the PC/Windows case, the game will receive notification messages for changed content files
+from the Asset Controller. Additionally, the game will be able to download the content of the
+changed file through the asset system so that it can be reloaded locally into the game. To support
+this work flow, there are two initial requirements:</p>
+
+<ul>
+    <li>Before you start a development session, you need to sync the assets that are seen by the
+    console file system with the assets in your Asset Web Root. The console will load all of its
+    assets in the normal way, which could be either from a local hard drive or some sort of optical
+    drive emulation system that utilizes a shared directory on your PC. This may require you to
+    maintain a complete copy of the runtime assets in Asset Web Root on the file system that the
+    console will use. If so, you need to sync this copy with the Asset Web Root before you start
+    the game. After that point, the Asset Controller manages asset synchronization in-memory to
+    update the game. For more information, see <a href=
+    "asset_runtime_deploying_assets.htm">Deploying assets</a>.</li>
+
+    <li>Network configuration may be required if the game is running in an environment where
+    broadcast UDP traffic cannot travel between Asset Controller on your PC and the game. A common
+    reason for this might be running a game on a remote PC or game console that is on a VPN or a
+    different network subnet. In most situations this configuration is not required, however in
+    this case the game must be configured to connect to the Asset Controller running on your
+    development PC. This is handled by setting the Channel Manager configuration variables for the
+    game configuration to the appropriate IP address and port number of the development PC.
+
+        <p class="indent1"><span class="NDLSystemFont">[ChannelManager]<br>
+        Hostname = 192.168.100.160<br>
+        Port = 13215</span><br></p>
+    </li>
+</ul>
+
+<h2>Normal Development on All Platforms</h2>
+
+<p>If you are focusing on code development rather than content development, and you want to iterate
+on your code changes but without invoking Toolbench, you need to make some adjustment for the fact
+that you are not running an Asset Controller. To run the game stand-alone, you must ensure that all
+of the asset metadata is up-to-date when the game starts. The best way to ensure that this is the
+case is to include a build step that runs the Asset Controller with a command-line that tells it to
+just update the metadata and then exit. The following is an example:</p>
+
+<p><span class="NDLSystemFont">AssetController.EXE AssetWeb.Path=..\..\relative\path\to\assets
+AssetWeb.ExportAndExit=true</span></p>
+
+<p>This command will scan the asset web and update only the metadata that was affected by changes
+to the assets since the last scan. It normally runs pretty quickly, even when your project contains
+thousands of assets.</p>
+
+<p>If you plan to run the game stand-alone on a console and without Toolbench and Asset Controller
+running, then you will need to deploy both the assets and the optimized metadata to the console's
+file system before the game can run as if the application were in a shipping configuration. See
+<a href="asset_runtime_deploying_assets.htm">Deploying assets</a>.</p>
+
+<p>Another important point for console development is that you will need to have a binary of the
+Asset Controller available for the console build step to run. Otherwise, your build system will be
+required to build the Asset Controller (for Windows) as a dependency for building your application
+for the console. The easy solution is to check-in a binary of the Asset Controller so that it is
+always available for build script purposes. However, if you are making changes to the Asset
+Controller code, you must keep in mind to update this binary as well. Otherwise, you run a risk of
+having different Asset Controller functionality when you build for Windows vs. consoles or when you
+run the Asset Controller as part of your build script vs. running it with Toolbench.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Source distributions of Gamebryo LightSpeed include an Asset Controller binary that
+                is a non-DLL Release build in the
+                <em>%EMERGENT_PATH%</em>\Source\Tools\AssetController\bin directory. This binary is
+                used for build scripts, as described above.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Miscellaneous</h2>
+
+<ul>
+    <li>Run Toolbench before starting the application. This allows the common asset metadata to be
+    used on application startup.</li>
+
+    <li>Leave Asset Controller running during asset file updates such as editing in external tools
+    and syncing from the central repository. This allows the optimized metadata to be immediately
+    updated and reduces later startup delays.</li>
+
+    <li>There should be no need to delete the optimized metadata and rebuild it for typical use
+    cases. However, you should be aware that when you start the Asset Controller, asset files are
+    scanned based on the timestamps of the directories. If you perform file operations that are not
+    validly reflected by updated timestamps on your directories, then affected files may not be
+    re-scanned. This is most easily corrected by just deleting the <span class=
+    "NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-metadata</span> directory,
+    then running the Asset Controller. A full scan of the asset files will take place.</li>
+
+    <li>Temporary asset files that are regenerated can have persisted source metadata files if
+    necessary.</li>
+
+    <li>When writing code that deals with assets, avoid using file names or partial path names to
+    refer to the asset. Assets are best identified by their logical asset ID. The physical file
+    might be moved, renamed or overridden with a platform specific or localized asset while
+    retaining the same logical asset ID. Furthermore, some assets might not have a direct file
+    name; for example, an asset might be contained inside a zipped file.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_overview.htm">Asset Infrastructure Overview</a></li>
+
+    <li><a href="asset_runtime_features.htm">Asset Infrastructure Features</a></li>
+
+    <li><a href="asset_runtime_how_work.htm">How the Asset Locating Services Work</a></li>
+
+    <li><a href="asset_runtime_limitations.htm">Asset Runtime Service limitations</a></li>
+
+    <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the
+    Emergent Game Framework</a></li>
+
+    <li><a href="asset_runtime_reqs.htm">Requirements for Working with the Asset
+    Infrastructure</a></li>
+
+    <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

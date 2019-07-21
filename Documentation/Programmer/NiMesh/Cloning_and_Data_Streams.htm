@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cloning and Data Streams</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Cloning and Data Streams</h1>
+
+<p>Vertex data is "shared" when more than one <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ instance references a <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span> 
+ instance (ie, via a common pointer in the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamRef.htm">NiDataStreamRefs</a></span> 
+ attached to meshes). <a href="../General_Topics/Mesh_Data_Sharing.htm">Mesh 
+ Data Sharing</a> and <a href="../Object_Systems/Cloning.htm#CloningBehaviorEnumeration">Cloning 
+ Behavior Enumeration</a> discusses some of the basics for data sharing 
+ and are pre-requisites for understanding the use cases presented in this 
+ document.</p>
+
+<p>Gamebryo defaults to the following cloning flags based 
+ off of the CPU write access flag specified at creation time:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+
+<tr>
+<th>
+
+	CPU Write Access Flag</th>
+<th>
+Default Cloning Behavior Value</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont">ACCESS_CPU_WRITE_STATIC</span></td>
+<td>
+<span class="NDLSystemFont">CLONE_SHARE</span></td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">ACCESS_CPU_WRITE_MUTABLE</span></td>
+<td>
+<span class="NDLSystemFont">CLONE_COPY</span></td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">ACCESS_CPU_WRITE_VOLATILE</span></td>
+<td>
+<span class="NDLSystemFont">CLONE_BLANK_COPY</span></td></tr>
+</tbody>
+</table>
+
+
+
+<p>These default flags can also be set by calling <span 
+ class="NDLSystemFont">NiDataStream::SetDefaultCloningBehavior</span>. The 
+ application may specify a different cloning behavior via <span class="NDLSystemFont">NiDataStream::SetCloningBehavior</span>.</p>
+
+<h2>Cloning Use Cases</h2>
+
+<h4>Use case 1: Basic Clones</h4>
+
+<p>The streams and stream contents of two meshes are shared. 
+ Transforms and materials might differ between the two instances, but the 
+ geometry data representation is the same. With the deprecated <span class="NDLSystemFont">NiGeometry</span> 
+ API, this scenario was represented by two <span class="NDLSystemFont">NiGeometry</span> 
+ instances that share a <span class="NDLSystemFont">NiGeometryData</span> 
+ instance. With <span class="NDLSystemFont">NiMesh</span>, the scenario is 
+ represented by two <span class="NDLSystemFont">NiMesh </span>instances that 
+ have an identical <span class="NDLSystemFont">NiDataStreamRef</span> array. 
+ &nbsp;The <span 
+ class="NDLSystemFont">NiDataStreams</span> are shared via smart pointers 
+ between the two meshes. This can be accomplished using the <span class="NDLSystemFont">NiAVObject::Clone</span> 
+ method by making sure that all of the <span class="NDLSystemFont">NiDataStreams</span> 
+ that are going to be shared have their <a href="../Object_Systems/Cloning.htm#CloningBehaviorEnumeration">Cloning 
+ Behavior</a> set to <span class="NDLSystemFont">CLONE_SHARE</span>. </p>
+
+<h4>Use case 2: Shared vertex buffer, no shared data</h4>
+
+<p>The data representing two distinct objects is stored 
+ in different regions of the same vertex buffer. In this scenario, even 
+ though the two meshes share the same <span class="NDLSystemFont">NiDataStreams</span>, 
+ the <span class="NDLSystemFont">NiDataStreamRef</span> array will reference 
+ different regions within those streams. This can be advantageous when 
+ vertex buffer swapping is an application bottleneck. This cannot be expressed 
+ using the cloning operation and must be created manually.</p>
+
+<h4>Use case 3: Some shared data</h4>
+
+<p>In this scenario, two <span class="NDLSystemFont">NiMeshes</span> 
+ may "mix-and-match" how the data is shared. Some data stream 
+ pointers may be shared. Other <span class="NDLSystemFont">NiDataStreamRefs</span> 
+ may point to completely different buffers, or different regions on buffers. 
+ An example of this is cloning objects throughout the world, like mailboxes. 
+ If you bake in lighting into vertex colors, you want to share the generic 
+ vertex data across all clones (positions, normals, UV coordinates, etc), 
+ but want to have unique vertex colors per mesh. This is possible with 
+ <span class="NDLSystemFont">NiMesh</span>, as each vertex stream is individually 
+ reference counted. This cannot be expressed using the cloning operation 
+ and must be created manually. However, one possible implementation path 
+ is to do a basic clone without the custom streams on the original mesh 
+ and later attaching the correct custom streams to the new meshes. Another 
+ implementation alternative, is to set the unique buffers to be CLONE_BLANK_COPY 
+ and write to them later.</p>
+
+<h4>Use case 4: Duplicate copy of data</h4>
+
+<p>In some cases, a user may want the <span class="NDLSystemFont">NiMesh::Clone</span> 
+ operation to produce an exact duplicate of the original <span class="NDLSystemFont">NiDataStream</span>. 
+ In this case, the <span class="NDLSystemFont">NiDataStream's</span> cloning 
+ behavior needs to be set to<span class="NDLSystemFont"> NiObject::CLONE_COPY</span> 
+ through the <span class="NDLSystemFont">SetCloningBehavior</span>. This 
+ isn't always guaranteed to work, as it requires the ability to <span class="NDLSystemFont">CPU_READ</span> 
+ the data stream in order to perform the copy. This implicitly limits the 
+ user to <span class="NDLSystemFont">CPU_WRITE_MUTABLE</span> data streams 
+ as <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> cannot be locked 
+ for <span class="NDLSystemFont">CPU_READ</span> and there is no use case 
+ for <span class="NDLSystemFont">CPU_WRITE_STATIC</span>. Note that this 
+ approach doesn't actually share any data.</p>
+
+<h4>Use case 5: Sharing the layout, but not the data</h4>
+
+<p>In some cases, a user may want the <span class="NDLSystemFont">NiMesh::Clone</span> 
+ operation to produce a copy of the original <span class="NDLSystemFont">NiDataStream</span> 
+ that has the same regions, but has never been written to. In this case, 
+ the <span class="NDLSystemFont">NiDataStream's</span> cloning behavior needs 
+ to be set to <span class="NDLSystemFont">NiObject::CLONE_BLANK_COPY</span> 
+ through the <span class="NDLSystemFont">SetCloningBehavior</span>. This 
+ is the preferred method for cloning <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> 
+ buffers, as it is not possible to carry over the contents from one lock 
+ call to another. Directly sharing volatile buffers will result in rendering 
+ errors.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

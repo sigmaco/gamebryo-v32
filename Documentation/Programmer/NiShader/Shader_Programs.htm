@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Shader Programs</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Shader Programs</h1>
+
+<p>A pass is the only valid place to actually utilize a 
+ shader program. </p>
+
+<p>There are two ways to declare a shader program.</p>
+
+<h2>Simple Declaration</h2>
+
+<p>To declare the pixel shader program to use, use the 
+ following line within the scope of a pass:</p>
+
+<pre>
+PSProgram    PixelShaderProgramName  EntryPoint  ShaderTarget
+</pre> 
+
+<p>To declare the geometry shader program to use, use the 
+ following line within the scope of a pass:</p>
+
+<pre>
+GSProgram    GeometryShaderProgramName  EntryPoint  ShaderTarget
+</pre>
+
+<p>To declare the vertex shader program to use, use the 
+ following line within the scope of a pass:</p>
+
+<pre>
+VSProgram    VertexShaderProgramName  EntryPoint  ShaderTarget
+</pre> 
+
+<p>Other shader program types may not be specified in this manner, and require the complete declaration as described below.</p>
+
+<p>There should be no more than shader program of each 
+ type declared using the simple method in a single pass.</p>
+
+<p><span class="NDLSystemFont">*ShaderProgramName</span> contains the name of the shader program file.</p>
+
+<p>The shader program names must use surrounding quotes if there are spaces in the program path.</p>
+
+<p>It the file extension is not included in the name of the shader program file, the shader system will assume the extension is ".vsh" for vertex shaders, ".gsh" for geometry shaders, and ".psh" for pixel shaders.</p>
+
+<p>The shader program factory will first see if it can open the file directly. If this attempt fails, it will then parse off the file path info and look for the program in the directory set via the <span class="NDLSystemFont">NiD3DShaderProgramFactory::SetProgramDirectory</span> function, or the equivalent for the respective renderer. If not found there, the function will fail and the error callback will be made.</p>
+
+<p><span class="NDLSystemFont">EntryPoint</span> and <span class="NDLSystemFont">ShaderTarget</span> are optional entries that support shader programs written in higher level shader languages like Microsoft's HLSL. <span class="NDLSystemFont">EntryPoint</span> contains the name of the function in the file to use as the shader program. If it is missing, "main" is assumed to be the entry point. <span class="NDLSystemFont">ShaderTarget</span> contains the shader target to compile the shader program against. Possible values for this parameter under DX9 are detailed in the DirectX9 documentation for <span class="NDLSystemFont">D3DXGetPixelShaderProfile</span> and <span class="NDLSystemFont">D3DXGetVertexShaderProfile</span>. If it is missing, the latest shader target supported by the hardware will be used.</p>
+
+<p>Note that while it is valid to specify an <span class="NDLSystemFont">EntryPoint</span> without a <span class="NDLSystemFont">ShaderTarget</span>, it is not valid to specify a <span class="NDLSystemFont">ShaderTarget</span> without an <span class="NDLSystemFont">EntryPoint</span> while using this declaration method.</p>
+
+<h2>Complete Declaration</h2>
+
+<p>To declare a shader program to use, insert the following section within the scope of a pass:</p>
+
+<pre>
+ShaderProgram
+{
+    ShaderType = &lt;Shader type&gt;
+    [Platform = &lt;Valid Platforms&gt;]
+    [DECLARATIONS]
+}
+</pre>
+
+<p>It is also permissible to specify a vertex shader, geometry shader, or pixel shader as follows:</p>
+
+<pre>
+VSProgram
+{
+    [DECLARATIONS]
+}
+
+GSProgram
+{
+    [DECLARATIONS]
+}
+
+PSProgram
+{
+    [DECLARATIONS]
+}
+</pre>
+<p>Declarations can be any combination of the following declarations:</p>
+
+<table>
+	<thead>
+		<tr>
+			<th>Requirement Statement</th>
+			<th>Explanation</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">ShaderType = &lt;Shader Type&gt;</span></td>
+       	<td>Sets the shader program type. Valid values include <span class="NDLSystemFont">Vertex</span>, 
+        <span class="NDLSystemFont">Hull</span>, <span class="NDLSystemFont">Domain</span>, 
+        <span class="NDLSystemFont">Geometry</span>, <span class="NDLSystemFont">Pixel</span>, and 
+        <span class="NDLSystemFont">Compute</span>.
+<div class="NDLTDNote"><span class="NDLTableNote">Note:</span> When using the "ShaderProgram" style of declaration, 
+        this line must be first. For "VSProgram", "GSProgram", and "PSProgram" declarations, this line
+        should be skipped.</div></td>
+		</tr>
+		<tr>						
+       	<td><span class="NDLSystemFont">Platform = DX9|D3D10|D3D11|PS3|Xenon</span></td>
+       	<td>Sets the platform flags the shader will run on. Can be any combination of <span class="NDLSystemFont">DX9</span> and <span class="NDLSystemFont">D3D10</span> and <span class="NDLSystemFont">D3D11</span> and <span class="NDLSystemFont">PS3</span> and <span class="NDLSystemFont">Xenon</span>.<br><br>
+
+Ex: "<span class="NDLSystemFont">Platform = DX9|D3D10|D3D11|Xenon</span>" sets the required platform flags to <span class="NDLSystemFont">NiShader::NISHADER_DX9 | NiShader::NISHADER_D3D10 | NiShader::NISHADER_D3D11 | NiShader::NISHADER_XENON</span>.<br><br>
+
+<div class="NDLTDNote"><span class="NDLTableNote">Note:</span> This declaration, if it exists, must come immediately after the ShaderType declaration.</div>
+
+</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">Program = &lt;ShaderProgramName&gt;</span></td>
+       	<td>Sets the shader program name. The name will be interpreted the same way as in the simple declaration method described above.</td>
+		</tr>
+		<tr>						
+       	<td><span class="NDLSystemFont">EntryPoint = &lt;EntryPoint&gt;</span></td>
+       	<td>Sets the shader program entry point. The entry point will be interpreted the same way as in the simple declaration method described above.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ShaderTarget = &lt;ShaderTarget&gt;</span></td>
+       	<td>Sets the shader target that will be used to compile the shader program The shader target will be interpreted the same way as in the simple declaration method described above.</td>
+		</tr>
+		<tr>						
+       	<td><span class="NDLSystemFont">SoftwareVP = true/false</span></td>
+       	<td>Only valid with vertex shader programs. Indicates whether or not the vertex shader program requires software vertex processing. Default value is true. Refer to the documentation on <a href="Software_Vertex_Processing.htm">software vertex processing</a>.</td>
+		</tr>
+		<tr>						
+       	<td><span class="NDLSystemFont">ThreadGroupCounts = # # #</span></td>
+       	<td>Only valid with compute shader programs. Indicates the thread group counts that should be used when invoking the shader. If the second or third
+        parameter is left off of this declaration, the shader will assume those values should be 1.</td>
+		</tr>
+        </tbody>	
+</table>
+
+<p>Note that if a <span class="NDLSystemFont">ShaderType</span> declaration is made, it must be the first declaration, and if the <span class="NDLSystemFont">Platform</span> declaration is made then it should be the next declaration.</p> 
+
+<p>Multiple shader program blocks may exist in a single pass if different platforms require different shader program parameters. Note also that when multiple <span class="NDLSystemFont">Platform</span> declarations exist in a single pass, only the <span class="NDLSystemFont">ShaderProgramName</span> component can differ between them. The <span class="NDLSystemFont">EntryPoint</span>, <span class="NDLSystemFont">ShaderTarget</span>, and <span class="NDLSystemFont">SoftwareVP</span> entries must be identical among all the shader program declarations in a pass.</p>
+
+<h2>Shader Program Example</h2>
+
+<p>Below is a NSF snippet for a shader program definition 
+ that declares the shader programs as:</p>
+
+<ul>
+	
+	<li>Vertex shader file 
+ "VertexShaderDX9.hlsl" on DX9</li>
+	
+	<li>Entry point "VertexShader" 
+ on DX9</li>
+	
+	<li>Shader target "vs_2_0" 
+ on DX9</li>
+	
+	<li>Pixel shader file "PixelShaderDX.psh" 
+ on DX9</li>
+</ul>
+
+<p>The snippet would be written as follows:</p>
+
+<pre>
+ShaderProgram
+{
+    ShaderType = Vertex
+    Platform = DX9
+    Program = "VertexShaderDX9.hlsl"
+    EntryPoint = VertexShader
+    ShaderTarget = vs_2_0
+}
+PSProgram
+{
+    Platform = DX9
+    Program = "PixelShaderDX.psh"
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

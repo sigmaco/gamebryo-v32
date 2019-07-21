@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Extending NSF/NSB Shaders</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Extending NSF/NSB Shaders</h1>
+
+<p>Some additions have been made to the NSF/NSB shader 
+ system to allow developers to extend the system by deriving their own 
+ classes from <span class="NDLSystemFont">NiBinaryShader</span>, while retaining 
+ the advantages of the NSF format for development. These additions are 
+ detailed in the sections below.</p>
+
+<a name="Implementation ClassName and the CreateNiBinaryShader Callback"></a><h2>Implementation ClassName and the CreateNiBinaryShader Callback</h2>
+
+<p>The <span class="NDLSystemFont">NiBinaryShader</span> 
+ system allows for deriving your own classes to extend the default behavior 
+ of the class to suit your needs. This is facilitated by an identifier 
+ contained within the implementation block of an NSF file. Naturally, this 
+ means that each implementation of a shader can use a different derived 
+ class, should you so desire.</p>
+
+<p>The implementation section of an NSF shader can now 
+ contain an entry like the following:</p>
+
+<p><span class="NDLSystemFont">ClassName = MyDerivedClass</span></p>
+
+<p>here "MyDerivedClass" 
+ would be an identifier used to allow the system to recognize what class 
+ should be created.</p>
+
+<p>The system will call a registered callback function 
+ with the given class name, which should return an instance of your derived 
+ class, or <span class="NDLSystemFont">NULL</span> if the callback does not 
+ recognize the class name. In the case of <span class="NDLSystemFont">NULL</span> 
+ being returned, the system will create a standard <span class="NDLSystemFont">NiBinaryShader</span> 
+ instance.</p>
+
+<p>Developers can register this callback through the following 
+ interface function:</p>
+
+<p><span class="NDLSystemFont">NiBinaryShaderLibrary::SetCreateNiBinaryShaderCallback</span></p>
+
+<p>The function should have the following declaration format:</p>
+
+<pre>
+typedef NiBinaryShader* (*CREATENIBINARYSHADER)(
+     const char* pcClassName);
+</pre>
+
+<p>The default implementation is provided in the following 
+ function:</p>
+
+<p><span class="NDLSystemFont">NiBinaryShaderLibrary::DefaultCreateNiBinaryShader</span></p>
+
+<p>The default implementation will display the following 
+ warning when it is called with a class name:</p>
+
+<pre>
+NiBinaryShaderLibrary::DefaultCreateNiBinaryShader called for class name &lt;ClassName&gt;
+    Did you intend to have a callback set for this???
+</pre>
+
+<p>This is provided to warn developers when they haven't 
+ set a callback but are using shaders that contain the <span class="NDLSystemFont">ClassName</span> 
+ keyword.</p>
+
+<p>The following is an example implementation of the <span 
+ class="NDLSystemFont">CreateNiBinaryShader</span> callback that will handle 
+ the case of a class named "<span class="NDLSystemFont">MyShaderClass</span>" 
+ (it assumes their is a class <span class="NDLSystemFont">MyBinaryShader</span>, 
+ derived from <span class="NDLSystemFont">NiBinaryShader</span>):</p>
+
+<pre>
+NiBinaryShader* MyCreateNiBinaryShaderCallback(const char* pcClassName)
+{
+    if (pcClassName &amp;&amp; stricmp(pcClassName, "MyShaderClass") == 0)
+    {
+        // Create an instance of MyBinaryShader
+        return new MyBinaryShader();
+    }
+    // Return NULL, indicating the system should create the standard
+    // NiBinaryShader instance for this class name...
+    return 0;
+}
+</pre>
+
+<a name="UserDefinedData in an NSF"></a><h2>UserDefinedData in an NSF</h2>
+
+<p>NSF files allow for user-defined data blocks at the 
+ shader, implementation, and pass level. Multiple blocks of data can be 
+ defined at each level, and are identified by a user supplied name.</p>
+
+<p>Combined with the class name derivation method, user-defined 
+ data blocks allow for customers to extend the NSF format in any manner 
+ they wish. (Most importantly, they can do so without modifying the lexer 
+ and grammar files.)</p>
+
+<p>User-defined data blocks can be declared at the <span 
+ class="NDLSystemFont">NSFShader</span>, <span class="NDLSystemFont">Implementation</span>, 
+ and <span class="NDLSystemFont">Pass</span> levels in your NSF-based shaders. 
+ A block must have a name unique to the level it is declared at, which 
+ allows for multiple blocks at each level.</p>
+
+<p>For full details on the format of the <span class="NDLSystemFont">UserDefinedData</span> 
+ block, please refer to <a href="User_Defined_Data.htm">User 
+ Defined Data</a>.</p>
+
+<p>Blocks are streamed out when a parsed shader is saved. 
+ Upon loading, the <span class="NDLSystemFont">NSBShader</span> will hold 
+ the user defined data. Once the system requests a specific implementation 
+ of a particular shader, the returned <span class="NDLSystemFont">NiBinaryShader</span> 
+ instance will also have a reference to the user-defined data. Applications 
+ can access the user-defined data stored at the shader, instance, or pass 
+ level using <span class="NDLSystemFont">NiBinaryShader::GetShaderUserDefinedDataSet</span>, 
+ <span class="NDLSystemFont">NiBinaryShader::GetImplementationUserDefinedDataSet</span>, 
+ or <span class="NDLSystemFont">NiBinaryShader::GetPassUserDefinedDataSet</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

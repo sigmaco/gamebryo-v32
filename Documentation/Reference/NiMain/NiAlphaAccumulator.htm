@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiAlphaAccumulator</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiAlphaAccumulator</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiBackToFrontAccumulator.htm">NiBackToFrontAccumulator</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiAlphaAccumulator.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiAlphaAccumulator</span> is an
+<a href="NiAccumulator.htm">accumulator</a> that is designed to
+allow z-buffered applications to place alpha blended objects
+wherever they desire in a scene graph, while still being able to
+render them correctly. Alpha blended objects must be drawn in
+sorted order with respect to each other by an application. If
+alpha blended objects are not drawn last and in sorted order,
+visual artifacts may result. This accumulator avoids the needless
+overhead of sorting the opaque objects, while sorting the alpha
+blended ones back-to-front.</p>
+
+<p>The accumulator accomplishes this task by deferring only alpha
+blended objects (leaving the ones with alpha blending turned off
+to be rendered immediately during the call to <span class=
+"NDLSystemFont">RegisterObjectArray</span>) and sorting them by
+using a simple z-sort, based on the center or frontmost point
+(switchable) of each object's bounding sphere. In this way, all
+opaque objects are drawn first in the order that they are
+traversed in the scene graph. Then, the alpha blended objects are
+drawn in a back-to-front sorted order. Please see the <a href=
+"NiAlphaAccumulator.htm#Notes">notes</a> section below for
+limitations of the sorting method.</p>
+
+<p>With the introduction of the <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+Frame Rendering System</a> the concept of the <span class=
+"NDLSystemFont">NiAlpaAccumulator</span> has been replaced by
+<span class="NDLSystemFont"><a href=
+"NiAlphaSortProcessor.htm">NiAlphaSortProcessor</a></span>. The
+<span class="NDLSystemFont">NiAlphaSortProcessor</span> provides
+the same functionality for application making use of the frame
+rendering system.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiAlphaAccumulator()</p>
+
+<p class="NDLRefMemberDescription">This default constructor
+creates an <span class="NDLSystemFont">NiAlphaAccumulator</span>
+.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">void SetObserveNoSortHint(bool
+bObserve)</p>
+
+<p class="NDLRefMemberFunction">bool GetObserveNoSortHint()
+const</p>
+
+<p class="NDLRefMemberDescription">Set and get the control bit
+for determining if the accumulator should observe the "no sort"
+flag found in <span class="NDLSystemFont"><a href=
+"NiAlphaProperty.htm">NiAlphaProperty</a></span> (set with
+<span class="NDLSystemFont">NiAlphaProperty::SetNoSorter</span>).
+The default behavior is to observe these flags (<span class=
+"NDLSystemFont">true</span>).</p>
+
+<p class="NDLRefMemberFunction">void SetSortByClosestPoint (bool
+bClosest)</p>
+
+<p class="NDLRefMemberFunction">bool GetSortByClosestPoint()
+const</p>
+
+<p class="NDLRefMemberDescription">Set and get the control bit
+for determining if the accumulator should sort by the bounding
+sphere center (<span class="NDLSystemFont">false</span>), or the
+nearest point on the bounding sphere (<span class=
+"NDLSystemFont">true</span>). The default is to sort by the
+center point (<span class="NDLSystemFont">false</span>). The only
+difference between the two cases is that in the (<span class=
+"NDLSystemFont">true</span>) case, the radius of each bounding
+sphere is subtracted from the depth of the bounding sphere
+center.</p><a name="Notes" id="Notes"></a>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Alpha Sorting and Z-Buffering</p>
+
+<p>The <span class="NDLSystemFont">AlphaAccumulator</span>
+assumes that either Z-buffering has been turned on for a scene,
+or that the opaque objects in the scene are presorted such that
+scene graph traversal ordering is sufficient to sort the
+objects. In most cases, this approach means that Z-buffering
+will be turned on for the scene graph.</p>
+
+<p class="NDLRefHead2">Limitations of the Sorter</p>
+
+<p>The alpha sorted objects are sorted using a simple
+object-level depth-sort, based on comparing the camera-space
+bounding-sphere centers (or nearest points) of objects. While
+this method is quite fast and generally works well, there are
+cases in many scenes where neither the bounding sphere center nor
+the point on the bounding sphere that is closest to the camera
+accurately represent the object. This situation is generally
+noticeable with pairs of objects that are large and in close
+proximity to one another.</p>
+
+<p class="NDLRefHead2">"No Sort" Flag</p>
+
+<p>When the control flag for observing "no sort" hints is set to
+<span class="NDLSystemFont">true</span> (default), the
+<span class="NDLSystemFont">NiAlphaAccumulator</span> does not
+sort objects that have the <span class="NDLSystemFont"><a href=
+"NiAlphaProperty.htm">NiAlphaProperty</a></span> "no sort" flag
+enabled. This flag is set with the <span class=
+"NDLSystemFont">NiAlphaProperty::SetNoSorter</span> method.</p>
+
+<p class="NDLRefHead2">
+NiAlphaAccumulator, NiRenderObject::GetSortObject, and
+NiSortAdjustNode</p>
+
+<p>Applications can use <span class=
+"NDLSystemFont">NiAlphaAccumulators</span> in conjunction with
+<span class="NDLSystemFont"><a href=
+"NiSortAdjustNode.htm">NiSortAdjustNodes</a></span> in order to
+turn off sorting for entire subtrees of objects. The <span class=
+"NDLSystemFont">NiAlphaAccumulator</span> obeys the <span class=
+"NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span> flag <span class=
+"NDLSystemFont">GetSortObject()</span>. If this flag is set to
+false on any encountered geometry object, then the alpha
+accumulator will render the object immediately upon encountering
+it in <span class=
+"NDLSystemFont">RegisterObjectArray</span>. This is true
+regardless of the alpha accumulator's <span class=
+"NDLSystemFont">GetObserveNoSortHint</span> setting. Currently,
+only the <span class="NDLSystemFont"><a href=
+"NiSortAdjustNode.htm">NiSortAdjustNode</a> </span>sets the
+<span class="NDLSystemFont">GetSortObject()</span> flag on
+geometry objects to false. In this way, the <span class=
+"NDLSystemFont"><a href=
+"NiSortAdjustNode.htm">NiSortAdjustNode</a></span> can be used to
+render a set of alpha-blended geometry at any time during scene
+rendering, interspersed with the opaque objects, even when using
+an <span class="NDLSystemFont">NiAlphaAccumulator</span>. For
+skydomes and other alpha-blended objects that should not be
+sorted against each other, this method can simplify the
+application code.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

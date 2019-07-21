@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Pass A Reasonable Time Into Dynamic Collision Detection</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Pass A Reasonable Time Into Dynamic Collision Detection</h1>
+
+<p>As described previously, bounding volumes are projected
+ forward in time along their linear velocities in order to determine all the
+ potential collisions that could occur before the next frame is rendered,
+ preventing objects from passing through each other. Since it is the
+ application's responsibility to actually move the objects, it also needs to
+ inform the collision system whenever it changes the velocity of moving
+ objects, such as ones under the influence of gravity, or those who have
+ rebounded from collisions. In order to ensure that collision will not be
+ missed for rapidly accelerating objects, the application might set the
+ velocity to that expected at the <em>end</em> of the frame, as the linear
+ approximation used by collision would then be assured of capturing the entire
+ potential range of motion.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image002_01.gif" width="536" height="339" alt="image002_01 (7K)" />
+    <p class="NDLFigureCaption">Velocity effects on collision detection</p>
+</div>
+
+<p>As an example, in the figure above, a ball is moving
+ upwards towards the green walls from y<sub>0</sub> to y<sub>1</sub>, with a
+ fairly uniform acceleration (indicated by the changing velocity depicted by
+ the curved blue line).&nbsp;  At frame i, the ball is moving at a rate of
+ about 1 unit of distance per frame.&nbsp; At frame i+1, the ball is moving at
+ about 5 units per frame.&nbsp;  If we passed the collision system
+ v<sub>i</sub>, it would predict movement to p<sub>i</sub>, which would miss
+ the collision with the wall.&nbsp;  If we passed it v<sub> i+1</sub>, on the
+ other hand, predicting movement to p<sub> i+1</sub>, it would not be as
+ efficient, as it would detect a second (false) collision with the second wall
+ during this frame.  However in this situation it would accurately determine
+ the first wall collision, and the ball would not pass through the first
+ wall.</p>
+
+<p>The time passed in to the collision system may need to be
+ chosen carefully to ensure accurate collision detection and avoid impacting
+ performance.&nbsp;  If a game is operating at a constant frame rate, and
+ changing velocities are handled as described above, then the ideal time to
+ pass the collision system during a
+ <span class="NDLSystemFont">FindCollisions</span> would be
+ <span class="NDLSystemFont">1.0/fps</span>, if we were
+ calling the collision system every frame (not recommended&mdash;see discussion
+ below).</p>
+
+<p>However, since frame rates vary, the framerate of the last
+ frame is not necessarily safe to use, so some application-specific factor
+ (perhaps variable) will need to be determined.&nbsp;  Obviously, if the
+ number submitted is too low, future collisions will be missed, as in the 
+ velocity discussion above, and penetrations might occur.&nbsp;  If the number
+ submitted is too high, then a large number of collisions might be
+ detected.&nbsp;  The effect of passing in too large a time value can snowball
+ even further as the larger period can increase the number of potential
+ collisions that are detected thereby lowering frame rates further and forcing
+ the use of even larger time values (<span class="NDLSystemFont">1.0/fps</span> increases as framerate decreases).</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

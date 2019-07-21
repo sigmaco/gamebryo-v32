@@ -1,0 +1,517 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::NameResolutionService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">efd::NameResolutionService</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../efd/efd__ISystemService.htm">efd::ISystemService</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;NameResolutionService.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classefd_1_1_name_resolution_service.gif" alt="Inheritance graph for efd::NameResolutionService"/>
+  <p class="FigureCaption">Inheritance graph for efd::NameResolutionService</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">Resolves names to ip addresses and other information. </p>
+<p class="NDLNormal">Similar to ZeroConf, mDNS, SSDP, or SLP (rfc 2608 ). Works on a local network only.</p>
+<p class="NDLNormal">Every service maintains a cache of responses. When the <span class="NDLSystemFont">NameResolutionService</span> is queried, it will send a response message immediately if it has information in the cache, but will also send out a new request if that information is too old. A second response will be sent locally with updated information if a response to the external query comes back with different data than what is in the cache.</p>
+<p class="NDLNormal">One of the drawbacks of mDNS is that a daemon must be installed on each machine. To get around this limitation, <span class="NDLSystemFont">NameResolutionService</span> attempts to bind to a well known port; if the binding fails, it assumes that there is a service running that will respond to requests. On a regular interval, <span class="NDLSystemFont">NameResolutionService</span> attempts to rebind to the port in case the process that was using the port released it.</p>
+<p class="NDLNormal">ServiceAnnouncements and requests are broadcast; responses are unicast.</p>
+<p class="NDLNormal"><span class="NDLSystemFont">NameResolutionService</span> listens for incoming unicast response messages on a private port assigned by the OS. This port is sent in the request message so that the <span class="NDLSystemFont">NameResolutionService</span> bound to the well known port knows where to target the response. In practice, the port will most likely be the local port assigned when the request is sent.</p>
+<p class="NDLNormal">Requests will be assigned a request ID, but responses to those requests will be sent in the form of 1 or more local messages. If no response can be given within a timeout, a message will be sent indicating that the timeout has been exceeded with no response. Any cached values will be sent as local messages immediately with any remote responses arriving within the timeout that are not already in the cache being sent locally as they arrive. A structure will be kept for each request to keep track of state, including request time and cached responses already sent. </p>
+
+<a name="public_static_attributes"></a>
+<p class="NDLRefHead1">Public Static Attributes</p>
+
+
+<a name="classefd_1_1_name_resolution_service_1a59369819bf9f3d0c9916bbb4125a81c4"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span>  kNameLookup_NoTimeout</p>
+<p class="NDLRefMemberDescription">Timeout value for setting no timeout on lookup requests. </p>
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="classefd_1_1_name_resolution_service_1a1ce16f92684513226e99a8fb235afa43"></a>
+<p class="NDLRefMemberFunction">NameResolutionService()</p>
+<p class="NDLRefMemberDescription">Default constructor. </p>
+
+<a name="classefd_1_1_name_resolution_service_1a300e870583720d85631d725c28325fe0"></a>
+<p class="NDLRefMemberFunction">virtual ~NameResolutionService()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classefd_1_1_name_resolution_service_1aafbca661cf3678138359bc56e54acf45"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">utf8string</a></span>&  GetInternetAddressAny() const</p>
+<p class="NDLRefMemberFunction"></p>
+
+<a name="classefd_1_1_name_resolution_service_1a2f8506ab349e4a86f5e96e87ea3f9556"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">utf8string</a></span>&  GetInternetAddressBroadcast() const</p>
+<p class="NDLRefMemberFunction"></p>
+
+<a name="classefd_1_1_name_resolution_service_1a466809ffb3c47e706ff8cd4c69ef922d"></a>
+<p class="NDLRefMemberFunction">void  AnnounceService(<br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> classID, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& name, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& extraInfo, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a2ed07576a2c351e88e18847f247b5705">efd::UInt16</a></span> port)</p>
+<p class="NDLRefMemberDescription">Services wishing to be able to be found can announce themselves using this function. </p>
+<p class="NDLRefMemberDetailedDescription">Services can be looked up by either their classid or name.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Assumes that the hostname is InternetAddressAny</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">classID</span></td>
+    <td>classID of the service being announced </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>Name of the service being announced </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">extraInfo</span></td>
+    <td>Additional information to report about this service. Not searched. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">port</span></td>
+    <td>port number to use. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1ae8e3ceafec6763e4a44fde434c24e1dc"></a>
+<p class="NDLRefMemberFunction">void  AnnounceService(<br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> classID, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& name, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a2ed07576a2c351e88e18847f247b5705">efd::UInt16</a></span> port, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& hostname = "", <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& extraInfo = "")</p>
+<p class="NDLRefMemberDescription">Services wishing to be able to be found can announce themselves using this function. </p>
+<p class="NDLRefMemberDetailedDescription">Services can be looked up by either their classid or name.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">classID</span></td>
+    <td>classID of the service being announced </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>Name of the service being announced </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">port</span></td>
+    <td>port number to use </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">hostname</span></td>
+    <td>The host name </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">extraInfo</span></td>
+    <td>Additional information to report about this service. Not searched. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1ae07e1ce8e5018e8b4a27344e067f3964"></a>
+<p class="NDLRefMemberFunction">void  CancelAnnounce(<br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> classID, <br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> name)</p>
+<p class="NDLRefMemberDescription">Cancel a service announcement when it is no longer desired to advertise. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">classID</span></td>
+    <td>the classID of the announcement being cancelled </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>the name of the service announcement being cancelled </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a1c89b8938865cafde37f2ad93bde01d9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  LookupService(<br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> classID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> tmo = 5.0)</p>
+<p class="NDLRefMemberDescription">Look up a service by classID. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">classID</span></td>
+    <td>classID of the service being announced. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">tmo</span></td>
+    <td>Timeout value to keep sending requests. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">Category</a></span> that the responses to this request will be sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1ac99647ad2dcf6c877c1b133cf565148b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  LookupService(<br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> name, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> tmo = 5.0)</p>
+<p class="NDLRefMemberDescription">Look up a service by name. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>Name of the service being announced. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">tmo</span></td>
+    <td>Timeout value to keep sending requests. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">Category</a></span> that the responses to this request will be sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a74cfd1a3eccceefd974ffe81f39e55fa"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  LookupService(<br/><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span> name, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> classID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> tmo = 5.0)</p>
+<p class="NDLRefMemberDescription">Look up a service by name and classID. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>Name of the service being announced. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">classID</span></td>
+    <td>classID of the service being announced. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">tmo</span></td>
+    <td>Timeout value to keep sending requests. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">Category</a></span> that the responses to this request will be sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a63904e30c41dc7dc376f0f2c74f26e0c"></a>
+<p class="NDLRefMemberFunction">void  CancelLookup(<span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> responseCategory)</p>
+<p class="NDLRefMemberDescription">Cancel a service lookup before the timeout has expired. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">responseCategory</span></td>
+    <td><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">Category</a></span> that is assigned to the request. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a9451eb795d832229b0f7aac0e8eab2bd"></a>
+<p class="NDLRefMemberFunction">void  ClearCache()</p>
+<p class="NDLRefMemberDescription">Clears any cached responses this instance has. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Cached responses do not ever expire so this method must be called before making a new request to assure that stale responses are not returned. </p></p>
+
+<a name="classefd_1_1_name_resolution_service_1ad3fff659b607d357c3758e5bb145da7c"></a>
+<p class="NDLRefMemberFunction">virtual void  HandleNetMessage(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__IMessage.htm">IMessage</a></span>* pIncomingMessage, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__ConnectionID.htm">ConnectionID</a></span>& senderConnectionID)</p>
+<p class="NDLRefMemberDescription">Callback method used by network code to deliver messages received from remote connections. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pIncomingMessage</span></td>
+    <td>The message received. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">senderConnectionID</span></td>
+    <td>The <span class="NDLSystemFont"><a href="../efd/efd__ConnectionID.htm">ConnectionID</a></span> the message was received from. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a3539e55058ee32820b90611bcc518884"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a62e4d1bc94248c629612480b748bfd0e">SyncResult</a></span>  OnPreInit(<span class="NDLSystemFont"><a href="../efd/efd__IDependencyRegistrar.htm">efd::IDependencyRegistrar</a></span>* pDependencyRegistrar)</p>
+<p class="NDLRefMemberDescription">Called by the framework after the service has been registered and before the service receives the first call to OnInit. </p>
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any synchronous setup. Although you may query for the existence of other services, for example in order to cache a smart pointer to a tightly coupled service, at this point you should not call any methods on other services unless the method explicitly states it is safe to call during OnPreInit. If the method does not indicate it is safe to call from OnPreInit you should not call it since the service may not have had a change to setup yet and might fail to handle the method as a result. You should wait until OnInit before you rely on cross-service interaction. You may also register additional service dependencies during OnPreInit. You should not register additional aliases, those should be done during OnServiceRegistered.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">OnPreInit is called in the order services are registered.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pDependencyRegistrar</span></td>
+    <td>Services can use this interface to optional register dependencies which determine the order in which OnInit and OnShutdown will be called. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>SyncResult the service's progress through the initialization state, one of:
+<ul>
+<li>SyncResult_Success : The PreInit phase succeeded and this service is ready to be moved to the OnInit <span class="NDLSystemFont"><a href="../efd/efd__queue.htm">queue</a></span>.</li>
+<li>SyncResult_Failure : The PreInit phase failed, this will cause framework to begin shutdown and unloading of all services. </li></ul></td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a5b63aea4848ae04ecce79d070f9a80f0"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">AsyncResult</a></span>  OnInit()</p>
+<p class="NDLRefMemberDescription">Called by the framework after the service has had OnPreInit called and before the service receives its first OnTick. </p>
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any initialization that it requires. During the OnInit phase it should be safe or call methods on other services since all services will have had a chance to be pre-initialized already. This phase is primarily intended for establishing cross-service relationships such as the registering of message handlers. The OnInit phase is asynchronous meaning that you can stay in this phase for multiple ticks. Once a service returns AsyncResult_Complete from OnInit on the next tick OnTick will be called even if not all of the other services have completed their OnInit.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">OnInit is called in dependency order.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>AsyncResult the service's progress through the initialization state, one of:
+<ul>
+<li>AsyncResult_Pending : More initialization work is required. OnInit will be called again until it completes or fails.</li>
+<li>AsyncResult_Failure : Initialization has critically failed. The entire framework will be shut down and the process will exit.</li>
+<li>AsyncResult_Complete : Initialization has completed for this service. It will receive no more OnInit calls. </li></ul></td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a8984a75b16908151607744c638ac277f"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">AsyncResult</a></span>  OnTick()</p>
+<p class="NDLRefMemberDescription">Called by the framework every cycle to allow the service to do its work. </p>
+<p class="NDLRefMemberDetailedDescription">The service should perform a small slice of work and return as quickly as possible. This is where your application will spend the vast majority of its lifetime.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">OnTick is called in priority order. Higher values are called before lower values.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>AsyncResult the service's progress through the running state, one of:
+<ul>
+<li>AsyncResult_Pending : This is the normal result, your service is still running and will continue to receive future OnTick calls.</li>
+<li>AsyncResult_Failure : The service has critically failed. The entire framework will be shut down and the process will exit.</li>
+<li>AsyncResult_Complete : The service no longer requires OnTick calls. It will remain registered and might still have things like message handlers that are active but it will not receive future OnTick calls. </li></ul></td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1ac28cfa2530df53f378fd12ecbf2870fb"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">AsyncResult</a></span>  OnShutdown()</p>
+<p class="NDLRefMemberDescription">Called by the framework after the framework shutdown has been requested. </p>
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any clean up that it requires. The service should cleanly shutdown which might involve persisting various state. If the service is unregistered while the framework is running it should be careful not to spend too much time in a single call and should instead do a small amount of work on each call while returning "pending" to request additional calls. In some rare cases OnShutdown can be called even if OnInit has never been called, for example if your service was unregistered or if the service manager is shutdown after OnPreInit was called but before OnInit was called.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">OnShutdown is called in reverse dependency order.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>AsyncResult the service's progress through the initialization state, one of:
+<ul>
+<li>AsyncResult_Pending : More shutdown work is required. OnShutdown will be called again until it completes or fails.</li>
+<li>AsyncResult_Failure : Shutdown has critically failed. The framework shutdown state will be aborted and the process will exit immediately.</li>
+<li>AsyncResult_Complete : Shutdown has completed for this service. It will receive no more OnShutdown calls. </li></ul></td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a75bd9724704ff8e4b16deefc23f78733"></a>
+<p class="NDLRefMemberFunction">virtual const char*  GetDisplayName() const</p>
+<p class="NDLRefMemberDescription">Returns the name of this service. </p>
+<p class="NDLRefMemberDetailedDescription">This name is used mainly for improving the readability of various log statements and has no impact on functionality. Service names are not guaranteed to be unique.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>const char* Display name for the current service. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_name_resolution_service_1a79134226f3ed678c08f59acc279858b2"></a>
+<p class="NDLRefMemberFunction">virtual void  SetAnnouncePort(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a2ed07576a2c351e88e18847f247b5705">efd::UInt16</a></span> announcePort)</p>
+<p class="NDLRefMemberFunction"></p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

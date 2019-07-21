@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiInput on Win32</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiInput on Win32</h1>
+
+<p>The <span class="NDLSystemFont">NiDI8InputSystem</span> 
+ makes use of both DirectInput and XInput. DirectInput is used for mouse 
+ and keyboard support, as well as legacy game pads, while XInput is used 
+ for the Xbox360 gamepad. </p>
+
+<h2>Initializing NiInput on Win32</h2>
+
+<p>When creating an instance of the <span class="NDLSystemFont">NiInputSystem</span> 
+ on the Win32 platform, users should utilize the <span class="NDLSystemFont">NiDI8InputSystem::DI8CreateParams</span> 
+ class to pass in the initialization parameters. (Refer to <a href="NiDI8InputSystem.htm#NiDI8InputSystem_The_CreateParams_Sub_Class">this 
+ documentation</a> for further details on this class.) DirectInput requires 
+ the application <span class="NDLSystemFont">HINSTANCE</span> and <span class="NDLSystemFont">HWND</span> 
+ to function properly. These values are passed via this version of the 
+ creation parameters. The Gamebryo Input System also allows for setting 
+ the names of controls that will be displayed if the DirectInput configuration 
+ screen is brought up by your application. This is also detailed in the 
+ <span class="NDLSystemFont">CreateParams</span> sub-class section.</p>
+
+<h2>XInput and DirectInput Controllers</h2>
+
+<p>Gamebryo will use the XInput API to handle Xbox360 controllers, 
+ and the DirectInput API to handle other game controllers. Gamebryo's reserves 
+ the first four gamepad ports (0 through 3) for XInput controllers, whether 
+ or not those controllers are actually present. This is so the engine will 
+ be able to respond to any controllers that are added after the input system 
+ is initialized. These first four gamepad ports will report a status of 
+ REMOVED if there is not a gamepad present. Applications wishing to interact 
+ with legacy, non-XInput capable gamepads will need to look for them starting 
+ with gamepad port 4.</p>
+
+<h2>Gamebryo Game Pad Mapping on Win32</h2>
+
+<p>The suggested Gamebryo mapping of game pads for Win32 
+ is detailed in the diagram below (this diagram uses an Xbox360 controller 
+ as an example):</p>
+
+<div class="FigureContainer">
+    <img src="images/CONT_PC.jpg" width="700" height="442" alt="CONT_PC (100K)" />
+	    <!-- <p class="FigureCaption"></p> -->
+</div>
+
+<h2>NiInput and DirectInput</h2>
+
+<p>The <span class="NDLSystemFont">NiInput</span> library 
+ does some 'behind-the-scenes' work to enable our system to work on top 
+ of DirectInput. Basically, <span class="NDLSystemFont">NiInput</span> utilizes 
+ the DirectInput action mapping system to map legacy game pads to its 
+ own definition of input controls on the device. This can be confusing, 
+ as both Gamebryo's immediate and action mapped modes both utilize the 
+ DirectInput concept of action mapping. The two are completely different 
+ systems, despite the naming similarity. </p>
+
+<p>For information on the DirectInput Action Mapping system, 
+ please refer to the DirectX documentation, DirectInput-&gt;Using DirectInput-&gt;Action 
+ Mapping. </p>
+
+<p>In setting up our action format, <span class="NDLSystemFont">DIACTIONFORMAT</span>, 
+ we set the <span class="NDLSystemFont">dwGenre</span> field to <span class="NDLSystemFont">DIVIRTUAL_FIGHTING_FPS</span>. 
+ In the current release, when the <span class="NDLSystemFont">DirectInput</span> 
+ configuration screen is brought up, the <span class="NDLSystemFont">NiInput</span> 
+ mapping names are displayed. Below is a list of the displayed names, the 
+ <span class="NDLSystemFont">DirectInput</span> <span class="NDLSystemFont">dwSemantic</span> 
+ value requested for them, and a description of the control: </p>
+
+
+<table>
+	<thead>
+		<tr>
+			<th>Displayed Name</th>
+			<th>DirectInput Semantic</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td>Stick 1 Horz</td>
+       	<td>DIAXIS_ANY_Y_1</td>
+       	<td>Left analog stick, horizontal axis.</td>
+		</tr>
+		<tr>
+       	<td>Stick 1 Vert</td>
+       	<td>DIAXIS_ANY_X_1</td>
+       	<td>Left analog stick, vertical axis.</td>
+		</tr>
+		<tr>						
+       	<td>Stick 2 Horz</td>
+       	<td>DIAXIS_ANY_1</td>
+       	<td>Right analog stick, horizontal axis.</td>
+		</tr>
+		<tr>
+       	<td>Stick 2 Vert</td>
+       	<td>DIAXIS_ANY_2</td>
+       	<td>Right analog stick, vertical axis.</td>
+		</tr>
+		<tr>						
+       	<td>D-Pad (LUP/DOWN/LEFT/RIGHT)</td>
+       	<td>DIHATSWITCH_FPS_GLANCE</td>
+       	<td>Combination of left up, down, left and right buttons.</td>
+		</tr>
+		<tr>
+       	<td>RDOWN</td>
+       	<td>DIBUTTON_ANY(0)</td>
+       	<td>Right button down.</td>
+		</tr>
+		<tr>						
+       	<td>RRIGHT</td>
+       	<td>DIBUTTON_ANY(1)</td>
+       	<td>Right right button.</td>
+		</tr>
+		<tr>
+       	<td>RLEFT</td>
+       	<td>DIBUTTON_ANY(2)</td>
+       	<td>Right left button.</td>
+		</tr>
+		<tr>						
+       	<td>RUP</td>
+       	<td>DIBUTTON_ANY(3)</td>
+       	<td>Right up button.</td>
+		</tr>
+		<tr>
+       	<td>L1</td>
+       	<td>DIBUTTON_ANY(4)</td>
+       	<td>Left bumper button.</td>
+		</tr>
+		<tr>						
+       	<td>R1</td>
+       	<td>DIBUTTON_ANY(5)</td>
+       	<td>Right bumper button.</td>
+		</tr>
+		<tr>
+       	<td>START</td>
+       	<td>DIBUTTON_ANY(6)</td>
+       	<td>Start button.</td>
+		</tr>
+		<tr>						
+       	<td>SELECT</td>
+       	<td>DIBUTTON_ANY(7)</td>
+       	<td>Select/Back button.</td>
+		</tr>
+		<tr>
+       	<td>A</td>
+       	<td>DIBUTTON_ANY(8)</td>
+       	<td>A button.</td>
+		</tr>
+		<tr>						
+       	<td>A</td>
+       	<td>DIBUTTON_ANY(9)</td>
+       	<td>B button.</td>
+		</tr>
+	</tbody>	
+</table>
+
+<h2>Rumble Support on Win32</h2>
+
+<p><span class="NDLSystemFont">NiInput</span> supports rumble 
+ on Xbox360 controllers though the XInput library. Rumble on legacy controllers 
+ is not supported.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

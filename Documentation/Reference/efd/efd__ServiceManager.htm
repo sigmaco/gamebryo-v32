@@ -1,0 +1,1222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::ServiceManager</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">efd::ServiceManager</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="efd__IBase.htm">efd::IBase</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;ServiceManager.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classefd_1_1_service_manager.gif" alt="Inheritance graph for efd::ServiceManager"/>
+  <p class="FigureCaption">Inheritance graph for efd::ServiceManager</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">A cache of <span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span> instances that are managed to control preinit, initialization, ticking, and shutdown. </p>
+<p class="NDLNormal">The <span class="NDLSystemFont">ServiceManager</span> is a central repository for <span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span> instances. It maintains a prioritized <span class="NDLSystemFont"><a href="efd__list.htm">list</a></span> of ISystemServices. </p>
+
+<a name="public_types"></a>
+<p class="NDLRefHead1">Public Types</p>
+<a name="classefd_1_1_service_manager_1a2e8b7180d9e66f8d1aaf7de389eb8d18"></a>
+<p class=NDLRefHead2>efd::ServiceManager::ServiceState</p>
+
+
+<p class="NDLRefMemberDescription">The combination of the <span class="NDLSystemFont">ServiceManager</span> state and the service's current state determines which <span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span> method will be called. </p>
+
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">ServiceManager</span> maintains the state of each service. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_Invalid</span></td>
+    <td>An invalid state. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_PreInit</span></td>
+    <td>Service was just registered and OnPreInit will be called on the next tick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_WaitingToInitialize</span></td>
+    <td>Service just ran OnPreInit this tick and is waiting to call OnInit next tick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_Initializing</span></td>
+    <td>Service will have OnInit called each tick until it completes or fails. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_WaitingToRun</span></td>
+    <td>Service just returned complete from OnInit and is waiting to call OnTick next tick. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_Running</span></td>
+    <td>Service will have OnTick called each tick until it completes or the thread is shutdown. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_WaitingToShutdown</span></td>
+    <td>Service was still ticking when Shutdown occurred. Continue to call OnTick each tick while waiting for this service's's turn to be OnShutdown. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_WaitingForThreadShutdown</span></td>
+    <td>Service returned Complete from OnTick, don't call OnTick any more until this service is ready to have OnShutdown called during thread shutdown. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_ShuttingDown</span></td>
+    <td>Service is shutting down and OnShutdown will be called each tick (unless we're waiting for another service that depends on this service to complete shutdown). </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kSysServState_Complete</span></td>
+    <td>Service has completed OnShutdown or was unregistered before OnPreInit was ever called. </td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+<a name="classefd_1_1_service_manager_1a0d1fd78acd7a66c5fde697c0c7b89598"></a>
+<p class=NDLRefHead2>efd::ServiceManager::ServiceTimeStatType</p>
+
+
+<p class="NDLRefMemberDescription">Possible bit values used for SetServiceTimeStatTypes. </p>
+
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">SERVICETIME_NONE</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">SERVICETIME_LOG</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">SERVICETIME_ACCUMULATE</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">SERVICETIME_METRICS</span></td>
+    <td>&nbsp;</td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+<a name="isystemservice_management"></a>
+<p class="NDLRefHead1">ISystemService management</p>
+
+
+<a name="classefd_1_1_service_manager_1afa840ee632d21bbd350ee3b1daebc4d6"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span>  kUseDefaultPriotity</p>
+<p class="NDLRefMemberDescription">This value can be passed to RegisterSystemService or RegisterAlternateSystemService to indicate that the default system service priority should be used. </p>
+
+<a name="classefd_1_1_service_manager_1a716896ee37581658867f7df2189135d7"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">AsyncResult</a></span>  RegisterSystemService(<br/><span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span>* pService, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> iPriority = kUseDefaultPriotity)</p>
+<p class="NDLRefMemberDescription">RegisterSystemService is used to register a service to be executed inside the <span class="NDLSystemFont">ServiceManager</span>. </p>
+<p class="NDLRefMemberDetailedDescription">You may register a system service at any time. If you register a service during the processing of the current service <span class="NDLSystemFont"><a href="efd__list.htm">list</a></span> then the actual registration will be delayed until the end of that processing. Once registered the service will enter the "Initializing" state. Once each service is initialized that service will enter the "Running" state.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">It is an error to register the same system service twice. To use multiple instances of the same service you must use RegisterAlternateSystemService for all but one instance (or for all instances if desired).</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pService</span></td>
+    <td>A pointer to the service to register. This service will have the OnServiceRegistered method called in order to provide the service <span class="NDLSystemFont"><a href="efd__IDs.htm">IDs</a></span> and dependencies. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">iPriority</span></td>
+    <td>An optional parameter that can override the default priority for the registered service. If the value kUseDefaultPriotity is passed then GetDefaultPriority will be called on the service in order to determine it's priority. The priority determines the order in which OnTick will be called on all registered services; lower numerical values are ticked after higher numerical values.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>AsyncResult Success if the service was immediately registered, pending if registration was queued, and failure if the request is invalid. The most common reason for failure would be a conflicting service ID. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a023a5d13d2290b266330d2c4599ffbf8"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ad81d366c75ea1e1119513a730f79910d">AsyncResult</a></span>  RegisterAlternateSystemService(<br/><span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span>* pService, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> iPriority = kUseDefaultPriotity)</p>
+<p class="NDLRefMemberDescription">RegisterAlternateSystemService is used to register a service under an alternate ClassID rather than it's usual ClassID. </p>
+<p class="NDLRefMemberDetailedDescription">The service will be registered to be executed inside the <span class="NDLSystemFont">ServiceManager</span> just as normal, but no aliases will be accepted for the service and the service can only be retrieved via GetSystemService using the specified alternate ClassID. This is useful for situations where you want to use multiple instances of the same service.</p>
+<p class="NDLRefMemberDetailedDescription">You may register a system service at any time. If you register a service during the processing of the current service <span class="NDLSystemFont"><a href="efd__list.htm">list</a></span> then the actual registration will be delayed until the end of that processing. Once registered the service will enter the "Initializing" state. Once each service is initialized that service will enter the "Running" state.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">It is an error to register the same system service twice.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pService</span></td>
+    <td>A pointer to the service to register </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID under which to register the system service. This must be unique among all other registered services and service aliases. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">iPriority</span></td>
+    <td>An optional parameter that can override the default priority for the registered service. If the value kUseDefaultPriotity is passed then GetDefaultPriority will be called on the service in order to determine it's priority. The priority determines the order in which OnTick will be called on all registered services; lower numerical values are ticked after higher numerical values.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>AsyncResult Success if the service was immediately registered, pending if registration was queued, and failure if the request is invalid. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a5287ebde71857f3176de10257339ab66"></a>
+<p class="NDLRefMemberFunction">virtual void  UnregisterSystemService(<span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span>* pSysSer)</p>
+<p class="NDLRefMemberDescription">UnregisterSystemService is used to unregister an existing system service by pointer. </p>
+<p class="NDLRefMemberDetailedDescription">A service may be unregistered at any time. Unregistering a service places the service into the shutdown state. Once a service completes shutdown it will be removed from the <span class="NDLSystemFont">ServiceManager</span> completely.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pSysSer</span></td>
+    <td>A pointer to the service to unregister </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1ac7bfb99743da8887d9cc79b25a170b41"></a>
+<p class="NDLRefMemberFunction">virtual void  UnregisterSystemService(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer)</p>
+<p class="NDLRefMemberDescription">UnregisterSystemService is used to unregister an existing system service by ID. </p>
+<p class="NDLRefMemberDetailedDescription">For classes registered via RegisterSystemService the ID can be the main ClassID or any alias registered during OnServiceRegistered. For classes registered via RegisterAlternateSystemService the ID must be the same ID that was passing in while registering the service.</p>
+<p class="NDLRefMemberDetailedDescription">A service may be unregistered at any time. Unregistering a service places the service into the shutdown state. Once a service completes shutdown it will be removed from the <span class="NDLSystemFont">ServiceManager</span> completely.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID of the service to unregister </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a73d977c236a051fc4c5a74c808b9406f"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span>*  GetSystemService(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer) const</p>
+<p class="NDLRefMemberDescription">GetSystemService is used to find a system service by ID. </p>
+<p class="NDLRefMemberDetailedDescription">For classes registered via RegisterSystemService the ID can be the main ClassID or any alias registered during OnServiceRegistered. For classes registered via RegisterAlternateSystemService the ID must be the same ID that was passing in while registering the service. Only services that have entered the "Initializing" state and not completed the "Shutdown" state can be retrieved.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">This method is not thread safe. It should only be called from thread that is executing the Run method or in a services tick call.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID of the service to find.</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td><span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span> Pointer to the system service if found, otherwise it returns NULL. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1af313f215e68fdcc164cf8c63f7e5cfdf"></a>
+<p class="NDLRefMemberFunction">template &lt;typename T  &gt; T*  GetSystemServiceAs(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer) const</p>
+<p class="NDLRefMemberDescription">Helper template that can cast the system service return by GetSystemService into the appropriate type represented by T. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription"><span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a73d977c236a051fc4c5a74c808b9406f">GetSystemService</a></span></p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID of the service to find. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a8898d4b1e5c366c31e86699bb9d7b9f6"></a>
+<p class="NDLRefMemberFunction">template &lt;typename T  &gt; T*  GetSystemServiceAs() const</p>
+<p class="NDLRefMemberDescription">Helper template that can cast the system service return by GetSystemService into the appropriate type represented by T. </p>
+<p class="NDLRefMemberDetailedDescription">The CLASS_ID member of the templated class is used as the ID value for the call to GetSystemService; as a result this version can only be used for classes registered via RegisterSystemService. If the specified class is a base class then the final class must also have properly registered an alias when OnServiceRegistered was called during registration. </p>
+<p class="NDLRefMemberDetailedDescription"><span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a73d977c236a051fc4c5a74c808b9406f">GetSystemService</a></span></p>
+
+<a name="classefd_1_1_service_manager_1afc0645941bc1ec6f97d4be4e31732a48"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="efd__ISystemService.htm">ISystemService</a></span>*  GetSystemServiceByName(const char* displayName) const</p>
+<p class="NDLRefMemberDescription">Search for a system with the given display name. </p>
+<p class="NDLRefMemberDetailedDescription">The first service in priority order that matches the name will be returned. Service names are not guaranteed to be unique. This is not an optimized lookup. </p>
+
+<a name="classefd_1_1_service_manager_1a2e50c75323e5171d13ce19cba6899ca1"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a2e8b7180d9e66f8d1aaf7de389eb8d18">ServiceState</a></span>  CheckSystemServiceState(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer) const</p>
+<p class="NDLRefMemberDescription">The state of each service is maintained by the <span class="NDLSystemFont">ServiceManager</span>, not by the services themselves. </p>
+<p class="NDLRefMemberDetailedDescription">To check the state of a service you call this method. If needed, services may implement their own concept of state, this is just the "initialized verse running verse        shutting down" state and should not be overloaded for other purposes.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID of the service to check</td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>ServiceState Current state of the service or kSysServState_Invalid if the service was not found. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1ada9d4a6aa0cd5153d5c2d96c1de5ec1d"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span>  CheckSystemServicePriority(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer) const</p>
+<p class="NDLRefMemberDescription">Determines the priority at which a system service is operating. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">idSysSer</span></td>
+    <td>The ID of the service to find. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>The priority of the system service, which may differ from the services default priority if it was overridden during RegisterSystemService. If the given service is not found then zero is returned, but as this is also a valid service priority you may wish to verify the existence of the service separately. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="programtype_method"></a>
+<p class="NDLRefHead1">ProgramType method</p>
+<a name="classefd_1_1_service_manager_1a011e239e42c764b6d2b83ab5922777cc"></a>
+<p class=NDLRefHead2>efd::ServiceManager::ProgramType</p>
+
+
+<p class="NDLRefMemberDescription">The ProgramType identifies the intent of the application running the <span class="NDLSystemFont">ServiceManager</span>. </p>
+
+<p class="NDLRefMemberDetailedDescription">By assigning it here we make it available throughout the application. </p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+<table>
+  <thead>
+	<tr>
+        <th>Name</th>
+	    <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">kProgType_Invalid</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kProgType_Client</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kProgType_Server</span></td>
+    <td>&nbsp;</td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">kProgType_Tool</span></td>
+    <td>&nbsp;</td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a65985d1c0763ae044bcdde0288590a6e"></a>
+<p class="NDLRefMemberFunction">void  SetProgramType(<br/><span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a011e239e42c764b6d2b83ab5922777cc">ProgramType</a></span> i_pt, <br/><span class="NDLSystemFont">bool</span> i_on = true)</p>
+<p class="NDLRefMemberDescription">Set the program type associated with this <span class="NDLSystemFont">ServiceManager</span>. </p>
+<p class="NDLRefMemberDetailedDescription">You may <span class="NDLSystemFont"><a href="efd__set.htm">set</a></span> multiple program types by calling this API multiple times if your application fills multiple roles. </p>
+
+<a name="classefd_1_1_service_manager_1a6c9065794ecd3d4fa4b356b030efdd71"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  IsProgramType(<span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a011e239e42c764b6d2b83ab5922777cc">ProgramType</a></span> i_pt)</p>
+<p class="NDLRefMemberDescription">Return true if this program type is the same is i_pt. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Be aware that multiple program types can be <span class="NDLSystemFont"><a href="efd__set.htm">set</a></span>. </p></p>
+<a name="thread_yeild_behavior_control"></a>
+<p class="NDLRefHead1">Thread yeild behavior control</p>
+
+
+<a name="classefd_1_1_service_manager_1a231e8695b2bf16d42f259d7172bb7447"></a>
+<p class="NDLRefMemberFunction">static const <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  kNoSleep</p>
+<p class="NDLRefMemberDescription">A special value which can be passed to <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a546b1776c8ca64f554aa05842d5e5f01">ServiceManager::SetSleepTime</a></span> to avoid sleeping at all. </p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Skipping the sleep behaves very differently from using a sleep interval of zero. Sleeping for zero milliseconds will still yield the CPU which can limit the rate of your program. </p></p>
+
+<a name="classefd_1_1_service_manager_1aab937c18a60d08e251b15a1772d2467c"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetSleepTime() const</p>
+<p class="NDLRefMemberDescription">Gets the value for the milliseconds to sleep on every tick. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Number of milliseconds to sleep </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a546b1776c8ca64f554aa05842d5e5f01"></a>
+<p class="NDLRefMemberFunction">void  SetSleepTime(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> sleeptime)</p>
+<p class="NDLRefMemberDescription">Sets the amount of time in milliseconds to sleep on every tick. </p>
+<p class="NDLRefMemberDetailedDescription">This limits the maximum frame rate of the application. A value of <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a231e8695b2bf16d42f259d7172bb7447">ServiceManager::kNoSleep</a></span> will result in skipping the sleep call completely.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">sleeptime</span></td>
+    <td>Number of milliseconds to sleep on every tick </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a89cfbef514a67d78d3140f88669987a1"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetDeactivatedSleepTime() const</p>
+<p class="NDLRefMemberDescription">Gets the value for the milliseconds to sleep on every tick if using DeactivatedSleepTime. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Number of milliseconds to sleep </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1af478631c11df75bb45ed2ae5c9da9ce7"></a>
+<p class="NDLRefMemberFunction">void  SetDeactivatedSleepTime(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> sleeptime)</p>
+<p class="NDLRefMemberDescription">Sets the amount of time in milliseconds to sleep on every tick if using DeactivatedSleepTime. </p>
+<p class="NDLRefMemberDetailedDescription">This limits the maximum framerate of the application. A value of <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a231e8695b2bf16d42f259d7172bb7447">ServiceManager::kNoSleep</a></span> will result in skipping the sleep call completely.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">sleeptime</span></td>
+    <td>Number of milliseconds to sleep on every tick when deactivated </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a95a18d2bf53d02ea67c4e6f526c6e5c7"></a>
+<p class="NDLRefMemberFunction">void  UseDeactivatedSleepTime(<span class="NDLSystemFont">bool</span> deactivated)</p>
+<p class="NDLRefMemberDescription">Instructs the <span class="NDLSystemFont">ServiceManager</span> to start or stop using DeactivatedSleepTime each frame, rather than the usual SleepTime. </p>
+<p class="NDLRefMemberDetailedDescription">This is called when the app should yield CPU to other processes on the same machine, such as rapid iteration tools.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">deactivated</span></td>
+    <td>True if DeactivatedSleepTime should be used to sleep each frame </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="classefd_1_1_service_manager_1a30eb3b72f90951e196e05d96b52f2979"></a>
+<p class="NDLRefMemberFunction">ServiceManager()</p>
+<p class="NDLRefMemberFunction"></p>
+
+<a name="classefd_1_1_service_manager_1a725a97c59cb6784500e457defd1db951"></a>
+<p class="NDLRefMemberFunction">virtual ~ServiceManager()</p>
+<p class="NDLRefMemberFunction"></p>
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classefd_1_1_service_manager_1abd07910b3a570f98081f1cf417a6b366"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetVirtualProcessID() const</p>
+<p class="NDLRefMemberDescription">Get the VirtualProcessID for this instance of <span class="NDLSystemFont">ServiceManager</span>. </p>
+<p class="NDLRefMemberDetailedDescription">The VirtualProcessID is uniquely identifies this instance of the service manager.</p>
+<p class="NDLRefMemberDetailedDescription">This function is not valid to be called before SetVirtualProcessID has been called. </p>
+
+<a name="classefd_1_1_service_manager_1ada60b01e8208f2232ae635f1396cf9c4"></a>
+<p class="NDLRefMemberFunction">void  SetVirtualProcessID(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> procID)</p>
+<p class="NDLRefMemberDescription">Set the VirtualProcessID for this instance of <span class="NDLSystemFont">ServiceManager</span>. </p>
+
+<a name="classefd_1_1_service_manager_1aba85c676385aeefd977e758841d625d9"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="efd__utf8string.htm">efd::utf8string</a></span>  GetVirtualProcessName() const</p>
+<p class="NDLRefMemberDescription">Get the VirtualProcessName for this instance of <span class="NDLSystemFont">ServiceManager</span>. </p>
+<p class="NDLRefMemberDetailedDescription">Will return an empty string before SetVirtualProcessName has been called. </p>
+
+<a name="classefd_1_1_service_manager_1a5f2ebc21fcfa42b585b5aadc0c5a42be"></a>
+<p class="NDLRefMemberFunction">void  SetVirtualProcessName(const <span class="NDLSystemFont"><a href="efd__utf8string.htm">efd::utf8string</a></span>& procName)</p>
+<p class="NDLRefMemberDescription">Set the VirtualProcessName for this instance of <span class="NDLSystemFont">ServiceManager</span>. </p>
+
+<a name="classefd_1_1_service_manager_1a3e5a69de393510cf957c469c4c90d1ea"></a>
+<p class="NDLRefMemberFunction">virtual void  RegisterSignalHandlers()</p>
+<p class="NDLRefMemberDescription">Registers platform appropriate signal handlers for ctrl-C should be called after any scripting runtimes have been registered. </p>
+
+<a name="classefd_1_1_service_manager_1affad0daa2c60372f232eda3153e3dba4"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">TimeType</a></span>  GetServiceLastTickTime(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span> idSysSer)</p>
+<p class="NDLRefMemberDescription">Get the last tick time of a service. </p>
+
+<a name="classefd_1_1_service_manager_1a2af08fc06ecd25e8507692f5f470f19b"></a>
+<p class="NDLRefMemberFunction">const <span class="NDLSystemFont"><a href="efd__map.htm">efd::map</a></span>&lt;<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aa4ab3871be5995733e12d9b853193b50">SSID</a></span>, <span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">TimeType</a></span>&gt;&  GetAccumulatedServiceTimes()</p>
+<p class="NDLRefMemberDescription">Get the <span class="NDLSystemFont"><a href="efd__map.htm">map</a></span> of services SSIDs versus accumulated time in each The <span class="NDLSystemFont"><a href="efd__map.htm">map</a></span> is only valid if the ServiceTimeStatType includes SERVICETIME_ACCUMULATE. </p>
+
+<a name="classefd_1_1_service_manager_1a83012ce2a825a4532b6f1cf265f93359"></a>
+<p class="NDLRefMemberFunction">void  ResetAccumulatedServiceTimes()</p>
+<p class="NDLRefMemberDescription">Reset the <span class="NDLSystemFont"><a href="efd__map.htm">map</a></span> of services SSIDs versus accumulated time in each. </p>
+
+<a name="classefd_1_1_service_manager_1afacd3af021b373485ea45272e6da78c3"></a>
+<p class="NDLRefMemberFunction">void  DumpAccumulatedServiceTimes()</p>
+<p class="NDLRefMemberDescription">Dump the accumulated service times to the log. </p>
+
+<a name="classefd_1_1_service_manager_1a41fc3ce3ada51d21b1ab92914b55bf90"></a>
+<p class="NDLRefMemberFunction">void  SetServiceTimeStatTypes(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span> types)</p>
+<p class="NDLRefMemberDescription">Set the types of logging we are doing for services. </p>
+<p class="NDLRefMemberDetailedDescription">Use a logical OR of the values in the ServiceTimeStatType enum. </p>
+<p class="NDLRefMemberDetailedDescription">The SERVICETIME_METRICS bit will always be added whenever EE_ENABLE_METRICS_LOGGING is defined. </p>
+
+<a name="classefd_1_1_service_manager_1ae583d3419d3bc89baee78e94ab49b46a"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1ac109bbf377c83566102d95319120db7b">efd::UInt32</a></span>  GetServiceTimeStatTypes()</p>
+<p class="NDLRefMemberDescription">Get the types of logging we are doing for service timing. </p>
+<a name="public_static_methods"></a>
+<p class="NDLRefHead1">Public Static Methods</p>
+
+
+<a name="classefd_1_1_service_manager_1aa0d6e38f79875f6e6606b7faf7bd3d63"></a>
+<p class="NDLRefMemberFunction">static <span class="NDLSystemFont"><a href="efd__utf8string.htm">efd::utf8string</a></span>  IDToString(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a11b3d968bc96d7f04115a0aad3893469">efd::ClassID</a></span> typeID)</p>
+<p class="NDLRefMemberDescription">Translates the message type ID or ClassID into a human readable string. </p>
+<p class="NDLRefMemberDetailedDescription">(mostly for use in log messages so can relate to real <span class="NDLSystemFont"><a href="efd__IDs.htm">IDs</a></span>)</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">typeID</span></td>
+    <td>the type or class to be translated. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td><span class="NDLSystemFont"><a href="efd__utf8string.htm">efd::utf8string</a></span> containing the string for the ID specified in human readable hex form. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="frame_event_methods"></a>
+<p class="NDLRefHead1">Frame Event methods</p>
+
+
+<a name="classefd_1_1_service_manager_1a0055da5edc54f286bd1b6be645518846"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  RegisterFrameEvent(<br/><span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span>* pEvent, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> priority = kUseDefaultPriotity)</p>
+<p class="NDLRefMemberDescription">Register a frame event with the Service Manager. </p>
+<p class="NDLRefMemberDetailedDescription">A frame event is a method of performing per-frame work by invoking an ordered <span class="NDLSystemFont"><a href="efd__list.htm">list</a></span> of handlers at a specific priority during the frame. Frame events run interspersed with <span class="NDLSystemFont"><a href="efd__ISystemService.htm#classefd_1_1_i_system_service_1a028f8ed6c314689703526e6a3efe863a">ISystemService::OnTick</a></span> calls and use the exact same priority system to control the overall order. If a service and a frame event have the same priority the service will receive OnTick before the frame event is invoked. Unlike system services, frame events are not state containing objects; they are more like message handlers for a locally sent message, but unlike message handlers the order in which various handlers is invoked is also controlled by an additional priority system. The handlers themselves are invoked using an interface and method that is specific to the frame event itself.</p>
+<p class="NDLRefMemberDetailedDescription">The expected usage of this method is for an owning system service to allocate a frame event during or after its OnInit phase. This owning service will eventually unregister the event before the end of its OnShutdown phase. The service manager will hold a reference to the frame event and will release it once it has been unregistered. If desired, the owning service may continue to reference the frame event but it is recommend that the event be treated as protected data of the owning service (one reason for this is that frame events do not implement Foundation RTTI so they cannot safely be cast to other class types). Once a frame event is registered, various services including the owning service or any service that depends on the owning service can add handlers that will be invoked sequentially when the frame event is invoked.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEvent</span></td>
+    <td>The frame event to register. It must have a unique name in order to register successfully. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">priority</span></td>
+    <td>The priority at which this frame event will execute. If the special value efd::kUseDefaultPriotity is used, the priority will be determined by calling the <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm#classefd_1_1_i_frame_event_1a1c6247df0d99f3580940f8128936b418">efd::IFrameEvent::GetDefaultPriority</a></span> method. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the event was registered successfully. When a true value is returned the caller must eventually call UnregisterFrameEvent to remove the event. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a924045a06e62f75d00569225605d2781"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  AddFrameEventHandler(<br/>const char* name, <br/><span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span>* pHandler, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> priority = 0)</p>
+<p class="NDLRefMemberDescription">Add a handler to an already registered frame event. </p>
+<p class="NDLRefMemberDetailedDescription">The provided <span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span> must implement the specific interface and method used by the frame event, which should be documented along with the frame event itself. The handler will be invoked in priority order each time the frame event is triggered, which will be once per frame so as long as the frame event is active.</p>
+<p class="NDLRefMemberDetailedDescription">The typical usage of this method is to add frame event handlers during the OnInit phase of a system service and to unregister those handlers during OnShutdown. If the handler needs to toggle itself on or off frequently it is more efficient to perform that operation within the handler than to frequently call the Add/RemoveFrameEventHandler methods.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">Services adding frame event handlers, either directly or through another object managed by the service, should register a dependency on the system service which owns the frame event (in other words, on the service that called RegisterFrameEvent).</p>
+<p class="NDLRefMemberDetailedDescription">Services calling this method must call RemoveFrameEventHandler before the end of their OnShutdown method. If a non-service object is handling frame events it also must be removed prior to the UnregisterFrameEvent call for the frame event, which would typically occur during OnShutdown of the owning service.</p>
+<p class="NDLRefMemberDetailedDescription">This method must never be called during the handler of the named frame event.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>The name of a <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span> instance you wish to handle </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pHandler</span></td>
+    <td>The <span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span> pointer of an interface for handling that event. The specific interface that is used is determined by each specific frame event. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">priority</span></td>
+    <td>The priority at which your handler should be invoked. Higher priority handlers are invoked before those with lower priority values. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1ac23870d7b01299e6395cf7b561acef25"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  RemoveFrameEventHandler(<br/>const char* name, <br/><span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span>* pHandler)</p>
+<p class="NDLRefMemberDescription">Remove a previously registered handler from a frame event. </p>
+<p class="NDLRefMemberDetailedDescription">This would typically be called during the OnShutdown method of a system service which owns the handler.</p>
+<p class="NDLRefMemberDetailedDescription">
+<p class="NDLRefMemberDetailedDescription">This method must never be called during the handler of the named frame event.</p></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>The name of an <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span> instance you wish to stop handling </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pHandler</span></td>
+    <td>The <span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span> pointer of an interface for handling that event. The specific interface that is used is determined by each specific frame event. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a8a7c84ff1af50c318db060fe12391d5c"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">bool</span>  UnregisterFrameEvent(const char* name)</p>
+<p class="NDLRefMemberDescription">Unregister a frame event previously registered with RegisterFrameEvent. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>The name of a <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span> instance to remove </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the event was unregistered successfully. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a0e991032835a3fc0f54e058aff28f731"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  RegisterFrameEventAndAddHandler(<br/><span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span>* pEvent, <br/><span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span>* pHandler, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> eventPriority = kUseDefaultPriotity, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">SInt32</a></span> handlerPriority = 0)</p>
+<p class="NDLRefMemberDescription">Convince method to both register a frame event and also add a handler. </p>
+<p class="NDLRefMemberDetailedDescription">This performs the same work as making two separate calls to RegisterFrameEvent and AddFrameEventHandler.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pEvent</span></td>
+    <td>The frame event to register. It must have a unique name in order to register successfully. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pHandler</span></td>
+    <td>The <span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span> pointer of an interface for handling that event. The specific interface that is used is determined by each specific frame event. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">eventPriority</span></td>
+    <td>The priority at which this frame event will execute. If the special value efd::kUseDefaultPriotity is used, the priority will be determined by calling the <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm#classefd_1_1_i_frame_event_1a1c6247df0d99f3580940f8128936b418">efd::IFrameEvent::GetDefaultPriority</a></span> method. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">handlerPriority</span></td>
+    <td>The priority at which your handler should be invoked. Higher priority handlers are invoked before those with lower priority values. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the event was registered successfully. When a true value is returned the caller must eventually call RemoveHandlerAndUnregisterFrameEvent to remove the event. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1aade0e0117c29dfbc76ea26c17976e2f5"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  RemoveHandlerAndUnregisterFrameEvent(<br/>const char* name, <br/><span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span>* pHandler)</p>
+<p class="NDLRefMemberDescription">Convenience method to remove a handler and then unregister the frame event. </p>
+<p class="NDLRefMemberDetailedDescription">This performs the same work as two separate calls to RemoveFrameEventHandler and UnregisterFrameEvent.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">name</span></td>
+    <td>The name of a <span class="NDLSystemFont"><a href="efd__IFrameEvent.htm">IFrameEvent</a></span> instance you wish to unregister </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pHandler</span></td>
+    <td>The <span class="NDLSystemFont"><a href="efd__IBase.htm">IBase</a></span> pointer of an interface for handling that event. The specific interface that is used is determined by each specific frame event. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the event was unregistered successfully. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="logging_and_performance_monitoring_utilities"></a>
+<p class="NDLRefHead1">Logging and Performance monitoring utilities</p>
+
+
+<a name="classefd_1_1_service_manager_1aba60647ef3ce5aabad08082eb6fed999"></a>
+<p class="NDLRefMemberFunction">void  SetPeriodicLogServiceTiming(<span class="NDLSystemFont">efd::Bool</span> bEnableLogging)</p>
+<p class="NDLRefMemberDescription">Specifies if the <span class="NDLSystemFont">ServiceManager</span> should periodically log a detailed time break-down of the running services. </p>
+<p class="NDLRefMemberDetailedDescription">By default the service manager will log this information. Note: Even if service time logging is disabled, the <span class="NDLSystemFont">ServiceManager</span> will still log if any services take longer than the specified max acceptable tick time. </p>
+
+<a name="classefd_1_1_service_manager_1a9a135f3ac0e968ed01dce9e17e2b7f0b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetPeriodicPeriodicLogServiceTiming() const</p>
+<p class="NDLRefMemberDescription">Determine if periodic log timings are enabled. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>true if periodic log timings are enabled. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1af3c4572f300b8853c48229dc39ce9248"></a>
+<p class="NDLRefMemberFunction">void  SetLogTimingDumpInterval(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> kTimingDumpInterval)</p>
+<p class="NDLRefMemberDescription">Set how often we log a detailed time break-down of the running services. </p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">ServiceManager</span> defaults to a 20 second log interval. </p>
+
+<a name="classefd_1_1_service_manager_1a2ac512fcd0711ded99e20c53b2403c0d"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span>  GetLogTimingDumpInterval() const</p>
+<p class="NDLRefMemberDescription">Get how often we log a detailed time break-down of the running services. </p>
+
+<a name="classefd_1_1_service_manager_1a46d3a163e2fb8ef3055614d3b2deacf0"></a>
+<p class="NDLRefMemberFunction">void  SetMaxAcceptableTickTime(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> kMaxAcceptableTickTime)</p>
+<p class="NDLRefMemberDescription">Set the maximum number of Milliseconds that we expect a single Tick to use. </p>
+<p class="NDLRefMemberDetailedDescription">If a tick takes longer then we will generate a slow-frame warning and log timing data. By default the <span class="NDLSystemFont">ServiceManager</span> uses a 5 millisecond max acceptable tick time. </p>
+
+<a name="classefd_1_1_service_manager_1a72adadfde3bfb86aea79dd0d9709eac4"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span>  GetMaxAcceptableTickTime() const</p>
+<p class="NDLRefMemberDescription">Get the maximum number of Milliseconds that we expect a single Tick to use. </p>
+<a name="servicemanager_control_methods"></a>
+<p class="NDLRefHead1">ServiceManager control methods</p>
+
+
+<a name="classefd_1_1_service_manager_1ad9b452a32234db370095e8e940d623c7"></a>
+<p class="NDLRefMemberFunction">virtual void  Run()</p>
+<p class="NDLRefMemberDescription">Run is used to start ticking each of the registered services until the Shutdown method is called. </p>
+<p class="NDLRefMemberDetailedDescription">This is the main loop of a <span class="NDLSystemFont">ServiceManager</span> controlled application. It first performs initialization, then runs until shutdown is requested, and then controls the shutdown process. Applications that call Run should not call OnInit, RunOnce, or Shutdown directly as the Run function will perform those tasks. </p>
+
+<a name="classefd_1_1_service_manager_1a7037754d0668cc6f92609ae8db7b1ae8"></a>
+<p class="NDLRefMemberFunction">virtual void  RunOnce()</p>
+<p class="NDLRefMemberDescription">RunOnce is used to tick each of the registered services once. </p>
+<p class="NDLRefMemberDetailedDescription">This is useful for integrating the <span class="NDLSystemFont">ServiceManager</span> with other application ServiceManagers. Using <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1ad9b452a32234db370095e8e940d623c7">Run()</a></span> is the recommended approach. You must first call InitializeServices() before calling this method. </p>
+
+<a name="classefd_1_1_service_manager_1abfbea7d81a3cefb1e261568eb476f86f"></a>
+<p class="NDLRefMemberFunction">virtual void  Shutdown(<span class="NDLSystemFont">bool</span> i_Immediate = false)</p>
+<p class="NDLRefMemberDescription">Shutdown is used to request a shutdown of the <span class="NDLSystemFont">ServiceManager</span>. </p>
+<p class="NDLRefMemberDetailedDescription">By default the current main loop will complete and then the <span class="NDLSystemFont">ServiceManager</span> will go into the "shutting down" state. If an immediate shutdown is requested then the main loop is aborted and we go directly to the shutting down state.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">i_Immediate</span></td>
+    <td>If true, this shutdown is being requested due to a critical error and the stability of the process is in question. Normal clean shutdown will be by-passed when passing this flag. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1aa971620a3b01574804806d3554b7f1ac"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  GetShutdown()</p>
+<p class="NDLRefMemberDescription">GetShutdown is used to check to see if a shutdown has been requested by using the <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1abfbea7d81a3cefb1e261568eb476f86f">Shutdown()</a></span> method. </p>
+<p class="NDLRefMemberDetailedDescription">Note that this becomes true the second the request is made even though we do not enter the "shutting down" state until the next main loop.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>bool True if a <span class="NDLSystemFont">ServiceManager</span> shutdown has been requested </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a45b7227987a14b44516fe970d3d48a01"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  IsInitialized() const</p>
+<p class="NDLRefMemberDescription">Determine if the pre-initialization phase of process startup has completed. </p>
+<p class="NDLRefMemberDetailedDescription">When true this implies that the service manager has been ticked at least once.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>Becomes true once all initial OnPreInit calls have completed. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1a6ef013fed140d026cc0e2131de4ccb70"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  IsRunning() const</p>
+<p class="NDLRefMemberDescription">Gets a value indicating if the service manager is currently performing a tick. </p>
+<p class="NDLRefMemberDetailedDescription">In other words this determines whether the RunOnce method is currently executing. </p>
+
+<a name="classefd_1_1_service_manager_1a57c5d57a3eb0d1229bbbbd769aa2137b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1a2e8b7180d9e66f8d1aaf7de389eb8d18">ServiceState</a></span>  GetCurrentState() const</p>
+<p class="NDLRefMemberDescription">Returns the state of the <span class="NDLSystemFont">ServiceManager</span> itself. </p>
+<p class="NDLRefMemberDetailedDescription">Be aware that individual services might be in a different state than the <span class="NDLSystemFont">ServiceManager</span> (for example, a service added while the <span class="NDLSystemFont">ServiceManager</span> is already running will be in the initializing state). The only valid <span class="NDLSystemFont">ServiceManager</span> states are:</p>
+<ul>
+<li>kSysServState_PreInit : <span class="NDLSystemFont">ServiceManager</span> is allocated but has not begun to run</li>
+<li>kSysServState_Initializing : <span class="NDLSystemFont">ServiceManager</span> is in the process of calling OnInit on all system services and will continue to do so until they all complete initialization.</li>
+<li>kSysServState_Running : <span class="NDLSystemFont">ServiceManager</span> is in the process of calling OnTick on all system and will continue to do so until a Shutdown request is received.</li>
+<li>kSysServState_ShuttingDown : <span class="NDLSystemFont">ServiceManager</span> is in the process of calling OnShutdown on all system services and will continue to do so until they all complete the shutdown state. Note that this state is entered on the next loop after a <span class="NDLSystemFont"><a href="efd__ServiceManager.htm#classefd_1_1_service_manager_1abfbea7d81a3cefb1e261568eb476f86f">Shutdown()</a></span> request is received and not immediately upon receiving that request.</li>
+<li>kSysServState_Complete : <span class="NDLSystemFont">ServiceManager</span> main loop has completed.</li></ul>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>ServiceState Current state of the <span class="NDLSystemFont">ServiceManager</span>. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="time_and_clock_management_methods"></a>
+<p class="NDLRefHead1">Time and Clock management methods</p>
+
+
+<a name="classefd_1_1_service_manager_1afa4604122449086345cb630038b3261b"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span>  GetServiceManagerTime() const</p>
+<p class="NDLRefMemberDescription">The ServiceManagerTime is a "stepped real time" clock. </p>
+<p class="NDLRefMemberDetailedDescription">By stepped it means that it only increments once at the beginning of each "main loop" of the <span class="NDLSystemFont">ServiceManager</span>. By real time it means that it advances at a rate of one second per real-world second. The <span class="NDLSystemFont">ServiceManager</span> time will be synchronized between all servers and all clients. </p>
+
+<a name="classefd_1_1_service_manager_1a9b2f29588dc3b4dde57eb2da2415ad97"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  RegisterClock(<span class="NDLSystemFont"><a href="efd__IClock.htm">IClock</a></span>* clock)</p>
+<p class="NDLRefMemberDescription">Register a clock with the service manager. </p>
+<p class="NDLRefMemberDetailedDescription">This clock will be updated every tick. The clock will be deleted when the <span class="NDLSystemFont">ServiceManager</span> is destroyed unless unregistered.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">clock</span></td>
+    <td>the clock to be registered. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>bool returns whether or not the clock was properly registered. If a clock by that id already exists, the return value is false. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1acf67b1e489968e5e4ada96e2e424c99d"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">bool</span>  UnregisterClock(<span class="NDLSystemFont"><a href="efd__IClock.htm">IClock</a></span>* clock)</p>
+<p class="NDLRefMemberDescription">Remove a clock from the service manager. </p>
+<p class="NDLRefMemberDetailedDescription">The clock is not deleted, it is assumed that the caller will delete the clock.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">clock</span></td>
+    <td>the clock to be unregistered. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>bool returns whether or not the clock was found. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1ab491c9c60ca3a8a5b1cd1db872162962"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">TimeType</a></span>  GetTime(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a11b3d968bc96d7f04115a0aad3893469">efd::ClassID</a></span> id) const</p>
+<p class="NDLRefMemberDescription">Get the time for the specified clock. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">id</span></td>
+    <td>The clock to query; this is the <span class="NDLSystemFont"><a href="efd__IClock.htm#classefd_1_1_i_clock_1aa92b1444ff6da41d20493ca47ad7c01c">IClock::GetClockClassID</a></span> value for a clock previously registered with the RegisterClock method. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a37c593debc73d82d7ddc571c725f0e2d">efd::TimeType</a></span> with the current time of the clock. If no clock by that id exists, the return value is 0.0f. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classefd_1_1_service_manager_1af1e3162da2c43bb9e6a7d4f8a4e8a857"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="efd__IClock.htm">IClock</a></span>*  GetClock(<span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a11b3d968bc96d7f04115a0aad3893469">efd::ClassID</a></span> id) const</p>
+<p class="NDLRefMemberDescription">Get the clock for the specified identifier. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">id</span></td>
+    <td>the clock to query; this is the <span class="NDLSystemFont"><a href="efd__IClock.htm#classefd_1_1_i_clock_1aa92b1444ff6da41d20493ca47ad7c01c">IClock::GetClockClassID</a></span> value for a clock previously registered with the RegisterClock method. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>An <span class="NDLSystemFont"><a href="efd__IClock.htm">efd::IClock</a></span> pointer for the requested clock, if found (NULL otherwise). </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

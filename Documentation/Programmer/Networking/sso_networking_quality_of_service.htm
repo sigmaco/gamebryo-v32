@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Quality of Service</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Quality of Service</h1>
+
+<p>Different messages have different delivery requirements. Message delivery may be guaranteed or
+not; messages may arrive in order or out of order; connections may be compressed or encrypted.
+Gamebryo LightSpeed represents these properties with a concept called <span class=
+"NDLEmphasis">Quality of Service</span>. Quality of Service is established when a connection is
+created and each connection has one and only one Quality of Service.</p>
+
+<p>The <a href="../../Reference/QuickRef_Services/svc_qckref_net_svc.htm">Network Service</a>
+(NetService) uses a <span class="NDLEmphasis">Physical Quality of Service</span> to determine which
+physical transport a message will be sent on. Physical Quality of Service is represented as an
+<span class="NDLSystemFont">efd::UInt32</span> value. This is a bit field that aggregates
+individual features from the <span class="NDLSystemFont">efdNetFeatures</span> enum. Net features
+describe individual qualities of the underlying service, for example:</p>
+
+<ul>
+    <li>NET_UDP/NET_TCP: Use UDP/TCP as the underlying IP transport</li>
+
+    <li>NET_AES/NET_SSL: Describes the type of encryption used</li>
+
+    <li>NET_TOTAL_ORDER: Messages are routed through a Channel Manager to ensure that they are
+    delivered to all connected parties in the correct order</li>
+</ul>
+
+<p>The network system also has the concept of <span class="NDLEmphasis">Virtual Quality of
+Service</span>. Each Virtual Quality of Service maps to a physical Quality of Service, allowing
+code and script to route messages using connections that correspond to game concepts rather than
+physical transports. For example, instead of requiring a scripter to know that certain kinds of
+messages should be transmitted over an unencrypted TCP connection, he can simply specify that the
+data is of type "voice."</p>
+
+<p>Virtual Qualities of Service are listed in <span class=
+"NDLSystemFont">efdVirtualQualityOfService.enum</span>. Physical Qualities of Service are listed in
+<span class="NDLSystemFont">efdQualitiesOfService.enum</span>. Each of these is baked into its
+respective header file by <span class="NDLSystemFont">DDEHeaderGen.exe</span> during the build
+process. If you need to specify additional qualities of service, you can extend these enum files in
+the usual way, as described under <a href="../../Tools/DataDrivenEnum/DataDrivenEnum_usage.htm">DDE
+Header Generator Usage</a>.</p>
+
+<p>You can map a Virtual to a Physical Quality of Service in code or via a config file. In code,
+you set the default Quality of Service that is returned for any requests that aren't already mapped
+by calling the static function <span class=
+"NDLSystemFont">QOSCompare::SetDefaultQualityOfService</span>. Using a config file gives
+finer-grained control, allowing permanent mappings to be established.</p>
+
+<h2>Example: Mapping Virtual to Physical Quality of Service Within Config.ini</h2>
+<pre>
+; Quality of Service Section
+[QualityOfService]
+; map the Virtual Quality of Service QOS_RELIABLE to use the Physical Quality of Service kQOS_TCP
+QOS_RELIABLE=kQOS_TCP
+; map the Virtual Quality of Service QOS_TCP to also go over kQOS_TCP
+QOS_TCP=kQOS_TCP
+; Make all subscriptions use the total order Quality of Service so all messages go to ChannelManager
+QOS_SUBSCRIPTION=kQOS_TCPTotalOrder
+; Make the game created virtual Quality of Service QOS_GAME_DATA go over plain unreliable UDP
+; NOTE: QOS_GAME_DATA does not exist but could be created by either adding a value to the 
+; appropriate .enum file or by creating a new enum file that derives from the existing
+; efdVirtualQualityOfService.enum. See the documentation for DDE Header Generator for more detail.
+QOS_GAME_DATA=kQOS_UDP
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Tools/DataDrivenEnum/DataDrivenEnum_usage.htm">DDE Header Generator
+    Usage</a></li>
+
+    <li><a href="sso_networking_overview.htm">Networking Overview</a></li>
+
+    <li><a href="sso_networking_prereqs.htm">Networking Prerequisites</a></li>
+
+    <li><a href="sso_networking_requirements.htm">Networking Requirements</a></li>
+
+    <li><a href="sso_networking_config.htm">Networking Configuration</a></li>
+
+    <li><a href="sso_networking_how_work.htm">How Networking Works</a></li>
+
+    <li><a href="sso_networking_limitations.htm">Networking Limitations</a></li>
+
+    <li><a href="sso_networking_best_practice.htm">Best Practices for Working with
+    Networking</a></li>
+
+    <li><a href="sso_networking_handle_categories.htm">Understanding How Networking Handles
+    Categories</a></li>
+
+    <li><a href="sso_networking_make_netlib.htm">Creating a NetLib</a></li>
+
+    <li><a href="sso_networking_troubleshoot.htm">Troubleshooting Networking</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Entity In/Out of World State</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Entity In/Out of World State</h1>
+
+<p>One of the most important concepts for managing entities is the "world state". An entity can
+either be "in the world" or "out of the world" at any given point in it's life span and can
+transition between these two states as needed. Here we discuss what exactly this means and how it
+affects simulation and rendering.</p>
+
+<h2>What does it mean to be "in the world"?</h2>
+<p>The simulation of an entity is controlled by many different system services that spend CPU cycles
+processing each relevant entity. In general the majority of these services should only concern
+themselves with entities that are in the world. For example, services such as the rendering service
+and the the various PhysX services will not spend any CPU cycles on out-of-world entities. This
+means those entities will not render to the screen and cannot trigger PhysX collisions, for example.
+These services can still discover new entities as soon as they are created; they might use this
+ability to load various resources or prepare for the entity to enter the world. Services should
+be able to very quickly transition an entity into the in-world state when requested. However
+services should strive to avoid spending CPU time on out-of-world entities. For example, when an
+entity that mixes in the Mesh standard model is created the relevant mesh and textures are loaded
+into memory and the appropriate scene graph nodes to represent the entity are created but these
+nodes are not added to the scene graph until that entity enters the world. Once added to the scene
+graph the entity will immediately be available for rendering.</p>
+<p>All of the property state for an entity is maintained when an entity is moved between in-world
+and out-of-world states. In addition, if desired the properties of an out-of-world entity can still
+be modified. This allows for many features such as implementing reusable pools of entities for
+things like short lived projectiles or explosion animations and optimizing which entities are active
+based on proximity to the player or visibility. Also, the actual transition to or from the world
+will trigger entity lifecycles which can execute behaviors on the entities as described in the
+<a href="entity_lifecycle.htm">Entity Lifecycles</a> documentation.</p>
+
+<h2>Background</h2>
+<p>In versions of LightSpeed prior to version 3.2 entities automatically entered the world as soon
+as they were created and there was no way to manually move an entity in or out of the world. This
+made it difficult to control the preloading of entity sets as each entity would pop into the world
+one-by-one as they finished asyncronous entity creation. Also there was no easy way to preload a
+set of entities without impacting CPU utilization which made it difficult to stream in additional
+entities in large streaming worlds. To easy upgrading from previous versions, by default entities
+are still automatically entered into the world as soon as they are created. However it is now
+recommended that this default behavior be overridden and applications manually control entry into
+the world to best suit their needs.</p>
+
+<h2>Controlling Entity World State</h2>
+
+<p>There are several ways to control the world state for entities:</p>
+<ul>
+    <li>By default entities will enter the world as soon as they are created. This is done to
+        match legacy behavior.</li>
+    <li>When dynamically creating an entity you can manually specify whether it should enter the
+        world automatically once created.</li>
+    <li>When loading a block you can manually specify whether all entities in the block should
+        automatically enter the world.</li>
+    <li>Specific entities can be told to enter to exit the world from C++ or script.</li>
+    <li>All entities loaded in a block can be told to enter or exit the world from C++ or script.</li>
+    <li>When an entity is destroyed it will automatically exit the world first if needed.</li>
+    <li>The default behavior of entering or exiting the world for both blocks and dynamically
+        created entities can be adjusted.</li>
+</ul>
+
+<h3>Controlling initial world state for dynamically created entities</h3>
+<p>There are several ways of creating an Entity in C++ and from script but in all of these cases
+the general method of controlling whether or not an entity should automatically enter the world is
+the same. This is controlled via a specific named parameter that is passed in during creation of
+the entity. When an entity is first created you can pass a <span class="NDLSystemFont"><a
+href="../../Reference/efd/efd__ParameterList.htm">ParameterList</a></span> containing arguments for
+the <span class="NDLSystemFont">OnCreate</span> behavior. These parameters now include one specific
+parameter that controls entering the world, the "<span class="NDLSystemFont">AutoEnterWorld</span>"
+parameter is a boolean value that controls whether the entity should enter the world automatically.
+If no parameters are provided then this parameter will automatically be added with a default value,
+otherwise the value of this parameter is checked by the <span class="NDLSystemFont"><a
+href="../../Reference/egf/egf__EntityManager.htm">EntityManager</a></span> when the entity is added.
+As a conveniance this parameter is then passed on to the <span class="NDLSystemFont">OnCreate</span>
+behavior along with any other parameters. The following examples demonstrate setting <span
+class="NDLSystemFont">AutoEnterWorld</span> to the non default value of 'false'.</p>
+<h4>C++ example of creating an out-of-world entity:</h4>
+<pre>
+    // Note: If you are only using this single argument for many entity creations you may wish to
+    // cache a single ParameterList with this argument and reuse it for each entity creation.
+    ParameterListPtr spCreationArguments = EE_NEW ParameterList;
+    spCreationArguments->AddParameter("AutoEnterWorld", false);
+    // Add additional arguments for creation if desired. Remember, you should always use only named
+    // parameters when invoking any 'extends' style behavior.
+
+    // Using the preferred EntityManager::CreateEntity method:
+    EntityManager* pEntityManager = m_pServiceManager->GetSystemServiceAs&lt;EntityManager&gt;();
+    pEntityManager->CreateEntity("ModelName", efd::kCAT_INVALID, spCreationArguments);
+</pre>
+<h4>Lua script example of creating an out-of-world entity:</h4>
+<pre>
+    local creationParams = ParameterList.ParameterList()
+    creationParams.PutBool("AutoEnterWorld", false)
+
+    BehaviorAPI.CreateEntity("ModelName", creationParams)
+
+    -- Works the same with the "AndWait" version of entity creation:
+    BehaviorAPI.CreateEntityAndWait("ModelName", creationParams)
+</pre>
+
+<h3>Controlling initial world state during block loading</h3>
+<p>When loading a block you can control whether all entities in that block are automatically entered
+into the world or not. By default all entities are automatically entered into the world as soon as
+every entity in the block is fully created. Internally the <span class="NDLSystemFont"><a
+href="../../Reference/egf/egf__EntityLoaderService.htm">EntityLoaderService</a></span> will
+automatically create the neccessary <span class="NDLSystemFont">ParameterList</span> with the <span
+class="NDLSystemFont">AutoEnterWorld</span> parameter set accordingly.</p>
+<h4>C++ example of loading a block out-of-world:</h4>
+<pre>
+    EntityLoaderService* pELS = m_pServiceManager->GetSystemServiceAs&lt;EntityLoaderService&gt;();
+    egf::BlockLoadParameters blp;
+    blp.SetAutoEnter(false); // This false specifies not to automatically enter the world
+    pELS->RequestEntitySetLoad("urn:emergent-world:YourBlockName", &blp);
+</pre>
+<h4>Lua script example of loading a block out-of-world:</h4>
+<pre>
+    local blockLoadParams = ParameterList.ParameterList()
+    blockLoadParams.PutBool("AutoEnter", false)
+    BehaviorAPI.LoadBlockFile("urn:emergent-world:YourBlockName", blockLoadParams)
+</pre>
+
+<h3>Manually adjusting world state for a single entity</h3>
+<p>Given a pointer or script reference to an entity it is a simple matter to move that entity in or
+out of the world.</p>
+<h4>C++ example of moving an entity in or out of the world:</h4>
+<pre>
+    Entity* pEntity = ...;
+    
+    // EnterWorld can be called at any time, if called before the OnCreate lifecycle has completed
+    // this request will be queued and will run as soon as it is valid to do so. If the entity is
+    // already in the world this will have no effect:
+    pEntity->EnterWorld();
+
+    ...
+
+    // ExitWorld can also be called at any time. If the entity is not in the world this will do
+    // nothing. If the entity is partially through entering the world then it will complete the
+    // entering process and then immediately exit the world.
+    pEntity->ExitWorld();
+    
+    // An entity can enter and exit the world as many times as needed:
+    pEntity->EnterWorld();
+
+    // If an entity is destroyed while it is in the world it will automatically exit the world
+    // before invoking the destruction lifecycle.
+    EntityManager* pEntityManager = m_pServiceManager->GetSystemServiceAs&lt;EntityManager&gt;();
+    pEntityManager->DestroyEntity(pEntity);
+</pre>
+<h4>Lua script example of moving an entity in or out of the world:</h4>
+<pre>
+function MyBehavior(self, params)
+    BehvaiorAPI.EntityEnterWorld(self)  -- enter the world
+    BehaviorAPI.Sleep(1000)             -- sleep for a second
+    BehvaiorAPI.EntityExitWorld(self)   -- leave the world
+    BehaviorAPI.Sleep(1000)             -- sleep for a second
+    BehvaiorAPI.EntityEnterWorld(self)  -- re-enter the world
+    BehaviorAPI.Sleep(1000)             -- sleep for a second
+    BehvaiorAPI.DestroyEntity(self)     -- destroy myself thus leaving the world
+end
+</pre>
+
+<h3>Manually adjusting world state for an entire block</h3>
+<p>Every entity created as result of loading a block file can be moved in or out of the world just
+as easily as updating a single entity's world state.</p>
+<h4>C++ example of moving a block in or out of the world:</h4>
+<pre>
+    // NOTE: The AssetID used here must be the exact AssetID used when the block was loaded.
+    EntityLoaderService* pELS = m_pServiceManager->GetSystemServiceAs&lt;EntityLoaderService&gt;();
+    pELS->RequestEntitySetEnterWorld("urn:emergent-world:YourBlockName");
+
+    ...
+
+    // Note: again the AssetID must match the one used when loading the block.
+    pELS->RequestEntitySetExitWorld("urn:emergent-world:YourBlockName");
+</pre>
+<h4>Lua script example of moving a block in or out of the world:</h4>
+<pre>
+function MyBehavior(self, params)
+    -- As always, the AssetID must match that used when loading the block.
+    BehvaiorAPI.EntitySetEnterWorld("urn:emergent-world:YourBlockName")
+    BehaviorAPI.Sleep(1000)
+    BehvaiorAPI.EntitySetExitWorld("urn:emergent-world:YourBlockName")
+end
+</pre>
+
+
+<h3>Changing the default auto-enter world behavior</h3>
+<p>The default response for both blocks and dynamically created entities is to automatically enter
+the world when created. These defaults are set mainly for legacy compatability with previous
+versions of LightSpeed. You can override these global defaults to prevent entities from
+autoamtically entering the world (unless, of course, they manually request entering the world
+through any of the methods discussed above). If you change these defaults, it is recommend this be
+done during your application initialization before any blocks or entities are created. It is not
+recommended that these settings be changed more than once. In particular changing these settings
+while blocks are loading may have undefined and potentially harmful side effects.</p>
+<h4>Turning off "auto-enter" for blocks:</h4>
+<pre>
+    BlockLoadParameters::SetDefaultAutoEnterWorld(false);
+</pre>
+
+<h4>Turning off "auto-enter" for dynamic entities:</h4>
+<pre>
+    EntityManager* pEntityManager = m_pServiceManager->GetSystemServiceAs&lt;EntityManager&gt;();
+    pEntityManager->SetDefaultAutoEnterWorld(false);
+</pre>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+    <li><a href="entity_creating.htm">Creating entities</a></li>
+    <li><a href="entity_destroying.htm">Destroying entities</a></li>
+    <li><a href="entity_how_work.htm">How entities work</a></li>
+    <li><a href="entity_lifecycle.htm">Entity lifecycles</a></li>
+    <li><a href="entity_best_practice.htm">Best practices for working with entities</a></li>
+    <li><a href="entity_tuning.htm">Tuning entity performance</a></li>
+
+    <li><a href="../../Reference/egf/egf__Entity.htm">egf::Entity class</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

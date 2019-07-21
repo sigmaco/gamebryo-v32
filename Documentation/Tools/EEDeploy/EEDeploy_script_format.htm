@@ -1,0 +1,407 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>EEDeploy Script File Format</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>EEDeploy Script File Format</h1>
+
+<p>The deploy script file is written in XML using a specific
+format that includes the following commands.</p>
+
+<h3>eedeploy</h3>
+
+<p>The top level command that defines the deploy script. All
+other commands must be inside this command. This command supports
+the following attributes:</p>
+
+<ul>
+    <li>version&mdash;<em>Required</em>. Version of deploy
+    script. Must be 1.</li>
+</ul>
+
+<h3>conditional</h3>
+
+<p>The <span class="NDLSystemFont">conditional</span> command
+allows decisions to be made within a script file based on a value
+of a variable. Variables can be defined elsewhere in the script
+using the <span class="NDLSystemFont">define</span> command, or
+they can be specified on the command line with either of the
+following formats: <em>variableName=value</em> or
+<em>variableName</em> (in which case a default value of "" is
+inferred).</p>
+
+<p>The body of the conditional is executed if the condition that
+is specified by the attributes passes. Conditional blocks may be
+arbitrarily nested. This command supports the following
+attributes:</p>
+
+<ul>
+    <li>var&mdash;<em>Required</em>. Variable to test.</li>
+
+    <li>op&mdash;<em>Required</em>. Comparison operation to
+    perform. The valid values for op are:
+
+        <ul>
+            <li><b>==</b>&mdash;Passes if variable is equal to
+            the value of the RHS attribute (right-hand
+            side).</li>
+
+            <li><b>!=</b>&mdash;Passes if variable is not equal
+            to the value of the RHS attribute.</li>
+
+            <li><b>defined</b>&mdash;Passes if variable is
+            defined (specified on command line or via a
+            <span class="NDLSystemFont">define</span> command
+            with no subsequent <span class=
+            "NDLSystemFont">undefine</span> tag).</li>
+
+            <li><b>!defined</b>&mdash;Passes if variable is not
+            defined (was not specified previously, or was removed
+            by an <span class="NDLSystemFont">undefine</span>
+            command).</li>
+        </ul>
+    </li>
+
+    <li>rhs&mdash;<em>Optional</em>. Provides the comparand used
+    to determine if the conditional passed or failed. Note: This
+    attribute is ignored for some operations, but if it is
+    omitted for an operation that requires a RHS, then "" will be
+    used instead.</li>
+</ul>
+
+<h3>copy</h3>
+
+<p>The <span class="NDLSystemFont">copy</span> command is the
+work horse of EEDeploy. It constructs a list of files from the
+source (with optional inclusive/exclusive filters) and copies any
+files that are newer than the same named file at the destination.
+This command supports the following attributes:</p>
+
+<ul>
+    <li>src&mdash;The root of the path that will be searched for
+    files to copy.</li>
+
+    <li>dst&mdash;The root of the destination where files will be
+    copied. If a file named <span class=
+    "NDLSystemFont">&lt;src&gt;\path\to\file.ext</span> passes
+    the filters (pattern, exclude, and include), then it will be
+    copied to <span class=
+    "NDLSystemFont">&lt;dst&gt;\path\to\file.ext</span>, where
+    <span class="NDLSystemFont">&lt;src&gt;</span> and
+    <span class="NDLSystemFont">&lt;dst&gt;</span> are the values
+    of the src and dst attributes.</li>
+
+    <li>pattern&mdash;<em>Optional</em>. Allows files to be
+    included by file extension using a traditional Windows
+    pattern string of the form *.ext. If not specified, the
+    default of *.* will be used. For a more robust
+    pattern-matching system, use the include attribute.</li>
+
+    <li>exclude&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, none of which may be in the path. If this
+    attribute is present, all potential files are vetted against
+    the exclusion strings, If any match, the file will be
+    rejected. To anchor a string to the end of the filename (for
+    file extension filtering), append the $ character to the
+    string. For example, "PS3;XBox360;.lua$" would exclude
+    non-Windows content, and also exclude any files that end in
+    .lua (but would not exclude a file named
+    joe.luakas.KFM).</li>
+
+    <li>include&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, one of which must be in the path. If this
+    attribute is present, only one of the inclusion strings needs
+    to be in the full file path, but if none are present, the
+    file will not make the list. For example, "DX9;DX10" would
+    match all files with DX9 or DX10 in their path, but does not
+    require the path to have both DX9 and DX10. Like the exclude
+    attribute, an include string can also be appended with $ to
+    anchor it in searches to the end of file path.</li>
+</ul>
+
+<h3>copyfile</h3>
+
+<p>Used to copy and optionally rename a single file. Unlike
+<span class="NDLSystemFont">copy</span>, this command allows a
+rename during the copy. This command supports the following
+attributes:</p>
+
+<ul>
+    <li>src&mdash;<em>Required</em>. The source file name. This
+    should be a file name and not a directory or path.</li>
+
+    <li>dst&mdash;<em>Required</em>. The destination file name.
+    This should be a file name and not a directory or path.</li>
+</ul>
+
+<h3>define</h3>
+
+<p>Defines a variable (with an optional value). Variables can be
+used to conditionally execute other parts of the script. See the
+<span class="NDLSystemFont">conditional</span> command for more
+information. This command supports the following attributes:</p>
+
+<ul>
+    <li>key&mdash;The variable name. If such a variable already
+    exists, it will be redefined to the new value.</li>
+
+    <li>value&mdash;<em>Optional</em>. The value of the variable.
+    If this attribute is omitted, a default value of "" will be
+    used instead.</li>
+</ul>
+
+<h3>delete</h3>
+
+<p>Used to delete files. This command supports the same filtering
+attributes as <span class="NDLSystemFont">copy</span> to
+construct a file list. After files are deleted, any empty
+directories left behind may be optionally deleted as well. This
+command supports the following attributes:</p>
+
+<ul>
+    <li>src&mdash;The root of the path to search for files to
+    delete.</li>
+
+    <li>pattern&mdash;<em>Optional</em>. Allows files to be
+    included by file extension using a traditional Windows
+    pattern string of the form *.ext. If not specified, the
+    default of *.* will be used. For a more robust
+    pattern-matching system, use the include attribute.</li>
+
+    <li>exclude&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, none of which may be in the path. If this
+    attribute is present, all potential files are vetted against
+    the exclusion strings, and if any match, then the file will
+    be rejected. To anchor a string to the end of the filename
+    (for file extension filtering), append the $ character to the
+    string. For example, "PS3;XBox360;.lua$" would exclude
+    non-Windows content, and also exclude any files that end in
+    .lua (but would not exclude a file named
+    joe.luakas.KFM).</li>
+
+    <li>include&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, one of which must be in the path. If this
+    attribute is present, only one of the inclusion strings needs
+    to be in the full file path, but if none are present, the
+    file will not make the list. For example, "DX9;DX10" would
+    match all files with DX9 or DX10 in their path, but does not
+    require the path to have both DX9 and DX10. Like the exclude
+    attribute, an include string can also be appended with $ to
+    anchor it in searches to the end of file path.</li>
+
+    <li>remove_empty_dirs&mdash;<em>Optional</em>. Valid values
+    are "true" and "false". If the value is true, then any
+    subdirectories of src that are empty after the file deletes
+    occur will be deleted. The search for empty directories is
+    recursive, so src\emptydir1\emptydir2 will delete emptydir2,
+    and then emptydir1, but the directory search does
+    <em>not</em> take into account pattern, exclude, or include.
+    It will remove any empty directories under src.</li>
+</ul>
+
+<h3>description</h3>
+
+<p>Allows the author of the deploy script a free-form field to
+type up a human readable description of the script. This command
+does not influence the deployment behavior of EEDeploy in any
+way, although it will be printed out if EEDeploy is run in
+<a href="#verbose">verbose</a> mode.</p>
+
+<h3>execute</h3>
+
+<p>Allows the script to execute another command or executable on
+a list of files. This command supports the same filtering
+attributes as <span class="NDLSystemFont">copy</span> to
+construct a file list. This command supports the following
+attributes:</p>
+
+<ul>
+    <li>app&mdash;The application to execute on each file in the
+    file list. System environment variables can be used for this
+    attribute.</li>
+
+    <li>args&mdash;The argument list for the executable. This can
+    include free-form text (misc. command line options for the
+    executable), as well as formatting markers to indicate where
+    EEdeploy should insert the source filename and destination
+    filename:
+
+        <ul>
+            <li>{0} - Source filename</li>
+
+            <li>{1} - Destination filename</li>
+
+            <li>{2} - Source root (the same value passed into the
+            src attribute)</li>
+
+            <li>{3} - Destination root (the same value passed
+            into the dst attribute)</li>
+        </ul>For example, app="7z" args="a -tzip {1}.zip {0}"
+        would indicate that each file found in the source
+        directory would go to it's own ZIP archive in the
+        destination directory.
+    </li>
+
+    <li>create_dirs&mdash;<em>Optional</em>. Valid values are
+    true or false. If true, then any directories in a destination
+    filename that do not exist will be created before executing
+    the external application. This can be useful if the external
+    app does not support creating directories natively.</li>
+
+    <li>src&mdash;The root of the path to search for files. This
+    value is substituted for {2} in the arg attribute, and files
+    that match the pattern, exclude, and includer filters will be
+    individually substituted for {0}.</li>
+
+    <li>dst&mdash;<em>Optional</em>. The root of the destination
+    where files may be placed. This is only used if the arg
+    attribute includes {1} or {3}. This value is substituted for
+    {3} in the arg attribute, and if a file named <span class=
+    "NDLSystemFont">&lt;src&gt;\path\to\file.ext</span> passes
+    the filters (pattern, exclude, and include), then it will be
+    individually substituted for {1} as <span class=
+    "NDLSystemFont">&lt;dst&gt;\path\to\file.ext</span>, where
+    <span class="NDLSystemFont">&lt;src&gt;</span> and
+    <span class="NDLSystemFont">&lt;dst&gt;</span> are the values
+    of the src and dst attributes.</li>
+
+    <li>pattern&mdash;<em>Optional</em>. Allows files to be
+    included by file extension using a traditional Windows
+    pattern string of the form *.ext. If not specified, the
+    default of *.* will be used. For a more robust
+    pattern-matching system, use the include attribute.</li>
+
+    <li>exclude&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, none of which may be in the path. If this
+    attribute is present, all potential files are vetted against
+    the exclusion strings, and if any match, then the file will
+    be rejected. To anchor a string to the end of the filename
+    (for file extension filtering), append the $ character to the
+    string. For example, "PS3;XBox360;.lua$" would exclude
+    non-Windows content, and also exclude any files that end in
+    .lua (but would not exclude a file named
+    joe.luakas.KFM).</li>
+
+    <li>include&mdash;<em>Optional</em>. A semicolon separated
+    list of strings, one of which must be in the path. If this
+    attribute is present, only one of the inclusion strings needs
+    to be in the full file path, but if none are present, the
+    file will not make the list. For example, "DX9;DX10" would
+    match all files with DX9 or DX10 in their path, but does not
+    require the path to have both DX9 and DX10. Like the exclude
+    attribute, an include string can also be appended with $ to
+    anchor it in searches to the end of file path.</li>
+</ul>
+
+<h3>undefine</h3>
+
+<p>Undefines a variable. Variables (or the lack of a variable)
+can be used to conditionally execute other parts of the script.
+See the <span class="NDLSystemFont">conditional</span> command
+for more information. This command supports the following
+attributes:</p>
+
+<ul>
+    <li>key&mdash;The variable name to undefine.</li>
+</ul>
+
+<h2>Examples</h2>
+
+<p>Here is a very simple example script file that simply copies
+NIF, KFM, and KF files to the destination</p>
+
+<pre>
+&lt;eedeploy version="1"&gt;
+&lt;copy src="Data" dst="DeployDir\Data" include=".NIF$;.KFM$;.KF$"/&gt;
+&lt;/eedeploy&gt;
+</pre>
+
+<p>Here is a slightly more complicated script that optionally
+excludes any debug visualization files from deployment when
+creating the shipping build.</p>
+
+<pre>
+&lt;eedeploy version="1"&gt;
+
+&lt;!-- Turn on verbose messages for the rest of the script. --&gt;
+&lt;define key="verbose"/&gt;
+
+&lt;!-- Exclude some files in shipping builds --&gt;
+&lt;conditional var="config" op="==" rhs="shipping"&gt;
+&lt;copy src="Data" dst="DeployDir\Data" exclude="DebugViz"/&gt;
+&lt;/conditional&gt;
+
+&lt;!--  Deploy all files in non-shipping builds --&gt;
+&lt;conditional var="config" op="!=" rhs="shipping"&gt;
+&lt;copy src="Data" dst="DeployDir\Data"/&gt;
+&lt;/conditional&gt;
+
+&lt;/eedeploy&gt;
+</pre>
+
+<p>The Mangled Metal Game Demo also makes use of a deploy script
+located at <span class=
+"NDLSystemFont">&lt;InstallPath&gt;\Samples\GameDemos\MangledMetal\MangledMetal.deployscript</span>
+to deploy for the consoles.</p>
+
+<p>It demonstrates the use of conditionals to perform platform
+and configuration dependent processing, as well as how to invoke
+EEDeploy from a project file.</p>
+
+<p>For example, building MangledMetal for the PS3 in Release mode
+executes:</p>
+
+<pre>
+EEDeploy MangledMetal.deployscript platform=PS3 config=Release
+</pre>
+
+<h2>Notes</h2>
+
+<ul>
+    <li>As a convention, deploy script files have the extension
+    '.deployscript', although no code or logic depends on
+    this.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="EEDeploy_intro.htm">EEDeploy:
+    Introduction</a></li>
+
+    <li><a href="EEDeploy_usage.htm">EEDeploy Command-line Usage
+    Format</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

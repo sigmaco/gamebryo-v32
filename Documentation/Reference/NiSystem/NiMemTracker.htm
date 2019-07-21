@@ -1,0 +1,832 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiMemTracker</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiMemTracker</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiAllocator.htm">NiAllocator</a></p>
+
+<p class="NDLRefParentage">&lt;NiMemTracker.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>A platform-independent wrapper class to handle memory tracking
+and debugging. There are four major areas of functionality
+provided by the memory tracker:</p>
+
+<ul>
+    <li><a href="NiMemTracker.htm#Memory_Debugging">Memory
+    Debugging</a> - Provide functionality to assist in tracking
+    down common memory errors.</li>
+
+    <li><a href="NiMemTracker.htm#Memory_Leaks">Memory Leak
+    Tracking</a> - Provide functionality to detect and help
+    correct leaked memory.</li>
+
+    <li><a href="NiMemTracker.htm#Memory_Logs">Memory Logging</a>
+    - Provide functionality to understand an application's memory
+    behavior over time.</li>
+
+    <li><a href="NiMemTracker.htm#Memory_Statistics">Memory
+    Summary Statistics</a> - Provide functionality to quickly get
+    a snapshot of the memory behavior over time.</li>
+</ul>
+
+<p>Please see the <a href="NiMemTracker.htm#Notes">notes</a> for
+commentary on the supported functionality for the tracker.</p>
+
+<p>Note that while the <span class=
+"NDLSystemFont">NiMemTracker</span> provides thread safety for
+itself and its internal allocator, all allocator classes should
+be responsible for their own thread-safety.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiMemTracker(<a href=
+"NiAllocator.htm">NiAllocator</a>* pkActualAllocator, bool
+bWriteToLog = true, unsigned int uiInitialSize = 65536, unsigned
+int uiGrowBy = 4096, bool bAlwaysValidateAll = false, bool
+bCheckArrayOverruns = true)</p>
+
+<p class="NDLRefMemberDescription">Creates an <span class=
+"NDLSystemFont">NiMemTracker</span> that will perform all actual
+allocations using <span class=
+"NDLSystemFont">pkActualAllocator</span>. It will have an initial
+pool of <span class="NDLSystemFont">uiInitialSize</span>
+allocation tracking units, and will grow the pool by <span class=
+"NDLSystemFont">uiGrowBy</span> allocation units when no units
+are available. If <span class=
+"NDLSystemFont">bAlwaysValidateAll</span> is true, the tracker
+will test all allocation units for errors upon alloc, realloc, or
+free. If <span class="NDLSystemFont">bCheckArrayOverruns</span>
+is true, the tracker will add sentinel bytes to the beginning and
+end of the allocation to guarantee that code does not stomp over
+the end of the array. If <span class=
+"NDLSystemFont">bWriteToLog</span> is false, memory tracking is
+enabled, but no memory logs are written.</p>
+
+<p class="NDLRefHead1">Supported Static Functions</p>
+
+<p class="NDLRefMemberFunction">static NiMemTracker* Get()</p>
+
+<p class="NDLRefMemberDescription">Accessor for the singleton
+instance of the <span class=
+"NDLSystemFont">NiMemTracker</span>.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<a name="NiAllocator_Routines" id="NiAllocator_Routines"></a><p class="NDLRefHead2">NiAllocator Routines</p>
+
+<p class="NDLRefMemberFunction">virtual void*
+Allocate(size_t&amp; stSizeInBytes, size_t&amp; stAlignment,
+<a href="NiMemHint.htm">NiMemHint</a> kHint, <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eEventType, const char* pcFile, int iLine, const char*
+pcFunction)</p>
+
+<p class="NDLRefMemberDescription">Allocate <span class=
+"NDLSystemFont">stSizeInBytes</span> bytes of memory,
+guaranteeing <span class="NDLSystemFont">stAlignment</span>
+alignment if possible for the returned address. Note that the
+size and alignment are passed-by-reference. This allows the
+allocator to adjust the values internally and pass the results
+back to the caller. This functionality is useful in the event of
+nesting allocators for memory tracking and debugging purposes.
+The additional arguments are used by memory tracking and
+debugging routines. The <span class="NDLSystemFont">kHint</span>
+object can be used to provide various hints to the underlying
+<span class="NDLSystemFont"><a href=
+"NiAllocator.htm">NiAllocator</a></span> object, such as which
+memory arena an allocation should occur in, or if the subsequent
+deallocation will have access to an accurate size without having
+to explicitly store it. The <span class=
+"NDLSystemFont">eEventType</span> argument indicates what
+external method was used to allocate the date. This may provide
+additional information to a memory debugging system or may be
+used at runtime to determine allocator behavior.</p>
+
+<p class="NDLRefMemberFunction">virtual void Deallocate(void*
+pvMemory, <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eEventType, size_t stSizeInBytes)</p>
+
+<p class="NDLRefMemberDescription">Free the memory at the
+specified address. In some situations, the deallocation routine
+may know how large it was when allocated. If so, the <span class=
+"NDLSystemFont">stSizeInBytes</span> argument will be the size
+initially requested. If this size is unknown, the correct value
+for the argument is <span class=
+"NDLSystemFont">NI_MEM_DEALLOC_SIZE_DEFAULT</span>. The
+<span class="NDLSystemFont">eEventType</span> argument indicates
+what external method was used to deallocate the data. This may
+provide additional information to a memory debugging system or
+may be used at runtime to determine allocator behavior.</p>
+
+<p class="NDLRefMemberFunction">virtual void* Reallocate(void*
+pvMemory, size_t&amp; stSizeInBytes, size_t&amp; stAlignment,
+<a href="NiMemHint.htm">NiMemHint</a> kHint, <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eEventType, size_t stSizeCurrent, const char* pcFile, int iLine,
+const char* pcFunction)</p>
+
+<p class="NDLRefMemberDescription">Reallocate the memory at the
+specified address, guaranteeing <span class=
+"NDLSystemFont">stAlignment</span> if possible for the returned
+address. Note that if <span class=
+"NDLSystemFont">stSizeInBytes</span> is zero, this method
+functions like <span class="NDLSystemFont">Deallocate</span>. If
+<span class="NDLSystemFont">pvMemory</span> is NULL, this method
+functions exactly like <span class=
+"NDLSystemFont">Allocate</span>. Otherwise, the memory hint
+specified by <span class="NDLSystemFont">kHint</span> should
+match the original hint passed into Allocate exactly. The
+<span class="NDLSystemFont">eEventType</span> argument indicates
+what external method was used to reallocate the date. This may
+provide additional information to a memory debugging system or
+may be used at runtime to determine allocator behavior.</p>
+
+<p class="NDLRefMemberFunction">virtual bool TrackAllocate(const
+void* const pvMemory, size_t stSizeInBytes, <a href=
+"NiMemHint.htm">NiMemHint</a> kHint, <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eEventType, const char* pcFile, int iLine, const char*
+pcFunction)</p>
+
+<p class="NDLRefMemberDescription">Track an external allocation.
+This function does not touch the input memory address, it simply
+allows the allocator to internally track the address.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+TrackDeallocate(const void* const pvMemory, <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eEventType)</p>
+
+<p class="NDLRefMemberDescription">Track an external deletion.
+This function should only be called on an input address that also
+had <span class="NDLSystemFont">TrackAllocate</span> called on
+it. This function does not touch the input memory address, it
+simply allows the allocator to internally track the address.</p>
+
+<p class="NDLRefMemberFunction">virtual void Initialize()</p>
+
+<p class="NDLRefMemberDescription">Called by the memory manager
+during <span class="NDLSystemFont">NiInit()</span>. This performs
+any necessary setup for the allocator.</p>
+
+<p class="NDLRefMemberFunction">virtual void Shutdown()</p>
+
+<p class="NDLRefMemberDescription">Called by the memory manager
+during <span class="NDLSystemFont">NiShutdown()</span>. This
+performs any necessary shutdown for the allocator.</p>
+
+<p class="NDLRefMemberFunction">virtual bool VerifyAddress(const
+void* pvMemory)</p>
+
+<p class="NDLRefMemberDescription">Called by the memory manager
+to verify that a memory address is being managed. This method is
+only used in <span class="NDLSystemFont"><a href=
+"NiMemoryDefines.htm#Preprocessor_Definitions">NI_USE_MEMORY_MANAGEMENT</a></span>
+builds of the engine. This method will also return false if a
+memory overrun has occurred.</p>
+
+<p class="NDLRefMemberFunction">size_t GetCurrentAllocationID()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the allocation ID of
+the next object to be allocated (or, during allocation, the
+object currently being allocated).</p>
+
+<p class="NDLRefMemberFunction">NiAllocUnit* FindAllocUnit(const
+void* pvMem) const</p>
+
+<p class="NDLRefMemberDescription">Returns the <span class=
+"NDLSystemFont"><a href=
+"NiMemTracker.htm#NiAllocUnit">NiAllocUnit</a></span> to which
+<span class="NDLSystemFont">pvMem</span> belongs. If the memory
+location does not belong ot any <span class=
+"NDLSystemFont"><a href=
+"NiMemTracker.htm#NiAllocUnit">NiAllocUnit</a></span> , the
+function will return NULL.</p>
+
+<p class="NDLRefHead2">Logging Routines</p>
+
+<p class="NDLRefMemberFunction">void LogAllocUnit(const <a href=
+"NiMemTracker.htm#NiAllocUnit">NiAllocUnit</a> *pkUnit, int
+iChannel, const char* pcPrefix = "", <a href=
+"NiMemoryDefines.htm#NiMemEventType">NiMemEventType</a>
+eDeallocType = NI_UNKNOWN, float fDeallocTime = -FLT_MAX,
+unsigned long ulDeallocThreadId = 0, size_t stSizeUnused = 0)
+const</p>
+
+<p class="NDLRefMemberDescription">This method writes a line of
+XML code describing the to allocation unit (<span class=
+"NDLSystemFont">pkUnit</span>) to the specified <span class=
+"NDLSystemFont"><a href="NiLogger.htm">NiLogger</a></span>
+channel ( <span class="NDLSystemFont">iChannel)</span>. Other
+arguments are specified if this line is meant to log information
+about the deallocation.</p>
+
+<p class="NDLRefMemberFunction">void LogMemoryReport() const</p>
+
+<p class="NDLRefMemberDescription">Write data to the memory leak
+log file about all active allocations.</p>
+
+<p class="NDLRefMemberFunction">void LogSummaryStats() const</p>
+
+<p class="NDLRefMemberDescription">Write a snapshot of the
+<a href="NiMemTracker.htm#Memory_Statistics">summary
+statistics</a> to the memory overview log file.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+ResetSummaryStats()</p>
+
+<p class="NDLRefMemberDescription">Reset the counts on all
+summary stats. This can potentially be a hazardous operation and
+should be used with caution.</p>
+
+<p class="NDLRefMemberFunction">void
+OutputLeakedMemoryToDebugStream() const</p>
+
+<p class="NDLRefMemberDescription">Writes out all currently
+active allocations to the debug stream.</p>
+
+<p class="NDLRefMemberFunction">void
+OutputActiveToDebugStream(const char* pcStringId = "", size_t
+stMinAllocID = 0) const</p>
+
+<p class="NDLRefMemberDescription">Writes all currently active
+allocations whose ID's are greater than the minimum ID using
+<span class="NDLSystemFont">NILOG</span> to the default
+channel.</p>
+
+<p class="NDLRefMemberFunction">void
+OutputAllocUnitToDebugStream(<a href=
+"NiMemTracker.htm#NiAllocUnit">NiAllocUnit</a>* pkUnit, size_t
+stBaseAllocID = 0, bool bShowPointer = true) const</p>
+
+<p class="NDLRefMemberDescription">Writes out the specified
+allocation unit to the debut stream. To facilitate comparison
+with prior logs, the user can subtract out a base allocation ID
+and optionally display the address of the allocation.</p>
+
+<p class="NDLRefHead2">Tracking options</p>
+
+<p class="NDLRefMemberFunction">void SetAlwaysValidateAll(bool
+bOn)</p>
+
+<p class="NDLRefMemberFunction">bool GetAlwaysValidateAll()
+const</p>
+
+<p class="NDLRefMemberDescription">Determine whether or not the
+tracker validates all of its internal allocation units upon
+allocate/deallocate/reallocate.</p>
+
+<p class="NDLRefMemberFunction">bool GetCheckForArrayOverruns()
+const</p>
+
+<p class="NDLRefMemberDescription">Determine whether or not the
+tracker will pad the allocation with guard bytes to determine if
+the memory has been the victim of array overruns upon
+deallocation.</p>
+
+<p class="NDLRefMemberFunction">bool ValidateAllocUnit(const
+<a href="NiMemTracker.htm#NiAllocUnit">NiAllocUnit</a>* pkUnit)
+const</p>
+
+<p class="NDLRefMemberDescription">This method is used to
+determine if the allocation unit has been corrupted or if it has
+valid information.</p>
+
+<p class="NDLRefMemberFunction">bool ValidateAllAllocUnits()
+const</p>
+
+<p class="NDLRefMemberDescription">This method is used to
+validate all active allocation units. This method returns false
+if an allocation unit appears to have an error. This method will
+also return false if a memory overrun has occurred.</p>
+
+<p class="NDLRefMemberFunction">void SetWriteToLog(bool bOn)</p>
+
+<p class="NDLRefMemberDescription">Disables or enables logging to
+disk when memory is deallocated.</p>
+
+<a name="Notes" id="Notes"></a><p class="NDLRefHead1">Notes</p>
+
+<a name="Memory_Debugging" id="Memory_Debugging"></a><p class="NDLRefHead2">Memory Debugging</p>
+
+<p>The tracker provides several levels of debugging functionality
+to catch common memory errors. These errors are caught by using
+asserts. Should a user encounter one of the asserts, please read
+the comments surrounding the assert. The comment should provide
+useful clues about the source of the assert. The debugger can
+then be used to inspect the current <a href=
+"NiMemTracker.htm#NiAllocUnit"><span class=
+"NDLSystemFont">NiAllocUnit</span></a> for more information about
+the allocation.</p>
+
+<p>Additionally, there are several variables that can be used to
+help trap when certain memory errors occur once specific
+information is known about the memory. The following table
+outlines these variables and how they can be used:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ms_stBreakOnAllocID</span></td>
+
+            <td>The tracker will assert when the allocation
+            unit's <span class="NDLSystemFont"><a href=
+            "NiMemTracker.htm#NiAllocUnit">m_stAllocationID</a></span>
+            equals this value upon
+            allocate/reallocate/deallocate.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ms_pvBreakOnAllocRangeStart</span></td>
+
+            <td>The tracker will assert when the allocation
+            unit's memory <a href=
+            "NiMemTracker.htm#NiAllocUnit"><span class=
+            "NDLSystemFont">address</span></a> equals this value
+            upon allocate/reallocate/deallocate.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ms_pvBreakOnAllocRangeEnd</span></td>
+
+            <td>The tracker will assert when the allocation
+            unit's memory <span class="NDLSystemFont"><a href=
+            "NiMemTracker.htm#NiAllocUnit">address</a></span>
+            equals this value upon
+            allocate/reallocate/deallocate.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ms_stBreakOnSizeRequested</span></td>
+
+            <td>The tracker will assert when the allocation
+            unit's requested size equals this value upon
+            allocate/reallocate/deallocate.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">ms_pcBreakOnFunctionName</span></td>
+
+            <td>The tracker will assert when the allocation
+            unit's <span class="NDLSystemFont"><a href=
+            "NiMemTracker.htm#NiAllocUnit">m_pcFunc</a></span>
+            equals this value upon allocate/reallocate.</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="Memory_Leaks" id="Memory_Leaks"></a><p class="NDLRefHead2">Memory Leaks</p>
+
+<p>When the application exits, all currently active allocations
+will be reported. There are two formats for the report: output
+debug strings and an XML log file. This log file, stored as
+"NiMemory-Leaks.xml", may be viewed in a variety of packages.</p>
+
+<p>For example, on the Windows platform, double-clicking the file
+will display the contents of the XML file filtered by the
+corresponding XSL stylesheet in your default web browser. Note
+that these logs can sometimes be very large and may take some
+time to load in Internet Explorer or Firefox. The debug strings
+will be visible if <span class=
+"NDLSystemFont">bOutputLeaksToDebugStream</span> is set to true
+(which is the default). In some packages, such as Microsoft
+Developer Studio, double-clicking on the individual leak records
+in the output stream will open the code browser to the line in
+which the allocation occurred.</p>
+
+<a name="Memory_Logs" id="Memory_Logs"></a><p class="NDLRefHead2">Memory Logs</p>
+
+<p>The memory tracker will optionally write all allocation
+records to a file as they are deallocated, as well as summary
+information. These records, stored in "NiMemory-Overview.xml",
+may be viewed in a variety of packages. (See the Memory Leaks
+section for package examples.)</p>
+
+<p>Note that per-allocation memory logging is disabled by
+default, however. As a result, sections other than "Summary" in
+Memory-Overview.xml are empty by default. Per-allocation memory
+logging may be re-enabled (which will fill in the empty sections
+in Memory-Overview.xml), but keep in mind that it has a
+significant performance impact, especially on consoles. See
+<a href=
+"../../Programmer/General_Topics/Custom_Allocation.htm#MemoryTrackingAndDebugging">
+Memory Tracking and Debugging</a> for details on enabling
+per-allocation memory logging.</p>
+
+<a name="Memory_Statistics" id="Memory_Statistics"></a><p class="NDLRefHead2">Memory Statistics</p>
+
+<p>The tracker provides several useful statistics. The current
+value for the statistics can be accessed through the following
+variables:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+
+            <th>Statistic</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stActiveMemory</span></td>
+
+            <td>Tracks the current amount of memory allocated in
+            bytes.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stPeakMemory</span></td>
+
+            <td>Tracks the maximum amount of memory (in bytes)
+            used at any point in the past by the application.
+            This corresponds to the "high water mark" for the
+            application.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAccumulatedMemory</span></td>
+
+            <td>Tracks the accumulated total amount of memory (in
+            bytes) used by the application.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stUnusedButAllocatedMemory</span></td>
+
+            <td>Tracks the total amount of memory (in bytes) that
+            has been allocated but still filled with the sentinel
+            bytes when deallocated.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stActiveAllocationCount</span></td>
+
+            <td>Tracks the current number of allocations that are
+            active.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stPeakAllocationCount</span></td>
+
+            <td>Tracks the maximum number of allocations used at
+            any point in the past by the application.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAccumulatedAllocationCount</span></td>
+
+            <td>Tracks the accumulated number of allocations made
+            by the application.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stActiveTrackerOverhead</span></td>
+
+            <td>Tracks the current amount of memory (in bytes)
+            used by the memory tracking system. Note that this
+            number is not included in <span class=
+            "NDLSystemFont">m_stActiveMemory</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stPeakTrackerOverhead</span></td>
+
+            <td>Tracks the maximum amount of memory (in bytes)
+            used by the memory tracking system in the past. Note
+            that this number is not included in <span class=
+            "NDLSystemFont">m_stPeakMemory</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAccumulatedTrackerOverhead</span></td>
+
+            <td>Tracks the total amount of memory (in bytes) used
+            by the memory tracking system. Note that this number
+            is not included in <span class=
+            "NDLSystemFont">m_stAccumulatedMemory</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_fPeakMemoryTime</span></td>
+
+            <td>Tracks the point in time as reported by
+            <span class=
+            "NDLSystemFont">NiGetCurrentTimeInSec</span> when
+            <span class="NDLSystemFont">m_stPeakMemory</span> was
+            set to its current value.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_fPeakAllocationCountTime</span></td>
+
+            <td>Tracks the point in time as reported by
+            NiGetCurrentTimeInSec when <span class=
+            "NDLSystemFont">m_stPeakAllocationCount</span> was
+            set to its current value.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stActiveExternalMemory</span></td>
+
+            <td>Tracks the current amount of memory in bytes
+            allocated outside the Gamebryo memory tracking
+            system. This memory must have been marked for
+            tracking with <span class="NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stPeakExternalMemory</span></td>
+
+            <td>Tracks the maximum amount of memory (in bytes)
+            allocated outside the Gamebryo memory tracking system
+            at any point in the past by the application. This
+            memory must have been marked for tracking with
+            <span class="NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAccumulatedExternalMemory</span></td>
+
+            <td>Tracks the accumulated total amount of memory (in
+            bytes) allocated outside the Gamebryo memory tracking
+            system by the application. This memory must have been
+            marked for tracking with <span class=
+            "NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stActiveExternalAllocationCount</span></td>
+
+            <td>Tracks the current number of allocations made
+            outside the Gamebryo memory tracking system that are
+            active. This memory must have been marked for
+            tracking with <span class="NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stPeakExternalAllocationCount</span></td>
+
+            <td>Tracks the maximum number of allocations made
+            outside the Gamebryo memory tracking system at any
+            point in the past by the application. This memory
+            must have been marked for tracking with <span class=
+            "NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAccumulatedExternalAllocationCount</span></td>
+
+            <td>Tracks the accumulated number of allocations made
+            outside the Gamebryo memory tracking system by the
+            application. This memory must have been marked for
+            tracking with <span class="NDLSystemFont"><a href=
+            "NiMemoryDefines.htm#ExternalAllocRoutines">NiTrackAlloc</a></span>.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Note about Memory Statistics on Xbox 360</h2>
+
+<p>Please see <a href=
+"../../ee_goto.htm#Reference/NiSystem/NiMemTracker_Xbox360.htm">NiMemTracker_Xbox360</a>
+for details.</p>
+
+<p class="NDLRefHead1">Utility Classes</p>
+
+<p>The following nested classes are used by <span class=
+"NDLSystemFont">NiMemTracker</span> internally for storage. Some
+of the member functions of <span class=
+"NDLSystemFont">NiMemTracker</span> return objects of these
+types.</p>
+
+<a name="NiFLF" id="NiFLF"></a><p class="NDLRefHead2">NiFLF</p>
+
+<p>This class is designed to store the file, line, and function
+information for later access by the memory tracking system. This
+data is stored in the public variables: <span class=
+"NDLSystemFont">m_pcFile</span>, <span class=
+"NDLSystemFont">m_pcFunc</span>, and <span class=
+"NDLSystemFont">m_uiLine</span>.</p>
+
+<p class="NDLRefMemberFunction">NiFLF()</p>
+
+<p class="NDLRefMemberFunction">NiFLF(const char* pcFile,
+unsigned int uiLine, const char* pcFunc)</p>
+
+<p class="NDLRefMemberFunction">void Set(const char* pcFile,
+unsigned int uiLine, const char* pcFunc)</p>
+
+<p class="NDLRefMemberFunction">void Reset()</p>
+
+<p class="NDLRefMemberFunction">bool IsValid() const</p>
+
+<p class="NDLRefMemberFunction">const char* SourceFileStripper()
+const</p>
+
+<p class="NDLRefMemberFunction">const char*
+CreateTempFLFString()</p>
+
+<a name="NiAllocUnit" id="NiAllocUnit"></a><p class="NDLRefHead2">NiAllocUnit</p>
+
+<p>This class is designed to hold all information about a piece
+of allocated memory. Since it does not persist beyond that piece
+of memory's deallocation, it holds no deallocation information.
+The meaning of each variable is outlined in the following
+table:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAllocationID</span></td>
+
+            <td>A unique identifier for the allocation unit with
+            respect to the <span class="NDLSystemFont"><a href=
+            "NiMemTracker.htm#Memory_Statistics">m_stAccumulatedAllocationCount</a></span>
+            count.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">m_pvMem</span></td>
+
+            <td>The address returned by the internal allocator.
+            Depending on how the sub-allocator works, this
+            address may or may not be the start of the full
+            allocation.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stAlignment</span></td>
+
+            <td>The alignment of the memory as requested at
+            allocation time.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stSizeRequested</span></td>
+
+            <td>The amount of memory that was requested at
+            allocation time.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_stSizeAllocated</span></td>
+
+            <td>The amount of memory that was actually allocated
+            at allocation time. This number should be greater
+            than or equal to <span class=
+            "NDLSystemFont">m_stSizeRequested.</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">m_pkPrev</span></td>
+
+            <td>The prior allocation unit in the active
+            array.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">m_pkNext</span></td>
+
+            <td>The next allocation unit in the active
+            array.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_ulAllocThreadId</span></td>
+
+            <td>The unique identifier for the thread that was
+            used to allocate the memory.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_fAllocTime</span></td>
+
+            <td>The time at which the allocation occurred, as
+            reported by <span class=
+            "NDLSystemFont">NiGetCurrentTimeInSec</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_eAllocType</span></td>
+
+            <td>The <a href=
+            "NiMemoryDefines.htm#NiMemEventType"><span class=
+            "NDLSystemFont">NiMemEventType</span></a> used to
+            allocate the memory.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">m_kAllocHint</span></td>
+
+            <td>The <a href="NiMemHint.htm"><span class=
+            "NDLSystemFont">NiMemHint</span></a> used during
+            allocation (including any mix-ins performed by the
+            memory manager).</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">m_kFLF</span></td>
+
+            <td>The <span class="NDLSystemFont">NiFLF</span>
+            storing the file, line, and function
+            information.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Exposing Custom Built-in API Functions to Lua</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Exposing Custom Built-in API Functions to Lua</h1>
+
+<p>There are two approaches that you can take to expose your built-in API functions to Lua. You can use
+SWIG to generate appropriate bindings for you, or you can bind them into the language yourself.</p>
+
+<p>Using SWIG is a quick and easy way to make your built-in API available to scripting languages. By
+defining a SWIG binding, you can generate bindings to both Lua and Python. This can save you
+considerable time during development because you don't have to write binding code yourself. By
+using SWIG as a pre-build step in you projects, your bindings will always reflect the current state
+of your built-in API. On the downside, if your <span class="NDLSystemFont">.i</span> definition file
+isn't correct, SWIG will generate wrapper files that are technically correct but do not behave as
+expected. These errors are typically easy to fix but hard to identify. You're also relying on SWIG
+to generate correct binding code.</p>
+
+<p>Creating your own Lua bindings requires a deeper understanding of how Lua works. You can define
+exactly how your bindings behave. You'll have total control over how your built-in API is exposed in
+Lua. On the downside, you need to maintain binding code by hand, and you must make sure that your
+bindings continue to reflect the current state of your built-in API.</p>
+
+<p class="NDLHeadingProcedure">To expose a custom built-in API behavior to Lua using SWIG</p>
+
+<p>The easiest way to create built-in API functions is to write plain C-style global functions and
+automatically generate scripting bindings using an interface generator such as SWIG or Luabind.
+Gamebryo LightSpeed uses SWIG-generated bindings because SWIG supports a wide range of target
+scripting languages.</p>
+
+<ol>
+    <li>Create a SWIG <span class="NDLSystemFont">.i</span> file to expose your built-in API to script.
+    The following example assumes you are defining a Lua module named MyBuiltin.
+        <pre>
+// The following name is the namespace exposed in scripting languages.
+%module MyBuiltin
+
+// Code contained within "%{ ... %}" blocks is directly written into the generated
+// wrapper file.  Typically you will want to include whatever header files define the
+// built-in API functions.
+%{
+#include "MyBuiltin.h"
+#include &lt;egfLua/bapiLua.h&gt;
+%}
+
+// egf/BehaviorAPI.i contains many helpful features for writing your own built-in APIs.  It is
+// recommended that it be imported into all other built-in API modules.  By using '%import'
+// instead of '%include' we pull in knowledge about BehaviorAPI without actually
+// duplicating any of its functionality.
+%import "egf/BehaviorAPI.i"
+
+// The example typemap we provide supports passing most Foundation and Game Framework data types.
+// It also defines types for maps and lists and rules for treating things as input, output, or
+// input-output parameters.  Finally it contains rules for supporting certainly overloaded methods.
+%include &lt;egfLua/bapiLuaTypeMaps.i&gt;
+
+// The easiest way to define the functions to be exposed is to simple directly include a C++
+// header file containing normal C++ function declarations for all the functions you want to
+// bind as built-in API functions.
+%include "MyBuiltin.h"
+</pre>
+    </li>
+
+    <li>Create custom build rules on your <span class="NDLSystemFont">.i</span> file to generate a
+    wrapper file for the script language that you want to support. The following example shows a
+    generated Lua wrapper for the Win32 platform.
+        <pre>
+SET SWIG_LIB=%EMERGENT_PATH%\Source\3rdParty\SWIG\Lib
+@REM the following lines must be on the same line in your custom build command
+%EMERGENT_PATH%\Source\3rdParty\SWIG\swig.exe -c++ -lua -DWIN32 -DEE_PLATFORM_WIN32
+    -DEE_EXTERNAL_RUNTIME=egfLua\SWIGLuaRuntime.h
+    -I"%EMERGENT_PATH%\Source\3rdParty\Lua\Package\src"
+    -I"%EMERGENT_PATH%\Source\3rdParty\Lua\Package\src\.."
+    -I"%EMERGENT_PATH%\Source\3rdParty\STLPort\Package"
+    -I"%EMERGENT_PATH%\Source\3rdParty\TinyXML\Package"
+    -I"%EMERGENT_PATH%\Source\Foundation"
+    -I"%EMERGENT_PATH%\Source\GameFramework"
+    -o MyBuiltin_LuaWrap.cpp MyBuiltin.i
+</pre>
+    </li>
+
+    <li>Add the generated wrapper file to your project and compile.</li>
+
+    <li>Register the SWIG-generated initialization function with the language runtime. This can be
+    done dynamically for DLL builds or statically in all build types. For further details, see:
+
+        <ul>
+            <li><a href="builtin_custom_static_load.htm">Statically loading custom
+            built-ins</a></li>
+
+            <li><a href="builtin_custom_dynamic_load.htm">Dynamically loading custom
+            built-ins</a></li>
+        </ul>
+    </li>
+
+    <li>At this point your built-in API functions are available to call from Lua behaviors. All
+    registered modules are automatically pre-loaded, so you should not use a "require" statement
+    for your module name. Just call your functions:
+        <pre>
+local foo = MyBuiltin.CalculateFoo()
+</pre>
+    </li>
+</ol>
+
+<p class="NDLHeadingProcedure">To expose a custom built-in API behavior in Lua by hand</p>
+
+<p>If you are experienced with writing C extensions to Lua, you may wish to implement built-in API
+functions using the native Lua C API. This gives you much greater flexibility in supporting
+Lua-specific syntax such as variable numbers of arguments. Native methods are also the only methods
+that can implement blocking behaviors. The down side is that the resulting methods are harder to
+implement and maintain and they only support a single scripting language.</p>
+
+<ol>
+    <li>Generate a static list of the functions that you want to expose to Lua from your built-in API.
+
+        <p class="indent1">These functions must have the correct signature of Lua functions and must
+        follow all Lua requirements. As such this method is only appropriate for those intimately
+        familiar with extending Lua. Lua documentation is available online at <a href=
+        "http://www.lua.org/docs.html" target="_blank">http://www.lua.org/docs.html</a>.</p>
+        <pre>
+int CalculateFoo(lua_State* L);
+
+static const struct luaL_reg MyBuiltinMetaTable [] =
+{
+    { "CalculateFoo", CalculateFoo },
+    {NULL, NULL}  /* sentinel */
+};
+</pre>
+    </li>
+
+    <li>Define an initialization function that registers your built-in API with the Lua runtime.
+
+        <p class="indent1">We recommend that this function follow the naming convention
+        luaopen_&lt;ModuleName&gt;.</p>
+        <pre>
+int luaopen_MyBuiltin(lua_State *L)
+{
+    // Bind all the MyBuiltin API functions in Lua.
+    luaL_register(L, "MyBuiltin", streamLibMetaTable);
+
+    // We left a meta table on the stack so return 1
+    return 1;
+}
+</pre>
+    </li>
+
+    <li>Compile your built-in API.</li>
+
+    <li>Register the manually generated initialization function with the Lua runtime. This is
+    identical to the SWIG method detailed above.</li>
+</ol>
+
+<h2>Adding native Lua functions to a SWIG generated wrapper</h2>
+
+<p>Using a SWIG generated wrapper provides greater simplicity, but some functionality can only be
+obtained using native Lua functions. Some examples that require native Lua functions:</p>
+
+<ul>
+    <li>Taking a variable number of arguments</li>
+
+    <li>Implementing method overloading in cases SWIG cannot resolve (See <a href=
+    "builtin_limitations.htm">built-in limitations</a> for details).</li>
+
+    <li>Blocking built-in functions</li>
+</ul>
+
+<p>If you require a native Lua function, this does not preclude you from using SWIG generated
+bindings for additional functions. You can use the "%native" keyword in your SWIG <span class=
+"NDLSystemFont">.i</span> file. For example, we add several native functions into the BehaviorAPI
+module:</p>
+<pre>
+%native(GetProperty) int egf::lua_GetProperty(lua_State *L);
+%native(GetDefaultProperty) int egf::lua_GetDefaultProperty(lua_State *L);
+%native(SetProperty) int egf::lua_SetProperty(lua_State* L);
+%native(SendAndWaitForReply) int egf::lua_SendAndWaitForReply(lua_State* L);
+%native(Sleep) int egf::lua_Sleep(lua_State* L);
+</pre>
+
+<p>The Get/SetProperty functions are natively implemented to support more specific method overloading
+than what SWIG can provide. SendAndWaitForReply and Sleep are natively implemented so that they can
+block the currently running Lua co-routine.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/Models/builtin_model_creating.htm">Creating built-in
+    models</a></li>
+
+    <li><a href="../../Programmer/Models/builtin_model_modifying.htm">Modifying built-in
+    models</a></li>
+
+    <li><a href="../../Programmer/Models/builtin_model_deleting.htm">Deleting built-in
+    models</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_custom_creating.htm">Creating custom
+    built-in API functions</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_custom_deleting.htm">Deleting custom
+    built-in API functions</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_custom_dynamic_load.htm">Dynamically loading
+    custom built-in API functions</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_custom_static_load.htm">Statically loading
+    custom built-in API functions</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_scripting.htm">Scripting built-in API functions</a></li>
+
+    <li><a href="../../Programmer/Builtins/builtin_custom_adding.htm">Adding custom built-in API functions to
+    the scripting system</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>egmAnimation::AnimationService</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="DoxyConvert by Emergent Game Technologies - http://emergent.net" />
+
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+  
+<!--(Body)======================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">egmAnimation::AnimationService</p>
+<p class="NDLRefParentage">: public <span class="NDLSystemFont"><a href="../efd/efd__ISystemService.htm">efd::ISystemService</a></span></p>
+
+
+<p class="NDLRefHeaderFile">&lt;AnimationService.h&gt;</p>
+
+<p class="NDLRefHead1" style="text-align: center; ">
+<div class="FigureContainer">
+  <img src="./images/classegm_animation_1_1_animation_service.gif" alt="Inheritance graph for egmAnimation::AnimationService"/>
+  <p class="FigureCaption">Inheritance graph for egmAnimation::AnimationService</p>
+</div>
+</p>
+
+<p class="NDLRefHead1">Description</p>
+<p class="NDLNormal">The Animation Service provides an interface and a set of script built-ins for interfacing with the Gamebryo animation system. </p>
+<p class="NDLNormal">The service allows seamless integration of entities, scripts, and behaviors with Gamebryo's animation system without the need for extensive custom code. The animation service performs several major functions. It handles loading of KFM and KF assets, provides script built-ins for starting and ending sequences, provides registration services for text key callbacks, and stores actor managers for each KFM asset which it uses for per-frame updates.</p>
+<p class="NDLNormal">The Animation Service notifies other services when Actor models are ready for use and then unavailale for use. These messages are always matched. Services wishing to be informed of such messages must subscribe to the channel returned by <span class="NDLSystemFont"><a href="egmAnimation__AnimationService.htm#classegm_animation_1_1_animation_service_1aedcec08641e6bfc2ddfab83722db3ac8">GetMessageCategory()</a></span> and must register handlers for <span class="NDLSystemFont"><a href="egmAnimation__ActorAddedMessage.htm">egmAnimation::ActorAddedMessage</a></span> and <span class="NDLSystemFont"><a href="egmAnimation__ActorRemovedMessage.htm">egmAnimation::ActorRemovedMessage</a></span>. Cache messages are sent on the same channel.</p>
+<p class="NDLNormal">The animation service also handles rapid iteration functionality for applications. When the service receives notification of an update to a file associated with an actor, it will attempt to update that asset with the new data in the file. This includes changes to the scene graph that is being animated and individual KF sequence files.</p>
+<p class="NDLNormal">The following properties can be rapidly iterated on in <span class="NDLSystemFont">AnimationService</span>:</p>
+<ul>
+<li>KfmAsset</li>
+<li>Attachments</li></ul>
+<p class="NDLNormal">The following properties can not: (An entity must be deleted and re-added to change these.)</p>
+<ul>
+<li>InitialSequence</li>
+<li>IsKfmAssetShared</li>
+<li>IsNifAssetShared</li>
+<li>AccumulatesTransforms</li></ul>
+<p class="NDLNormal">The Animation Service manipulates the pose (position and rotation) on entities with the Actor model using the following rules:</p>
+<ul>
+<li>Animations that use accumulation, and hence implicitly move the character while it animates, modify the Position and Rotation properties of the entity to track the global position of the Accumulation Root node in the animated scene graph. Animations without accumulate do not modify the entity position. When operating in tool mode all pose updating is de-activated.</li>
+<li>When the Position or Rotation of an entity with the Actor model is set by another system (from script, another service, or during rapid iteration) it is assumed that the new pose refers to the Accumulation Root of the actor. The delta between the current Accumulation Root pose and the given pose is applied to the Nif Root of the actor's scene graph. This will place the actor in the requested location while moving the initial pose so that the actor will be in the same place when the animationsare reset and played again.</li></ul>
+<p class="NDLNormal">We recommend that there be no objects in the scene graph that are unaffected by the Accumulation Root (that is, not transformed by the Accumulation Root transform). Such objects will behave oddly when the pose on the character is reset and their position will not be that reported by the entity's position. </p>
+
+<a name="public_methods"></a>
+<p class="NDLRefHead1">Public Methods</p>
+
+
+<a name="classegm_animation_1_1_animation_service_1a340e5861e2e1eec96399f0dd6614181e"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager</a></span>*  GetActorManager(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Get the <span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager</a></span> object for a given entity. </p>
+<p class="NDLRefMemberDetailedDescription">Returns the actor manager for the given entity, NULL if the entity is not known to the service.</p>
+<p class="NDLRefMemberDetailedDescription">The <span class="NDLSystemFont">AnimationService</span> owns the pointer - applications must not delete it. </p>
+
+<a name="classegm_animation_1_1_animation_service_1af890f75d11e36c29998dc874f6890010"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="egmAnimation__KFMCache.htm">KFMCache</a></span>*  GetKFMCache() const</p>
+<p class="NDLRefMemberDescription">Get the KFM Cache object used by the service to manage KFM assets. </p>
+<p class="NDLRefMemberDetailedDescription">The cache is necessary to look up data related to <span class="NDLSystemFont"><a href="egmAnimation__KFMCache.htm#classegm_animation_1_1_k_f_m_cache_1ad2b95ace01601cbc70cc1a41fdb6a099">egmAnimation::KFMCache::KFMCacheHandle</a></span> objects. </p>
+
+<a name="classegm_animation_1_1_animation_service_1aedcec08641e6bfc2ddfab83722db3ac8"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span>  GetMessageCategory() const</p>
+<p class="NDLRefMemberDescription">Get the category used by this service to send any notifications of actors added and removed. </p>
+<p class="NDLRefMemberDetailedDescription">The category is only valid after OnPreInit has completed. </p>
+<a name="active_animation_management"></a>
+<p class="NDLRefHead1">Active Animation Management</p>
+
+
+<a name="classegm_animation_1_1_animation_service_1a4ca51b051cefe27032845732ba8e77c3"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetTargetAnimation(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID)</p>
+<p class="NDLRefMemberDescription">Set an entity's target animation to a given sequence (given by ID.). </p>
+
+<a name="classegm_animation_1_1_animation_service_1af1a84883fffd8cf2da00e091aeff2cc9"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetTargetAnimation(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& sequenceName)</p>
+<p class="NDLRefMemberDescription">Set an entity's target animation to a given sequence (given by name.). </p>
+
+<a name="classegm_animation_1_1_animation_service_1a6303e35a0467281ce1b382a263a7e9cc"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>  GetCurrentAnimation(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the sequence name of the entity's currently playing animation. </p>
+<p class="NDLRefMemberDetailedDescription">If no animation is playing, NULL is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a741f253ba2cf80e95e9093883d63cdd7"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span>  GetCurrentAnimationId(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the sequence ID of the entity's currently playing animation. </p>
+<p class="NDLRefMemberDetailedDescription">If no animation is playing, InvalidSequence is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1abc257c011949bc70b5aac0b6972bd507"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span>  GetNextAnimationId(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the ID of the sequence that the entity is currently transitioning to. </p>
+<p class="NDLRefMemberDetailedDescription">If not currently transitioning, InvalidSequence is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1ac30a4938f1df24a57b246612e02d2dc2"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>  GetNextAnimation(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the name of the sequence that the entity is currently transitioning to. </p>
+<p class="NDLRefMemberDetailedDescription">If not currently transitioning, NULL is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a048015aa2b10d7c82204b4cad3bbdf9f"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span>  GetTargetAnimationId(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the ID of the sequence that the entity is currently transitioning to. </p>
+<p class="NDLRefMemberDetailedDescription">If not currently transitioning, InvalidSequence is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1aefed21eeb3c26eb0ab6b5c6b7c6008a7"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>  GetTargetAnimation(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the name of the sequence that the entity will try to transition to next. </p>
+<p class="NDLRefMemberDetailedDescription">If no target sequence, NULL is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1ad8bfcf37ff8083fb431d71a7e0587581"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::TransitionState</a></span>  GetTransitionState(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Returns the current transition state for a given entity. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a4b80e9b28a59e02def546acd37d1ec80"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>  GetAnimationNameFromId(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID)</p>
+<p class="NDLRefMemberDescription">Returns the name for a given sequence ID in a given entity. </p>
+<p class="NDLRefMemberDetailedDescription">If not found, NULL is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1aaa097d58a6bc9b06067f2e7e00da38a1"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span>  GetAnimationIdFromName(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>& name)</p>
+<p class="NDLRefMemberDescription">Returns the ID for a given sequence name in a given entity. </p>
+<p class="NDLRefMemberDetailedDescription">If not found, InvalidSequence is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a5576ee2f3b123cc1fdf37334d2ca5213"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  ActivateLayeredSequenceById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont">efd::Bool</span> autoDeactivate = true, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1aab8784cd0d3fb2fa32b479bd64702149">efd::SInt32</a></span> priority = 0, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> weight = 1.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> easeInTime = 0.0f, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> easeOutTime = 0.0f, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> timeSyncID = NiKFMTool::SYNC_SEQUENCE_ID_NONE, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> freq = NiActorManager::SEQUENCE_DATA_FREQUENCY, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> startFrame = 0.0f, <br/><span class="NDLSystemFont">efd::Bool</span> additiveBlend = false, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> additiveRefFrame = 0.0f)</p>
+<p class="NDLRefMemberDescription">Activates a layered sequence on an entity. </p>
+<p class="NDLRefMemberDetailedDescription">See <span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager</a></span> documentation for more information about these arguments.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">entityID</span></td>
+    <td>Actor that owns the sequence. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">sequenceID</span></td>
+    <td>Sequence ID to activate. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">autoDeactivate</span></td>
+    <td>Whether to deactivate the sequence when it is complete. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">priority</span></td>
+    <td>Sequence priority. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">weight</span></td>
+    <td>Sequence weight. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">easeInTime</span></td>
+    <td>Duration to ease this sequence in. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">easeOutTime</span></td>
+    <td>Duration to ease this sequence out (if auto-deactivating.) </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">timeSyncID</span></td>
+    <td>Sequence to synchronize with. InvalidSequence means no synchronization. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">freq</span></td>
+    <td>Frequency to play this animation at. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">startFrame</span></td>
+    <td>Frame to begin playing this animation at. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">additiveBlend</span></td>
+    <td>Whether or not this sequence is additive. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">additiveRefFrame</span></td>
+    <td>The base frame to generate additive deltas from. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the sequence activated successfully. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1ae1bb0f6bec2ddb38feb6b25b20cf3632"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetSequenceFrequencyById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> frequency)</p>
+<p class="NDLRefMemberDescription">Sets the frequency of an entity's sequence. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false if entity or sequence do not exist. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a24406e6555204e0c55e320e6b4b525b0"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetSequenceFrequencyById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span>& frequency)</p>
+<p class="NDLRefMemberDescription">Gets the frequency of an entity's sequence. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false if entity or sequence do not exist. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a687ade9a690b629804c6ee7535eeadca"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  SetSequenceWeightById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> weight)</p>
+<p class="NDLRefMemberDescription">Sets the weight of an entity's sequence. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false if entity or sequence do not exist. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a9a1cbaccabf7802a7dc32889c34ff265"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetSequenceWeightById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span>& weight)</p>
+<p class="NDLRefMemberDescription">Gets the weight of an entity's sequence. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false if entity or sequence do not exist. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a122e1e1d7c5497f47516b799e16bf6c6"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  GetSequenceDurationById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span>& duration)</p>
+<p class="NDLRefMemberDescription">Gets the duration of an entity's sequence. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if successful, false if entity or sequence do not exist. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a13d5a5232fbd83939ce5a6749065746a"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  DeactivateLayeredSequenceById(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/><span class="NDLSystemFont"><a href="../NiAnimation/NiActorManager.htm">NiActorManager::SequenceID</a></span> sequenceID, <br/><span class="NDLSystemFont"><a href="../Namespaces/efd.htm#namespaceefd_1a84dd4659cdf07ea3cbc429edc92db34a">efd::Float32</a></span> easeOutTime)</p>
+<p class="NDLRefMemberDescription">Deactivates a layered sequence on an entity. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">entityID</span></td>
+    <td>The actor. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">sequenceID</span></td>
+    <td>Sequence ID to deactivate. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">easeOutTime</span></td>
+    <td>Duration to ease the sequence out. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the sequences was succesfully deactivated. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1ad28a60264d93174c50e36b6c22938c71"></a>
+<p class="NDLRefMemberFunction">void  GetActiveSequences(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/><span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__utf8string.htm">efd::utf8string</a></span>&gt;& sequences)</p>
+<p class="NDLRefMemberDescription">Gets a list of active sequences on an entity. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a6a9b6e0cea4c67a99539888fecb241e1"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  IsPaused(<span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID)</p>
+<p class="NDLRefMemberDescription">Get the currently paused state of an Entity's actor manager. </p>
+<p class="NDLRefMemberDetailedDescription">False is returned if the service does not know of the entity. When the entity is known and has an actor manager, the paused state of the actor manager is returned. Otherwise, the cached pause state, which will be used when the actor manager is created, is returned. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a7833c9c03da1a7df98eecf6b95a665a0"></a>
+<p class="NDLRefMemberFunction">void  SetPaused(<br/><span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span> entityID, <br/><span class="NDLSystemFont">efd::Bool</span> isPaused)</p>
+<p class="NDLRefMemberDescription">Set the paused state of the entity's actor. </p>
+<a name="asset_caching"></a>
+<p class="NDLRefHead1">Asset Caching</p>
+
+<p class="NDLRefMemberDescription">When an asset is cached, this service immediately loads it and will never unload it until it is removed from the cache.</p>
+<p class="NDLRefMemberDescription">When entities with shared actors request this asset, it will be cloned rather than loaded from disk, which can save having to repeatedly reload assets.</p>
+<p class="NDLRefMemberDescription">Caching is a boolean state, not a reference count. If an asset is repeatedly cached, it will still be uncached during the first RemoveFromCache or RemoveAllFromCache. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a944c0693829e5359a5dfad32770f5d54"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  Cache(<br/>const <span class="NDLSystemFont"><a href="../efd/efd__AssetID.htm">efd::AssetID</a></span>& assetID, <br/><span class="NDLSystemFont"><a href="../efd/efd__MemObject.htm">KFMCache::IKFMCacheRequestData</a></span>* pRequestData, <br/>const <span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> responseCategory, <br/><span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">KFMCache::KFMCacheHandle</a></span>&gt;& o_handles)</p>
+<p class="NDLRefMemberDescription">Load and cache any assets that match the provided asset ID. </p>
+<p class="NDLRefMemberDetailedDescription">The assets may already be loaded from disk, in which case true is returned and the handles for the asset are returned. Otherwise, the caller must wait for a <span class="NDLSystemFont"><a href="egmAnimation__KFMCacheResponse.htm">KFMCacheResponse</a></span> message on the given category with a list of handles to the cached objects. The identifier in that message will be the urn from the given assetID.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">assetID</span></td>
+    <td>The ID for the asset you wish to cache. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">pRequestData</span></td>
+    <td>Data that will be passed back to you in the response to this cache request, if one is sent. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">responseCategory</span></td>
+    <td>The category to send the response on when the recreate is completed. The message will only be sent if this function returns false. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">o_handles</span></td>
+    <td>A vector of handles to cached actors that will be filled if the assets are already available (only when true is returned by this function). Information about the asset can be obtained by using the handle with functions in the <span class="NDLSystemFont"><a href="egmAnimation__KFMCache.htm">egmAnimation::KFMCache</a></span> returned by GetKFMCache. </td>
+</tr>
+<tr>
+    <td><em>Return Value</em></td>
+    <td>True if the assets for the requested ID were already in the cache, or could be cached immediately. False if you must wait on a message indicating the result of the caching operation. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a91266309c0a3ef39b18aa43fa48b9def"></a>
+<p class="NDLRefMemberFunction">void  UnCacheHandles(<span class="NDLSystemFont"><a href="../efd/efd__vector.htm">efd::vector</a></span>&lt;<span class="NDLSystemFont"><a href="../efd/efd__SmartPointer.htm">KFMCache::KFMCacheHandle</a></span>&gt;& i_handles)</p>
+<p class="NDLRefMemberDescription">Un-cache KFM files direct from the handle that was provided when the KFM was cached. </p>
+<p class="NDLRefMemberDetailedDescription">This must be called at some point if the asset is ever to leave the cache, but asset will only be removed from the cache when no other objects are using the cached data.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">i_handles</span></td>
+    <td>The handles for the assets, as returned in the response to Cache or by CacheKFMFileName. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a2e4bc98f3677e376b5d3e3d36aaa71f9"></a>
+<p class="NDLRefMemberFunction">void  RemoveAllFromCache()</p>
+<p class="NDLRefMemberDescription">Stop caching all assets. </p>
+<a name="message_handling"></a>
+<p class="NDLRefHead1">Message Handling</p>
+
+
+<a name="classegm_animation_1_1_animation_service_1a9cbb7af04537c8c2348cdce1ae3ae142"></a>
+<p class="NDLRefMemberFunction">void  HandleEntityEnterWorldMessage(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityChangeMessage.htm">egf::EntityChangeMessage</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">This message handler is called when an entity is added to the world. </p>
+<p class="NDLRefMemberDetailedDescription">The Animation Service starts updating the entity.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The entity message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a3ced1d08e96ebd78ab227135a8b47e76"></a>
+<p class="NDLRefMemberFunction">void  HandleEntityExitWorldMessage(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityChangeMessage.htm">egf::EntityChangeMessage</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">This message handler is called when an entity has been removed from the world. </p>
+<p class="NDLRefMemberDetailedDescription">The Animation Service stops updating the entity.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The entity message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a8d3e739fac5900651e2ce7caee090a4f"></a>
+<p class="NDLRefMemberFunction">void  HandleEntityUpdatedMessage(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityChangeMessage.htm">egf::EntityChangeMessage</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">This message handler is called when an entity has been updated in the EntityManager. </p>
+<p class="NDLRefMemberDetailedDescription">If the KFM asset property has been updated, the animation service queues the assets for reloading.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The entity message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a5616d231d45de8a8da062acec4d7132b"></a>
+<p class="NDLRefMemberFunction">void  HandleCacheResponse(<br/>const <span class="NDLSystemFont"><a href="egmAnimation__KFMCacheResponse.htm">egmAnimation::KFMCacheResponse</a></span>* pResponse, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">Handle an KFM asset cached response message from the KFM cache. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pResponse</span></td>
+    <td>The cache response message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1ab7ae8c57d64b7bcf111d81742e04aba1"></a>
+<p class="NDLRefMemberFunction">void  HandleSceneGraphAddedMessage(<br/>const <span class="NDLSystemFont"><a href="../ecr/ecr__SceneGraphAddedMessage.htm">ecr::SceneGraphAddedMessage</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">Handle a message indicating that scene graph assets have been added. </p>
+<p class="NDLRefMemberDetailedDescription">This happens during rapid iteration. The animation service will update the NIF root of the associated actor manager with the new scene graph.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The scene graph added message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a54591fb969ec8722970f2bc31d478321"></a>
+<p class="NDLRefMemberFunction">void  HandleSceneGraphRemovedMessage(<br/>const <span class="NDLSystemFont"><a href="../ecr/ecr__SceneGraphRemovedMessage.htm">ecr::SceneGraphRemovedMessage</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">Handle a message indicating that scene graph assets have been removed. </p>
+<p class="NDLRefMemberDetailedDescription">This happens during rapid iteration. The animation service will remove the NIF root for the associated actor.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The scene graph removed message. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a6464662096eb51c712d1f886908138f6"></a>
+<p class="NDLRefMemberFunction">void  HandleSceneGraphCacheResponse(<br/>const <span class="NDLSystemFont"><a href="../ecr/ecr__SceneGraphCacheResponse.htm">ecr::SceneGraphCacheResponse</a></span>* pMessage, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">Handle a message indicating that scene graph assets have been cached. </p>
+<p class="NDLRefMemberDetailedDescription">This message is processed when a cache request has been made for an actor. Other scene graph cache responses are ignored.</p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pMessage</span></td>
+    <td>The scene graphs cached response. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+
+<a name="classegm_animation_1_1_animation_service_1a91eece4ffa1fb8b9ad3a377532f77064"></a>
+<p class="NDLRefMemberFunction">void  HandlePreloadRequest(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityPreloadRequest.htm">egf::EntityPreloadRequest</a></span>* pRequest, <br/><span class="NDLSystemFont"><a href="../efd/efd__Category.htm">efd::Category</a></span> targetChannel)</p>
+<p class="NDLRefMemberDescription">Handle an asset preload request. </p>
+<p class="NDLRefMemberDetailedDescription"></p>
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>  
+<tr>
+    <td><span class="NDLSystemFont">pRequest</span></td>
+    <td>The entity that is requesting preload. </td>
+</tr>
+<tr>
+    <td><span class="NDLSystemFont">targetChannel</span></td>
+    <td>Channel the message was sent on, which asserts to <span class="NDLSystemFont"><a href="../egf/egf__EntityManager.htm">egf::EntityManager</a></span>::. </td>
+</tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+<a name="text_key_registration"></a>
+<p class="NDLRefHead1">Text Key Registration</p>
+
+
+<a name="classegm_animation_1_1_animation_service_1a1a4c3df45e67724199218dc14a6ffa72"></a>
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont">efd::Bool</span>  ListenForTextKeyEvents(<br/>const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID, <br/>const char* behaviorName, <br/>const char* textKey = 0, <br/>const char* seqName = 0)</p>
+<p class="NDLRefMemberDescription">Registers a text key callback behavior function. </p>
+<p class="NDLRefMemberDetailedDescription">This behavior will be invoked for any text key events an entity fires. </p>
+
+<a name="classegm_animation_1_1_animation_service_1aa40ea918996142fe90a7e69a03568f87"></a>
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">efd::Bool</span>  ClearRegisteredTextKeys(const <span class="NDLSystemFont"><a href="../egf/egf__EntityID.htm">egf::EntityID</a></span>& entityID)</p>
+<p class="NDLRefMemberDescription">Clears all registered text key callbacks for a given entity. </p>
+<a name="construction_and_destruction"></a>
+<p class="NDLRefHead1">Construction and Destruction</p>
+
+
+<a name="classegm_animation_1_1_animation_service_1ac52543056de04866f25959bca338afcc"></a>
+<p class="NDLRefMemberFunction">virtual ~AnimationService()</p>
+<p class="NDLRefMemberDescription">Virtual destructor. </p>
+
+<a name="classegm_animation_1_1_animation_service_1a0a75eb1479e8535910fa0c27ec3d3980"></a>
+<p class="NDLRefMemberFunction">AnimationService(const <span class="NDLSystemFont">bool</span> toolMode = false)</p>
+<p class="NDLRefMemberDescription">Default constructor. </p>
+<p class="NDLRefMemberDetailedDescription">When in tool mode the service does not update the Position and Rotation on the actor as accumulation moves it. All pose information on the entity is applied to the Nif Root of the actor when in tool mode. </p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

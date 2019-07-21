@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Cloning</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Cloning</h1>
+
+<p>Cloning is a method by which copies of objects are made. An application calls one of the following functions to clone an object. The first version of the function uses default values for cloning object names as discussed later. The second version allows local control over the options via the <a href="../../Reference/NiMain/NiCloningProcess.htm">NiCloningProcess</a> object and is designed for use in multithreaded situations:</p>
+
+<pre>
+NiObject* NiObject::Clone();
+NiObject* NiObject::Clone(NiCloningProcess&amp; kCloning);
+</pre>
+
+<p>The advantage of using <span class="NDLSystemFont">Clone</span>, as opposed to duplicating a scene graph by reloading from a NIF file, for example, is that the type of objects that tend to consume the most memory, such as the vertex arrays stored in NiDataStream objects, are shared by cloned objects, whereas those vertex arrays would be duplicated if a single NIF file was loaded multiple times.</p>
+
+<p>To obtain a fully deep copy of an object you can use:</p>
+
+<pre>
+NiObjectPtr NiObject::CreateDeepCopy
+</pre>
+
+<p>This call makes use of the streaming system to save the object to a memory block, then load that memory block into an entirely new object. Be careful about making a deep copy. Objects that have large amounts of model data or textures associated with them should most likely share the data. A deep copy shares nothing.</p>
+
+<h2>Update Clones Before Rendering</h2>
+
+<p>Clones of some objects, particularly skinned and morphed objects, must be updated before rendering. The data streams on these objects are marked <span class="NDLSystemFont">CLONE_BLANK_COPY</span> (see below), so the data in the clone is undefined until an update step has been run to fill the streams. In general, it is good practice to always update any cloned object before trying to render it.</p>
+
+<h3>Cloning and Names</h3>
+
+<p>The following static functions in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> are used to determine the default setting for how the object names that are stored in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiObjectNET.htm">NiObjectNET</a></span> are copied during a clone operation:</p>
+
+<pre>
+static void SetDefaultCopyType(CopyType eCopyType);
+static CopyType GetDefaultCopyType();
+static void SetDefaultAppendCharacter(char cAppendCharacter);
+static char GetDefaultAppendCharacter();
+</pre>
+
+<p>The possible values of <span class="NDLSystemFont">NiObjectNET::CopyType</span>, the enumerated type that specifies the copy mode, are:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Enumeration
+            </th>
+            <th>
+                Description
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                COPY_NONE
+                </span>
+            </td>
+            <td>
+                Don't copy the name strings at all. Cloned objects have their names set to NULL.
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                COPY_EXACT
+                </span>
+            </td>
+            <td>
+                The name string of a cloned object is an exact duplicate of the original object's name.
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="NDLSystemFont">
+                COPY_UNIQUE
+                </span>
+            </td>
+            <td>
+                The name string of a cloned object is the original object's
+                name with a single character appended. The appended
+                character is accessed by the static <span class="NDLSystemFont">NiObjectNET</span> functions
+                <span class="NDLSystemFont">SetAppendCharacter</span> and <span class="NDLSystemFont">GetAppendCharacter</span>.
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The default value of the variable accessed by <span class="NDLSystemFont">SetDefaultCopyType</span> and <span class="NDLSystemFont">GetDefaultCopyType</span> is <span class="NDLSystemFont">COPY_NONE</span>. The default value 
+ of the variable accessed by <span class="NDLSystemFont">SetDefaultAppendCharacter</span> 
+ and <span class="NDLSystemFont">GetDefaultAppendCharacter</span> 
+ is '<span class="NDLSystemFont">$</span>'.</p>
+
+<a name=CloningBehaviorEnumeration></a><h2>Cloning Behavior 
+ Enumeration</h2>
+
+<p>Some classes, such as <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span>have the 
+ ability to optionally share or duplicate information during a cloning 
+ operation. In this situation, the class will have an API allowing the 
+ user to set the <span class="NDLSystemFont">CloningBehavior</span> enumeration 
+ value.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+
+<tr>
+<th>
+Enumeration</th>
+<th>
+Description</th></tr>
+    </thead>
+    <tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont">CLONE_SHARE</span></td>
+<td>
+Share this object pointer with the newly cloned scene.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">CLONE_COPY</span></td>
+<td>
+Create an exact duplicate of this object for use with 
+ the newly cloned scene. The use of this flag requires the data stream 
+ to have CPU_READ access. Hence, it cannot be used for streams with ACCESS_CPU_WRITE_VOLATILE.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont">CLONE_BLANK_COPY</span></td>
+<td>
+Create a copy of this object for use with the newly 
+ cloned stream, leaving some of the data to be written later. Exactly what 
+ data is left uncopied is determined by the class itself.</td></tr>
+</tbody>
+</table>
+
+
+
+<h2>Cloning with Threads</h2>
+
+<p>Single-threaded applications can call the <span class="NDLSystemFont">Clone()</span> 
+ member of NiObject without concern of corruption from other threads. &nbsp;In 
+ a multithreaded application, however, it is possible for the values returned 
+ <span class="NDLSystemFont">GetDefaultCopyType</span> and <span class="NDLSystemFont">GetDefaultAppendCharacter</span> 
+ to be changed in another thread by a call to <span class="NDLSystemFont">SetDefaultCopyType</span> 
+ or <span class="NDLSystemFont">SetDefaultAppendCharacter</span>. &nbsp;These 
+ functions are not thread safe. &nbsp;Applications 
+ wishing to clone in a multi-threaded application should manually set the 
+ copy type and append character on a local <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiCloningProcess.htm">NiCloningProcess</a></span> 
+ object as shown below:</p>
+ 
+<pre>
+NiCloningProcess kCloning;
+	kCloning.m_eCopyType = NiObjectNET::COPY_EXACT;
+	kCloning.m_cAppendChar = '%';
+NiObject* pkClone = pkNode->Clone(kCloning);
+</pre>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

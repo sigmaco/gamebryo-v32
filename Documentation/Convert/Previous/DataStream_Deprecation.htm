@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>DataStream Deprecation</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>DataStream Deprecation</h1>
+
+<p>Several classes and methods related to the <span class="NDLSystemFont">efd::DataStream</span>
+class were deprecated, altered or replaced with new classes or methods as part of the LightSpeed 3.2
+release. The following sections list the changes and discuss how to convert existing code.</p>
+
+<h2>DataStream removed from Lua scripting</h2>
+<p>The DataStream module was replaced by the ParameterList in Lua.  The DataStream module was removed.
+You must convert any existing DataStream usage in Lua with corresponding ParameterList calls.  Attempts
+to access the DataStream module in Lua result in an error indicating the object does not exist.</p>
+
+<p>The majority of DataStream functions have exact 1-1 equivelents in ParameterList.  The major difference
+is when create new instances in Lua, and the fact that ParameterList is type safe.  Previously unsafe
+calls into DataStream result in runtime asserts with ParameterList. 
+Here is an example showing the conversion from DataStream to ParameterList in Lua:</p>
+
+<p>Using a DataStream (3.1):</p>
+<pre>
+    local params = DataStream.DataStream()
+    params:PutString("test")
+	params:PutUInt32(35)
+</pre>
+
+<p>Using a ParameterList (3.2):</p>
+
+<pre>
+    local params = ParameterList.ParameterList()
+    params:PutString("test")
+	params:PutUInt32(35)
+</pre>
+
+<h2>DataStream as a buffer and an iterator</h2>
+<p>One significant limiation of the DataStream class is that it acted as both the data storage
+buffer and also as the iterator of that buffer. In addition DataStream could both pack data into the
+buffer and unpack data from the buffer at the same time, which is almost never desired and can lead
+to accidental errors when a DataStream is being shared. In the new system two seperate classes take
+over these different roles, <span class="NDLSystemFont"><a
+href="../../Reference/efd/efd__Archive.htm">efd::Archive</a></span> and <span class="NDLSystemFont">
+<a href="../../Reference/efd/efd__SmartBuffer.htm">efd::SmartBuffer</a></span>. The SmartBuffer
+class holds the resulting data buffer and is designed to be easily copied without duplicating the
+underlying memory. The Archive class acts as an iterator into a SmartBuffer when data is being
+serialized. Consider this sample of old style code:</p>
+
+<pre>
+// Create a buffer with the iterator pointing to the head
+DataStreamPtr spDataStream = EE_NEW DataStream();
+// Stream some data into the buffer using overloaded operator&lt;&lt; methods
+*spDataStream &lt;&lt; data1;
+*spDataStream &lt;&lt; data2;
+
+// ... eventually the data stream is passed to someone that wants to unpack it
+spDataStream-&gt;Reset();
+// Stream some data from the buffer using overloaded operator&gt;&gt; methods
+*spDataStream &gt;&gt; outData1;
+*spDataStream &gt;&gt; outData2;
+</pre>
+
+<p>There are many easy errors for this code. For example, if you forget to call <span
+class="NDLSystemFont">DataStream::Reset</span> then the same iterator that was used when packing
+will be used to unpack, but this iterator points to the end of the buffer and might read past the
+end. Another difficult error is if your <span class="NDLSystemFont">operator&gt;&gt;</span> and
+<span class="NDLSystemFont">operator&lt;&lt;</span> methods do not exactly match in which case the
+stream will become unreadable. Finally you could accidentally use the wrong operator (such as
+&lt;&lt; when you meant &gt;&gt;) which can corrupt data in odd ways. Consider instead this new
+code:</p>
+
+<pre>
+// Archive is explicitly valid only for packing preventing accidental use of the wrong method
+Archive ar(Archive::Packing);
+// Data is serialized using specialized Serializer::SerializeObject methods
+Serializer::SerializeObject(data1, ar);
+Serializer::SerializeObject(data2, ar);
+// The result is just a buffer. SmartBuffer can be created on the stack efficiently without
+// resulting in large memory copies.
+SmartBuffer result = ar.GetUsedBuffer();
+
+// To unpack a new Archive iterator is explicitly created in unpack mode.
+Archive arUnpack(Archive::Unpack, result);
+// Data is read out using the exact same method used to write the data in:
+Serializer::SerializeObject(outData1, ar);
+Serializer::SerializeObject(outData2, ar);
+</pre>
+
+
+<h2>DataStream streaming operators</h2>
+
+<p>As we saw in the example above, in the old system you had to override three common data stream
+methods in order to provide streaming support for a custom data type. Those methods were:</p>
+<pre>
+namespace efd
+{
+    /// Insertion operator (<<) for inserting data in an output data stream.
+    efd::DataStream& operator<<(efd::DataStream& i_strm, const YourType& i_val);
+
+    /// Extraction operator (>>) for extracting data from an input data stream.
+    const efd::DataStream& operator>>(const efd::DataStream& i_strm, YourType& o_val);
+
+    /// Skip over data in an input data stream.
+    void DataStreamSkip(const efd::DataStream& i_strm, const YourType&);
+}
+</pre>
+
+<p>All three of these methods are replaced by a single method in the new system. The new system
+requires every serializable data type to specialize the following function:</p>
+<pre>
+namespace efd
+{
+    namespace Serializer
+    {
+        template&lt;typename T&gt;
+        void SerializeObject(T& io_object, efd::Archive& io_archive)
+        {
+            io_object.Serialize(io_archive);
+        }
+    }
+}
+</pre>
+
+<p>Notice that the default implementation of this function will call a method called Serialize on
+the object being serialized. This gives us two convenient methods to specialize a custom data type
+for use with the new system. We can add a <span class="NDLSystemFont">Serialize</span> function to
+the object or we can specialize the templated <span class="NDLSystemFont">SerializeObject</span>
+function. If possible it is recommended that a <span class="NDLSystemFont">Serialize</span> method
+be added to your object, but there are times when you need to serialize an object for which you
+cannot modify the code to add a method so in these cases simply specialize the <span
+class="NDLSystemFont">SerializeObject</span> method for the data type. See the examples below for
+more tips on converting stream operators into Serialize methods.</p>
+
+<p>If you are getting a compiler error when you attempt to call SerializeObject on your type be sure
+you have provided a <span class="NDLSystemFont">Serialize</span> method or a <span
+class="NDLSystemFont">SerializeObject</span> specialization. If you still get an error, check for an
+extra 'const' in the type name (if packing you can use <span class="NDLSystemFont">
+Serializer::SerializeConstObject</span> to fix this). Finally make sure you have included whatever
+header file defines your specialization. If you attempt to use the <span class="NDLSystemFont">
+Serializer</span> system with your data type but it is not properly specialized you will typically
+see the following error:</p>
+
+<pre>
+    error C2509: 'Serialize' : member function not declared in 'YourDataType'
+</pre>
+
+
+<h2>IStreamable changes</h2>
+
+<p>IStreamable is the base class for IMessage and thus is used throughout the messaging system. It
+is how messages are marshalled to and from the wire when networking a LightSpeed application. The
+IStreamable class used to have the following two methods:</p>
+<pre>
+    virtual void ToStream(efd::DataStream &strm) const = 0;
+    virtual bool FromStream(const efd::DataStream &strm) = 0;
+</pre>
+<p>These methods have both been replaced with a single new method:</p>
+<pre>
+    virtual void Serialize(efd::Archive& io_ar) = 0;
+</pre>
+<p>The old ToStream and FromStream methods acted just like the streaming operators. Note that these
+have been replaced with a virtual function that uses the standard signature for a Serialize method.
+As a result any class that derives from the new IStreamable is compatible with the normal
+Serializer::SerializeObject method. Converting a ToStream or FromStream implementation into a
+Serialize implementation should be exactly like converting the streaming operators. However, don't
+forget to call the parent implementation of Serialize if needed.</p>
+
+<p>To assist with refactoring any IStreamable implementations, private versions of the legacy
+methods were added that have different return types. Any IStreamable implementations that require
+refactoring will generate a compiler errors such as the following:</p>
+
+<pre>
+    error C2555: 'YourIStreamableClass::ToStream': overriding virtual function return type differs and is not covariant from 'efd::IStreamable::ToStream'
+        Source\Foundation\efd/IStreamable.h(66) : see declaration of 'efd::IStreamable::ToStream'
+    error C2555: 'YourIStreamableClass::FromStream': overriding virtual function return type differs and is not covariant from 'efd::IStreamable::FromStream'
+        Source\Foundation\efd/IStreamable.h(77) : see declaration of 'efd::IStreamable::FromStream'
+    error C2509: 'Serialize' : member function not declared in 'YourIStreamableClass'
+</pre>
+
+
+<h2>Example conversions</h2>
+
+<p>Simple classes with protected memebers would simply stream each atomic member. Previously this
+required a lot of boilerplate code, the new system is less error prone and uses less code.</p>
+<pre>
+/////////////////////////////////////////////////////////////////////
+// Before:
+class SimpleClass
+{
+public:
+    efd::UInt32 GetSomeData();
+    void SetSomeData(efd::UInt32);
+    efd::Float32 GetMoreData();
+    void SetMoreData(efd::Float32);
+protected:
+    efd::UInt32 m_someData;
+    efd::Float32 m_moreData;
+};
+efd::DataStream&amp; operator&lt;&lt;(efd::DataStream&amp; i_strm, const SimpleClass&amp; i_val)
+{
+    i_strm &lt;&lt; i_val.GetSomeData();
+    i_strm &lt;&lt; i_val.GetMoreData();
+    return i_strm;
+}
+const efd::DataStream&amp; operator&gt;&gt;(const efd::DataStream&amp; i_strm, SimpleClass&amp; o_val)
+{
+    efd::UInt32 ui;
+    i_strm &gt;&gt; ui;
+    i_val.SetSomeData(ui);
+    efd::Float32 f;
+    i_strm &gt;&gt; f;
+    i_val.SetMoreData(f);
+    return i_strm;
+}
+void DataStreamSkip(const efd::DataStream&amp; i_strm, const SimpleClass&amp;)
+{
+    i_strm.SeekFromCurrentPos(sizeof(efd::UInt32) + sizeof(efd::Float32));
+}
+
+/////////////////////////////////////////////////////////////////////
+// After:
+class SimpleClass
+{
+public:
+    efd::UInt32 GetSomeData();
+    void SetSomeData(efd::UInt32);
+    efd::Float32 GetMoreData();
+    void SetMoreData(efd::Float32);
+    
+    void Serialize(efd::Archive&amp; ar)
+    {
+        efd::Serializer::SerializeObject(m_someData, ar);
+        efd::Serializer::SerializeObject(m_moreData, ar);
+    }
+    
+protected:
+    efd::UInt32 m_someData;
+    efd::Float32 m_moreData;
+};
+</pre>
+
+<p>More complex classes often had complicated code. This code can now typically be replaced by a
+single method call. By building blocks of complicated serialization into 'serialize behaviors' you
+can reduce common errors.</p>
+
+<pre>
+/////////////////////////////////////////////////////////////////////
+// Before:
+class MyMessage : public efd::IMessage
+{
+    struct MyData : public efd::MemObject
+    {
+        efd::UInt32 m_data1;
+        efd::UInt32 m_data2;
+    }
+
+    efd::map&lt;efd::utf8string, MyData*&gt; m_data;
+
+    virtual void ToStream(efd::DataStream&amp; strm) const
+    {
+        efd::IMessage::ToStream(strm);
+        strm &lt;&lt; (efd::UInt32)m_data.size();
+        for (efd::map&lt;efd::utf8string, MyData*&gt;::const_iterator iter = m_data.begin();
+            iter != m_data.end();
+            ++iter)
+        {
+            strm &lt;&lt; iter-&gt;first;
+            strm &lt;&lt; iter-&gt;second-&gt;m_data1;
+            strm &lt;&lt; iter-&gt;second-&gt;m_data2;
+        }
+    }
+    virtual bool FromStream(const efd::DataStream&amp; strm)
+    {
+        efd::UInt32 size = 0;
+        strm &gt;&gt; size;
+
+        for (efd::UInt32 i = 0; i &lt; size; ++i)
+        {
+            efd::utf8string key;
+            strm &gt;&gt; key;
+            MyData* pData = EE_NEW MyData;
+            strm &gt;&gt; pData-&gt;m_data1;
+            strm &gt;&gt; pData-&gt;m_data2;
+            m_data[key] = pData;
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+// After:
+class MyMessage : public efd::IMessage
+{
+    struct MyData : public efd::MemObject
+    {
+        efd::UInt32 m_data1;
+        efd::UInt32 m_data2;
+        
+        void Serialize(efd::Archive&amp; ar)
+        {
+            efd::Serializer::SerializeObject(m_data1, ar);
+            efd::Serializer::SerializeObject(m_data2, ar);
+        }
+    }
+
+    efd::map&lt;efd::utf8string, MyData*&gt; m_data;
+
+    virtual void Serialize(efd::Archive&amp; io_ar)
+    {
+        efd::IMessage::Serialize(ar);
+        efd::SR_StdMap&lt;efd::SR_Default, efd::SR_Allocate&lt;&gt; &gt;::Serialize(m_data, ar);
+    }
+</pre>
+
+<p>Notice that the last example is using 'serialization routines' to implement Serialize. These
+are plugable structures that implement common serialization logic typically related to containers.
+They allow fine control over how sub-elements in the container should be treated. In this example
+SR_StdMap knows how to manage STL-style map containers. This routine takes two other routines, one
+for use on the 'key' and another for use on the 'data'. The 'key' supports the default
+SerializeObject method so we pass SR_Default. The 'data' needs to be allocated when unpacking so we
+pass the SR_Allocate which in turn takes another routine which defaults to SR_Default. Using
+serialization routines for complex operations and can reduce common errors while providing better
+error checking.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

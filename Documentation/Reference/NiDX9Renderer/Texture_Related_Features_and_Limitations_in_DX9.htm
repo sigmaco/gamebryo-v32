@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Texture-Related Features and Limitations in DX9</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Texture-Related Features and Limitations in DX9</h1>
+
+<p>The following sections describe basic texture-related features
+and limitations of the current version of the <span class=
+"NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span>.</p>
+
+<h2>Required Hardware Capabilities</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> requires
+the display hardware to support at least two textures in a single
+pass. Hardware that does not support this capability will fail
+renderer creation.</p>
+
+<h2>Cube Mapping</h2>
+
+<p>The DX9 renderer supports both rendered and source cube
+mapping on all platforms that support them. As a result, the
+<span class="NDLSystemFont">DIFFUSE_CUBE_MAP</span> and
+<span class="NDLSystemFont">SPECULAR_CUBE_MAP</span> texture
+coordinate generation modes are supported. Cube Maps may be used
+in any type of projected multitexture effect. Note that not all
+hardware can support Cube Maps. If the hardware cannot support
+Cube Maps, then <span class=
+"NDLSystemFont">Ni*CubeMap::Create</span> will return
+<span class="NDLSystemFont">NULL</span>.</p>
+
+<h2>Specular Bump Mapping</h2>
+
+<p>The DX9 renderer supports specular bump mapping on 3D hardware
+that can support it (either via <span class=
+"NDLSystemFont">BUMPENVMAP</span> or <span class=
+"NDLSystemFont">BUMPENVMAPLUMINANCE</span>). On hardware that
+cannot support bump mapping, the <span class=
+"NDLSystemFont">NiDX9Renderer</span> detects the lack of support
+and the effect will be dropped.</p>
+
+<h2>Diffuse Bump Mapping</h2>
+
+<p>The DX9 renderer can be used to render using diffuse Dot3 bump
+mapping on 3D hardware that can support it, but an <span class=
+"NDLSystemFont">NiShader</span> object will be required to
+perform the effect. This is a result of the limitations of the
+fixed-function DirectX vertex and texture pipelines.</p>
+
+<h2>Non-Power-of-Two Texture Size</h2>
+
+<p>It may be desirable to use non-power-of-two pixel dimensions
+in some cases, e.g., for full-screen splash screens, or when
+using the backbuffer as a rendered texture. Gamebryo supports
+non-power-of-two texture dimensions on hardware that supports
+them. Thus, textures may have non-power-of-two pixel dimensions
+if the hardware supports them and certain conditions are met, but
+otherwise power-of-two pixel dimensions will be required.</p>
+
+<p>Specifically, modern graphics cards typically want power of 2
+dimensions for 2D textures, but can work with any size under
+certain conditions. For such cards (which are identified as
+having both <span class=
+"NDLSystemFont">D3DPTEXTURECAPS_POW2</span> and <span class=
+"NDLSystemFont">D3DPTEXTURECAPS_NONPOW2CONDITIONAL</span> set for
+caps), the following conditions must be met for non-power-of-two
+dimensions:</p>
+
+<ul>
+    <li>The texture addressing mode for the texture stage is set
+    to clamp (texture wrapping is disabled).</li>
+
+    <li>Mipmapping is not in use (use magnification filter
+    only).</li>
+
+    <li>Texture formats must not be <span class=
+    "NDLSystemFont">D3DFMT_DXT1</span> through <span class=
+    "NDLSystemFont">D3DFMT_DXT5</span>.</li>
+</ul>
+
+<p>Some of the newest graphics cards have unconditional support
+for 2D textures of any dimension; these cards are identified as
+not having the <span class=
+"NDLSystemFont">D3DPTEXTURECAPS_POW2</span> cap set.</p>
+
+<p>On the other hand, older graphics cards typically require
+unconditionally that all 2D textures have widths and heights
+specified as powers of two; for these cards, the <span class=
+"NDLSystemFont">D3DPTEXTURECAPS_POW2</span> cap is set, but not
+<span class=
+"NDLSystemFont">D3DPTEXTURECAPS_NONPOW2CONDITIONAL</span>.</p>
+
+<p>Whether you use textures with non-power-of-two dimensions will
+ultimately depend on the target platforms you must consider for
+your application.</p>
+
+<h2>Texture Downsizing</h2>
+
+<p>Most current 3D hardware has some limit on the maximum width
+and height of each texture, although on most DX9-level 3D
+hardware, these limits are very large (at least 1024x1024 or
+2048x2048). The <span class="NDLSystemFont">NiDX9Renderer</span>
+does not downsize textures automatically.</p>
+
+<h2>Texture Compression</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> supports
+loading pre-compressed texture data, and can support on-the-fly
+compression if a compressing image converter is used. See the
+<a href=
+"../../Programmer/Texturing/Introduction_to_Texturing.htm">Texturing</a>
+documentation for details of how to create compressed texture
+data. The <span class="NDLSystemFont">NiDX9Renderer</span> will
+load compressed data directly to the 3D hardware on 3D devices
+that support compression, while the applications using the
+<span class="NDLSystemFont">NiDevImageConverter</span> will also
+be able to load and expand the compressed textures to
+non-compressed formats automatically on hardware that cannot
+support compressed textures directly.</p>
+
+<h2>Texture Apply Modes Supported</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> does not
+support the <span class="NDLSystemFont">APPLY_DECAL</span>
+texture-apply mode. Most DX9 hardware cards can support
+<span class="NDLSystemFont">APPLY_REPLACE</span> and <span class=
+"NDLSystemFont">APPLY_MODULATE.</span></p>
+
+<h2>Texture Format Requests</h2>
+
+<p>Texture format requests are fully supported via the
+<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexture__FormatPrefs.htm">
+NiTexture::FormatPrefs</a></span> object
+the <span class="NDLSystemFont">NiDX9Renderer</span> queries for
+all available Gamebryo texture formats. The exact mapping of
+format request objects to pixel formats is dependent upon the
+target hardware and display pixel depth.</p>
+
+<h2>Palettized Texture Formats</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> does not
+support palletized textures in the display hardware, as the DX9
+interface implementation of palettes is too limiting to be
+useful. Under DX9, only one palette is allowed per rendering
+pass. As a result, more than one palletized texture cannot be
+used in a single pass unless the palettes are the same. To
+compensate for this, palletized textures must be expanded by the
+image converter (such as the <span class=
+"NDLSystemFont">NiDevImageConverter</span>) at load time. This
+will be done automatically when an appropriate image converter is
+in use.</p>
+
+<h2>Sphere Mapping</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> defaults
+to world-space sphere mapping, as do most other renderers in
+Gamebryo.</p>
+
+<h2>Load Texture Files Direct to Renderer Hint</h2>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> supports
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span>
+hint to load texture files directly into renderer-specific
+resources. The renderer uses the D3DX library to handle this
+functionality. Textures in any texture format, even formats not
+directly supported by the Gamebryo engine in general, will be
+correctly loaded, but may be converted by the D3DX library. Such
+conversions tend to maintain the texture data rather than the bit
+depth, for example, a 16-bit A8R3G3B2 texture will be expanded to
+a full 32-bit A8R8G8B8 rather than an alternative 16-bit
+format.</p>
+
+<p>The texture files that are supported by this feature include
+DDS files, TGA files, and BMP files. Cube and volume textures
+included in DDS files will be correctly loaded, but can only be
+accessed via 3-component texture coordinates when used with
+<span class="NDLSystemFont">NiShaders</span>. Textures in any
+texture format will be correctly loaded, but may be
+converted.</p>
+
+<p>Any texture that will be used in a bump map (ie, the
+<span class=
+"NDLSystemFont">NiTexture::FormatPrefs.PixelLayout</span> is
+<span class="NDLSystemFont">BUMPMAP</span>) that is not in one of
+the signed texture formats will fall back to the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>-based
+loading mechanism so the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span>
+can produce a texture using a signed format.</p>
+
+<p>Textures loaded using this mechanism will not skip any mipmap
+levels, even if <span class=
+"NDLSystemFont">NiRenderer::SetMipmapSkipLevel</span> has been
+used to force textures to skip the highest mipmap level(s).</p>
+
+<h2>Persistent Source Texture Renderer Data</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"NiDX9Renderer.htm">NiDX9Renderer</a></span> supports
+<span class="NDLSystemFont"><a href=
+"NiDX9PersistentSrcTextureRendererData.htm">NiDX9PersistentSrcTextureRendererData</a></span>
+objects as the means to accomplish DX9-specific texture format
+conversions at export time for textures that are stored in the
+scene's main NIF file. With this approach, DX9-specific source
+texture renderer data may be loaded directly into DX9
+renderer-specific resources at application load time, without
+temporary memory allocations for conversion, and without time
+spent doing conversions at load time.</p>
+
+<p>Once a NIF has been exported from a modeling package with
+internal DX9-specific textures, however, there is no falling back
+to an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>
+based loading mechanism for load-time texture format conversions,
+since there is no pixel data in that case.</p>
+
+<p>Thus, the advantages of doing DX9-specific texture format
+conversions at export time include:</p>
+
+<ul>
+    <li>Improvements in "high water mark" behavior for texture
+    memory at load time. In other words, temporary memory
+    allocations for texture format conversion will not be
+    required if a DX9-specific export option is requested in the
+    art pipeline.</li>
+
+    <li>Load time performance improvements, due to no texture
+    format conversions at load time.</li>
+</ul>
+
+<p>A caveat to this approach is that the texture is configured
+specifically for DX9 and for a particular class of graphics card,
+and may not be loadable for use with other classes of graphics
+cards, with alternative platforms, or with tools on the PC. In
+such cases, <a href=
+"../../Programmer/Texturing/Failures.htm">"error" replacement
+textures</a> are used to indicate the error.</p>
+
+<p>Note that each time a platform SDK (e.g., Xbox360 XDK or
+Playstation3 SDK) changes, there is at least a possibility that
+the new SDK will cause textures to be formatted differently on
+that platform. It is not likely to happen frequently, but the
+possibility exists. In such a case, it may be desirable to
+re-export Nifs containing platform-specific textures using
+exporters built with that platform's most recent SDK version.</p>
+
+<p>See also the descriptions of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span>
+in the Main Class Reference for more details on persistent source
+texture renderer data. Also, consult the export options for
+<a href="../../Art/Max/Gamebryo_3ds_max_Export_Options1.htm">3ds
+max</a> or <a href=
+"../../Art/Maya/Export_Display_Options.htm">Maya</a> for more
+details on how to export source texture renderer data from the
+modeling packages.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,759 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Metal Wars Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Metal Wars Code Overview</h1>
+
+<p>The Metal Wars source code is divided into several files
+constituting the application's C++ classes. Each class is
+contained within source files (.h and .cpp) of the same name. The
+purpose of the following descriptions is to give developers a
+brief idea of the way that the collection of classes in Metal
+Wars work together to provide overall functionality. For this
+reason, the dependency listings for each class should be of high
+interest.</p>
+
+<h2>MetalWars</h2>
+
+<p><span class="NDLSystemFont">MetalWars</span> is the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a>-</span>derived class for the Metal Wars
+application. The specific interfaces it relies on from
+<span class="NDLSystemFont">NiApplication</span> are for
+initialization (<span class=
+"NDLSystemFont">MetalWars::Initialize</span>), shutdown
+(<span class="NDLSystemFont">MetalWars::Terminate</span> ),
+renderer and scene creation (<span class=
+"NDLSystemFont">MetalWars::CreateRenderer</span> and <span class=
+"NDLSystemFont">MetalWars::CreateScene</span>), and rendering
+(<span class="NDLSystemFont">MetalWars::OnIdle</span>).</p>
+
+<p>Somewhat unique to the Metal Wars sample (relative to other
+Gamebryo sample applications) is the fact that little of the real
+work done in the application is maintained in the <span class=
+"NDLSystemFont">MetalWars</span> class itself. As such, and in
+addition to its dependency on <span class=
+"NDLSystemFont"><a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span>, the <span class=
+"NDLSystemFont">MetalWars</span> class is dependent on the
+<span class="NDLSystemFont">WorldManager</span> and <span class=
+"NDLSystemFont">ShaderHelper</span> classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    world creation and data loading occurs in <span class=
+    "NDLSystemFont">WorldManager</span> (and its dependent
+    classes). This can be seen directly in <span class=
+    "NDLSystemFont">MetalWars::CreateScene</span> where the only
+    work done is the creation of the single <span class=
+    "NDLSystemFont">WorldManager</span> and execution of the
+    <span class="NDLSystemFont">WorldManager</span> method that
+    handles "world loading" (<span class=
+    "NDLSystemFont">WorldManager::LoadWorld</span>). Similarly,
+    the idle time processing of directly in <span class=
+    "NDLSystemFont">MetalWars::OnIdle</span> is limited in code
+    scope. Most of the real application work is done through a
+    call to <span class=
+    "NDLSystemFont">WorldManager::Update</span>.</li>
+
+    <li><span class="NDLSystemFont">ShaderHelper</span>: The
+    <span class="NDLSystemFont">MetalWars</span> class maintains
+    the application instance of the <span class=
+    "NDLSystemFont">ShaderHelper</span> class, which is used to
+    initialize and load shaders into the Gamebryo Shader system.
+    This class is much like similarly-named classes used in other
+    Gamebryo demos, such as MOUT. The class loads the required
+    shader libraries to read and parse the shader files (the HLSL
+    FX shader parser in this case).</li>
+</ul>
+
+<h2>BipedCharacter</h2>
+
+<p><span class="NDLSystemFont">BipedCharacter</span> provides the
+basis for a character class that can be used in applications that
+require an <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span>
+driven character. It is used in MetalWars as a base for the
+<span class="NDLSystemFont">Killbot</span> class. It includes
+support for a rendered texture shadow, random idle animations,
+various base-level data access methods, and several pure-virtual
+interfaces for methods that handle drawing and locomotion.</p>
+
+<p><span class="NDLSystemFont">BipedCharacter</span> is dependent
+on three other application classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">ShadowGeometry</span>:
+    <span class="NDLSystemFont">BipedCharacter</span> maintains
+    an instance of <span class=
+    "NDLSystemFont">ShadowGeometry</span> for giving the
+    character a rendered shadow. <span class=
+    "NDLSystemFont">BipedCharacter</span> has the interfaces for
+    application access to shadow texture and shadow geometry
+    rendering.</li>
+
+    <li><span class="NDLSystemFont">WorldManager</span>:
+    <span class="NDLSystemFont">WorldManager</span> debugging
+    interfaces are used by <span class=
+    "NDLSystemFont">BipedCharacter</span>.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    terrain manager is accessed solely to transfer the ground
+    object maintained by the terrain manager into the character's
+    shadow manager (which will apply shadow geometry upon
+    it).</li>
+</ul>
+
+<h2>BlasterManager</h2>
+
+<p><span class="NDLSystemFont">BlasterManager</span> handles all
+effects related to gunfire. It manages both the projectile and
+its movement, and also the "blow-out" point light that exploits
+the HDR adaptation system used in Metal Wars to black-out the
+screen temporarily. Upon projectile impact and explosion, the
+blaster's point light is used to quickly drive lighting levels in
+the scene to very large values, thereby causing the sample's HDR
+systems to adjust for the very brief burst of high scene
+luminance. For a few seconds post-explosion, the user can see the
+HDR system re-adapt (much like the human eye, which it mimics) to
+more typical lighting conditions. The warp effect that is created
+with the projectile explosion is rendered using the same system
+as the heat-shimmer effects from the fire sources in the scene.
+The blaster simply registers an additional geometry object (a
+sphere) as rendering to the buffer that adds shimmer offsets.</p>
+
+<p><span class="NDLSystemFont">BlasterManager</span> depends
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">CollisionManager</span>: The
+    CollisionManager is used for intersection testing of the
+    projectile with the scene, including the terrain.</li>
+
+    <li><span class="NDLSystemFont">Killbot</span>: The Killbot
+    is used (indirectly) to query the launch point for the
+    blaster projectile. The Killbot is lit by the blaster point
+    light. The killbot also includes a callback for a text key
+    event (the gun firing event) that causes the blaster to
+    fire.</li>
+
+    <li><span class="NDLSystemFont">MRTShadersEffect</span>: This
+    class accesses the blaster object to draw the projectile into
+    the shimmer buffer that generates the warp effect when the
+    projectile is in flight and exploding. WorldManager: The
+    WorldManager creates the BlasterManager and also updates it
+    every frame.</li>
+</ul>
+
+<h2>CameraController</h2>
+
+<p>The <span class="NDLSystemFont">CameraController</span> class
+implements a form of "smart camera". The <span class=
+"NDLSystemFont">CameraController</span> adds numerous features
+beyond a standard Gamebryo camera and hides implementation
+details from other parts of the application. It is close to
+identical to the <a href=
+"MOUT_Sample_Code_Overview.htm">CameraController</a> from the
+MOUT GameDemo, and also adds control to Metal Wars for managing
+the killbot's HUD system.</p>
+
+<p><span class="NDLSystemFont">CameraController</span> depends
+upon several of the other support classes in the application for
+specific features:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">CameraController</span> uses the
+    <span class="NDLSystemFont">WorldManager</span> to render the
+    3D scene as a part of the <span class=
+    "NDLSystemFont">CameraController</span>'s overall rendering
+    process (which includes the 2D UI elements and effects). It
+    also uses the <span class=
+    "NDLSystemFont">WorldManager</span>'s information logging
+    interfaces to log any errors encountered during the shadowing
+    process. Finally the <span class=
+    "NDLSystemFont">WorldManager</span> is used to access the
+    <span class="NDLSystemFont">Killbot</span>, the <span class=
+    "NDLSystemFont">TerrainManager</span> and the <span class=
+    "NDLSystemFont">CollisionManager</span>.</li>
+
+    <li><span class="NDLSystemFont">Killbot</span>: Owing to the
+    fact that the camera is relative to the Killbot's position
+    and heading, the <span class=
+    "NDLSystemFont">CameraController</span> uses the Killbot
+    object in several instances. During startup, the Killbot is
+    queried to determine the initial heading of the camera, as
+    well as the fixed height-offset of his eyes from his feet
+    (which are his origin). The Killbot's scene graph root
+    position is used each frame to slide the automap texture in
+    such a way that it matches the Killbot's location in the
+    scene. One other bit of coupling is implicit - the camera
+    itself is attached to a child of the Killbot's root node,
+    meaning that the camera automatically transforms with the
+    character's root.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    ensure that the camera does not "clip" through the terrain.
+    Height values returned by the terrain manager are used to
+    artificially raise the camera to avoid any clipping below the
+    terrain. This does not ensure that the character is visible
+    from the camera location (a bump in the terrain between the
+    camera and the character will not be detected), but it does
+    assume that the camera does not end up in a "backstage"
+    region.</li>
+
+    <li><span class="NDLSystemFont">MRTShadersEffect</span>: The
+    <span class="NDLSystemFont">MRTShadersEffect</span> class is
+    accessed during camera idle mode operations and when the
+    Killbot is in first person mode to manage the current HUD
+    mode.</li>
+
+    <li><span class="NDLSystemFont">MenuManager:</span>The camera
+    controller creates and manages the menu system, if it is
+    created.</li>
+</ul>
+
+<h2>CollisionManager</h2>
+
+<p><span class="NDLSystemFont">CollisionManager</span> handles
+scene level picking and collision interactions. It is used by the
+<span class="NDLSystemFont">Killbot</span> class for determining
+if there are character-to-building collision intersections, as
+determined by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/Introduction_to_Collision.htm">NiCollision</a></span>
+system. The <span class="NDLSystemFont">Killbot</span> uses
+<span class="NDLSystemFont">CollisionManager</span> for ray
+intersection (picking via <span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a></span>)
+purposes with the buildings in the scene to determine if any
+given building obstructs the view of the <span class=
+"NDLSystemFont">Killbot</span>.</p>
+
+<p><span class="NDLSystemFont">CollisionManager</span> is
+dependent on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">Killbot</span>: The
+    <span class="NDLSystemFont">CollisionManager</span> accesses
+    a collision record maintained as a member of the <span class=
+    "NDLSystemFont">Killbot</span> record, when collisions are
+    detected, is used to hold information about the intersection
+    that occurred including things like time of collisions,
+    intersection points and normals.</li>
+
+    <li>WorldManager: The world manager is used for debugging
+    output, as well as for querying the killbot when setting up
+    character-scene collisions.</li>
+</ul>
+
+<h2>HDRScene</h2>
+
+<p><span class="NDLSystemFont">HDRScene</span> handles all
+operations of generating effects for "HDR lighting" in the Metal
+Wars demo. Specifically, it performs a sequence of steps to
+calculate an average scene luminance. This value is then used to
+perform a bright pass filter on the rendered scene to control
+what in the image will generate "blooms". The "blooms" are then
+created by successive blurring operations done on the bright pass
+results. Additionally, the active luminance value incorporates an
+adaptation control to "smooth" the active luminance over several
+frames and prevent jarring jumps in brightness in the scene. This
+adaptation is done to mimic the human eye adaptation to bright
+sources. Input to the <span class="NDLSystemFont">HDRScene</span>
+code comes from the floating point render target to which the 3D
+scene was rendered. This target encodes large lighting values
+from light sources that have large multipliers or cubemaps that
+use HDR textures as their representation. In Metal Wars, HDR
+diffuse and specular cube maps form part of the lighting in the
+scene. Output from the HDR operations is fed to a set of
+potentially-enabled MRT-based effects. The shaders used by the
+<span class="NDLSystemFont">HDRScene</span> class can be found in
+<span class="NDLSystemFont">HDRScene.fx</span>.</p>
+
+<p><span class="NDLSystemFont">HDRScene</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The HDR
+    scene depends on output from the <span class=
+    "NDLSystemFont">WorldManager</span> scene drawing operations,
+    which are assumed to be rendered into a floating-point color
+    buffer that can be used as a texture.</li>
+
+    <li><span class="NDLSystemFont">PostProcessManager:</span>
+    The <span class="NDLSystemFont">PostProcessManager</span>
+    manages the state of the HDR effects system and its
+    operation.</li>
+</ul>
+
+<p>The code and associated shaders of <span class=
+"NDLSystemFont">HDRScene</span> are based on concepts from the
+Microsoft DirectX 9 "HDRLighting" sample. Documentation for that
+sample may be found in the Microsoft "DirectX Documentation for
+C++" (shipped with the DX9 SDK) by searching for
+"HDRLighting".</p>
+
+<h2>Killbot</h2>
+
+<p><span class="NDLSystemFont">Killbot</span> provides
+specialized, <span class=
+"NDLSystemFont">MetalWars</span>-specific behavior to the
+<span class="NDLSystemFont">BipedCharacter</span> base class,
+including input-based transform updating, drawing, and code to
+determine if the Killbot is obscured in the camera view by
+buildings.</p>
+
+<p>Much of the details of the operation of this class is
+specified in inline source comments for <span class=
+"NDLSystemFont">Killbot</span>. Of particular interest might be
+<span class="NDLSystemFont">UpdateCollisionBasedPosition</span>,
+which is used to determine if movement for the character is valid
+relative to collisions with buildings, and <span class=
+"NDLSystemFont">CheckForBlockedCameraView</span>, which
+determines if buildings obscure the camera's view of the
+character.</p>
+
+<p>The <span class="NDLSystemFont">Killbot</span> class is
+dependent on the following other MetalWars application
+classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">BlasterManager</span>: The
+    killbot includes code to launch the blaster effect inside of
+    one of its animation callbacks. The callback for the text key
+    "<span class="NDLSystemFont">morph: fire_begin</span>" causes
+    the blaster to fire. In this way, the animation system
+    automatically launches the blaster effect at the appropriate
+    time. In addition, before allowing the killbot's firing
+    animation to even be triggered, the killbot code checks to
+    see if the blaster can be fired (i.e. a blaster "bolt" is not
+    already in flight).</li>
+
+    <li><span class="NDLSystemFont">CameraController</span>: The
+    <span class="NDLSystemFont">CameraController</span> is
+    accessed in the <span class=
+    "NDLSystemFont">UpdateBipedRootTransforms</span> function to
+    obtain the current input values for setting the character's
+    world rotation. The current camera pitch and yaw values are
+    used in <span class=
+    "NDLSystemFont">AdjustSequenceWeights</span> to set the
+    blending values for the gun firing animations. This allows
+    the character to fire the gun upward and downward.</li>
+
+    <li><span class="NDLSystemFont">CollisionManager</span>: This
+    application class is used by the <span class=
+    "NDLSystemFont">Killbot</span> in two different ways. First,
+    the <span class="NDLSystemFont">CollisionManager</span>
+    provides access to collision detection routines for
+    determining intersections with the MetalWars scene's
+    buildings. The <span class="NDLSystemFont">Killbot</span>
+    uses the <a href=
+    "../../Reference/NiCollision/Introduction_to_Collision.htm"><span class="NDLSystemFont">
+    NiCollision</span></a> system with both static and dynamic
+    (velocity-based) collision to determine if movements are safe
+    without causing building intersections (including sliding
+    behavior) in <span class=
+    "NDLSystemFont">UpdateCollisionBasedPosition</span>.
+    Additionally, the <span class=
+    "NDLSystemFont">CollisionManager</span> provides interfaces
+    for the <span class="NDLSystemFont">Killbot</span> to use the
+    <a href="../../Reference/NiCollision/NiPick.htm"><span class=
+    "NDLSystemFont">NiPick</span></a> system to determine if any
+    buildings are blocking the camera view of the character in
+    <span class=
+    "NDLSystemFont">CheckForBlockedCameraView</span>.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    ground the soldier on the terrain both during initialization
+    (<span class="NDLSystemFont">Initialize</span>) and run-time
+    updating of the character's position (<span class=
+    "NDLSystemFont">UpdateCollisionBasedPosition</span>).</li>
+
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">WorldManager</span> is used for
+    global access of its sub-managers as well as debug logging.
+    Additionally, its <span class=
+    "NDLSystemFont">SetAsKillbotBlocker</span> function is used
+    by the <span class=
+    "NDLSystemFont">Killbot::CheckForBlockedCameraView</span>
+    function to mark buildings as camera-blockers. It uses a
+    world manager function (<span class=
+    "NDLSystemFont">LightObject</span>) to assign the closest
+    lights to affect the killbot each frame.</li>
+</ul>
+
+<h2>MRTShadersEffect</h2>
+
+<p><span class="NDLSystemFont">MRTShadersEffect</span> provides a
+layer built on <span class=
+"NDLSystemFont">PostProcessEffect</span> to manage all
+full-screen post processing effects, several of which rely on
+multiple render targets (MRTs) for operation. The inputs to these
+shader-based effects are provided by a pair of buffer outputs
+from the single 3D scene rendering operation; a
+surface-normal/depth texture, as well as the standard rendered
+color buffer. Output of each is a fullscreen polygon rendered
+with whatever effects are active. The system "ping-pongs" the
+effects between a set of screen-sized color buffers, with each
+effect using the last rendered buffer as a texture and rendering
+to the other buffer. Most of the effects in this part of the
+system operate using variations of the same basic techniques.</p>
+
+<p>The general scene shaders (found in GeneralDiffuseSpecular.fx)
+write necessary data to MRT buffers for later use by the
+MRT-based effects controlled by this class. The shaders used by
+the <span class="NDLSystemFont">MRTShadersEffect</span> class can
+be found in <span class=
+"NDLSystemFont">MRTShadersEffect.fx</span>. In all cases, the
+vertex shader simply outputs transformed vertex positions of the
+full-screen polygon being drawn for the effect. The interesting
+work for each effect is done in the pixel shaders.</p>
+
+<p>The MRT-based effects the demo uses include:</p>
+
+<ul>
+    <li>Heat Shimmer&mdash;The heat shimmer effect is always
+    active in the demo (unless disabled via the debugging menu).
+    Shimmer producing objects (the fire-sourced heat waves and
+    the blaster projectile) are rendered to a unique render
+    target buffer, called the "shimmer buffer". This buffer is
+    then used as a lookup mask to determine where to apply
+    shimmer. The resulting color from this lookup is interpreted
+    as texture coordinate offsets - they are added per-pixel to a
+    set of UVs that do a 1-to-1 mapping of the buffer containing
+    the rendered scene. In this way, the red and green channels
+    in the shimmer buffer serve to jitter or shimmer an otherwise
+    direct mapping of the rendered scene image to the screen. The
+    red and green channels of the shimmer buffer represent signed
+    shifts in screen space. If the entire shimmer buffer is 50%
+    yellow, then the offsets will be zero at every pixel, and
+    there will appear to be no shimmer effect. As red and green
+    channels diverge from these "zero" values (lower meaning a
+    negative offset and higher meaning a positive offset), then
+    the lookup into the rendered scene texture for a given pixel
+    will be shifted up, do, left or right accordingly, creating
+    an effect that looks like light refraction.</li>
+
+    <li>Depth of Field&mdash;This effect is used when the camera
+    is in idle mode and focusing on the killbot. Using the
+    distance/depth data retained from the original rendering of
+    the scene in an MRT, pixels beyond a specified distance are
+    faded between the original rendering and a blurred version
+    (blurred smoothly using a standard Gaussian blurring
+    operations) based on depth. Thus, as the pixels recede into
+    the distance, they become increasingly blurrier. Like most of
+    the pixel-shader based blurring techniques used in Metal
+    Wars, the overall blur is actually done with two separate
+    operations, one to blur the image in the X dimension of the
+    screen and then another to blur in the Y dimension.</li>
+
+    <li>Night Vision&mdash;The night vision effect is one of the
+    killbot's "Heads Up Display" ;modes. The effect converts the
+    rendered scene buffer's color to a luminance value via a dot
+    product between the scene buffer's color and a constant
+    luminance vector to create the monochromatic-looking night
+    vision result. It uses a rendered texture version of the
+    killbot's HUD as the lookup mask for the effect. If a pixel
+    is in the masked area of the HUD (determined by the presence
+    of any color in the mask lookup), it uses a blue tinted
+    luminance translation vector and only the color translation
+    itself is done on the pixel. If the pixel outside the HUD
+    center area, a different luminance vector is used and a blur
+    is also performed. As a final step, noise is added to all
+    pixels.</li>
+
+    <li>Edge Detection&mdash;As one of the killbot HUD effects,
+    the edge detection mode works by analyzing and detecting
+    sharp changes in the per-pixel surface normal and depth
+    values stored to the normal/depth MRT buffer during the
+    previous rendering operation (which are still accessible).
+    The pixel shader then assigns monochrome output colors to the
+    corresponding pixels based on the analysis of these values at
+    the current pixel and neighboring pixels within a small
+    sampling kernel. If the comparison of pixel values produces
+    differences that exceed threshold values, it signifies
+    changes in scene geometry that represent an edge, and the
+    output pixel is assigned the edge color.</li>
+
+    <li>Infra-Red&mdash;The infra-red effect works nearly
+    identically to the night vision effect. The differences are
+    that a one-dimensional texture is used to convert the
+    luminance values to color values that are inside the masked
+    area of the killbot HUD. Pixels outside the masked area are
+    modulated by a monochrome luminance vector and then inverted
+    to give the darkening effect. No blur is performed but noise
+    is added to all pixels.</li>
+
+    <li>Magnify&mdash;The fish-eye magnification technique is
+    another of the killbot HUD effects and is done with a process
+    identical to the way the heat shimmer is generated. However,
+    instead of using the heat shimmer scene object rendering
+    (i.e. the fire heat-waves and/or blaster projectile) as the
+    initial lookup mask for what is to be distorted, the rendered
+    texture version of the killbot's HUD is used in its place to
+    identify magnification areas. The pixel shader for this
+    effect generates the circular fish-eye perturbation of the
+    texture coordinates used for the final step of applying the
+    main rendered scene colors to the output buffer.</li>
+</ul>
+
+<p>The code and associated shaders of MRTShadersEffect are based
+on concepts from the Microsoft DirectX 9 "PostProcess"
+sample.</p>
+
+<h2>NiOpaqueOnlyCullingProcess</h2>
+
+<p><span class="NDLSystemFont">NiOpaqueOnlyCullingProcess</span>
+is a culling process that handles alpha blended objects uniquely.
+During a culling pass, it can optionally store alpha blended
+objects in a unique set that is then used to render alpha
+blending objects separately and later during the drawing process.
+This culling process is interesting in that it populates not one
+but two independent visible array objects, one for opaque
+objects, and one for alpha blended objects, allowing the two
+types of objects to be rendered completely independently (in this
+case, to different render targets).</p>
+
+<p><span class="NDLSystemFont">NiOpaqueOnlyCullingProcess</span>
+is only used in the demo when it is run on hardware that cannot
+perform post-pixel-shader blending operations into floating-point
+render targets. <span class=
+"NDLSystemFont">NiOpaqueOnlyCullingProcess</span> is part of a
+workaround for this. The steps involved with this workaround
+are:</p>
+
+<ol>
+    <li>Opaque objects are drawn first to a floating point render
+    target.</li>
+
+    <li>Transparent objects are drawn to a traditional 32-bit
+    buffer using the existing z-buffer from the previous opaque
+    object pass. This 32-bit color buffer was first cleared to
+    black and additive blending is done while drawing the
+    transparent objects.</li>
+
+    <li>Render a full screen polygon to another floating point
+    render target with the opaque object render target as the
+    polygon's base map and the transparent object render target
+    as glow map.</li>
+
+    <li>Proceed normally in the application with this final
+    floating point render target as input to proceeding
+    application steps.</li>
+</ol>
+
+<p>The <span class="NDLSystemFont">WorldManager</span> uses
+<span class="NDLSystemFont">NiOpaqueOnlyCullingProcess</span>
+after the application detects the necessity for it at
+startup.</p>
+
+<h2>PostProcessEffect</h2>
+
+<p><span class="NDLSystemFont">PostProcessEffect</span> is a base
+class that provides logistical support for all post-process
+rendering effects as they are interfaced by the sample through
+the <span class="NDLSystemFont">PostProcessManager.</span></p>
+
+<h2>PostProcessManager</h2>
+
+<p><span class="NDLSystemFont">PostProcessManager</span> manages
+all of the post-processing effects in the demo, that are
+optionally performed after the main 3D scene rendering. It
+provides interfaces for adding and removing effects as well as
+methods for managing the overall post-process effect drawing
+operations, which can be called just once per all of the
+instances of post-processing effects. The <span class=
+"NDLSystemFont">WorldManager</span> interacts with the
+<span class="NDLSystemFont">PostProcessManager</span> to control
+its creation and operation, including drawing.</p>
+
+<h2>ShadowGeometry</h2>
+
+<p>The <span class="NDLSystemFont">ShadowGeometry</span> class
+supports automatic, projected shadows. The class includes the
+ability to generate the shadow image each frame from a set of
+"caster" geometry. Alternatively, a static shadow may be read
+from an image file at load time. The class also supports
+projection of the shadow onto a set of "recipient" geometry,
+culling pieces of geometry that do not need to receive the
+shadow. This creates a high-quality, high-performance shadow
+effect with minimal application-level code. The <span class=
+"NDLSystemFont"><a href=
+"MOUT_Sample_Code_Overview.htm">ShadowGeometry</a></span> is used
+mostly intact as described in the MOUT sample. In addition to the
+functionality provided in MOUT, the Metal Wars shadow code adds
+the ability to modify the shadow casting direction based on the
+closest fire light in the Metal Wars scene. The rendered shadow
+texture itself is also blurred with a custom shader to give it a
+soft-edged effect.</p>
+
+<p><span class="NDLSystemFont">ShadowGeometry</span> depends upon
+several of the other support classes in the application for
+specific features:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">WorldManager</span>: The
+    <span class="NDLSystemFont">WorldManager</span> object is
+    used to query the world-space direction of the light, which
+    is assumed to be casting the shadow. <span class=
+    "NDLSystemFont">ShadowGeometry</span> also uses the
+    <span class="NDLSystemFont">WorldManager</span>'s information
+    logging interfaces to log any errors encountered during the
+    shadowing process. Finally, the <span class=
+    "NDLSystemFont">WorldManager</span> is used to access the
+    <span class="NDLSystemFont">TerrainManager</span>
+    object.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: Is
+    used in several places to determine the geometry upon which
+    the shadow is cast. The terrain is picked in order to locate
+    a center of the projected shadow volume, and the terrain
+    objects and triangles are tested against the shadow camera
+    clipping planes. Geometry from the terrain manager that is
+    found to fall within the shadow camera's frustum is added to
+    the list of recipient geometry in each frame.</li>
+</ul>
+
+<h2>Sparks</h2>
+
+<p><span class="NDLSystemFont">Sparks</span> is a class that
+implements a procedural geometry effect. The idea behind the
+effect is to make moving particles appear to be motion-blurred by
+replacing the point-like billboard particles with screen-aligned
+quads that are extruded in the direction that the particle is
+moving from frame to frame. Sparks manages a single <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> object that
+contains the visible, motion-blurred "particles" that are based
+on the positions and velocities of a collection of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+objects in the sample's scene. <span class=
+"NDLSystemFont">Sparks</span> generates per-particle quads that
+are updated per-frame to be camera-facing and dynamic in length
+based on the actual particle velocity (as described by
+artist-directed movement of the particle systems at export time).
+In the case of <span class="NDLSystemFont">Sparks</span>, the
+actual <span class="NDLSystemFont">NiPSParticleSystem</span>
+source objects are not drawn at all, as the <span class=
+"NDLSystemFont">Sparks</span> geometry replaces them in the
+visual scene. The <span class=
+"NDLSystemFont">NiPSParticleSystem</span> are used for Update
+information, however.</p>
+
+<p>The <span class="NDLSystemFont">Sparks</span> class depends on
+<span class="NDLSystemFont">WorldManager</span> to create it and
+feed it appropriate <span class=
+"NDLSystemFont">NiPSParticleSystem</span> objects. At load time,
+the scene graph for the main Metal Wars scene file is traversed
+looking for a tagged object with a specific name tag. All
+<span class="NDLSystemFont">NiPSParticleSystem</span> child
+objects beneath this node are converted to work as <span class=
+"NDLSystemFont">Sparks</span>.</p>
+
+<h2>TerrainManager</h2>
+
+<p><span class="NDLSystemFont">TerrainManager</span> loads and
+manages a separate NIF file that is assumed to contain only a
+single object that represents just the ground geometry that
+should be picked against (via <span class=
+"NDLSystemFont"><a href="../../Reference/NiCollision/NiPick.htm">NiPick</a></span>)
+to determine height placement for objects above the terrain. The
+<span class="NDLSystemFont">TerrainManager</span> is created and
+initialized by the <span class=
+"NDLSystemFont">WorldManager</span>.</p>
+
+<p>The <span class="NDLSystemFont">TerrainManager</span> is used
+by the Killbot (primarily in <span class=
+"NDLSystemFont">Killbot::UpdateCollisionBasedPosition</span>) to
+ground the soldier on the terrain. It is also used by the
+<span class="NDLSystemFont">CameraController</span> to prevent
+the camera from going through the ground.</p>
+
+<p>The <span class="NDLSystemFont">TerrainManager</span> is
+dependent on only the <span class=
+"NDLSystemFont">WorldManager</span> solely for debug logging
+purposes.</p>
+
+<h2>WorldManager</h2>
+
+<p><span class="NDLSystemFont">WorldManager</span> is the main
+"operations hub" for the Metal Wars demo. As mentioned in the
+<span class="NDLSystemFont">MetalWars</span> class description,
+the <span class="NDLSystemFont">WorldManager</span> is used to
+create the world (as called in <span class=
+"NDLSystemFont">MetalWars::CreateScene</span>) and handle the
+application's run-time processing via several <span class=
+"NDLSystemFont">WorldManager</span> interface calls in
+<span class="NDLSystemFont">MetalWars::OnIdle</span>. The
+<span class="NDLSystemFont">WorldManager</span> is globally
+available via a static <span class=
+"NDLSystemFont">WorldManager::Get</span> function.</p>
+
+<p><span class="NDLSystemFont">WorldManager</span> maintains
+sub-managers (and accessor functions) for the other MetalWars
+application classes that are effectively globally accessible to
+the entire application. Therefore <span class=
+"NDLSystemFont">WorldManager</span> is dependent on most of the
+other classes in the MetalWars application.</p>
+
+<h2>ZPassSorter</h2>
+
+<p><span class="NDLSystemFont">ZPassSorter</span> is used to do
+z-only pass drawing in Metal Wars. The z-only pass technique can
+be useful in some applications to improve performance. Search
+<a href="http://developer.nvidia.com" target=
+"_blank">developer.nvidia.com</a> for "z-only pass" for more
+details on this technique. By default "z pass" operations are not
+enabled in Metal Wars as it does not make a significant positive
+impact on performance due to the object complexity of the
+scene.</p>
+
+<p><span class="NDLSystemFont">ZPassSorter</span> is a
+straightforward accumulator that is only active when the demo has
+z-only pass rendering enabled. It handles the job of disabling
+color writes in <span class=
+"NDLSystemFont">StartAccumulating</span>, then doing a shader
+swap on objects as it encounters them in <span class=
+"NDLSystemFont">RegisterObjectArray</span>, replacing any
+existing shader with a very basic, minimal expense, shader. After
+it draws an object, it restores the object's original shader. In
+<span class="NDLSystemFont">FinishAccumulating</span>, it
+re-enables color writes in the renderer.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

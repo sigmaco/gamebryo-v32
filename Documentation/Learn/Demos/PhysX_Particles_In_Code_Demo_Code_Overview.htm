@@ -1,0 +1,236 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>PhysX Particles-In-Code Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>PhysX Particles-In-Code Demo Code Overview</h1>
+
+<p>This section details the functionality of significant member
+functions in the application class, <span class=
+"NDLSystemFont">PhysXParticles</span>.</p>
+
+<h2>PhysXParticles::Initialize</h2>
+
+<p><span class="NDLSystemFont">Initialize</span> first creates the
+PhysX SDK object via the <span class="NDLSystemFont"><a href=
+"../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">efdPhysX::PhysXSDKManager::Initialize</a></span>
+function. We must create the PhysX SDK before calling
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/NiSample.htm">NiSample::Initialize</a></span>
+because the latter creates PhysX objects via <span class=
+"NDLSystemFont">CreateScene</span>. We also set several SDK
+parameters, including turning off debug visualization. After
+<span class="NDLSystemFont">NiSample::Initialize</span> we
+prepare the scene graph and get the asynchronous simulation
+started.</p>
+
+<h2>PhysXParticles::CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> calls all of
+the top-level object creation functions. It is also responsible
+for creating the PhysX scene object. After <span class=
+"NDLSystemFont">NiSample::CreateScene</span> and background color
+setting, the function creates the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>
+object which will be used to interface the PhysX scene and the
+Gamebryo scene. We then create the <span class=
+"NDLSystemFont">NxScene</span> object, using hardware if we
+detect it. We then associate the <span class=
+"NDLSystemFont">NxScene</span> with the <span class=
+"NDLSystemFont">NiPhysXScene</span>. A snapshot is required to
+support reset, so we create one here and add information about
+the scene.</p>
+
+<p>At this point we are ready to populate the scene with actors,
+but first we get a material index to use for all the actors. The
+particle system is a prop - a collection of PhysX content that
+appears as a unit in scene. We create the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystemProp.htm">
+NiPhysXPSMeshParticleSystemProp</a></span> object to hold the
+prop data, and create a snapshot <a href=
+"../../Reference/NiPhysX/NiPhysXPropDesc.htm"><span class=
+"NDLSystemFont">NiPhysXPropDesc</span></a> object, which will be
+used to enable reset. Functions are then called to create the
+planar boundaries of the space, the box and the particle system.
+The prop is added to the scene when all the content has been
+created. Addition of the prop to the scene causes all the PhysX
+content to be created in the <span class=
+"NDLSystemFont">NxScene</span> object.</p>
+
+<p>The function finishes by creating a light and setting several
+parameters on the <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span>.
+This enables updating of destinations, sets fixed timing,
+interpolation of state (although only the cube's state will be
+interpolated, not the particles), and turns off debug
+rendering.</p>
+
+<p>At the end of <span class="NDLSystemFont">CreateScene</span>
+we prepare a screen texture to show while running up the particle
+system.</p>
+
+<h2>PhysXParticles::CreateBox</h2>
+
+<p><span class="NDLSystemFont">CreateBox</span> makes a simple
+box using the geometry factory to produce Gamebryo geometry for
+the PhysX box shape, and then sets up a typical dynamic actor. We
+assign it to collision group 1, which is the "non-particles"
+group in this application. The box is added to the PhysX prop and
+the snapshot, and a destination is added to extract state from it
+for the Gamebryo object.</p>
+
+<h2>PhysXParticles::CreatePlane</h2>
+
+<p><span class="NDLSystemFont">CreatePlane</span> makes a static
+plane which is optionally rendered. We assign it to collision
+group 1, which is the "non-particles" group in this application.
+The plane is added to the PhysX scene but, because it is static,
+there is no need to add any ties to the Gamebryo scene, so it is
+not added to the prop.</p>
+
+<h2>PhysXParticles::CreatePSys</h2>
+
+<p>The first step in creating a PhysX-based particle system is to
+create the particle system scene graph node. In this case we
+create a <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystem.htm">
+NiPhysXPSMeshParticleSystem</a></span> because we want to render
+the particles as small balls. We specify mesh and actor pool
+creation on load and a pool size as large as the maximum particle
+count. In practice, this will fill the actor pools once a PhysX
+scene is specified. We deliberately delay that in this instance
+because we want to specify the prototypical actor first. If we
+gave the PhysX scene but not the actor then we would not be able
+to fill the pool. We also specify that the PhysX scene and the
+particle system are in the same space (with the identity
+transform in this case) which allows for some optimizations.
+After creating the system we attach it to the scene graph.</p>
+
+<p>The next block of code creates a unit-sphere for the rendered
+particle mesh, which will be scaled by the particle size to match
+the PhysX particle actor size.</p>
+
+<p>At this point we can create the prototypical actor in the form
+of a <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXActorDesc.htm">NiPhysXActorDesc</a></span>
+object. The shape is specified by creating a <span class=
+"NDLSystemFont">NxSphereShapeDesc</span> object and using it to
+set a <span class="NDLSystemFont"><a href=
+"../../Reference/NiPhysX/NiPhysXShapeDesc.htm">NiPhysXShapeDesc</a></span>
+object which is added to the array of shapes for this actor. We
+then create a body using the same basic process. Finally, we
+create the actor descriptor and set all its properties. When
+creating actor descriptors this way we must specify at least one
+pose. For particles the pose values don't matter, but there still
+must be a pose to enable actor creation (we use the identity).
+Particles get collision group 2, which is later set to not
+collide with itself. Hence, particles do not collide with each
+other. The particle actor is specified to the particle system. It
+is also important to specify a region of space in which to place
+the actors of the pool. Creating them all on top of each other
+introduces an enormous performance penalty when PhysX starts up.
+The region should be big enough to contain a pool's worth of
+actors without too much overlap. It should also be some distance
+from other actors in the scene, but not so far as to cause
+problems with the overall size of the scene.</p>
+
+<p>With an actor descriptor in place we can specify the PhysX
+scene for the particle system and implicitly create the actor
+pool. We also set up collision filtering here, so that particles
+collide with other objects but not themselves.</p>
+
+<p>The final task of <span class=
+"NDLSystemFont">CreatePSys</span> is to create an emitter. This
+is a standard Gamebryo particle emitter placed at the bottom of
+the column to fire particles upward.</p>
+
+<h2>PhysXParticles::UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> implements a
+typical asynchronous simulation loop. If simulation is active, it
+first fetches the results from the previous step, which had been
+processing while the previous frame was rendering. The
+destinations are updated to prepare the particle system to update
+the particles from PhysX (the actual work is done during the
+scene graph update for the particle system). We emit any
+additional particles now, after simulation but before updating
+the particle system.</p>
+
+<p>Input is processed after finishing the simulation step. It
+must be done here because actions resulting from input might
+affect the PhysX SDK, which should not be touched while within a
+<span class="NDLSystemFont">simulate/fetchResults</span> pair.
+Because we have already blocked on <span class=
+"NDLSystemFont">FetchResults</span>, we are certain that we are
+not simulating at the time we process input.</p>
+
+<p>If the application is not paused, we start up the next
+simulation step with a time that we guess will be the next frame
+time.</p>
+
+<p>Finally, if we are running-up the particle system we make
+certain that the screen texture is being displayed, otherwise we
+make certain that the scene is being displayed.</p>
+
+<h2>PhysXParticles::SimulateStart</h2>
+
+<p>Before beginning simulation, the <span class=
+"NDLSystemFont">NiPhysXScene</span> needs to know what the time
+is, which is done through a call to <span class=
+"NDLSystemFont">SetFetchTime</span>. We also clear any debug
+geometry that might be left over from a previous simulation step.
+Finally, we start simulation.</p>
+
+<h2>PhysXParticles::SimulateStop</h2>
+
+<p>To stop simulation we call <span class=
+"NDLSystemFont">FetchResults</span> to complete any existing
+simulation and then update the destinations with the results of
+the final step.</p>
+
+<h2>PhysXParticles::SimulationReset</h2>
+
+<p>The <span class="NDLSystemFont">SimulationReset</span>
+function stops the simulation (if running). It resets the
+Gamebryo particle system then restores the PhysX scene from
+snapshot 0, which we created in <span class=
+"NDLSystemFont">CreateScene</span> when the application started.
+We remove any out-dated debug geometry, push the restored actor
+states to the scene graph, and restart simulation with a new
+run-up period.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

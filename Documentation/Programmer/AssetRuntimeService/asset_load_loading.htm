@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Loading Assets with the Asset Factory Manager</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="TCR" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Loading Assets with the Asset Factory Manager</h1>
+
+<p>Most assets are loaded by services that ship with Gamebryo and applications use the APIs of
+those services to control asset loading. However, authors of new services or those modifying
+existing services may need to load assets from application code. This page describes how, assuming
+that a loader for the asset type and the related messages already exist. The <a href=
+"asset_runtime_customize_asset_loaders.htm">custom asset loaders</a> page describes the creation of
+new loaders. The examples on this page are taken from the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_input_svc.htm">Input Service</a> code that loads
+input action maps.</p>
+
+<h2>Application Setup for Asset Loading</h2>
+
+<p>All applications must create an instance of the <a href=
+"../../Reference/QuickRef_Services/svc_qckref_asset_factory_mgr.htm">Asset Factory Manager</a> and
+register it with the <a href="../../Reference/efd/efd__ServiceManager.htm">Service Manager</a>.
+This step is necessary even when using existing system services to load assets.</p>
+<pre>
+    AssetFactoryManagerPtr spAssetFactoryManager = EE_NEW AssetFactoryManager();
+    m_spServiceManager-&gt;RegisterSystemService(
+        AssetFactoryManager::CLASS_ID,
+        spAssetFactoryManager);
+</pre>
+
+<p>The main thread instance automatically creates the background thread and the instance of the
+Asset Factory Manager running there, and the two instances connect their shared data
+structures.</p>
+
+<p>An asset factory class must be constructed and registered to load the asset of interest. The
+Input Service uses the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__GenericAssetFactory.htm">efd::GenericAssetFactory</a></span> class to
+load a raw buffer.</p>
+<pre>
+    AssetFactoryManager* pAssetFactoryManager =
+        m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::AssetFactoryManager&gt;();
+    m_pAssetFactory = EE_NEW GenericAssetFactory(true);
+    pAssetFactoryManager-&gt;RegisterAssetFactory(MessageCategory(), m_pAssetFactory);
+</pre>
+
+<p>The <span class="NDLSystemFont">ecrInput::InputService::MessageCategory</span> method returns a
+message category used for Input Service messages. In this situation the category is used to tie the
+factory to asset load requests that have a matching response category.</p>
+
+<p>Code that requests a load will typically wish to know when it is complete. To do so, create a
+message handler class for <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__AssetLoadResponse.htm">efd::AssetLoadResponse</a></span> messages. The
+factory for the asset may return a derived class of message, but it is important to handle the base
+class because certain error conditions, such as no factory for the asset, will return the base
+class message with an error code. This is the handler from the Input Service.</p>
+<pre>
+void InputService::HandleAssetLoadResponse(
+    const efd::AssetLoadResponse* pMessage,
+    efd::Category targetChannel)
+{
+    InputActionMapsLoaded* pResponse = EE_NEW InputActionMapsLoaded(pMessage-&gt;GetURN());
+    
+    if (pMessage-&gt;GetResult() != AssetLoadResponse::ALR_Success)
+    {
+        pResponse-&gt;SetSuccess(false);
+        m_pMessageService-&gt;SendLocal(pResponse, MessageCategory());
+        return;
+    }
+    
+    const efd::GenericAssetLoadResponse* pGenericResp =
+        EE_DYNAMIC_CAST(efd::GenericAssetLoadResponse, pMessage);
+    EE_ASSERT(pGenericResp);
+    if (!ParseAllActionMaps(pMessage-&gt;GetURN().c_str(), pGenericResp-&gt;GetAssetData()))
+    {
+        pResponse-&gt;SetSuccess(false);
+    }
+
+    m_pMessageService-&gt;SendLocal(pResponse, MessageCategory());    
+}
+</pre>
+
+<p>The Input Service sends its own response message when the action map is loaded and this handler
+contains the code to do so. Note the check for success of the load, and the cast from a basic
+<span class="NDLSystemFont">AssetLoadResponse</span> to a <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__GenericAssetLoadResponse.htm">efd::GenericAssetLoadResponse</a></span>
+which is the message type returned by the asset factory we will use.</p>
+
+<p>The handler must be registered and the Input Service must subscribe to the messages. Note that
+we handle both the base class and the derived class. And we subscribe to the same category as the
+factory was registered with, because that is the category that responses from the factory will be
+sent on.</p>
+<pre>
+EE_HANDLER(InputService, HandleAssetLoadResponse, AssetLoadResponse);
+
+EE_HANDLER_SUBCLASS(
+    InputService,
+    HandleAssetLoadResponse,
+    AssetLoadResponse,
+    GenericAssetLoadResponse);
+</pre>
+<pre>
+    m_pMessageService-&gt;Subscribe(this, MessageCategory());
+</pre>
+
+<p>Everything is now in place to handle the request and response. The request asks for a urn, and
+specifies the same category as is used for the factory and response handler. Several default
+parameters to message construction are not shown: the message provides no physical location, the
+load should occur in the background, and the load is in-order.</p>
+<pre>
+AssetLoadRequest* pLoadRequest = EE_NEW AssetLoadRequest(urn, MessageCategory());
+m_pMessageService-&gt;SendLocal(pLoadRequest, AssetFactoryManager::MessageCategory());
+</pre>
+
+<h2>Specifying Foreground or Background Loading</h2>
+
+<p>By default, request messages specify background loading. To change this, change the parameter in
+the request message</p>
+<pre>
+AssetLoadRequest* pLoadRequest = EE_NEW AssetLoadRequest(urn, MessageCategory(), "", false);
+m_pMessageService-&gt;SendLocal(pLoadRequest, AssetFactoryManager::MessageCategory());
+</pre>
+
+<p>or change it after creation</p>
+<pre>
+AssetLoadRequest* pLoadRequest = EE_NEW AssetLoadRequest(urn, MessageCategory());
+pLoadRequest-&gt;SetIsBackground(false);
+m_pMessageService-&gt;SendLocal(pLoadRequest, AssetFactoryManager::MessageCategory());
+</pre>
+
+<p>The request may be ignored in cases where the factory cannot load in the requested thread
+(typically for thread safety reasons). The asset will still be loaded, but in the factory's
+required thread.</p>
+
+<h2>Specifying In-Order or Preemptive Loading</h2>
+
+<p>By default, request messages specify in-order loading. With in-order loading, the Asset Factory
+Manager holds messages in queues to ensure that responses are delivered in the same order that
+requests were received. All the existing Gamebryo system services use in-order loading. To change
+this, change the parameter in the request message</p>
+<pre>
+AssetLoadRequest* pLoadRequest = EE_NEW AssetLoadRequest(urn, MessageCategory(), "", true, true);
+m_pMessageService-&gt;SendLocal(pLoadRequest, AssetFactoryManager::MessageCategory());
+</pre>
+
+<p>or change it after creation</p>
+<pre>
+AssetLoadRequest* pLoadRequest = EE_NEW AssetLoadRequest(urn, MessageCategory());
+pLoadRequest-&gt;SetIsPreemptive(true);
+m_pMessageService-&gt;SendLocal(pLoadRequest, AssetFactoryManager::MessageCategory());
+</pre>
+
+<p>Preemptive requests will always be given the opportunity to load before in-order requests. They
+may not be returned first, however, because even pre-emptive loads may be blocked on asset location
+services or other actions. Preemptive requests should be used sparingly to avoid crowding out other
+requests.</p>
+
+<p>The foreground/background and preemptive flags are independent. Any combination is valid.</p>
+
+<h2>Additional Notes</h2>
+
+<p>The request URN is sent to the <a href="asset_locate_svcs_overview.htm">asset location
+system</a> to find the physical location of the requested asset. The system is currently limited to
+urns that map to a single asset.</p>
+
+<p>The asset path in a request should be empty when the asset location services are to be used. If
+non-empty, the Asset Factory Manager will invoke the factory with the provided path, without
+touching the asset location services.</p>
+
+<p>Some asset factories have specific request messages. The Asset Factory Manager does not
+automatically register to receive such requests, so it is the responsibility of the requesting code
+to register the Asset Factory Manager's handler for the message. Here is an example from the
+<span class="NDLSystemFont"><a href="../../Reference/egfLua/egf__LuaScriptFactory.htm">egfLua::LuaScriptFactory</a></span>
+factory:</p>
+<pre>
+EE_HANDLER_SUBCLASS(AssetFactoryManager, AssetLoadRequestHandler,
+                    AssetLoadRequest, ScriptFactoryRequest);
+</pre>
+
+<h2>Asset Factories that Ship with Gamebryo</h2>
+
+<p>The following asset factories ship with Gamebryo and are available for application use, although
+typically they will be accessed via a system service. See the reference documentation for details
+of the request and response messages required for the factory.</p>
+
+<ul>
+    <li><a href="../../Reference/efd/efd__BaseAssetFactory.htm">efd::BaseAssetFactory.htm</a> is
+    not a useable factory, but provides helpful functionality for making background asset locate
+    requests and handling concurrent load requests.</li>
+
+    <li><a href="../../Reference/efd/efd__GenericFactory.htm">efd::GenericFactory</a> for loading
+    data as a raw buffer.</li>
+
+    <li><a href="../../Reference/egf/egf__WorldFactory.htm">egf::WorldFactory</a> for loading block
+    files. Use methods in <a href=
+    "../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a> to load block files from an
+    application.</li>
+
+    <li><a href="../../Reference/egf/egf__EntityFactory.htm">egf::EntityFactory</a> for loading
+    entities. Use methods in <a href=
+    "../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a> to load an entity from an
+    application.</li>
+
+    <li><a href="../../Reference/egf/egf__FlatModelFactory.htm">egf::FlatModelFactory</a> to load
+    flat models. Flat models are automatically loaded as part of block and entity loading.</li>
+
+    <li><a href="../../Reference/egfLua/egf__LuaScriptFactory.htm">egf::LuaScriptFactory</a> to
+    load Lua scripts. Scripts are automatically loaded as part of entity creation.</li>
+
+    <li><a href="../../Reference/ecr/ecr__NIFFactory.htm">ecr::NIFFactory</a> for loading Gamebryo
+    scene graph (nif) files. Use methods in <a href=
+    "../../Reference/ecr/ecr__SceneGraphService.htm">ecr::SceneGraphService</a> to load scene
+    graphs from applications.</li>
+
+    <li><a href=
+    "../../Reference/egmAnimation/egmAnimation__KFMFactory.htm">egmAnimation::KFMFactory</a> for
+    loading Gamebryo animation (kfm) files. Use methods in <a href=
+    "../../Reference/egmAnimation/egmAnimation__AnimationService.htm">egmAnimation::AnimationService</a>
+    to load KFM files, as the factory does not load the NIF file required by the animation.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_load_svcs_overview.htm">Asset Loading Services Overview</a></li>
+
+    <li><a href="asset_load_svcs_how_work.htm">How Asset Loading Services Work</a></li>
+
+    <li><a href="asset_caching.htm">Caching Assets</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

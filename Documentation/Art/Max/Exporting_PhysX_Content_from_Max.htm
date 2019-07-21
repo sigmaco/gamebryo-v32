@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Exporting PhysX Content from Max</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Body)==========================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Exporting PhysX Content from Max</h1>
+
+<p>When a scene is exported using Gamebryo's exporter, 
+ PhysX content associated with a Gamebryo node is added as extra data. 
+ For example, any object tagged as a dynamic rigid body by the Max PhysX 
+ plug-in has extra data in its Gamebryo node stating what type of actor 
+ it is, what its PhysX properties are and what its collision shape is.</p>
+
+<p>To convert this extra data into PhysX objects, such 
+ as actors, joints and fluids, the scene graph must be processed by the 
+ <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor</a> <a href="Scripting_the_Art_Pipeline_in_3ds_Max.htm">tool 
+ plug-in</a>. The result can then be saved using any of the single-NIF 
+ output plug-ins (not multi-NIF plug-ins).</p>
+
+<p>The <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor</a> tool plug-in creates a PhysX prop and a Gamebryo interface 
+ for that prop. Properties such as hardware support for the prop can be 
+ set via the options dialog for the tool plug-in. The options also control 
+ the conversion of particle systems into <a href="PhysX_Based_Particle_Systems_and_Max.htm">PhysX-based 
+ particle systems</a> or <a href="PhysX_Fluids_and_Max.htm">fluids</a>.</p>
+
+<h2>Coordinate Systems</h2>
+
+<p>The PhysX prop that is created by the <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor</a> is in the same coordinate system as the scene root of the 
+ exported Gamebryo scene graph. At run-time, when the prop is introduced 
+ into Gamebryo, the transformation of the PhysX prop will be set to match 
+ the global transformation of the scene graph in the application. The <a 
+ href="../../Programmer/Introduction_to_GamebryoPhysX_Programming.htm">PhysX 
+ Programmer's Guide</a> has details.</p>
+
+<p>By default, Max's System Units are used to determine what scale the simulation within the scene 
+uses. It is recommended that each scene use a consistent system unit. Your system 
+units setting will be used in place of the PhysX Extractor's Scale Factor option to automatically 
+convert the simulation units into meters.</p>
+
+<h2>Additional Tool Plug-ins</h2>
+
+<p>There are three other Tool Plug-ins associated with 
+ PhysX content:</p>
+
+<ul>
+	
+	<li>The <a href="../../Reference/Tool_Plug_ins/PhysX_Cleaner.htm">PhysX 
+ Cleaner</a> tool plug-in removes from nodes the extra data encoding PhysX 
+ content. Use it if your Max scene contains PhysX-enabled objects that 
+ you do not want exported using Gamebryo's exporter. This plug-in is not 
+ required if the <a href="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX 
+ Extractor</a> is in use because the latter removes the extra data as it 
+ processes it.</li>
+	
+	<li>The <a href="../../Reference/Tool_Plug_ins/PhysX_Ragdoll.htm">PhysX 
+ Rag-doll</a> tool plug-in is used to associate a set of rigid bodies defining 
+ a rag-doll with a set of bones for the character the rag-doll will control. Within 3ds Max
+ this will most likely be unnecessary as ragdoll setup is supported directly.</li>
+	
+	<li>The <a href="../../Reference/Tool_Plug_ins/PhysX_Nif_Viewer.htm">PhysX 
+ Viewer</a> tool plug-in launches the <a href="../../Tools/PhysX_NIF_Viewer/Introduction_to_the_PhysX_NIF_Viewer.htm">PhysX 
+ NIF Viewer</a> application for Win32 which is the tool provided for previewing 
+ Gamebryo-PhysX content. Select the &quot;Default PhysX Viewer Script&quot; 
+ as the Custom Viewer in the <a href="Viewer_Selection_Panel.htm">Viewer 
+ Selection Panel</a> to launch this viewer. To launch the PhysX Nif Viewer 
+ on consoles, use the console-specific on-target viewer options.</li>
+</ul>
+
+<h2>Notes</h2>
+
+<h4>Platform Specific Export</h4>
+
+<p>PhysX targets the same platform for mesh cooking as 
+ the renderer is targeting.</p>
+
+<h4>Extra Data</h4>
+
+<p>Internally, the export of PhysX content from Max happens 
+ in two phases. The first phase, inside the Gamebryo Max plug-in, processes 
+ the Max scene to identify content for export. During this processing, 
+ PhysX objects, modifiers and User Props are found and associated
+ with their Gamebryo node counterparts. These Gamebryo nodes are tagged with Extra 
+ Data that encodes everything about the PhysX properties of the node. We 
+ use Extra Data because the plug-in must compile and execute without the 
+ source for the PhysX Max plug-in and Gamebryo's PhysX-specific classes that depend
+ on the PhysX SDK. This process happens 
+ regardless of whether you wish to export the PhysX content: if PhysX content 
+ is present in the Max scene, it always appears as Extra Data in Gamebryo 
+ nodes.</p>
+
+<p>As the scene graph is processed by the export scripts, 
+ the PhysX Extractor tool plug-in looks for the Extra Data in the nodes 
+ and converts it to the NiPhysX objects ready for streaming to NIF. As 
+ it does this, it removes the Extra Data from the nodes so there will be 
+ no PhysX-related Extra Data remaining after the PhysX Extractor has run.</p>
+
+<p>If the PhysX Extractor tool plug-in is not used, the 
+ Extra Data remains in the nodes during streaming. However, the PhysX Cleaner 
+ tool plug-in can be used to remove the Extra Data with no other effects 
+ on the scene graph.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

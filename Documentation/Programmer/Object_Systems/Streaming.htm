@@ -1,0 +1,689 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Streaming</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Streaming</h1>
+
+<p>Streaming provides a way of saving and loading scene 
+ graphs and other Gamebryo objects to and from disk. The streaming system 
+ can also be used to stream Gamebryo objects to and from monolithic memory 
+ buffers. Streaming is implemented by the Gamebryo class <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>. 
+ Saving, loading, and background loading are described below.</p>
+
+<p>The object creation functions necessary to load the 
+ classes in a particular Gamebryo library are automatically registered 
+ when the top-level header file for that library is included in an animation. 
+ For example, if you want to load a NIF file containing <span class="NDLSystemFont">NiAnimation</span> 
+ objects, you must include <span class="NDLSystemFont">NiAnimation.h</span> 
+ in your application.</p>
+
+<h2>NiStream object list</h2>
+
+<p><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ gives an application access to a list of objects that are to be saved 
+ or that have been loaded. The functions that provide access to this list 
+ are:</p>
+
+<pre>
+void InsertObject(NiObject* pkObject);
+void RemoveObject(NiObject* pkObject);
+void RemoveAllObjects();
+NiObject* GetObjectAt(unsigned int i) const;
+unsigned int GetObjectCount() const;
+</pre> 
+
+<h2>Stream Saving</h2>
+
+<p>The file suffix traditionally used by <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ is &quot;NIF&quot;. Saving objects to a NIF file is illustrated by the 
+ code shown below:</p>
+
+<pre>
+NiCamera* pkCamera = &lt;some camera&gt;;
+NiLight* pkLight = &lt;some light&gt;;
+NiNode* pkScene = &lt;some scene graph&gt;;
+ 
+NiStream kStream;
+kStream.InsertObject(pkCamera);
+kStream.InsertObject(pkLight);
+kStream.InsertObject(pkScene);
+kStream.Save("MYFILE.NIF");
+</pre> 
+
+<p>An entire scene graph can be saved by inserting the 
+ root <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ of the scene graph into the stream. Code in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ sees to it that any objects referred to by an object that is inserted 
+ into a stream (for example, a node's children) are also saved.</p>
+
+<p>Note that some issues arise with saving geometric data 
+ as described <a href="Streaming.htm#StreamingOutGeometricData">below</a>.</p>
+
+<h2>Stream Loading</h2>
+
+<p>Loading objects is illustrated by the code shown below:</p>
+
+<pre>
+NiTObjectArray&lt;NiObjectPtr&gt; kObjects;
+NiStream kStream;
+kStream.Load("MYFILE.NIF");
+for (unsigned int i = 0; i &lt; kStream.GetObjectCount(); i++)
+{
+    NiObject* pkObject = kStream.GetObjectAt(i);
+    kObjects.Add(pkObject);
+}
+</pre>
+
+<p>The number of objects indicated by <span class="NDLSystemFont">GetObjectCount</span> will 
+ be the same number of objects that were inserted into the saved stream 
+ by calling <span class="NDLSystemFont">InsertObject</span>. 
+ However, this is only the count of the top-level objects that are manually 
+ registered with the stream. Objects that are streamed implicitly as children 
+ or referenced objects of the ones inserted manually will not appear in 
+ this count or in the array of top-level objects. Furthermore, the order 
+ in which the objects are returned by <span class="NDLSystemFont">GetObjectAt</span> 
+ will be the same order in which the objects were inserted into the stream. 
+ If you do not know how many objects are in a NIF file, or in what order 
+ the objects are stored, you can process them using run-time type information:</p>
+
+<pre>
+NiTObjectArray&lt;NiCameraPtr&gt; kCameras;
+NiTObjectArray&lt;NiLightPtr&gt; kLights;
+NiTObjectArray&lt;NiNodePtr&gt; kScenes;
+NiStream kStream;
+kStream.Load("MYFILE.NIF");
+for (unsigned int i = 0; i &lt; kStream.GetObjectCount(); i++)
+{
+    NiObject* pkObject = kStream.GetObjectAt(i);
+    if (NiIsKindOf(NiCamera, pkObject))
+        kCameras.Add((NiCamera*) pkObject);
+    else if (NiIsKindOf(NiLight, pkObject))
+        kLights.Add((NiLight*) pkObject);
+    else if (NiIsKindOf(NiNode, pkObject))
+        kScenes.Add((NiNode*) pkObject);
+    else
+    {
+        // unknown object, handle it somehow
+    }
+}
+</pre>
+
+<a name=Background_Loading></a><h2>Background Loading</h2>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+            <div class="NDLNote">When working with the Game Framework, the background
+            loading services provided by the
+            <a href="../AssetRuntimeService/asset_load_svcs_overview.htm">Asset Loading Services</a>
+            should be used. Almost all asset types are background loaded by default in the
+            Game Framework. The following discussion applies only to applications built
+            on the Core Runtime alone.
+            </div>
+        </td>
+    </tr>
+</table> 
+
+<p>The previous section demonstrated how to use <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ to load a NIF file synchronously. The application blocks while waiting 
+ for the file to be loaded. Background loading provides a way to load a 
+ NIF file asynchronously. The application can continue to do other things, 
+ such as display a loading progress bar, while the file is loading. The 
+ following declarations from the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ class define the background loading interface:</p>
+
+<pre>
+enum ThreadStatus
+{
+    IDLE,
+    LOADING,
+    CANCELLING,
+    PAUSING,
+    PAUSED
+};
+ 
+struct LoadState
+{
+    float m_fReadProgress; // [0.0f..1.0f]
+    float m_fLinkProgress; // [0.0f..1.0f]
+};
+ 
+void BackgroundLoadBegin(const char* pcFileName);
+void BackgroundLoadBegin(NiBinaryStream* pkIstr);
+ThreadStatus BackgroundLoadPoll(LoadState* pkState);
+void BackgroundLoadPause();
+void BackgroundLoadResume();
+void BackgroundLoadCancel();
+bool BackgroundLoadFinish();
+bool BackgroundLoadGetExitStatus() const;
+virtual void BackgroundLoadOnExit();
+</pre>
+
+<p>The global function <span class="NDLSystemFont"><a href="../../Reference/NiSystem/Platform_Independent_Wrappers_For_System_Routines.htm">NiSleep</a></span>, 
+ which is declared in <span class="NDLSystemFont">NiSystem.h</span>, 
+ is an important component of the background loading system:</p>
+
+<p><span class="NDLSystemFont">void NiSleep(unsigned int uiMilliseconds);</span></p>
+
+<p>An application begins a background load by calling either 
+ version of <span class="NDLSystemFont">BackgroundLoadBegin</span>. 
+ The background load runs in a separate thread with a lower priority than 
+ the thread that created it. </p>
+
+<p><span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ returns the status of the most recently launched background load. The 
+ following values, enumerated in <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>, 
+ define the possible states:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">IDLE</span>: No background 
+ load is in process. Either no background load has been launched or the 
+ most recently launched background load has finished.</li>
+	
+	<li><span class="NDLSystemFont">LOADING</span>: 
+ The most recently launched background load is still in progress. If the 
+ <span class="NDLSystemFont">pkState</span> argument to <span 
+ class="NDLSystemFont">BackgroundLoadPoll</span> is not <span 
+ class="NDLSystemFont">NULL</span>, it will be filled in 
+ with data that provides more information about the progress of the load. 
+ When a background load begins, <span class="NDLSystemFont">pkState-&gt;m_fReadProgress</span> 
+ and <span class="NDLSystemFont">pkState-&gt;m_fLinkProgress</span> 
+ are both <span class="NDLSystemFont">0.0</span>. As the 
+ NIF file is read into memory, <span class="NDLSystemFont">m_fReadProgress</span> 
+ increases from <span class="NDLSystemFont">0.0</span> to 
+ <span class="NDLSystemFont">1.0</span>. After <span class="NDLSystemFont">m_fReadProgress</span> 
+ reaches <span class="NDLSystemFont">1.0</span>, <span class="NDLSystemFont">m_fLinkProgress</span> 
+ will increase from <span class="NDLSystemFont">0.0</span> 
+ to <span class="NDLSystemFont">1.0</span> as the linking 
+ code runs, doing work such as making scene graph connections. The relative 
+ speeds of the reading and linking steps depend on the speed of the medium 
+ from which the NIF file is read. For example, the reading time will take 
+ a larger percentage of the total load time when reading from a CD than 
+ it will when reading from a hard disk. It is not necessarily true that 
+ a load has finished when <span class="NDLSystemFont">m_fReadProgress</span> 
+ and <span class="NDLSystemFont">m_fLinkProgress</span> are 
+ <span class="NDLSystemFont">1.0</span>. You must wait until 
+ the state changes to IDLE.</li>
+	
+	<li><span class="NDLSystemFont">PAUSING</span>: 
+ A call to <span class="NDLSystemFont">BackgroundLoadPause</span> has signalled 
+ this thread to pause at the next possible point. Background loads must 
+ wait for certain synchronization points to pause to insure that they can 
+ safely be interrupted.</li>
+	
+	<li><span class="NDLSystemFont">PAUSED</span>: The most recently 
+ launched background has been paused by a call to <span class="NDLSystemFont">BackgroundLoadPause</span>. 
+ It will remain in this state until <span class="NDLSystemFont">BackgroundLoadResume</span>, 
+ <span class="NDLSystemFont">BackgroundLoadCancel</span>, 
+ or <span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ is called.</li>
+	
+	<li><span class="NDLSystemFont">CANCELLING</span>: The application 
+ has requested that the most recently launched background load be cancelled 
+ by calling <span class="NDLSystemFont">BackgroundLoadCancel</span>, 
+ but the cancel request has not yet been processed by the background loading 
+ thread. In order to allow a background loading thread to clean up after 
+ itself, a background loading thread cannot be killed outright. Instead, 
+ a variable is set asking the background loading thread to exit. After 
+ the background loading thread has received and processed the cancel request, 
+ the status returned by <span class="NDLSystemFont">BackgroundLoadPoll</span> 
+ transitions from <span class="NDLSystemFont">CANCELLING</span> 
+ to <span class="NDLSystemFont">IDLE</span>.</li>
+</ul>
+
+<p><span class="NDLSystemFont">BackgroundLoadPause</span> 
+ pauses the thread in which the background load is running. See the above 
+ description of the <span class="NDLSystemFont">PAUSED</span> 
+ state.</p>
+
+<p><span class="NDLSystemFont">BackgroundLoadResume</span> 
+ unpauses a background load which has been paused by a call to <span class="NDLSystemFont">BackgroundLoadPause</span>.</p>
+
+<p><span class="NDLSystemFont">BackgroundLoadCancel</span> 
+ requests that the most recently launched background load be cancelled. 
+ See the above description of the <span class="NDLSystemFont">CANCELLING 
+ </span>state.</p>
+
+<p><span class="NDLSystemFont">BackgroundLoadFinish</span> 
+ blocks until the most recently launched background load finishes. The 
+ return value is <span class="NDLSystemFont">true</span> 
+ if the load succeeded and <span class="NDLSystemFont">false</span> 
+ if it failed.</p>
+
+<p><span class="NDLSystemFont">BackgroundLoadGetExitStatus</span> 
+ returns the exit status of the most recently completed background load: 
+ <span class="NDLSystemFont">true</span> 
+ if the load succeeded and <span class="NDLSystemFont">false</span> 
+ if it failed.</p>
+
+<p><span class="NDLSystemFont">BackgroundLoadOnExit</span> 
+ is a virtual function. The implementation of <span class="NDLSystemFont">NiStream::BackgroundLoadOnExit</span> 
+ does nothing. This function is called by the background loading thread 
+ immediately after it finishes loading the requested file. Application 
+ writers may find it useful to derive their own class from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>, 
+ overload <span class="NDLSystemFont">BackgroundLoadOnExit</span>, 
+ and use their overridden version to do post-loading tasks that are more 
+ appropriately run in the background thread than in the foreground thread 
+ that launched the background load. Examples of typical tasks that would 
+ be performed in an overloaded version of <span class="NDLSystemFont">BackgroundLoadOnExit</span> 
+ include creating property and effect states for the objects in the newly 
+ loaded NIF file and precaching geometry objects from the newly loaded 
+ NIF file.</p>
+
+<p>On all platforms, the thread that performs the background 
+ load is created with a lower priority than the foreground thread that 
+ creates it. This is done to prevent the background thread from ever stealing 
+ cycles from the foreground thread. One implication of this is that, on 
+ most platforms, the background thread will never run unless the foreground 
+ thread yields the processor. The foreground thread can yield the processor 
+ to a background thread by calling the global function <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/Platform_Independent_Wrappers_For_System_Routines.htm">NiSleep</a></span>. 
+ The <span class="NDLSystemFont">uiMilliseconds</span> argument 
+ to <span class="NDLSystemFont"><a href="../../Reference/NiSystem/Platform_Independent_Wrappers_For_System_Routines.htm">NiSleep</a></span> 
+ indicates how long the foreground thread should sleep.</p>
+
+<p>After a background load exits successfully, objects 
+ from the loaded NIF file are accessed exactly as they are after a synchronous 
+ NIF file load. See the previous section for details.</p>
+
+<a name=TextureStreamingOptions></a><h2>Texture Streaming 
+ Options</h2>
+
+<h3>Internal Textures</h3>
+
+<p>NIF files are often saved using internal textures. The 
+ principal advantage of this approach is that each such NIF file contains 
+ everything it needs to load the NIF file at load time.</p>
+
+<p>Textures that are internal to a NIF may be shared, even 
+ across NIF files, but only if the same texture palette is used to load 
+ all those NIF files (either by using the same <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ or by transferring the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ from one <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ to another). This sharing is best managed by the application which knows 
+ when streams may or may not share an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ to minimize the complexity of thread-safety issues.</p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span> 
+ texture objects may be created from either <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> 
+ objects, which are the two main forms of source texture data representation 
+ in Gamebryo.</p>
+
+<p>Platform-specific texture capabilities, available via 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span> 
+ objects, enable platform-specific source texture renderer data to be loaded 
+ directly into a renderer-specific resource at application load time, with 
+ two very beneficial results:</p>
+
+<ul>
+	
+	<li>Improvements in &quot;high 
+ water mark&quot; behavior for texture memory at load time. Specifically, 
+ temporary memory allocations for texture format conversion will not be 
+ required if a platform-specific export option is requested in the art 
+ pipeline.</li>
+	
+	<li>Load time performance 
+ improvements, since there are no texture format conversions (including 
+ texture tiling in the case of Xbox360) at load time.</li>
+</ul>
+
+<p>These capabilities operate on the principle of streaming 
+ persistent versions of source texture renderer data to support platform-specific 
+ texture format conversions for &quot;internal textures&quot; (those included 
+ in a scene's NIF file) at export time.</p>
+
+<p>Assuming that the specific platform can support the 
+ pixel format in question at application load time, the renderer will load 
+ the persistent source texture renderer data directly into a renderer-specific 
+ resource, bypassing the application-level <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> 
+ object and all <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span>-based 
+ texture conversion at load time entirely.</p>
+
+<p>Use of platform-specific textures can reduce the &quot;high 
+ water mark&quot; for each texture by up to 50%, which is an important 
+ consideration, given that the majority of data by volume will likely be 
+ texture data. These savings are especially important on consoles.</p>
+
+<p>To specify platform-specific textures for export from 
+ the art packages, you may select any of the non-generic platform types 
+ with internal textures (include textures in main NIF). Specifically, these 
+ platform-specific internal texture choices include: Xbox360, Playstation3, 
+ and DX9.</p>
+
+<p>A caveat to this approach is that the texture is configured 
+ specifically for a target platform (or graphics card), and may not be 
+ loadable for use with alternative platforms or graphics cards, or with 
+ tools on the PC. If a texture is configured specifically for one target 
+ platform or graphics card, but an attempt is made to load it on a platform 
+ or graphics card that can't support it, <a href="../../Programmer/Texturing/Failures.htm">&quot;error&quot; 
+ replacement textures</a> are used to indicate load-time errors.</p>
+
+<p><b>Note: If application requirements 
+ dictate fully general support of textures within a NIF file on multiple 
+ platforms or graphics cards, then <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>-based 
+ textures should be used</b>, since they enable on the fly texture format 
+ conversions at load time. For example, DX9-specific textures may be problematic, 
+ since there are so many diverse graphics cards your application may have 
+ to support. To specify <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>-based 
+ textures for export from the art packages, you may select &quot;generic&quot; 
+ platform type, but include textures in the main NIF, for example.</p>
+
+<p>Note that each time a platform SDK (for example, Xbox360 XDK 
+ or Playstation3 SDK) changes, there is at least a possibility that the 
+ new SDK will cause textures to be formatted differently on that platform. 
+ It is not likely to happen frequently, but the possibility exists. In 
+ such a case, it may be desirable to re-export Nifs containing platform-specific 
+ textures using exporters built with that platform's most recent SDK version.</p>
+
+<p>Consult the export options for <a href="../../Art/Max/Gamebryo_3ds_max_Export_Options1.htm">3ds 
+ max</a> or <a href="../../Art/Maya/Export_Display_Options.htm">Maya</a> 
+ or the reference information on <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span> 
+ for more details.</p>
+
+<h3>External Textures</h3>
+
+<p>NIF files may also be saved using external textures&mdash;in this case, the NIF file only stores a string path to each of its 
+ textures, not the pixel data itself. This has several advantages, especially 
+ during development. The NIF files are smaller, texture images can be edited 
+ without having to re-export the content, and image files can be shared 
+ across multiple NIFs.</p>
+
+<p>There are several options that allow applications to 
+ customize how the images are located and loaded from these external references. 
+ These two options are the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>'s 
+ <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiTexturePalette</a></span>, 
+ and the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>'s 
+ <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span>. 
+ The basic method used when searching for a texture is as follows:</p>
+
+<ol>
+	
+	<li>Load the filename as 
+ stored in the NIF file</li>
+	
+	<li>For each path returned 
+ by the <span class="NDLSystemFont">SearchPath</span> object
+	
+  	<ul>
+  		
+  		<li>Query for an image 
+   with name path+filename in the <span class="NDLSystemFont">TexturePalette</span></li>
+  		
+  		<li>If a texture with 
+   that name is returned by the <span class="NDLSystemFont">TexturePalette</span>, 
+   DONE</li>
+  	</ul>
+	
+	</li>	
+	
+	<li>For each path returned 
+ by the <span class="NDLSystemFont">SearchPath</span> object
+	
+  	<ul>
+  		
+  		<li>Attempt to find 
+   the file path+filename on disk</li>
+  		
+  		<li>If a texture file 
+   is found at path+filename, DONE</li>
+  	</ul>
+	
+	</li>	
+	
+	<li>Fail the loading of 
+ the texture, leaving no pixel data in the texture&mdash;DONE</li>
+</ol>
+
+<p>While this behavior is hard-coded into the engine, the 
+ <span class="NDLSystemFont">TexturePalette</span> 
+ and <span class="NDLSystemFont">SearchPath</span> 
+ objects both contain app-adjustable settings, and are also based on virtual 
+ functions, allowing advanced applications to completely override the behavior 
+ of either step.</p>
+
+<h4>Image File Search Path</h4>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ contains a pointer to an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span> 
+ object.&nbsp; The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ object's search path can be retrieved or set using:</p>
+
+<p><span class="NDLSystemFont">NiSearchPath* NiStream::GetSearchPath() const<br>
+void iStream::SetSearchPath(NiSearchPath* pkSearchPath</span></p>
+
+<p>Each <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span> 
+ object has a standard set of search paths that it returns whenever queried 
+ by the imaging system.&nbsp; By default, an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ contains a pointer to an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span> 
+ object instance.&nbsp; The reference documentation for NiSystem describes 
+ in detail the paths that objects of this type return.&nbsp; However, one 
+ of the paths that is returned is directly adjustable by the application&mdash;the static &quot;default&quot; path.&nbsp; An application may access 
+ or change the default path for all <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span> 
+ objects using:</p>
+
+<pre>
+static void NiSearchPath::SetDefaultPath(const char* pcPath)
+static const char* NiSearchPath::GetDefaultPath()
+</pre> 
+
+<p>These functions allow the user to set a directory that 
+ will always be searched for the application's textures.&nbsp; More advanced 
+ applications may subclass the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiSystem/NiSearchPath.htm">NiSearchPath</a></span> 
+ class, replacing the functions that return paths with whatever behavior 
+ is desired.&nbsp; Instances of this subclass may then be set upon each 
+ <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ as the search path for that stream.&nbsp; </p>
+
+<h3>Texture Image Palette</h3>
+
+<p>Each <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ contains a pointer to an <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ object, which implements a lookup table interface for mapping image file 
+ names to textures.&nbsp; This ensures that if the same image filename 
+ is used in multiple places in the same NIF file, it will simply share 
+ a single instance of the image.&nbsp; </p>
+
+<p>Sometimes an application wants to create multiple <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ objects and use each of them to load a scene graph. The scene graphs loaded 
+ by the different <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ objects may happen to share some texture images. By default, each <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ object maintains its own individual hash table that independently maps 
+ file names to loaded images. By default, images that could be shared across 
+ the streams will actually be individually loaded (i.e. duplicated) by 
+ the two streams. To allow different stream objects to share the same images, 
+ <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ provides the ability to set the same <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ on multiple streams, using the following accessors:</p>
+
+<pre>
+void SetTexturePalette(NiTexturePalette* pkTexturePalette)
+NiTexturePalette* GetTexturePalette() const
+</pre> 
+
+<p>An even more powerful trick that is available through 
+ the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ class is the ability to replace it.&nbsp; An application can subclass 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span>, 
+ allowing the app to receive the equivalent of a callback each time the 
+ streaming system needs to load a texture from a file.&nbsp; In the most 
+ extreme case, an application could implement their own texture archive 
+ system, loading a single NIF file that contains all of the app's textures 
+ in a single stream load call, and then doling out pointers to these textures 
+ via their own <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span> 
+ subclass as each texture request came in.</p>
+
+<a name=StreamingOutGeometricData></a><h2>Streaming Out Geometric 
+ Data</h2>
+
+<p>With the introduction of <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a> 
+ </span>and <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span>, 
+ the possibility exists that geometric data is loaded directly into memory 
+ not accessible by the CPU for streaming. In these situations, applications 
+ will need to take additional steps to insure that geometric data can be 
+ streamed out to a NIF file. The following options are available:</p>
+
+<ul>
+	
+	<li>Stream with no application 
+ changes - Data without <span class="NDLSystemFont">NiDataStream::ACCESS_CPU_READ</span> 
+ in the access flag will stream out as zeroes instead of the actual data 
+ values. The application will assert.</li>
+	
+	<li>Use the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiDataStreamFactory.htm">NiDataStreamFactory</a></span> 
+ callback to force CPU read access at stream creation - The NIF will stream 
+ out succesfully, but the access flags on the <span class="NDLSystemFont">NiDataStream</span> 
+ objects will be changed which may change application behavior upon reloading 
+ the saved NIF.</li>
+	
+	<li>Load NIF files prior 
+ to creating a renderer to create a streamable version - Since the renderer 
+ overrides the data stream factory, NIF files loaded prior to the renderer 
+ will use <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiToolDataStream.htm">NiToolDataStream</a></span> 
+ objects and be completely streamable. Applications can deep copy the scene 
+ graph to create a renderable version.</li>
+</ul>
+
+<p>For debugging purposes, it is likely acceptable to use 
+ the second option and set the access flag via the <span class="NDLSystemFont">NiDataStreamFactory</span> 
+ callback.</p>
+
+<h2>File Version and File User Version</h2>
+
+<p>Each <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ contains two different version values. When loading, <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ will guarantee the version of the stream is compatible with the current 
+ version of Gamebryo by checking the Min and Max versions. <span class="NDLSystemFont">GetFileVersion()</span> 
+ is used by Gamebryo to insure engine compatible with loading this stream. 
+ <!--kadov_tag{{<spaces>}}-->&nbsp;<span class="NDLSystemFont"><!--kadov_tag{{</spaces>}}-->GetFileUserDefinedVersion()</span> 
+ is also used to handle any necessary version information defined by the 
+ user. Both the file version and the user defined file version must be 
+ correct for the file to load.</p>
+
+<a name=Endianness></a><h2>Endianness</h2>
+
+<p>By default, all <span class="NDLSystemFont">NiStream</span> 
+ objects save in the endianness of the platform upon which the stream saving 
+ code executes (i.e. saving a file with an application running on a PC 
+ will use the PC endianness). However, Gamebryo is capable of loading and 
+ saving objects of either endianness on any platform. However, both loading 
+ and saving operations are more expensive if the selected endianness does 
+ not match that of the platform being used to accomplish the load or save 
+ operation. This is due to the fact that every individual piece of data 
+ that is streamed out must be byte swapped to the desired endianness. This 
+ is a reasonable tradeoff in the case of saving, since it is better to 
+ save a file with the endianness of the target platform, even if it differs 
+ from the endianness of the platform being used to save the file. In most 
+ cases, it is best to make the save operation more expensive (i.e. do the 
+ endian conversion) in order to make the loading operation run in native 
+ endianness.</p>
+
+<p><span class="NDLSystemFont">NiStream</span> provides several 
+ member functions related to endianness:</p>
+
+
+<pre>
+    // Set this stream to save as little/big endian
+    void SetSaveAsLittleEndian(bool bLittle);
+ 
+    // Will this stream save as little endian?
+    bool GetSaveAsLittleEndian();
+ 
+    // Was the file that this stream loaded little endian?
+    bool GetSourceIsLittleEndian();
+</pre>
+ 
+<p>As a side note, the function <span class="NDLSystemFont">NiSystemDesc::GetSystemDesc().IsLittleEndian()</span> 
+ can be used to determine the endianness of the executing platform. This 
+ information allows the above member functions to be set dependent upon 
+ the current platform.</p>
+
+<p>During the course of development for a multi-platform 
+ application, assets for one platform may need to be loaded on another 
+ to facilitate the art pipeline or to more easily test those assets. As 
+ previously mentioned, loading files that were saved in another platform's 
+ endianness is much slower than loading files that are native. Therefore, 
+ at some point, it may be desirable to save out all assets for the particular 
+ platform upon which they will be loaded.</p>
+
+<p>Gamebryo provides a static function, <span class="NDLSystemFont">NiBinaryStream::SetEndianMatchHint(bool 
+ bForceMatch)</span>. If the boolean parameter is false (the default at 
+ Gamebryo startup), then the behavior is to automatically endian-swap loaded 
+ files to the platform's endianness if the endianness of the file does 
+ not match the platform. This is very convenient, but as discussed above 
+ it can lead to slow loading when the file endianness does not match that 
+ of the loading platform. Setting this flag to true will disable swapping. 
+ When set to true, classes that use <span class="NDLSystemFont">NiBinaryStream</span> 
+ will require that the endianness of all loaded files match the endianness 
+ of the platform they are being loaded upon, failing to load those for 
+ which the endianness of the file and that of the loading platform do not 
+ match. It is important to note that this function only provides a hint, 
+ although it is respected by both <span class="NDLSystemFont">NiStream</span> 
+ and <span class="NDLSystemFont">ActorManager</span>. By setting this static 
+ flag, it can become very easy to find files of the wrong endianness that 
+ would otherwise slow the loading process.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

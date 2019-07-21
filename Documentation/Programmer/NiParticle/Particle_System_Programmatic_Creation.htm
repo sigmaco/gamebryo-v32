@@ -1,0 +1,701 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+
+<head>
+
+<title>Particle System Programmatic Creation</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Particle System Programmatic Creation</h1>
+
+<p>Gamebryo includes a powerful and flexible particle system library. In many
+cases, artists will create particle effects in 3ds max or Maya and will export
+them directly into Gamebryo. However, sometimes it may be more appropriate for
+programmers to generate their own programmatic particle system effects. Since
+the <span class="NDLSystemFont">NiParticle</span> library is rather complex, it
+may not be immediately straightforward how to go about doing this. This article
+will explain how to create a simple particle system in code.</p>
+
+<p>The main Gamebryo object that represents a particle system is the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object. This object is derived from <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> and holds arrays of
+per-particle information, such as position, color, rotation, etc. Particle
+simulation is performed in the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span> mesh
+modifier. Emitters, colliders, and forces are implemented with specific
+objects, some of which reside inside simulator steps that are derived from
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorStep.htm">NiPSSimulatorStep</a></span>.
+Animation of modifier parameters over time (including things such as when to
+emit particles) are performed with time controllers attached to the
+<span class="NDLSystemFont">NiPSParticleSystem</span> object and derived from
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSForceCtlr.htm">NiPSForceCtlr</a></span> and
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitterCtlr.htm">NiPSEmitterCtlr</a></span>
+classes.</p>
+
+<p>There are two main types of particle systems in Gamebryo: standard and
+mesh-based. Standard particle systems have a generator mesh modifier attached,
+such as <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span>,
+which is responsible for generating renderable data streams for the particles
+and storing them on the <span class="NDLSystemFont">NiPSParticleSystem</span>
+object. Since <span class="NDLSystemFont">NiPSParticleSystem</span> is derived
+from <span class="NDLSystemFont">NiMesh</span>, these data streams are used to
+directly render particles. Mesh particle systems are represented by the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span>
+object. Mesh particles can be any arbitrary <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>,
+whether a single <span class="NDLSystemFont">NiMesh</span> object or an
+animated hierarchy of objects.</p>
+
+<p>This article describes how to create both types of particle systems:</p>
+
+<ul>
+    <li><a href=
+    "Particle_System_Programmatic_Creation.htm#Creating_a_Standard_Particle_System">
+    Creating a Standard Particle System</a></li>
+
+    <li><a href=
+    "Particle_System_Programmatic_Creation.htm#Creating_a_Mesh_Particle_System">
+    Creating a Mesh Particle System</a></li>
+</ul>
+
+<p>The <a href=
+"../../Learn/Demos/Introduction_to_the_MeshCreation_Demo.htm">MeshCreation
+Demo</a> provides a working sample of the techniques discussed in this
+article.</p><a name="Creating_a_Standard_Particle_System" id=
+"Creating_a_Standard_Particle_System"></a>
+
+<h2>Creating a Standard Particle System</h2>
+
+<p>The first step is to create the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object. A static <span class="NDLSystemFont">Create</span> function is used to
+do this, which takes a variety of parameters defining characteristics about the
+particle system. The maximum number of particles determines the size of all the
+per-particle data arrays and cannot be changed once the particle system has
+been created. It should be set to a value that is as small as possible to
+accommodate all particles that will simultaneously be active. Attempts to emit
+more particles once the limit has been reached will have no effect. This
+particle system is being created with both colors and rotations. Also, the
+particles will be stored in world space. This means that particles will move
+independently of the <span class="NDLSystemFont">NiPSParticleSystem</span>'s
+transformations in the scene graph. It is rare for world-space particles not to
+be used. Finally, a dynamic bounding volume is requested. This causes the
+<span class="NDLSystemFont">Create</span> function to add an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span>
+object to the particle system. By default, the bound updater is set to
+recompute the bounding volume every frame on a subset of the particles each
+frame. This can be customized by getting a pointer to the <span class=
+"NDLSystemFont">NiPSBoundUpdater</span> from the particle system and adjusting
+its parameters or replacing it entirely with a derived class. If desired,
+bounding volume computation can be entirely skipped by supplying false to the
+appropriate <span class="NDLSystemFont">Create</span> function parameter. In
+this case, no bound updater object is added, and you should set the model bound
+of the <span class="NDLSystemFont">NiPSParticleSystem</span> object to be
+appropriate.</p>
+<pre>
+// Create and attach particle system object.
+NiUInt32 uiMaxNumParticles = 120;
+AlignMethod eNormalMethod = ALIGN_CAMERA;
+NiPoint3 kNormalDirection = NiPoint3::ZERO;
+AlignMethod eUpMethod = ALIGN_CAMERA;
+NiPoint3 kUpDirection = NiPoint3::ZERO;
+bool bHasLivingSpawner = false;
+bool bHasColors = true;
+bool bHasRotations = true;
+bool bHasAnimatedTextures = false;
+bool bWorldSpace = true;
+bool bDynamicBounds = true;
+bool bCreateDefaultGenerator = true;
+bool bAttachMeshModifiers = true;
+NiPSParticleSystem* pkStandardPSys = NiPSParticleSystem::Create(
+    uiMaxNumParticles,
+    eNormalMethod,
+    kNormalDirection,
+    eUpMethod,
+    kUpDirection,
+    bHasLivingSpawner,
+    bHasColors,
+    bHasRotations,
+    bHasAnimatedTextures,
+    bWorldSpace,
+    bDynamicBounds,
+    bCreateDefaultGenerator,
+    bAttachMeshModifiers);
+m_spScene-&gt;AttachChild(pkStandardPSys);
+</pre>
+
+<p>Calling the <span class="NDLSystemFont">Create</span> function as shown
+above will automatically attach an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span>
+mesh modifier to the particle system. If a different particle generator is
+preferred, the default generator should not be created and the particle
+generator should be attached to the particle system object after creation.</p>
+
+<p>The next step is to add the desired properties to the particle system
+object. These will control the rendering of all particles, specifying things
+such as z-buffer, stencil, and texturing parameters. Standard particle systems
+use these properties when rendering, but mesh particle systems do not. Instead,
+mesh particles are rendered with whatever properties are attached to the master
+particle for that mesh. For the purposes of this example, a vertex color
+property is added to turn off lighting and set the vertex colors to be
+emissive.</p>
+<pre>
+// Create and add vertex color property.
+NiVertexColorProperty* pkVertColorProp = NiNew NiVertexColorProperty;
+pkVertColorProp-&gt;SetLightingMode(NiVertexColorProperty::LIGHTING_E);
+pkVertColorProp-&gt;SetSourceMode(NiVertexColorProperty::SOURCE_EMISSIVE);
+pkStandardPSys-&gt;AttachProperty(pkVertColorProp);
+</pre>
+
+<p>What we now have is a particle system that will function but that contains
+no particles. In order for the system to generate particles, an emitter must be
+added. The simplest emitter is an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSBoxEmitter.htm">NiPSBoxEmitter</a></span>,
+which emits each particle from a random location within a specified rectangular
+volume. The emitter object holds all the information about how particles should
+be emitted, such as the direction of emission, their initial speeds, and their
+initial sizes. The emitter references an external <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> that represents
+the position and orientation of the emitter. This object could already exist in
+the scene graph or could even be the <span class=
+"NDLSystemFont">NiPSParticleSystem</span> object itself. In this example, a new
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiNode.htm">NiNode</a></span> is created to represent
+the emitter position.</p>
+<pre>
+// Create and attach emitter node.
+NiNode* pkEmitterNode = NiNew NiNode;
+pkEmitterNode-&gt;SetTranslate(-10.0f, 2.0f, 0.0f);
+m_spScene-&gt;AttachChild(pkEmitterNode);
+
+// Create and add emitter.
+NiFixedString kEmitterName("Box Emitter");
+float fEmitterWidth = 2.0f;
+float fEmitterHeight = 2.0f;
+float fEmitterDepth = 2.0f;
+float fSpeed = 10.0f;
+float fSpeedVar = 2.5f;
+float fSpeedFlipRatio = 0.0f;
+float fDeclination = 0.0f;
+float fDeclinationVar = NI_PI * 0.25f;
+float fPlanarAngle = 0.0f;
+float fPlanarAngleVar = NI_PI;
+float fSize = 2.0f;
+float fSizeVar = 0.0f;
+float fLifeSpan = 2.0f;
+float fLifeSpanVar = 1.0f;
+float fRotAngle = 0.0f;
+float fRotAngleVar = 2.0f * NI_PI;
+float fRotSpeed = NI_PI;
+float fRotSpeedVar = NI_PI;
+bool bRandomRotSpeedSign = true;
+NiPoint3 kRotAxis(NiPoint3::ZERO);
+bool bRandomRotAxis = true;
+pkStandardPSys-&gt;AddEmitter(NiNew NiPSBoxEmitter(
+    kEmitterName,
+    fEmitterWidth,
+    fEmitterHeight,
+    fEmitterDepth,
+    pkEmitterNode,
+    fSpeed,
+    fSpeedVar,
+    fSpeedFlipRatio,
+    fDeclination,
+    fDeclinationVar,
+    fPlanarAngle,
+    fPlanarAngleVar,
+    fSize,
+    fSizeVar,
+    fLifeSpan,
+    fLifeSpanVar,
+    fRotAngle,
+    fRotAngleVar,
+    fRotSpeed,
+    fRotSpeedVar,
+    bRandomRotSpeedSign,
+    kRotAxis,
+    bRandomRotAxis));
+</pre>
+
+<p>The emitter contains information about how to emit particles, but it does
+not contain any information about when to do so. It is, of course, possible to
+programmatically emit particles from your application by calling the
+<span class="NDLSystemFont">EmitParticles</span> function directly on the
+emitter. This function must be provided with the current time, the number of
+particles to emit, and an array of initial particle ages (to simulate emission
+of particles between frames).</p>
+<pre>
+// Programmatically emit particles from the emitter.
+float fTime = m_fAccumTime;
+NiUInt32 uiNumParticles = 5;
+float* pfAges = NiAlloc(float, uiNumParticles);
+pfAges[0] = 0.4f;
+pfAges[1] = 0.3f;
+pfAges[2] = 0.2f;
+pfAges[3] = 0.1f;
+pfAges[4] = 0.0f;
+pkEmitter-&gt;EmitParticles(fTime, uiNumParticles, pfAges); 
+</pre>
+
+<p>The more automatic way to emit particles, however, is to create and attach
+an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">NiPSEmitParticlesCtlr</a></span>
+object. This time controller holds two interpolators: one to control the
+emission rate (in particles per second) and another to specify when the emitter
+is active. In this example, we will create a controller that specifies an
+emission rate that is always 30 particles per second but that runs from time
+-2.0 to time 1.0 and then from time 2.0 to time 3.0. It will also be set to
+loop. The negative time is used here to ensure that particles already exist at
+time 0.0 when rendering begins to give the appearance that the emitter has been
+emitting particles for some time. This requires running up the particle system
+from that negative time to 0.0 prior to rendering anything, as is done
+below.</p>
+<pre>
+// Create a particle emission controller that has a fixed birth rate of
+// 30.0 particles per second and is active from time -2.0 to time 1.0 and
+//  from time 2.0 to time 3.0.
+float fBirthRate = 30.0f;
+NiFloatInterpolator* pkBirthRateInterpolator = NiNew NiFloatInterpolator(
+    fBirthRate);
+NiUInt32 uiNumEmitterActiveKeys = 4;
+NiStepBoolKey* pkEmitterActiveKeys =
+    NiNew NiStepBoolKey[uiNumEmitterActiveKeys];
+pkEmitterActiveKeys[0].SetTime(-2.0f);
+pkEmitterActiveKeys[0].SetBool(true);
+pkEmitterActiveKeys[1].SetTime(1.0f);
+pkEmitterActiveKeys[1].SetBool(false);
+pkEmitterActiveKeys[2].SetTime(2.0f);
+pkEmitterActiveKeys[2].SetBool(true);
+pkEmitterActiveKeys[3].SetTime(3.0);
+pkEmitterActiveKeys[3].SetBool(false);
+NiBoolData* pkEmitterActiveData = NiNew NiBoolData;
+pkEmitterActiveData-&gt;ReplaceAnim(pkEmitterActiveKeys,
+    uiNumEmitterActiveKeys, NiBoolKey::STEPKEY);
+NiBoolInterpolator* pkEmitterActiveInterpolator = NiNew NiBoolInterpolator(
+    pkEmitterActiveData);
+NiPSEmitParticlesCtlr* pkEmitParticlesCtlr = NiNew NiPSEmitParticlesCtlr(
+    kEmitterName);
+pkEmitParticlesCtlr-&gt;SetBirthRateInterpolator(pkBirthRateInterpolator);
+pkEmitParticlesCtlr-&gt;SetEmitterActiveInterpolator(
+    pkEmitterActiveInterpolator);
+pkEmitParticlesCtlr-&gt;ResetTimeExtrema();
+pkEmitParticlesCtlr-&gt;SetCycleType(NiTimeController::LOOP);
+pkEmitParticlesCtlr-&gt;SetTarget(pkStandardPSys);
+</pre>
+
+<p>So, we have a particle system that will properly emit particles over time.
+Now we can customize its behavior. First, we'll animate the size of the
+particle over its lifetime. This is done by adding animation keys to the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">NiPSSimulatorGeneralStep</a></span>
+simulator step, which can be obtained from the particle system simulator using
+the <span class="NDLSystemFont">NiGetSimulatorStep</span> macro.</p>
+<pre>
+// Start the particle with a size of 0. Have it grow to twice its size
+// by the time its life is half over. Then have it start shrinking to 
+// its original size by the time it dies.
+NiPSSimulatorGeneralStep* pkGeneralStep = NiGetSimulatorStep(
+    NiPSSimulatorGeneralStep, pkStandardPSys-&gt;GetSimulator());
+NIASSERT(pkGeneralStep);
+NiUInt8 ucNumSizeKeys = 3;
+NiPSKernelFloatKey* pkSizeKeys = NiAlloc(NiPSKernelFloatKey,
+    ucNumSizeKeys);
+pkSizeKeys[0].m_fTime = 0.0f;
+pkSizeKeys[0].m_fValue = 0.0f;
+pkSizeKeys[1].m_fTime = 0.5f;
+pkSizeKeys[1].m_fValue = 2.0f;
+pkSizeKeys[2].m_fTime = 1.0f;
+pkSizeKeys[2].m_fValue = 1.0;
+pkGeneralStep-&gt;CopySizeKeys(pkSizeKeys, ucNumSizeKeys);
+NiFree(pkSizeKeys); 
+</pre>
+
+<p>It is possible to have each particle change color throughout its lifetime.
+This is done by adding animation keys to the <span class=
+"NDLSystemFont">NiPSSimulatorGeneralStep</span> simulator step. The keys
+animate the color of each particle throughout its lifetime. The time for each
+key must be between 0.0 and 1.0 and represents the ratio of the particle's
+life.</p>
+<pre>
+// Add color animation keys to the particle system. Note that the
+// CopyColorKeys function does not take ownership of the animation key
+// array, so the array must be deleted after the keys have been set.
+NiUInt8 ucNumColorKeys = 3;
+NiPSKernelColorKey* pkColorKeys = NiAlloc(NiPSKernelColorKey,
+    ucNumColorKeys);
+pkColorKeys[0].m_fTime = 0.0f;
+pkColorKeys[0].m_kColor = NiRGBA::WHITE;
+pkColorKeys[1].m_fTime = 0.5f;
+pkColorKeys[1].m_kColor = NiRGBA(255, 0, 0, 255);
+pkColorKeys[2].m_fTime = 1.0f;
+pkColorKeys[2].m_kColor = NiRGBA::BLACK;
+pkGeneralStep-&gt;CopyColorKeys(pkColorKeys, ucNumColorKeys);
+NiFree(pkColorKeys);
+</pre>
+
+<p>We'll add an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSGravityForce.htm">NiPSGravityForce</a></span>
+object simulate a gravity force in the downward direction. The gravity force
+also relies on an external <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> to define the
+position and direction of the gravity force. Rather than creating a new node
+for this purpose, we will re-use the node created to represent the emitter
+position. The force must be added to the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorForcesStep.htm">NiPSSimulatorForcesStep</a></span>
+simulator step, which is again obtained from the particle system simulator with
+the <a href="../../Reference/NiParticle/NiPSSimulator.htm"><span class=
+"NDLSystemFont">NiGetSimulatorStep</span></a> macro.</p>
+<pre>
+// Add a gravity force. We will indicate the gravity direction as being
+// along the negative z-axis.
+NiPSSimulatorForcesStep* pkForcesStep = NiGetSimulatorStep(
+    NiPSSimulatorForcesStep, pkStandardPSys-&gt;GetSimulator());
+NIASSERT(pkForcesStep);
+NiPoint3 kGravityAxis = -NiPoint3::UNIT_Z;
+float fDecay = 0.0f;
+float fStrength = 9.8f;
+NiPSForceDefinitions::GravityData::ForceType eForceType =
+    NiPSForceDefinitions::GravityData::FORCE_PLANAR;
+float fTurbulence = 0.0f;
+float fTurbulenceScale = 1.0f;
+pkForcesStep-&gt;AddForce(NiNew NiPSGravityForce(
+    "Gravity",
+    pkEmitterNode,
+    kGravityAxis,
+    fDecay,
+    fStrength,
+    eForceType,
+    fTurbulence,
+    fTurbulenceScale));
+</pre>
+
+<p>Finally, we'll add an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSPlanarCollider.htm">NiPSPlanarCollider</a></span>
+object to provide a plane at which the particles will collide against. The
+collider relies on an external <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> to define the
+origin. Rather than creating a new node for this purpose, we will re-use the
+node created to represent the colliders position. The collider must be added to
+the <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorCollidersStep.htm">NiPSSimulatorCollidersStep</a></span>
+simulator step, which is again obtained from the particle system simulator with
+the <a href="../../Reference/NiParticle/NiPSSimulator.htm"><span class=
+"NDLSystemFont">NiGetSimulatorStep</span></a> macro.</p>
+<pre>
+// Add a colliding plane. We will position the collider centered around the given node.
+NiPSSimulatorCollidersStep* pkColliderStep = NiGetSimulatorStep(
+    NiPSSimulatorCollidersStep, pkStandardPSys-&gt;GetSimulator());
+NIASSERT(pkColliderStep);
+float fBounce = 1.0f;
+bool bSpawnOnCollide = false;
+bool bDieOnCollide = false;
+NiPSSpawner* pkSpawner = NULL;
+float fWidth = 10.0f;
+float fHeight = 10.0f;
+NiPoint3 kXAxis = NiPoint3::UNIT_X;
+NiPoint3 kYAxis = NiPoint3::UNIT_Y;
+pkColliderStep-&gt;AddCollider(NiNew NiPSPlanarCollider(
+    fBounce,
+    bSpawnOnCollide,
+    bDieOnCollide,
+    pkSpawner,
+    pkEmitterNode
+    fWidth,
+    fHeight,
+    kXAxis,
+    kYAxis));
+</pre>
+
+<p>At this point, we have a fully functional standard particle effect that was
+created entirely in code. Since the emit particles controller was set to start
+at a negative time, our application must detect this negative time upon
+initialization and update the particle system at regular intervals from that
+time until time 0.0 so that particles will already exist in the system when
+rendering begins. This is known as "running up" the particle system. The
+minimum time for any time controllers in the scene can be obtained with
+<span class="NDLSystemFont">NiTimeController::GetMinBeginKeyTime</span>. See
+the <a href=
+"Particle_System_Main_Object.htm#Running_Up_a_Particle_System">Running Up a
+Particle System</a> section for more information.</p>
+<pre>
+// Run up the particle systems.
+float fMinKeyTime = NiTimeController::GetMinBeginKeyTime(m_spScene);
+for (float fTime = fMinKeyTime; fTime &lt; 0.0f; fTime += MAX_FRAME_TIME)
+{
+    m_spScene-&gt;Update(fTime);
+} 
+</pre>
+
+<p>Creating a mesh particle system is similar to creating a standard particle
+system but has some additional steps. This is covered in the next
+section.</p><a name="Creating_a_Mesh_Particle_System" id=
+"Creating_a_Mesh_Particle_System"></a>
+
+<h2>Creating a Mesh Particle System</h2>
+
+<p>For a mesh particle system, we need to create an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span>
+object instead of an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object. In this case, we don't need colors, but we do want the mesh particles
+to rotate. Colors will be provided by the master particles that we will be
+loading from disk. Parameters that affect the pool allocation of mesh particles
+can also be specified to the Create function here, but in this case we will
+accept the default pool size. The number of generations is specified to be 2
+because we will be adding two master particles later on.</p>
+<pre>
+// Create the NiPSMeshParticleSystem object and attach it in the scene
+// graph. The default pool size is used, and the number of generations is
+// set to 2.
+NiUInt32 uiMaxNumParticles = 40;
+AlignMethod eNormalMethod = ALIGN_LOCAL_FIXED;
+NiPoint3 kNormalDirection = NiPoint3::UNIT_X;
+AlignMethod eUpMethod = ALIGN_LOCAL_VELOCITY;
+NiPoint3 kUpDirection = NiPoint3::ZERO;
+bool bHasLivingSpawner = false;
+bool bHasColors = false;
+bool bHasRotations = true;
+bool bWorldSpace = true;
+bool bDynamicBounds = true;
+bool bAttachMeshModifiers = true;
+NiUInt32 uiPoolSize = NiPSMeshParticleSystem::DEFAULT_POOL_SIZE;
+NiUInt16 usNumGenerations = 2;
+bool bAutoFillPools = false;
+NiPSMeshParticleSystem* pkMeshPSys = NiPSMeshParticleSystem::Create(
+    uiMaxNumParticles,
+    bHasColors,
+    bHasRotations,
+    bWorldSpace,
+    bDynamicBounds,
+    bAttachMeshModifiers,
+    uiPoolSize,
+    usNumGenerations,
+    bAutoFillPools);
+m_spScene-&gt;AttachChild(pkMeshPSys);
+</pre>
+
+<p>Each mesh particle system stores a set of master particles, which are
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> pointers that may
+refer to a single <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> object or could refer to
+an entire scene graph. Each mesh particle is a clone of one of these master
+particles. Since we want our particle system to spawn a different mesh when the
+particles die, we will add two master particles to the system. These meshes are
+loaded from an external NIF file here but could simply be objects already in
+the scene graph. Master particles may contain animations. In this case, the
+"Teapot" mesh has its diffuse color animated from time 0.0 to 1.0. Each mesh
+particle will be updated with its age (ranging from 0.0 to 1.0), so this will
+result in each "Teapot" particle changing color over its lifetime. The number
+of master particles added must match the number of generations specified in the
+NiPSMeshParticleSystem::Create function, and all master particles must be added
+before the particle system is streamed, cloned, updated, or rendered.</p>
+<pre>
+// Add two master particles to the system.
+NiStream kStream;
+NIVERIFY(kStream.Load(ConvertMediaFilename("meshes.nif")));
+NiNode* pkRoot = NiVerifyStaticCast(NiNode, kStream.GetObjectAt(0));
+NiAVObject* pkTeapot = pkRoot-&gt;GetObjectByName("Teapot");
+NIASSERT(pkTeapot);
+NiAVObject* pkCone = pkRoot-&gt;GetObjectByName("Cone");
+NIASSERT(pkCone);
+pkMeshPSys-&gt;SetMasterParticle(0, pkTeapot);
+pkMeshPSys-&gt;SetMasterParticle(1, pkCone);
+</pre>
+
+<p>The particle emitter is added in exactly the same manner as described for
+standard particles.</p>
+<pre>
+// Create and attach emitter node.
+NiNode* pkEmitterNode = NiNew NiNode;
+pkEmitterNode-&gt;SetTranslate(10.0f, 2.0f, 0.0f);
+m_spScene-&gt;AttachChild(pkEmitterNode);
+
+// Create and add emitter.
+NiFixedString kEmitterName("Box Emitter");
+float fEmitterWidth = 0.0f;
+float fEmitterHeight = 0.0f;
+float fEmitterDepth = 0.0f;
+float fSpeed = 15.0f;
+float fSpeedVar = 2.5f;
+float fSpeedFlipRatio = 0.0f;
+float fDeclination = 0.0f;
+float fDeclinationVar = NI_PI * 0.25f;
+float fPlanarAngle = 0.0f;
+float fPlanarAngleVar = NI_PI;
+float fSize = 0.5f;
+float fSizeVar = 0.5f;
+float fLifeSpan = 1.0f;
+float fLifeSpanVar = 1.0f;
+float fRotAngle = 0.0f;
+float fRotAngleVar = 2.0f * NI_PI;
+float fRotSpeed = NI_PI;
+float fRotSpeedVar = NI_PI;
+bool bRandomRotSpeedSign = true;
+NiPoint3 kRotAxis(NiPoint3::ZERO);
+bool bRandomRotAxis = true;
+pkMeshPSys-&gt;AddEmitter(NiNew NiPSBoxEmitter(
+    kEmitterName,
+    fEmitterWidth,
+    fEmitterHeight,
+    fEmitterDepth,
+    pkEmitterNode,
+    fSpeed,
+    fSpeedVar,
+    fSpeedFlipRatio,
+    fDeclination,
+    fDeclinationVar,
+    fPlanarAngle,
+    fPlanarAngleVar,
+    fRadius,
+    fRadiusVar,
+    fLifeSpan,
+    fLifeSpanVar,
+    fRotAngle,
+    fRotAngleVar,
+    fRotSpeed,
+    fRotSpeedVar,
+    bRandomRotSpeedSign,
+    kRotAxis,
+    bRandomRotAxis));
+</pre>
+
+<p>We also need to add an <span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">NiPSEmitParticlesCtlr</a></span>
+object to control particle emission, as before. This time, particle emission
+with be constant.</p>
+<pre>
+// Create a particle emission controller that has a fixed birth rate of
+// 20.0 particles per second and is always active starting at time -2.0.
+float fBirthRate = 20.0f;
+NiFloatInterpolator* pkBirthRateInterpolator = NiNew NiFloatInterpolator(
+    fBirthRate);
+NiUInt32 uiNumEmitterActiveKeys = 2;
+NiStepBoolKey* pkEmitterActiveKeys =
+    NiNew NiStepBoolKey[uiNumEmitterActiveKeys];
+pkEmitterActiveKeys[0].SetTime(-2.0f);
+pkEmitterActiveKeys[0].SetBool(true);
+pkEmitterActiveKeys[1].SetTime(1.0f);
+pkEmitterActiveKeys[1].SetBool(false);
+NiBoolData* pkEmitterActiveData = NiNew NiBoolData;
+pkEmitterActiveData-&gt;ReplaceAnim(pkEmitterActiveKeys,
+    uiNumEmitterActiveKeys, NiBoolKey::STEPKEY);
+NiBoolInterpolator* pkEmitterActiveInterpolator = NiNew NiBoolInterpolator(
+    pkEmitterActiveData);
+NiPSEmitParticlesCtlr* pkEmitParticlesCtlr = NiNew NiPSEmitParticlesCtlr(
+    kEmitterName);
+pkEmitParticlesCtlr-&gt;SetBirthRateInterpolator(pkBirthRateInterpolator);
+pkEmitParticlesCtlr-&gt;SetEmitterActiveInterpolator(
+    pkEmitterActiveInterpolator);
+pkEmitParticlesCtlr-&gt;ResetTimeExtrema();
+pkEmitParticlesCtlr-&gt;SetCycleType(NiTimeController::LOOP);
+pkEmitParticlesCtlr-&gt;SetTarget(pkMeshPSys);
+</pre>
+
+<p>As mentioned earlier, we want the particle system to spawn a different mesh
+when the first mesh particle dies. To do this, we need to add an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSpawner.htm">NiPSSpawner</a></span> object to
+the system and set it as the death spawner. We will set it up so that each
+particle will spawn between 1 and 3 new particles when it dies. The spawned
+particles will have some randomness applied to their speed and direction but
+will have the same life span as the original particles. When these particles
+are spawned, they will use the master particle set for the second generation in
+the particle system object.</p>
+<pre>
+// Add an NiPSSpawner so that particles will spawn on death.
+NiUInt16 usNumSpawnGenerations = 1;
+float fPercentageSpawned = 1.0f;
+NiUInt32 uiMinNumToSpawn = 1;
+NiUInt32 uiMaxNumToSpawn = 3;
+float fSpawnSpeedFactor = 1.0f;
+float fSpawnSpeedFactorVar = 0.5f;
+float fSpawnDirChaos = 0.5f;
+NiPSSpawner* pkSpawner = NiNew NiPSSpawner(
+    usNumSpawnGenerations,
+    fPercentageSpawned,
+    uiMinNumToSpawn,
+    uiMaxNumToSpawn,
+    fSpawnSpeedChaos,
+    fSpawnDirChaos,
+    fLifeSpan,
+    fLifeSpanVar);
+pkMeshPSys-&gt;AddSpawner(pkSpawner);
+pkMeshPSys-&gt;SetDeathSpawner(pkSpawner);
+</pre>
+
+<p>The final step in our mesh particle system creation is animating the size of
+the particle over its lifespan. This is done by adding animation keys to the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSSimulatorGeneralStep.htm">NiPSSimulatorGeneralStep</a></span>
+simulator step, which can be obtained from the particle system simulator using
+the <a href="../../Reference/NiParticle/NiPSSimulator.htm"><span class=
+"NDLSystemFont">NiGetSimulatorStep</span></a> macro.</p>
+<pre>
+// Start the particle with at full size. Have it shrink to nothing by
+// the time it dies.
+NiPSSimulatorGeneralStep* pkGeneralStep = NiGetSimulatorStep(
+    NiPSSimulatorGeneralStep, pkStandardPSys-&gt;GetSimulator());
+NIASSERT(pkGeneralStep);
+NiUInt8 ucNumSizeKeys = 2;
+NiPSKernelFloatKey* pkSizeKeys = NiAlloc(NiPSKernelFloatKey,
+    ucNumSizeKeys);
+pkSizeKeys[0].m_fTime = 0.0f;
+pkSizeKeys[0].m_fValue = 1.0f;
+pkSizeKeys[1].m_fTime = 1.0f;
+pkSizeKeys[1].m_fValue = 0.0f;
+pkGeneralStep-&gt;CopySizeKeys(pkSizeKeys, ucNumSizeKeys);
+NiFree(pkSizeKeys);
+</pre>
+
+<p>And that's all there is to it! There are, of course, many more emitters,
+forces, and colliders that you could add; we have only touched upon the basics
+here. Creating programmatic particle effects can be a powerful tool when
+creating your game. A screen shot of an application that uses the code
+described here is shown below.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/ProgrammaticParticleSystems.jpg" width="773" height=
+    "595"> <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

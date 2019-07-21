@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Finding Data Streams</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Finding Data Streams</h1>
+
+<p>Thus far, building meshes and locking a mesh based on 
+ compile-time knowledge has been discussed. This section discusses how 
+ to search for an existing stream reference based on no pre-existing knowledge 
+ of the mesh in question. In general, developers should use the scoped 
+ locking classes discussed in <a href="Data_Stream_Lock_and_Iterator_Objects.htm">Data 
+ Stream Lock and Iterator Objects</a>. However, if the user wishes to simply 
+ inspect a mesh for attributes, these other methods may prove useful:</p>
+
+<h4>FindStreamRef</h4>
+
+<p><span class="NDLSystemFont">FindStreamRef</span> is often 
+ used when it is known that the <span class="NDLSystemFont">NiDataStreamRef</span> 
+ only contains one element. The user specifies the semantic name and index. 
+ Optionally, the user can specify a format for the element. If that format 
+ doesn't match, the result will be NULL. The following code snippet returns 
+ the stream reference to the <span class="NDLSystemFont">POSITION</span> 
+ element.</p>
+
+<pre>
+NiDataStreamRef* pkStreamRef = pkMesh-&gt;FindStreamRef(NiCommonSemantics::POSITION(), 0,  
+   NiDataStreamElement::F_FLOAT32_3);
+</pre> 
+
+<h4>FindStreamRefAndElementBySemantic</h4>
+
+<p><span class="NDLSystemFont">FindStreamRefAndElementBySemantic</span> 
+ is used in most cases, especially if the user is unsure if the <span class="NDLSystemFont">NiDataStreamRef</span> 
+ only contains one element. Note that the return values are passed-by-reference 
+ and a boolean is returned indicating success. The two return values are 
+ the stream reference and element matching the input semantic key/index 
+ pair. Optionally, the user can specify a format for the element. If that 
+ format doesn't match, the result will be false. The following code snippet 
+ returns the stream reference to the <span class="NDLSystemFont">POSITION</span> 
+ element.</p>
+
+<pre>
+NiDataStreamRef* pkRef = NULL;
+NiDataStreamElement kElement;
+NIVERIFY(pkMesh-&gt;FindStreamRefAndElementBySemantic(NiCommonSemantics::POSITION(), 0,  
+   NiDataStreamElement::F_FLOAT32_3, pkRef, kElement));
+</pre> 
+
+<h4>GetFirstStreamRef</h4>
+
+<p><span class="NDLSystemFont">GetFirstStreamRef</span> is 
+ used in the situation where the application wishes to get the first data 
+ stream matching a <span class="NDLSystemFont">Usage</span> type. The following 
+ code checks a mesh for an index buffer and responds accordingly. Since 
+ a mesh should only have one index buffer stream, this is a valid mechanism.</p>
+
+<pre>
+const NiDataStreamRef* pkStreamRef = pkMesh-&gt;GetFirstStreamRef(NiDataStream::USAGE_VERTEX_INDEX);
+ 
+if (pkStreamRef)
+{
+  bIndexed = true;
+</pre>
+
+
+<p>If there is an index buffer, it should always have only 
+ one element reference since interleaved index buffers do not make sense. 
+ </p>
+
+<pre>
+// Determine the type of the elements in the stream
+NIASSERT(pkStreamRef-&gt;GetElementDescCount() == 1); 
+</pre>
+
+<p>The element reference stores the format of the data 
+ (if the data is interleaved each interleaved data could have a different 
+ format) so get the format and check for either 16-bit or 32-bit indices.</p>
+
+<pre>
+  NiDataStreamElement::Format eFormat = pkStreamRef-&gt;GetElementDescAt(0).GetFormat();
+  NIASSERT(eFormat == NiDataStreamElement::F_UINT16_1);
+  // Do something useful...
+}
+else
+{
+  bIndexed = false;
+  // Do something else...
+}
+</pre> 
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

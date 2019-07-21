@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Deleting a system service</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Deleting a system service</h1>
+
+<p>You might find that you need to delete a system service you have created at runtime before
+Service Manager shuts down. Service are unregistered automatically by the Service Manager before
+<span class="NDLSystemFont">ServiceManager::Run</span> returns, and their reference count is
+decremented. However if you need to remove or delete a system service before then you can do so
+manually.</p>
+
+<p class="NDLHeadingProcedure">To delete a system service</p>
+
+<ol>
+    <li>Call <span class="NDLSystemFont">ServiceManager::UnregisterSystemService</span>. This will
+    cause the service to transition to the shutting down state and <span class="NDLSystemFont">
+    OnShutdown</span> will be called by Service Manager once per tick until it returns <span
+    class="NDLSystemFont">efd::AsyncResult_Complete</span>. Once <span class="NDLSystemFont">
+    OnShutdown</span> has completed, the system service will be removed and Service Manager will
+    release the reference count that it holds for that system service.
+
+<pre>
+SmartPointer&lt;MySystemService&gt; spMySystemService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MySystemService&gt;();
+m_pServiceManager-&gt;UnregisterSystemService(spMySystemService);
+</pre>
+    </li>
+
+    <li>If multiple services are unregistered at the same time, these services will be shut down
+    sequentially based on their reverse dependency order just as they would during normal
+    application shutdown. However, unlike during normal shutdown, <span class="NDLSystemFont">OnTick
+    </span> will not be called on unregistered services that are blocked waiting on other services
+    to shutdown.</li>
+
+    <li>Some number of ticks later after <span class="NDLSystemFont">OnShutdown</span> has returned
+    <span class="NDLSystemFont">efd::AsyncResult_Complete</span> the reference held by Service
+    Manager will be released. To make sure the service actually gets destructed you must release
+    all references for the service. Typically all resources should be released during <span class=
+    "NDLSystemFont">OnShutdown</span> so it normally has little memory cost if service references
+    persist after the unregistration of that service, but if the cached service reference is used
+    after it's destruction is completed it could result in an application crash.</li>
+
+    <li></li>
+
+    <li>When services are added or removed at run-time the <span class="NDLSystemFont">OnInit
+    </span>, <span class="NDLSystemFont">OnTick</span> and <span class="NDLSystemFont">OnShutdown
+    </span> orders for all services will be recomputed to account for the addition or removal of
+    new service dependencies.</li>
+
+    <li>If a service is unregistered at run-time but another service has a required dependency on
+    the removed service it will generate a critical error that will lead to process shutdown.</li>
+
+    <li>Once a service is unregistered by calling <span class="NDLSystemFont">
+    ServiceManager::UnregisterService</span>, it will immediate become unavailable for lookup via
+    the <span class="NDLSystemFont">ServiceManager::GetSystemServiceAs</span> method.</li>
+
+    <li>Additionally, a new instance of the service can be registered immediately following the
+    unregister call even through the previous instance of the service will not have completed
+    shutdown yet. While this is supported it is not recommended as some services may manage shared
+    system resources so this could lead to unexpected failures.</li>
+</ol>
+
+<p>Anyone else holding a reference to your system service will prevent the destructor from being
+called. Be care removing system services that other system services might depend on as there is no
+mechanism for notification of when a system syrvice is removed at runtime. Many system services grab
+a reference to any services they depend on in their <span class="NDLSystemFont">OnPreInit</span> or
+<span class="NDLSystemFont">OnInit</span> methods and hold that reference until their <span class=
+"NDLSystemFont">OnShutdown</span> method. As a result, it is recommended that services which are
+added or removed dynamically at run-time should not have references cached in other services unless
+those services have an application specific mechanism for knowing when the service is added or
+removed so that the references can be released.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="system_service_creating.htm">Creating a system service</a></li>
+    <li><a href="system_service_modifying.htm">Modifying a system service</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

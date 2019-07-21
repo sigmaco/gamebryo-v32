@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best practices for working with models</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Best practices for working with models</h1>
+
+<ul>
+    <li>It is valuable to consider 4 conceptual tiers of models that would be realized by policy:
+
+        <ul>
+            <li>Interface models that contain only abstract behaviors. These declare a ways that an
+            entity can be interacted with, and what capabilities the entity contracts to
+            provide.</li>
+
+            <li>Elemental models that are mixed in to several classes of models. These are
+            recomposable entity components and would be implemented in a very general purpose
+            way.</li>
+
+            <li>Concrete class models that mix-in elemental models but are not instantiated. These
+            could be tweaked to include specialized behaviors where the whole needs to be greater
+            than the sum of its mixed in parts.</li>
+
+            <li>Template models (called presets) that further refine class models and are
+            instantiable leafs. These would not have new behaviors or properties, but could have
+            new initial property values.</li>
+        </ul>
+    </li>
+
+    <li>To help highlight this structure, you should use adjectives to name the interface and
+    elemental mix-in models (Destructible, Visible, CanAttack) and nouns for the class and template
+    models (Creature, Building, BlueDragon).</li>
+
+    <li>Commonly all properties and behaviors will to belong in the elemental mix-in models. If
+    tempted to hang new properties at more derived levels, consider that representing it as a new
+    elemental mix-in might allow for future reuse/modding. Concrete class and preset template
+    models frequently override values but do not add new ones.</li>
+
+    <li>It is often a good idea to avoid models that are both instantiated and mixed in. If the
+    version that gets instantiated needs to be tuned in the future, it will be easier if it is not
+    also mixed into further specialized models. For example, a non-instantiated "Dragon" model
+    should be a mixed into an instantiated "DragonDefault" model. Later, it would be easy to add
+    variants like "DragonGreat" as a peer to "DragonDefault". One approach would be to make
+    DragonDefault a Preset.</li>
+
+    <li>Often a designer will want to try out an entity instance in-game and tweak its settings.
+    The final settings make the most sense when copied back to EMT or the world builder model
+    palette as a preset.</li>
+
+    <li>Try to name models to take advantage of sorting such that all template models appear
+    together, along with any associated class model mixed in. This is particularly helpful in the
+    spreadsheet view when editing properties. You can also make use of folder organization in the
+    model browser, which is based on tags.</li>
+
+    <li>When considering composition of new entity types, the first approach to consider is mixing
+    of models. If the composition needs to change during gameplay, you must use multiple entities
+    and hold entity references in a Property.</li>
+
+    <li>For models that assume they will be mixed into a particular type of entity (for example,
+    one that has a Position property), the designer can choose among a few approaches. They could
+    mix in the Positionable model to gain access to the Position property. Or they could declare
+    their own Position property directly in the model, and rely on the mix-in resolution system to
+    provide only a single copy of that property. The second approach supports models that are
+    entirely independently developed (to the point of having no common parent models) and is still
+    able to mix them together effectively. It is possible, but not recommended, to access
+    properties in a behavior that are not declared to be part of (or mixed into) the current
+    model.</li>
+</ul>
+
+<h2>Terminology</h2>
+
+<p>This is a quick introduction to some object-oriented software terminology used to describe
+associations or relationships between pieces of the virtual world. These have been gleaned from
+several sources, and "tuned".</p>
+
+<ul>
+    <li>Mix-in: is used for Composition, Extends, and Interface.</li>
+
+    <li>Extends, inherits: is-a, is-like-a, adds-to</li>
+
+    <li>Interface: can-be-used-as-a</li>
+
+    <li>Composition: is-made-of-a (whole-part with single owner and identical lifetimes).</li>
+
+    <li>Aggregation (shareable): has-a (whole-part with multiple owners, or separate
+    lifetimes)</li>
+
+    <li>Refers: uses-a</li>
+
+    <li>Contains: contains-a, carries, collects (implies hiding it; not adding to own I/F; implies
+    single-owner; implies separate lifetimes)</li>
+
+    <li>EntityRef Property type: is used for Aggregation, Refers, Contains</li>
+
+    <li>Behavior: acts-on, tells, tells-a-thing-to-do-something</li>
+</ul>
+
+<p>When discussing these concepts it is helpful to use the terms inner and outer to refer to the
+pieces. The piece that makes the reference is outer, and the piece being referenced is the inner.
+This doesn't always imply containment, or hiding or abstraction. When talking about pieces, they
+might be Entities, Properties, Models, or possibly groups.</p>
+
+<h2>Decomposition</h2>
+
+<p>A realistic game is generally too complex to represent as a single game object, so the developer
+must decompose the system into multiple models. Further, it is clearly unacceptable to provide a
+unique implementation for each game object instance. You will want to identify classes of objects
+(Entities) that share the same capabilities, then create multiple instances of those classes, each
+operating independently. In the Gamebryo Game Framework, the game objects are called Entities, and
+the classes are called Models.</p>
+
+<p>In the past two approaches have been tried and shown to <b>not</b> be scalable:</p>
+
+<ul>
+    <li>A single monolithic object type. In this approach, there is only one class of game object,
+    and each object instance is configured, or initialized to down-select to the capabilities the
+    designer desires. Perhaps through a set of check boxes.</li>
+
+    <li>A fixed hierarchy of object types. This approach is more object oriented, but suffers from
+    the multiple inheritance "diamond of death", and inflexibility to changes in the design.</li>
+</ul>
+
+<p>It has long been considered optimal to use a component-oriented approach to modeling game
+objects. The idea here is to independently implement many small pieces of functionality, and glue
+them together in a separate step to realize the different capabilities desired for different
+classes of objects. The key benefit of this approach is that not all entities contain everything,
+so it saves space and complexity.</p>
+
+<p>The Emergent mix-in system is a generalization of these approaches allowing a designer to choose
+the most appropriate approach. Gamebryo Entities are component-oriented, and also allow
+hierarchical classes of Models. Mix-ins provide manageable reuse and object oriented interface and
+specialization capabilities, but also give us the combinatorial richness of composition. In some
+cases, mixing two Models implies specialization. In other cases it implies composition. The
+designer is free to choose.</p>
+
+<p>When a designer decomposes their world, they must identify which pieces will be represented as
+an Entity. Some parts of the world will be completely static, and can be baked into the constant
+terrain. During edit time, we can think of those objects as Entities that can be created and placed
+in the world. But they have no behaviors, and could be optimized away at runtime.</p>
+
+<p>Other parts will be stationary, but will be able to change state. E.g. a tree may be whole or
+burned. That object will be a real Entity instance at run time. Since there will potentially be
+many tree Entities, the designer will create a Tree Model from which each tree is instantiated. By
+changing the default values stored in the Tree Model, all trees can be tuned.</p>
+
+<p>One of the most important Properties of a Tree Model is its graphical representation (mesh,
+texture...). The asset ID for its chosen asset could be stored in an mAppearance Property. All
+trees that look the same will have the same default value for mAppearance. If a different species
+of tree is desired, a new Model or Preset would is created with a different visual asset in its
+mAppearance Property. A tree would not have a default position, but may have other such Properties
+(e.g. mHeight, mLumberContent, mIsBurned,...).</p>
+
+<p>When creating a level, or a world, the tree Models and Presets would be used to scatter initial
+Entity instances around the world. During run time, each of these trees would be an Entity, and
+each could be individually burned or harvested.</p>
+
+<p>Entities, Properties and Models can be used to represent much more complex objects, both
+tangible and abstract, such as NPCs, quests, inventory, popularity, chi, etc. The designer will
+determine which things to represent, which things to ignore, and how best to structure the
+complexity of the system they envision.</p>
+
+<h2>Organization and Reuse</h2>
+
+<p>One way an object oriented Entity system helps manage complexity is with reuse. Easily and
+quickly extending or overriding the capability of existing objects is a powerful and efficient
+approach. Manageable reuse is realized with the sub-classing of Models.</p>
+
+<p>The Entity system is not tied to any particular language. It can indeed support multiple
+languages concurrently. It is purposely not tied to one of the more limited and strict object
+models in a particular scripting language. Therefore the Mix-in Model system is provided in the
+game framework and mapped only to simpler scripting concepts. In this way, the same entity and
+model semantics are preserved no matter which language or languages are chosen.</p>
+
+<p>The mix-in system avoids the difficulties of multiple inheritance by automatically resolving
+identical members from multiple base classes (making them identical). It supports data-driven
+definitions so new game object classes can be constructed using composition, that wind up having a
+combination of capabilities without resorting to writing code.</p>
+
+<p>A consequence of the approach is that a great deal more content can be constructed in a short
+period of time, because a Model can be reused in unanticipated contexts. For example, a fire-attack
+might be used by a dragon and by a flame-thrower, and spontaneous human combustion. Debugging or
+extending the capability in one place upgrades the capability everywhere that class was mixed
+in.</p>
+
+<p>When creating the world, known as a "block" file in Toolbench, you will likely want to override
+properties of your base models. Rather than overriding each property of that base model in the
+block file, it is best to create presets and to put those presets into the block file instead. This
+technique will minimize the overrides contained in the block file to just those that are unique to
+the specific entity.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_models_overview.htm">Model overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

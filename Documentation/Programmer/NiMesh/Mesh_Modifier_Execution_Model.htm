@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Mesh Modifier Execution Model</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Mesh Modifier Execution Model</h1>
+
+<p>Mesh modifiers are designed to execute in parallel with 
+ other engine tasks using the <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ library, although it is certainly possible to create modifiers the execute 
+ serially.</p>
+
+<p>Execution uses a parallel task submission model, with 
+ the main application loop calling on modifiers to submit parallel update 
+ tasks that are completed and synchronized at later points. Modifier implementations 
+ provide the code to compute the task and the functions to submit and complete 
+ the tasks. <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ objects contain the logic that controls when the modifier functions are 
+ called.</p>
+
+<p>The modifier can perform any form of computation on 
+ the mesh to which it is attached. Due to their focus on parallelism, tasks 
+ that fit into the Floodgate kernel model are best suited to modifiers. 
+ However, there is no requirement to use Floodgate in a modifier - the 
+ modifier can be treated as a serial computation step invoked at pre-defined 
+ points as the mesh object is moved through the system.</p>
+
+<h2>NiMeshModifier Functions</h2>
+
+<p>Two functions in the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span> 
+ class are used to control execution at run-time:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMeshModifier.htm#Updating_and_Managing_Parallel_Tasks">SubmitTasks</a></span> 
+ is called whenever the modifier indicates that it would like to start 
+ parallel tasks. A task is a chunk of work that corresponds to a Floodgate 
+ <span class="NDLSystemFont"><a href="../NiFloodgate/Floodgate_Specifying_Tasks.htm">NiSPTask</a></span> 
+ object. The <span class="NDLSystemFont">SubmitTasks</span> function can 
+ also be used to do serial work, including any per-invocation work that 
+ must be done to set up the task.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMeshModifier.htm#Updating_and_Managing_Parallel_Tasks">CompleteTasks</a></span> 
+ is called when the modifier is required to complete parallel tasks that 
+ it has started executing. In other words, it is the synchronization function. 
+ In addition to waiting on Floodgate to <a href="../NiFloodgate/Floodgate_Workflow_Completion_Monitoring.htm">complete</a> 
+ the relevant tasks, the <span class="NDLSystemFont">CompleteTasks</span> 
+ function may perform additional serial processing, or the function may 
+ do serial processing alone.</li>
+</ul>
+
+<p>The use of Floodgate means that much of the runtime 
+ functionality of modifiers resides in <a href="../NiFloodgate/Floodgate_Programming_Kernels.htm">kernel 
+ functions</a> and makes heavy use of stream processing.</p>
+
+<p>See <a href="Creating_a_Custom_Mesh_Modifier.htm">Creating 
+ a Custom Mesh Modifier</a> for more information on defining the <span 
+ class="NDLSystemFont">SubmitTasks</span> function and the <span class="NDLSystemFont">CompleteTasks</span> 
+ function.</p>
+
+<h2>SyncPoints</h2>
+
+<p>The execution points at which the <span class="NDLSystemFont">SubmitTasks</span> 
+ function and <span class="NDLSystemFont">CompleteTasks</span> function are 
+ called are determined by a set of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSyncArgs.htm">SyncPoints</a></span> 
+ that the modifier registers for, one set for submission and one for completion. 
+ The <span class="NDLSystemFont">SubmitTasks</span> function will be called 
+ at every submit sync point the modifier is registered for, and the <span 
+ class="NDLSystemFont">CompleteTasks</span> function will be called for every 
+ complete sync point registered. For example:</p>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/SyncPoints.png" width="482" height="101"
+/>
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>As shown above, each sync point corresponds to a particular 
+ stage in per-frame processing. The following sync points are pre-defined 
+ in the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span> 
+ class and have meanings consistent across all Gamebryo applications:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">SYNC_UPDATE</span>: 
+ The <span class="NDLSystemFont">SubmitTasks</span> function or <span class="NDLSystemFont">CompleteTasks</span> 
+ function will be called during the <span class="NDLSystemFont">Update</span> 
+ to an object. The <span class="NDLSystemFont">CompleteTasks</span> function 
+ is called immediately upon entering the object's update function, while 
+ the <span class="NDLSystemFont">SubmitTasks</span> function is called after 
+ the object's time controllers have been updated but before the new world 
+ pose and bound are computed for the object. As a result, modifiers using 
+ this sync point or <span class="NDLSystemFont">SYNC_POST_UPDATE</span> should 
+ compute the world transform or world bounds if they are needed.</li>
+	
+	<li><span class="NDLSystemFont">SYNC_POST_UPDATE</span>: 
+ This sync point also invokes functions during update, exactly as with 
+ <span class="NDLSystemFont">SYNC_UPDATE</span>, but any Floodgate tasks 
+ submitted by the modifier are postponed until the entire scene graph finishes 
+ update.</li>
+	
+	<li><span class="NDLSystemFont">SYNC_VISIBLE</span>: 
+ The <span class="NDLSystemFont">SubmitTasks</span> function or <span class="NDLSystemFont">CompleteTasks</span> 
+ function will be called in the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh::OnVisible</a></span> 
+ function when an object is determined to be visible, inside the culling 
+ phase. Use this sync point to begin tasks that only need to be done if 
+ the object will be rendered.</li>
+	
+	<li><span class="NDLSystemFont">SYNC_RENDER</span>: 
+ This sync point is only used for completion. The <span class="NDLSystemFont">CompleteTasks</span> 
+ function is invoked in the <a href="../../Reference/NiMesh/NiMesh.htm"><span 
+ class="NDLSystemFont">NiMesh::RenderImmediate</span></a> function (i.e. 
+ when the object is about to be rendered).</li>
+</ul>
+
+<p>Additional sync points for physics simulation synchronization 
+ are also defined in the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSyncArgs.htm">NiSyncArgs</a></span> 
+ class. The Gamebryo-PhysX integration makes use of these, and other physics 
+ packages may also use them. It is the physics integration's responsibility 
+ to submit and complete modifiers with these synchronization points.</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">SYNC_PHYSICS_SIMULATE</span></li>
+	
+	<li><span class="NDLSystemFont">SYNC_PHYSICS_COMPLETED</span></li>
+</ul>
+
+<p>The special sync point <span class="NDLSystemFont">SYNC_ANY</span> 
+ is used to indicate that action should be taken for any sync points that 
+ the modifier supports. For example, it is used as the completion sync 
+ point when all the tasks that were submitted at a given sync point must 
+ be finished.</p>
+
+<p>Sync points are 16-bit unsigned integer identifiers. 
+ Applications can define their own and make calls to submit or complete 
+ modifiers at customized execution points. Gamebryo reserves values higher 
+ than 0x7FFF for internal use (values with the highest-order bit set to 
+ 1).</p>
+
+<p>Gamebryo's pre-defined modifiers provide some examples 
+ of the use of sync points:</p>
+
+<ul>
+	
+	<li>The <a href="../../Reference/NiMesh/NiInstancingMeshModifier.htm"><span 
+ class="NDLSystemFont">NiInstancingMeshModifier</span></a> class uses a submit 
+ sync point of <span class="NDLSystemFont">SYNC_UPDATE</span> to do some 
+ serial processing. It uses <span class="NDLSystemFont">SYNC_VISIBLE</span> 
+ to submit Floodgate tasks that perform the instance culling. These tasks 
+ are completed at sync point <span class="NDLSystemFont">SYNC_RENDER</span> 
+ so that the results are available for rendering.</li>
+	
+	<li>The <a href="../../Reference/NiMesh/NiMorphMeshModifier.htm"><span 
+ class="NDLSystemFont">NiMorphMeshModifier</span></a> class submits tasks 
+ either at <span class="NDLSystemFont">SYNC_POST_UPDATE</span>, <span class="NDLSystemFont">SYNC_UPDATE</span>, 
+ or &nbsp;<span class="NDLSystemFont">SYNC_VISIBLE 
+ </span>depending on whether the morphed object is respectively also skinned 
+ in software, always updated, or neither. Tasks are completed on <span 
+ class="NDLSystemFont">SYNC_VISIBLE</span> if the object is software skinned, 
+ otherwise <span class="NDLSystemFont">SYNC_RENDER</span>. These particular 
+ sync points are chosen to maximize the time available for processing while 
+ minimizing wasted work and ensuring that the modifier works with skinning.</li>
+	
+	<li>The <a href="../../Reference/NiMesh/NiSkinningMeshModifier.htm"><span 
+ class="NDLSystemFont">NiSkinningMeshModifier</span></a> class submits a 
+ bone matrix updating task at <span class="NDLSystemFont">SYNC_POST_UPDATE</span> 
+ (so that all of the bone transforms in a scene graph will have been set 
+ when the task runs) and this task is completed at <span class="NDLSystemFont">SYNC_RENDER</span>. 
+ If software skinning, the first task is completed at <span class="NDLSystemFont">SYNC_VISIBLE</span> 
+ and the task to actually perform software skinning is submitted to be 
+ completed at <span class="NDLSystemFont">SYNC_RENDER</span>.</li>
+	
+	<li>Particle systems submit 
+ tasks at <span class="NDLSystemFont">SYNC_UPDATE</span> to be completed 
+ at <span class="NDLSystemFont">SYNC_VISIBLE</span>, at which time the task 
+ to construct the particle geometry is submitted for completion at <span 
+ class="NDLSystemFont">SYNC_RENDER</span>.</li>
+</ul>
+
+<p>See <a href="Creating_a_Custom_Mesh_Modifier.htm">Creating 
+ a Custom Mesh Modifier</a> for more information on specifying sync points.</p>
+
+<p>For Xbox 360 specific information, please see <a href="../../ee_goto.htm#Programmer/NiMesh/Mesh_Modifier_Execution_Model_Xbox360.htm">Mesh Modifier Execution Model Xbox 360</a></p>
+
+<p>The next topic is <a href="Associating_Mesh_Modifiers_with_a_Mesh.htm">Associating 
+ Mesh Modifiers with a Mesh</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

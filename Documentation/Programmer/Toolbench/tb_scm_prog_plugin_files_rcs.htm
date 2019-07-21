@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Placing Toolbench Plug-in Files Under Revision Control</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="SCM" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Placing Toolbench Plug-in Files Under Revision Control</h1>
+
+<p>This guide will explain how plug-in authors can make their plug-ins Revision Control aware
+by using the IRevisionService from the Emergent.Toolbench.RevisionControl plug-in.</p>
+
+<h2>Commands</h2>
+
+<p>Before doing any operations you'll first need a reference to the revision service.</p>
+<pre>IRevisionService rcs = Platform.GetService&lt;IRevisionService&gt;();</pre>
+
+<p>The commands that your plug-in will be responsible for executing are Edit/Delete/Rename.  The
+reason Add is not in that list is that typically you'll just call Edit.  Add is a subset of Edit
+in the revision service, so there's usually never a reason to explicitly call Add.</p>
+
+<pre>rcs.Edit(@"c:\A.txt");</pre>
+<pre>rcs.Delete(@"c:\A.txt");</pre>
+<pre>rcs.Rename(@"c:\A.txt", @"c:\B.txt");</pre>
+
+<p>The revision service layer will take care of things like asking if read-only files need to
+be overwritten.  It's important to remember that the actual operation will happen at some point 
+after the last transaction is closed.  However, it is important that you do things like call Edit
+before you do any file IO so that we can do things like blow off read-only locks.  It's also
+recommended that your plug-in uses both the FileTransaction and DirtyFileWriter classes that are
+part of the Toolbench kernel.</p>
+
+<p>It's very important that you do not mix System.IO.File commands and IRevisionService commands.
+We execute all RevisionService commands on a separate thread.  So the commands are
+non-deterministic but are guaranteed to occur unless cancelled or aborted by the user.  If that 
+happens then the associated file IO actions will not occur.  However by convention if there is an 
+error executing a command we still perform that commands file operation.</p>
+
+<h2>Transactions</h2>
+
+<p>If your plug-in needs to perform many revision control commands in a group, you'll need to 
+wrap those commands in a transaction.  Transactions can have any number of sub/child transactions
+and they can be aborted individually without aborting all other transactions.  By default when
+saving we automatically open a single transaction at the beginning.  If you're performing more than
+a single operation outside of a save, you'll need to open a transaction before any commands are 
+executed.  This is because if no transactions have been opened when a command is executed, we 
+automatically create a transaction containing a single command.  So executing two commands back to 
+back with no transaction to group them would cause the revision control wait dialog to be 
+triggered.</p>
+
+<p>To start a transaction:</p>
+<pre>rcs.StartTransaction();</pre>
+
+<p>To end a transaction:</p>
+<pre>rcs.EndTransaction();</pre>
+
+<p>If during your transaction an exception is thrown or you find you need to abort the 
+transaction, just use:</p>
+<pre>rcs.AbortTransaction();</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><a href="tb_scm_prog_create_rcs_wrapper.htm">Creating a Toolbench Revision Control Wrapper</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

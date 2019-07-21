@@ -1,0 +1,594 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>Converting to Gamebryo LightSpeed 3.1 Overview</title>
+
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Converting to Gamebryo LightSpeed 3.1 Overview</h1>
+
+<p>Some Gamebryo LightSpeed 3.0 interfaces have changed in Gamebryo LightSpeed 3.1. These changes
+are listed in this section to help you identify actions you might need to take to ensure a smooth
+conversion path from Gamebryo LightSpeed 3.0 to Gamebryo LightSpeed 3.1.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                For an overview of the features in this release, see <a href=
+                "../../GetStart/All/What_s_New_in_Gamebryo.htm">What's New in Gamebryo
+                LightSpeed</a>. Additional discussion of new features, fixed issues, and changes in
+                behavior are outlined in the <a href=
+                "../../RelNotes/Release_Notes_Introduction.htm">Release Notes</a>.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>The following notes apply to the 3.0-to-3.1 conversion path:</p>
+
+<ul>
+    <li><a href="#AsynchronousLoading">Asynchronous Asset Loading</a></li>
+
+    <li><a href="#D3D10Deprecation">Deprecation of D3D10 renderer</a></li>
+
+    <li><a href="#PremainAllocations">Deprecation of memory allocator support for allocations and
+    deallocations outside of EE_INIT / EE_SHUTDOWN</a></li>
+
+    <li><a href="#NiBinaryShaderLib">NiBinaryShaderLib restructuring</a></li>
+
+    <li><a href="#NiSettingsDialog">Changes to NiSettingsDialog</a></li>
+
+    <li><a href="#D3DRendererLinking">Linking to D3D renderers</a></li>
+
+    <li><a href="#ShaderLibraryInterface">Changes to Shader Library Interfaces</a></li>
+
+    <li><a href="#NiPersistentSrcTextureRendererData">Changes to
+    NiPersistentSrcTextureRendererData</a></li>
+
+    <li><a href="#ChannelManagerConfig">Relocation/removal of ChannelManager Config
+    headers</a></li>
+
+    <li><a href="#NetService">NetService changes</a></li>
+
+    <li><a href="#NetLib">NetLibTCP renamed to NetLib</a></li>
+
+    <li><a href="#GetContentsStream">Removal of efd::EnvelopeMessage::GetContentsStream</a></li>
+
+    <li><a href="#IMessage">Changes to efd::IMessage</a></li>
+
+    <li><a href="#ecrInput">Changes to ecrInput</a></li>
+
+    <li><a href="#EntityPreloading">Changes to entity preloading</a></li>
+
+    <li><a href="#NiFragmentMaterial">Changes to NiFragmentMaterial</a></li>
+
+    <li><a href="#NiVisualTracker">Changes to NiVisualTracker</a></li>
+
+    <li><a href="#LightService">Changes to Game Framework Lighting and the LightService</a></li>
+
+    <li><a href="#IBuiltinModelImpl">Changes to Built-in Models</a></li>
+
+    <li><a href="#CreateEntity">Changes to BehaviorAPI.CreateEntity</a></li>
+
+    <li><a href="#MigratingToolbenchData">Migrating Toolbench Data</a></li>
+</ul>
+
+<a name="AsynchronousLoading" id="AsynchronousLoading"></a><h2>Asynchronous Asset Loading</h2>
+
+<p>Gamebryo LightSpeed 3.1 includes new functionality that enables asynchronous loading of assets
+in a background thread. Applications that load assets directly or that request asset loads from
+system services must be modified. For more information about converting existing applications to
+use this new functionality, see <a href="convert_background_asset_load_3_1.htm">Converting to
+Background Asset Loading</a> page. Specifically, the
+<span class="NDLSystemFont"><a href="../../Reference/efd/efd__AssetFactoryManager.htm">efd::AssetFactorymanager</a></span>
+system service is now required.</p>
+
+<a name="D3D10Deprecation" id="D3D10Deprecation"></a><h2>Deprecation of D3D10 Renderer</h2>
+
+<p>The D3D10 renderer has been deprecated in Gamebryo LightSpeed 3.1 and will be removed
+in a future version when the D3D11 renderer is shipping. Customers can use the D3D11
+renderer to access D3D10-specific features because D3D11 includes support for D3D10-level
+hardware. Customers who are currently using the D3D10 renderer and who wish to preview the
+D3D11 renderer may contact their sales representative to inquire about obtaining a
+preview of the D3D11 renderer.</p>
+
+<a name="PremainAllocations" id="PremainAllocations"></a><h2>Deprecation of Memory Allocator Support for Allocations and Deallocations Outside of EE_INIT/EE_SHUTDOWN</h2>
+
+<p>Support for performing allocations outside of an <span class="NDLSystemFont">EE_INIT</span>/
+<span class="NDLSystemFont">EE_SHUTDOWN</span> pair has been deprecated. To aid conversion, the
+standard allocator will trigger an assert in debug builds when an allocation occurs outside of
+these times. This assert can be suppressed by changing from <span class=
+"NDLSystemFont">EE_USE_DEFAULT_ALLOCATOR</span> to <span class=
+"NDLSystemFont">EE_USE_DEPRECATED_PREMAIN_ALLOCATOR</span> (if using a custom allocator, the enable
+switch for the assert is actually a constructor argument of <a href=
+"../../Reference/efd/efd__MemTracker.htm" class="NDLSystemFont">efd::MemTracker</a>), but note that
+any such suppressed asserts may indicate an allocation that will fail in a future version of
+Gamebryo.</p>
+
+<p>The failed memory assert will include:</p>
+<pre>
+    EE_MEMASSERT("Warning: Using the Gamebryo allocator outside of EE_INIT/EE_SHUTDOWN is deprecated."
+</pre>
+
+<p>When a failed memory assert occurs, we recommend that you look at the call stack. It will
+typically be pre-main for an allocation and post-main for a deallocation. The object that contains
+the method that is doing the allocation or deallocation will most likely be static.</p>
+
+<p>Common patterns that cause the assert include the following:</p>
+
+<ul>
+    <li>
+        <b>Dangling smart pointers</b>:
+
+        <ul>
+            <li>Example code:
+                <pre>
+int main(int argc, char** argv)
+{
+    NiInit();
+    NiSmartPointer&lt;SomeClass&gt; spService = EE_NEW SomeClass();
+    ...
+    NiShutdown();
+}
+</pre>
+            </li>
+
+            <li>Cause: The smart pointer goes out of scope after <span class=
+            "NDLSystemFont">NiShutdown</span>, causing a deallocation after <span class=
+            "NDLSystemFont">NiShutdown()</span>.</li>
+
+            <li>Fix: Either explicitly drop the reference (<span class="NDLSystemFont">spService =
+            NULL</span>; before <span class="NDLSystemFont">NiShutdown()</span>), or place code
+            inside of the init/shutdown pair in their own scope ({ code })</li>
+        </ul>
+    </li>
+
+    <li>
+        <b>Static UTF-8 strings</b>:
+
+        <ul>
+            <li>Example code:
+                <pre>
+// Global scope
+/* static */ efd::utf8string ClassName::ModelName("SomeReasonablyLongString");
+</pre>
+            </li>
+
+            <li>Cause: The <span class="NDLSystemFont">utf8string</span> class will allocate a
+            dynamic buffer during construction if the string is larger than its internal buffer.
+            Because the constructors for static objects are invoked pre-main, the allocation will
+            certainly occur before <span class="NDLSystemFont">EE_INIT</span> is called</li>
+
+            <li>Fix: If the string is used infrequently, it can be changed to a <span
+            class="NDLSystemFont">const char *</span> without
+            any real loss of performance. It will actually save some memory as well (no internal
+            buffer allocated, no compiler-generated code to call the ctor and dtor globally, and so
+            on...). If it is used frequently, then the string should be converted to a non-static
+            member of the class, initialized during the constructor of the containing class rather
+            than during global ctor initialization. Note: Calling <span class=
+            "NDLSystemFont">clear()</span> on a <span class="NDLSystemFont">utf8string</span> is
+            not sufficient, the dynamic allocation is grow-only and can only be freed by calling
+            the destructor.</li>
+        </ul>
+    </li>
+
+    <li>
+        <b>Static containers</b>:
+
+        <ul>
+            <li>Example code:
+                <pre>
+// Global scope, could be a list, map, vector, etc...
+/* static */ efd::list&lt;SmartPointer&lt;Item&gt; &gt; SomeContainer;
+
+// At runtime
+add items to SomeContainer
+</pre>
+            </li>
+
+            <li>Cause: The objects won't be deallocated until the container is deallocated, which
+            will happen post-main for statically-allocated containers. This type of issue can occur
+            on any container that stores smart pointers, but it can also occur on containers that
+            just hold POD data, as the internal data structures for these classes are also
+            allocated via Gamebryo.</li>
+
+            <li>Fix: For some containers, just clearing them during shutdown will be sufficient
+            (releasing both any smart pointers contained in the list, as well as the internal data
+            structures associated with the list). For a few containers (<span class=
+            "NDLSystemFont">efd::vector</span> and <span class=
+            "NDLSystemFont">efd::hash_map</span>), this is not sufficient as the clear method does
+            not free all dynamically allocated memory. These kinds of lists cannot be declared
+            static and should be changed to a pointer instead, allocated during startup, and
+            deallocated during shutdown. Any initialization or shutdown that must occur near the
+            start of an application can either be managed explicitly by the application or
+            implicitly by using the <a href=
+            "../../Programmer/Object_Systems/Static_Data_Management_Internals.htm">static data
+            manager</a>, which is a system that allows initialization and shutdown to occur in a
+            well-defined order, during <span class="NDLSystemFont">EE_INIT</span> or <span class=
+            "NDLSystemFont">EE_SHUTDOWN</span> instead of pre-main / post-main.</li>
+        </ul>
+    </li>
+</ul>
+
+<a name="NiBinaryShaderLib" id="NiBinaryShaderLib"></a><h2>NiBinaryShaderLib Restructuring</h2>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiBinaryShaderLib/Introduction.htm">NiBinaryShaderLib</a></span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NSBShaderLib/Hyperlinked_List_of_NSBShaderLib_Classes_and_Files.htm">NSBShaderLib</a></span>
+have been restructured to reduce redundant code and eliminate the need for applications to link in
+shader libraries for renderers that they will not use.</p>
+
+<p>Statically-linked applications should include <span class=
+"NDLSystemFont">NiBinaryShaderLib.h</span> rather than <span class=
+"NDLSystemFont">NSBShaderLib.h</span>, and should register the shader library using the string
+"<span class="NDLSystemFont">NiBinaryShaderLib</span>" rather than "<span class=
+"NDLSystemFont">NSBShaderLib</span>". Applications that use shader libs through DLLs should call
+<span class="NDLSystemFont">NiBinaryShaderLib_LoadShaderLibrary</span> rather than <span class=
+"NDLSystemFont">NSBShaderLib_LoadShaderLibrary</span>. For backwards compatibility, existing code
+that uses the "<span class="NDLSystemFont">NSBShaderLib</span>" entry points will still, and will
+generate a DX9 shader library. Applications that also require D3D10 support will need to link in
+and register the <span class="NDLSystemFont"><a href=
+"../../Reference/NiD3D10BinaryShaderLib/Introduction.htm">NiD3D10BinaryShaderLib</a></span> library
+as well.</p>
+
+<p>Applications that support only the DX9 or D3D10 renderer, but not both, will no longer be
+required to link in both binary shader libraries.</p>
+
+<p>With this change, the shader library <span class="NDLSystemFont">NSBShaderLib.*</span> is no
+longer valid. Be sure to delete this library from your shader library directory (<span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\SDK\Win32\DLL\ShaderLibs\</span>).</p>
+
+<a name="NiSettingsDialog" id="NiSettingsDialog"></a><h2>Changes to NiSettingsDialog</h2>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiSettingsDialog/NiSettingsDialog_Introduction.htm">NiSettingsDialog</a></span>
+has been refactored to allow applications to link in only those renderer libraries that the
+application will support. It does this by moving the code that manages a renderer-specific options
+tab and creates a renderer based on those options to its own library. These new setup libraries are
+responsible for registering themselves with the settings dialog, so an application only needs to
+link in the renderer setup that it needs.</p>
+
+<p>The new renderer setup libraries are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">NiDX9RendererSetup</span></li>
+
+    <li><span class="NDLSystemFont">NiD3D10RendererSetup</span></li>
+
+    <li><span class="NDLSystemFont">ecrD3D11RendererSetup</span></li>
+</ul>
+
+<p>As a result of this change, <span class="NDLSystemFont">NiSettingsDialog</span> does not link in
+all the D3D renderers by default. See the section on <a href="#D3DRendererLinking">linking the D3D
+renderers</a> for more information.</p>
+
+<a name="D3DRendererLinking" id="D3DRendererLinking"></a><h2>Linking to D3D Renderers</h2>
+
+<p>In previous versions of Gamebryo, linking to <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span> would
+automatically link in all the D3D renderers due to it's use of NiSettingsDialog, whether they 
+were used or not. As of Gamebryo
+LightSpeed 3.1, applications based on <span class="NDLSystemFont">NiApplication</span> or the
+<span class="NDLSystemFont"><a href=
+"../../Reference/ecr/Introduction_to_ecr_Class_Reference.htm">ecr</a></span> library can now choose
+which renderer libraries they will link in. Failing to link in these renderer libraries will
+cause an application to fail to create a renderer. Refer to the doc on <a href=
+"../../Reference/NiApplication/Usage_of_NiApplication_in_Gamebryo.htm">linking to the renderers in
+<span class="NDLSystemFont">NiApplication</span></a> or <a href=
+"../../Programmer/CoreRuntimeServices/core_services_ecr_RenderService.htm#Linking">RenderService
+library requirements</a>.</p>
+
+<a name="ShaderLibraryInterface" id="ShaderLibraryInterface"></a><h2>Changes to Shader Library Interfaces</h2>
+
+<p>In previous versions of Gamebryo, user-defined shader libraries required including a
+renderer-specific shader library interface header (such as <span class=
+"NDLSystemFont">NiD3DShaderLibraryInterface.h</span> or <span class=
+"NDLSystemFont">NiD3D10ShaderLibraryInterface.h</span>), as well as defining callback functions
+based on the function declaration typedefs <span class="NDLSystemFont">NID3DSLI_LOADLIBRARY</span>,
+<span class="NDLSystemFont">NID3DSLI_RUNPARSER</span>, and <span class=
+"NDLSystemFont">NIGETCOMPILERVERSIONFUNCTION</span> (or other renderer-specific variants of these).
+As of Gamebryo LightSpeed 3.1, the common shader library interface header <span class=
+"NDLSystemFont">NiShaderLibraryInterface.h</span> should be used instead, and the callback function
+typedefs are now <span class="NDLSystemFont">NISLI_LOADLIBRARY</span>, <span class=
+"NDLSystemFont">NISLI_RUNPARSER</span>, and <span class=
+"NDLSystemFont">NISLI_GETCOMPILERVERSIONFUNCTION</span>. For backward compatibility, the old
+headers and typedefs are still included, but they have been deprecated and may be removed in a
+future release.</p>
+
+
+<a name="ChannelManagerConfig" id="ChannelManagerConfig"></a><h2>Relocation/Removal of ChannelManager Config Headers</h2>
+
+<p><span class="NDLSystemFont">ChannelManagerConfig.h</span> has moved from the <span class=
+"NDLSystemFont">efd</span> library to the <span class="NDLSystemFont">efdNetwork</span> library.
+Anywhere that included <span class="NDLSystemFont">efd/ChannelManagerConfig.h</span> must be
+updated to <span class="NDLSystemFont">efdNetwork/ChannelManagerConfig.h</span>. In addition,
+<span class="NDLSystemFont">efd/ChannelSubscriptionList.h</span> was an internal class that is no
+longer used and has been removed entirely.</p>
+
+<a name="NetService" id="NetService"></a><h2>NetService Changes</h2>
+
+<p>Previously <span class="NDLSystemFont"><a href=
+"../../Reference/efdNetwork/efd__NetService.htm">efd::NetService</a></span> used the <span class=
+"NDLSystemFont"><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a>
+ProgramType</span> to determine the default behavior for several independent options: automatic
+connection to <span class="NDLSystemFont"><a href=
+"../../Reference/efdNetwork/efd__ChannelManagerService.htm">efd::ChannelManager</a></span>,
+automatic re-connection to <span class="NDLSystemFont">efd::ChannelManager</span> and automatic
+assignment of the client NetID. Now, these options are directly specified through methods on the
+<span class="NDLSystemFont">NetService</span>. To get the same behavior that used to result from
+calling <span class="NDLSystemFont">ServiceManager::SetProgramType(
+ServiceManager::kProgType_Server)</span> you should call:</p>
+<pre>
+    NetService* pNetService = pServiceManager-&gt;GetSystemServiceAs&lt;NetService&gt;();
+    pNetService-&gt;AutoConnectToChannelManager(true);
+    pNetService-&gt;AssignClientNetID(false);
+    pNetService-&gt;AutoReconnectToChannelManager(true);
+</pre>
+
+<a name="NetLib" id="NetLib"></a><h2>NetLibTCP Renamed to NetLib</h2>
+
+<p>The class <span class="NDLSystemFont">NetLibTCP</span> has been renamed to <span class=
+"NDLSystemFont"><a href="../../Reference/efdNetwork/efd__NetLib.htm">NetLib</a></span>. When
+creating a NetLib and passing a string to the NetLib factory, anywhere where the string "NetLibTCP"
+was previously passed the string "NetLib" must now be passed instead.</p>
+
+<a name="GetContentsStream" id="GetContentsStream"></a><h2>Removal of efd::EnvelopeMessage::GetContentsStream</h2>
+
+<p>The function <span class="NDLSystemFont">efd::EnvelopeMessage::GetContentsStream</span> has
+been removed. Instead the previously private members of <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__EnvelopeMessage.htm">efd::EnvelopeMessage</a></span> have been made
+protected to allow for easier subclassing of <span class=
+"NDLSystemFont">efd::EnvelopeMessage</span>.</p>
+
+<a name="IMessage" id="IMessage"></a><h2>Changes to efd::IMessage</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__IMessage.htm">efd::IMessage</a></span> interface has been updated to
+include an atomic reference count. Child classes of <span class="NDLSystemFont">IMessage</span>
+should not define their own reference counts. If the class is only derived from IMessage you can
+simply remove any reference counting macros, or if the class uses multiple inheritance it should
+forward reference count operations to the IMessage parent class using the <span class=
+"NDLSystemFont">EE_DECLARE_FORWARDED_CONCRETE_REFCOUNT</span> macro that is defined in <span class=
+"NDLSystemFont">efd/ReferenceCounting.h</span>. Failure to forward reference counting operations to
+the <span class="NDLSystemFont">IMessage</span> parent class can result in unexpected runtime
+behavior and/or failures.</p>
+
+<a name="ecrInput" id="ecrInput"></a><h2>Changes to ecrInput</h2>
+
+<p>The <span class="NDLSystemFont">ecrInput</span> library was updated to support loading action
+map files asynchronously. The <span class="NDLSystemFont">ecrInput::InputService</span> continues
+to support loading action maps based on information specified in the configuration file. You should
+use the configuration option if only one action map is required.</p>
+
+<p>For applications that require multiple action maps, loading these maps explicitly is
+recommended. To load an action map at runtime, use the <span class=
+"NDLSystemFont">ecrInput::InputService::LoadAllActionMaps</span>. Actions will not be available
+until the action map load completes. You can be notified when the load completes but subscribing to
+the <span class="NDLSystemFont">ecrInput::InputService::MessageCategory()</span> and providing a
+handler for <span class="NDLSystemFont">ecrInput::InputActionMapsLoaded</span>
+messages.</p>
+
+<a name="EntityPreloading" id="EntityPreloading"></a><h2>Changes to Entity Preloading</h2>
+
+<p>The entity asset preloading system was changed to support asynchronous loading. The <span class=
+"NDLSystemFont">BehaviorAPI.PreloadRequiredAssetFromProperty</span> and <span class=
+"NDLSystemFont"><a href=
+"../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a>::RegisterRequiredAssetPreload</span>
+APIs have been removed. Instead, the <a href=
+"../../Reference/QuickRef_Models/StandardModelLibrary__Preloadable.htm">Preloadable</a> standard
+model and its associated <span class="NDLSystemFont">PreloadAssets</span> property are now used to
+control entity preloading. By default, entities that mix in the Actor, Mesh, or Terrain models will
+preload their primary assets upon creation. Applications that must preload other asset types or
+must preload asset IDs stored in other properties will need to use a custom service and register it
+by calling <span class="NDLSystemFont">EntityManager::RegisterPreloadService</span>.</p>
+
+<p>Entity asset preloading does not monitor for property change events during the preloading
+process. If you have properties set dynamically at runtime, it is possible for the preloading
+system to load the asset as defined in the property before the change. This happens if a property
+change happens after the preload starts but before it completes. If you have asset properties that
+can change dynamically at runtime, you should ensure that the asset that is loaded during preloading is the asset that is specified by the entity property. If you detect a mismatch, reload the asset.</p>
+
+<a name="NiFragmentMaterial" id="NiFragmentMaterial"></a><h2>Changes to NiFragmentMaterial</h2>
+
+<p>The virtual method <span class="NDLSystemFont">AddReplacementShaders</span> has been added to
+<span class="NDLSystemFont">NiFragmentMaterial</span>. The <span class=
+"NDLSystemFont">AddReplacementShaders</span> method serves as a way to pre-populate a fragment
+material's shader cache with a known set of guaranteed to work shaders. The fragment material
+implementations can then choose to use one of these shaders via the fragment material fall back
+mechanism if it fails to produce the desired shader that is requested by a mesh. Replacement
+shaders should be considered a last resort alternative to the error shader. If an shader cache for
+a fragment material is locked (which will always be the case for shipped console titles), then new
+shaders cannot be added to the shader cache. In this case, if an application requests a shader that
+is not in the cache, a replacement shader is used. In this manner, replacement shaders help prevent
+an application from ever requiring the use of the error shader to render an object.</p>
+
+<p>All <span class="NDLSystemFont">NiFragmentMaterial</span> based materials in Gamebryo have been
+updated to support the usage of replacement shaders. While the replacement shaders are different
+for each material, they are always very simple, bare bones shaders. Any application that makes use
+of a custom <span class="NDLSystemFont">NiFragmentMaterial</span> should provide an implementation
+for the <span class="NDLSystemFont">AddReplacementShaders</span> method.</p>
+
+<a name="NiVisualTracker" id="A1"></a><h2>Changes to NiVisualTracker</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiVisualTracker/NiVisualTracker.htm">NiVisualTracker::Update</a></span>
+method signature has changed to return the number of callbacks removed during the update. Code
+that derives from <span class="NDLSystemFont">NiVisualTracker</span> and overrides
+<span class="NDLSystemFont">Update</span> will require modification.
+</p>
+
+<a name="LightService" id="LightService"></a><h2>Changes to Game Framework Lighting and the LightService</h2>
+
+<p>The following changes have been made to the lighting in the Game Framework:</p>
+
+<ul>
+    <li>Added a <span class="NDLSystemFont">Lightable</span> model, which specifies the maximum
+    number of lights by type an entity can support. Defaults to a maximum of 3 point, 2 spot, and 3
+    directional lights.</li>
+
+    <li>Added a <span class="NDLSystemFont">UpdateLightingOnMove</span> property to the Light
+    model. When this is set to false (default), adjusting any of the light's properties will not
+    force lighting to be recomputed for all entities.</li>
+
+    <li>Added a tool version of the Light service that always acts as if the <span class=
+    "NDLSystemFont">UpdateLightingOnMove</span> property is set to TRUE.</li>
+
+    <li>Added a <span class="NDLSystemFont">LightPriority</span> property to the Light model. The
+    Light Service now computes the 'influence' of a light on an entity, which takes its priority
+    into account. When choosing which lights will affect an entity, lights with the greatest
+    influence win.</li>
+
+    <li>Changed the Light Service to only consider objects for lighting if they mix-in the
+    <span class="NDLSystemFont">Lightable</span> model. Previously, we
+    only supported lighting for models that mixed in <span class="NDLSystemFont">Mesh</span>,
+    <span class="NDLSystemFont">Terrain</span>, or <span class="NDLSystemFont">Actor</span>.</li>
+
+    <li>Added support for explicit Always Affected/Never Affected lists to the Light model. This
+    allows you to manually override lighting.</li>
+</ul>
+
+<p>The Light Service will now only consider light entities that mix-in the
+<span class="NDLSystemFont">Lightable</span> model for lighting. The <span class=
+"NDLSystemFont">StandardModelLibrary</span> has been updated so that the <span class=
+"NDLSystemFont">Actor</span>, <span class="NDLSystemFont">Mesh</span>, and <span class=
+"NDLSystemFont">Terrain</span> models now mix-in the <span class="NDLSystemFont">Lightable</span>
+model. Applications will need to update their local copy of the <span class=
+"NDLSystemFont">StandardModelLibrary</span> with the shipped <span class=
+"NDLSystemFont">StandardModelLibrary</span>. If you do not make this update, the Light Service
+will ignore all entities, and nothing will be affected by lights.</p>
+
+<a name="IBuiltinModelImpl" id="IBuiltinModelImpl"></a><h2>Changes to Built-in Models</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__IBuiltinModelImpl.htm">egf::IBuiltinModelImpl</a></span> class is no
+longer a templated class. Any derived built-in models will need to be updated. Previously, when you
+derived from <span class="NDLSystemFont">egf::IBuiltinModelImpl</span> you had to pass the name of
+the derived class as a template parameter to the base class. This parameter is no longer required
+and can simply be removed. No other changes should be necessary.</p>
+
+<p>Any built-in model must now use the macro
+<span class="NDLSystemFont"><a href=
+"../../Reference/Macros/efd_macros_builtin_model.htm">EE_IMPLEMENT_BUILTINMODEL_PROPERTIES</a></span>
+with the
+<span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__IBuiltinModelImpl.htm">egf::IBuiltinModelImpl</a></span> derived class
+name as an argument. This should be located in the class' cpp file in the same scope as
+<span class="NDLSystemFont"><a href=
+"../../Programmer/Foundation/foundation_rtti.htm">EE_IMPLEMENT_CONCRETE_CLASS_INFO</a></span>.</p>
+
+<a name="CreateEntity" id="CreateEntity"></a><h2>Changes to BehaviorAPI.CreateEntity</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Programmer/Scripting/lua_lib_BehaviorAPI.htm">BehaviorAPI.CreateEntity</a></span> function
+is now asynchronous. The function does return an EntityID, but you may not perform many
+operations on this entity safely until the entity has gone through its <a href=
+"../../Programmer/Entities/entity_lifecycle.htm">creation lifecycle</a>. To be notified of
+successful entity creation, pass a behavior name to CreateEntity; it will be invoked when the new
+entity completes its OnAssetsLoaded behavior.</p>
+
+<p>A simpler approach for many situations is to call <span class=
+"NDLSystemFont">BehaviorAPI.CreateEntityAndWait</span>. This Lua call blocks the executing behavior
+until the entity lifecycle completes. Some services may see the entity creation messages before the
+behavior resumes; consider passing a ParameterList object to the entity's OnCreate behavior
+containing named parameters that the OnCreate behavior can read and use for setting properties. For
+an example of this latter approach, see <a href=
+"../../Programmer/Entities/entity_creating.htm#CreateEntityAndWait">Creating Entities</a>.</p>
+
+<a name="MigratingToolbenchData" id="MigratingToolbenchData"></a><h2>Migrating Toolbench Data</h2>
+
+<p>Several Toolbench file formats have changed in Gamebryo LightSpeed 3.1. Toolbench includes a
+migration service to help update legacy data. The migration service is active whenever a file is
+opened in Toolbench. The version of the file is checked against registered migration steps to
+determine if content needs to be migrated before Toolbench can load it. If migration is necessary,
+the file is updated on disk and only then loaded normally into the tool. When a need to migrate is
+detected, the user is alerted to be sure the files are writeable. Otherwise, the process is fully
+automated. If files are not migrated, no assets will load at runtime.</p>
+
+<h3>Toolbench File Format Changes</h3>
+
+<p>In Gamebryo LightSpeed 3.1, migration will update <span class="NDLSystemFont">.gsl</span>, <span class="NDLSystemFont">.emtproj</span>, <span class="NDLSystemFont">.block</span>, <span class="NDLSystemFont">.model</span>, <span class="NDLSystemFont">.preset</span>, and
+<span class="NDLSystemFont">.layer</span> files. These updates support several enhancements, including:</p>
+
+<ul>
+    <li>Improved mergeability of tool data formats to reduce the need for manual conflict
+    resolution</li>
+
+    <li>Replacement of XmlSerializer for less error-prone extension of data formats</li>
+
+    <li>Transition to EMT virtual folders for easier user reorganization of content</li>
+</ul>
+
+<p>If you have custom EMT property types in your data (implemented in a Toolbench plug-in), extra
+work may be necessary to migrate <span class="NDLSystemFont">.model</span> and <span class="NDLSystemFont">.preset</span> content. See <span class=
+"NDLSystemFont">Emergent.Toolbench.EntityModeling.ModelMigrationStep3to4.MigrateDataType</span> for
+examples of how all core EMT property types are migrated in Toolbench.</p>
+
+<p>Assuming you keep your source data in a revision control system, you might want to have one
+developer migrate all assets to the new formats when upgrading. However, because the migration
+process is deterministic, it should also be fine to have each developer migrate legacy files as
+necessary.</p>
+
+<h3>Updating Base EMT Libraries and Integrations</h3>
+
+<p>Gamebryo LightSpeed 3.1 includes updates to common base EMT libraries, such as the Standard
+Model Library. Partners may also have updated EMT libraries in support of their product
+integrations. Toolbench includes a new <a href=
+"../../Tools/Toolbench/tb_game_soln_content_import.htm">Integration Wizard</a> to help bring these
+updates into your existing asset web. The Integration Wizard will automatically launch when a game
+solution is first migrated to the latest version as a reminder to pull in these enhancements.</p>
+
+<p>If you have made modifications to imported entity modeling libraries, such as the
+StandardModelLibrary, care should be taken to ensure your changes are not lost. It is wise to
+migrate the user-modified libraries to the new Toolbench file formats <em>before</em> attempting to
+resolve any content changes in the Gamebryo LightSpeed 3.1 versions. This way you will be diffing
+files that are on the same file version, and real content changes will be easier to identify.</p>
+
+<p>When starting a new asset web, if you expect to make significant changes to Standard Model
+Library or other imported libraries, consider bypassing the new game solution wizard step that
+copies these libraries into your asset web. Instead, you may want to branch these EMT libraries via
+revision control from a clean location into your asset web. Then, when you later upgrade the
+Gamebryo installation, the revision control system should be able to walk you through an
+integration of the changes, avoiding a potentially tedious manual merge. Again, you should open
+your customized libraries in the latest Toolbench to migrate file formats before integrating
+changes from an upgraded installation.</p>
+
+<h3>Asset Web Case Insensitivity</h3>
+
+<p>The Asset Controller now generates logical asset IDs in a case-insensitive manner. This makes it
+easier for teams to collaborate on assets without running into errors due to file naming
+inconsistencies. When you open a game solution file that was created in the previous version of
+LightSpeed, a migration step will walk you through the asset ID migration process. Or, you can run
+a tool to migrate assets manually. For more information about this tool, see <a href=
+"../../Tools/Toolbench/tb_convertllidrefs.htm">ConvertLLIDRefs Tool</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

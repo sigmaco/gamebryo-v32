@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Light Service Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Light Service Overview</h1>
+
+<p>The <a href=
+"../../Reference/QuickRef_Services/svc_qckref_light_svc.htm"><span class="NDLSystemFont">
+ecr::LightService</span> class</a> interfaces the Game Framework
+to the Core Runtime <a href=
+"../General_Topics/Per_vertex_Lighting_with_Dynamic_Effects.htm">lighting</a>
+and <a href=
+"../Shadowing_System/Introduction_to_the_Shadowing_System.htm">shadowing</a>
+systems.</p>
+
+<p>The Light Service manages light sources and the lists of scene
+graphs (<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiNode.htm">NiNode</a></span> objects)
+which they affect. The Light Service also manages shadow
+generators, which are optionally associated with directional,
+point, and spot lights, as well as the lists of scene graphs
+(<span class="NDLSystemFont">NiNode</span> objects) which may
+cast and/or receive shadows.</p>
+
+<p>The following two sections discuss how to make property
+changes to <a href=
+"../../Reference/QuickRef_Models/StandardModelLibrary__Light.htm">
+Light</a> entities in order to accomplish desired lighting and shadowing behavior 
+    for a scene. The final section discusses the internal
+details for how the Light Service accomplishes these
+capabilities.</p>
+
+<h2>Properties to Control Lighting Behavior</h2>
+
+<p>There are many different properties that should be considered when thinking about 
+    lighting behavior. First all entity models that should be lit need to mix-in the 
+    <span class="NDLSystemFont">Lightable</span> model. The <span class="NDLSystemFont">Actor</span>, <span class="NDLSystemFont">Mesh</span>, and <span class="NDLSystemFont">Terrain</span> models already mix-in the 
+    <span class="NDLSystemFont">Lightable</span> model. The <span class="NDLSystemFont">Lightable</span> model defines the maximum number of lights that 
+    are allowed to affect an entity per light type. This allows the user to control 
+    the lighting quality vs. performance at a per entity level.</p>
+    <p>The primary property used to determine if a light should affect an entity is the 
+        light&#39;s range. If an entity is within the range of a light (and it includes the 
+        Lightable model) then the light will affect that entity. Depending on the layout 
+        of a scene it is possible to have an entity that is within the range of more 
+        lights than it supports (defined by the Lightable model). In these cases the 
+        <span class="NDLSystemFont">LightService</span> will compute which lights have the greatest influence over the 
+        entity and those lights will be chosen to affect the object. Three main factors 
+        are considered when computing a light&#39;s influence over an entity, the light&#39;s 
+        distance from the entity as a percentage of the light&#39;s range, the light&#39;s luminosity 
+        value on the entity, and the percentage of the entity that will be affected by a 
+        light. The end result is that if an entity only supports two point lights, and 
+        the scene contains 3 point lights, then the two closest and brightest 
+        lights will be chosen to affect the entity. </p>
+    <p>Further lighting control is available through the light&#39;s <span class="NDLSystemFont">LightPriority</span> property. 
+        The <span class="NDLSystemFont">LightPriority</span> property is used by the <span class="NDLSystemFont">LightService</span> to weight a light&#39;s 
+        influence factor. Giving a light a higher priority will cause that light to have 
+        greater influence when compared to other lights. The <span class="NDLSystemFont">LightPriority</span> property 
+        provides a way to give users more control over the lighting in a scene. A good 
+        example use cause for adjusting a light&#39;s priority would be if a scene contains 
+        a &#39;Sun&#39; light source. In an outdoor scene the Sun should always be affecting 
+        every entity, to ensure this happens simply max out the Sun entity&#39;s light 
+        priority.</p>
+    <p>As a final override the Light model contains an <span class="NDLSystemFont">AlwaysAffectedByLight</span> property and 
+        a <span class="NDLSystemFont">NeverAffectedByLight</span> property. The always affected and never affected 
+        properties allows a user to explicitly set entities that should always be 
+        affected by a light and entities that should never be affected by a light. These 
+        properties override all of the logic described above making it possible for an 
+        entity to be affected by a light even if the entity is outside of the light&#39;s 
+        range.</p>
+    <p>To help improve the light service&#39;s performance at runtime the 
+        <span class="NDLSystemFont">UpdateLightingOnMove</span> property should always be set to false (defaults to false). 
+        Anytime an entity&#39;s position changes its lighting could change, meaning that if 
+        an entity moves the lighting for that entity should be reevaluated. Evaluating 
+        lighting for an entity is not cheap and can become rather expensive if large 
+        number of entities in a scene are moving. To address this problem the 
+        <span class="NDLSystemFont">UpdateLightingOnMove</span> property is used. The <span class="NDLSystemFont">UpdateLightingOnMove</span> property defines 
+        if the light service should reevaluate lighting for an entity when that entity 
+        moves. <span class="NDLSystemFont">UpdateLightingOnMove</span> is set to false by default, so entities will only 
+        have their lighting evaluated when they are created. Setting 
+        <span class="NDLSystemFont">UpdateLightingOnMove</span> to true will cause lighting for that entity to be 
+        reevaluate every-time that entities moves.</p>
+
+<h2>Properties to Control Shadowing Behavior</h2>
+
+<p>Via the default property settings in the standard model
+library, all Actor and Mesh entities are initially set to both
+cast and receive shadows. However, by default, all lights are
+initially set to not cast shadows. This approach makes it
+straightforward for artists to selectively enable shadowing
+capabilities for individual lights, without having to consider
+the shadow manager itself or individual cast/receive shadow
+properties, by default.</p>
+
+<p><a href=
+"../../Reference/QuickRef_Models/StandardModelLibrary__ShadowGenerator.htm">
+ShadowGenerator</a> mix-in properties may be changed at run-time
+via lua scripts or C++ code, for individual light entities. These
+mix-in properties include whether to cast shadows, render
+backfaces, generate static shadows, strictly observe the size
+hint, and use the default depth bias. Other mix-in properties
+include a size hint from 1x1 to 2048x2048 for the shadow map, a
+shadow technique, and a floating point depth bias. See
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span>
+for more details on these settings, including more detailed
+information on the shadowing techniques provided by Gamebryo.</p>
+
+<p><a href=
+"../../Reference/QuickRef_Models/StandardModelLibrary__Shadowable.htm">
+Shadowable</a> mix-in properties may be changed at run-time via
+lua scripts or C++ code, for individual Mesh or Actor entities.
+These mix-in properties include whether the entity casts shadows
+as well as whether it receives shadows. They represent a
+straightforward "opt out" setting for individual entities in
+terms of shadow casting or receiving.</p>
+
+<h2>Implementation Details</h2>
+
+<p>With regard to shadow mapping capabilities, the Light Service
+initializes the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowManager.htm">NiShadowManager</a></span>
+and sets it to be active. In particular, it initializes the
+shadow click generator, the shadow manager's scene camera, and a
+shadow render step, to which a preprocessing callback function is
+assigned.</p>
+
+<p>The Light Service registers for entity discovery, entity
+property change, and entity removal messages, as well as scene
+graph added and removed messages. These messages are used to
+manage the underlying <span class="NDLSystemFont">NiLight</span>
+attributes associated with a given entity.</p>
+
+<p>If a light entity is discovered, the Light Service
+automatically takes care of creating a corresponding <span class=
+"NDLSystemFont">NiLight</span> and querying the light entity for
+relevant properties to apply to the <span class=
+"NDLSystemFont">NiLight</span>. Also, if the light entity is set
+to cast shadows, relevant shadow casting properties are queried
+to apply to a corresponding <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span>.</p>
+
+<p>If properties change for a specific light entity, then the
+Light Service updates the associated <span class=
+"NDLSystemFont">NiLight</span> accordingly, and it iterates
+through all the scene graphs to update the <span class=
+"NDLSystemFont">NiLight</span> object's Affected Nodes list.
+Also, if shadow casting properties change for a specific light
+entity, then the <span class=
+"NDLSystemFont">NiShadowGenerator</span> is created, if
+necessary, and individual properties are queried in order to set
+appropriate <span class="NDLSystemFont">NiShadowGenerator</span>
+parameters, as needed. Also, the function iterates through all
+the scene graphs to update Unaffected Caster and Unaffected
+Receiver lists appropriately.</p>
+
+<p>If a light entity is removed, the Light Service takes care of
+removing the light from the scene and cleaning up relevant
+Affected Nodes lists.</p>
+
+<p>If a scene graph is added, the Light Service ensures that the
+<span class="NDLSystemFont">NiNode</span> representing the newly
+added entity is attached to the Affected Nodes list for every
+light that is in range. Also, the Light Service iterates through
+all the shadow generators to ensure that, depending on the entity
+property settings, the <span class="NDLSystemFont">NiNode</span>
+casts shadows or not, and receives shadows or not, by updating
+each light's Unaffected Casters and Unaffected Receivers
+lists.</p>
+
+<p>If a scene graph is removed, the Light Service ensures that
+all references to that scene graph are removed from relevant
+Affected Nodes, Unaffected Casters, and Unaffected Receivers
+lists.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

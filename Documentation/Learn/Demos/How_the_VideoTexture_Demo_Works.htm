@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How the VideoTexture Demo Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How the VideoTexture Demo Works</h1>
+
+<p>The main application code for this demo (<span class=
+"NDLSystemFont">VideoTexture</span>, subclassed from <span class=
+"NDLSystemFont">NiApplication</span>) is fairly straightforward,
+while the bulk of the detailed interactions with the video
+decoding and sound output libraries appears in the <span class=
+"NDLSystemFont">NiVideoDecoder_Bink</span> class, which is
+derived from the <span class=
+"NDLSystemFont">NiVideoDecoder</span> class.</p>
+
+<h2>NiBinkVideo</h2>
+
+<p>To build this sample, you'll need the <span class=
+"NDLSystemFont">NiBinkVideo.lib</span> library. You can build
+this library by using the appropriate solution within the
+platform-specific directories in the following location:</p>
+
+<p><span class=
+"NDLSystemFont"><em>%EMERGENT_PATH%</em>\Source\CoreRuntime\UtilityLibs\NiVisualTracker</span></p>
+
+<p>The NiBinkVideo library in turn depends on the Bink SDK,
+(available from RAD Game Tools). Before building the NiBinkVideo
+library ensure the correct platform specfic environment variable
+that points to the location of the Bink SDK for that platform is
+setup. These include BINK_WIN32_PATH, BINK_XENON_PATH,
+and BINK_PS3_PATH. In the same
+way that NiMilesAudio inherits from NiAudio, the NiBinkVideo
+class inherits from the NiVideo class. This creates a layer of
+abstraction between Gamebryo and third party video decoding
+libraries. To enable sound output for Win32 you'll also need the
+Miles SDK (also available from RAD Game Tools). However,
+configurations may be built that do not have sound enabled, which
+applies also to platforms for which the Miles SDK is not yet
+available.</p>
+
+<h2>Initialize</h2>
+
+<p><span class="NDLSystemFont">VideoTexture::Initialize</span>
+calls <span class=
+"NDLSystemFont">VideoTexture::CreateSoundSystem</span> to
+initialize the sound library and <span class=
+"NDLSystemFont">VideoTexture::AssociateSoundSystemWithVideoSystem</span>
+to identify the sound library to the video decoding library. Then
+it calls the base class version of <span class=
+"NDLSystemFont">Initialize</span> and sets up the camera
+turret.</p>
+
+<h2>CreateScene</h2>
+
+<p><span class="NDLSystemFont">VideoTexture::CreateScene</span>
+calls the base class version. Next, it creates a two-sided 3D
+rectangle (with a placeholder texture) and attaches it to a node
+for managing local rotations. It then positions the 3D rectangle
+in the scene, based on the camera location and viewing direction.
+Then, it creates a small 2D screen polygon with a placeholder
+texture. Finally, it sets up a dynamic texture (i.e., the "video
+texture") for use by both the two-sided 3D rectangle and the
+small 2D screen rectangle.</p>
+
+<h2>SetupVideoTexture</h2>
+
+<p><span class=
+"NDLSystemFont">VideoTexture::SetupVideoTexture</span> calls
+<span class="NDLSystemFont">NiVideoDecoder_Bink::Create</span> to
+allocate and return a video decoder that specifically uses the
+Bink video SDK. Then, it gets the "video texture" (actually, a
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDynamicTexture.htm">NiDynamicTexture</a></span>)
+from the decoder via <span class=
+"NDLSystemFont">CreateVideoTexture</span>. Finally, it applies
+the "video texture" to both sides of the two-sided 3D rectangle
+and to the 2D screen rectangle.</p>
+
+<h2>UpdateFrame</h2>
+
+<p>After calling the base class version, <span class=
+"NDLSystemFont">VideoTexture::UpdateFrame</span> asks the decoder
+for an updated video frame by calling <span class=
+"NDLSystemFont">ProcessVideoFrame</span>. Then, it rotates the
+large 3D polygon, based on the particular angular setting for
+this frame (which may result from automatic spinning or user
+input). Finally, the camera turret is updated, as a result of any
+user input.</p>
+
+<h2>CreateTwoSided3DPolygon</h2>
+
+<p><span class=
+"NDLSystemFont">VideoTexture::CreateTwoSided3DPolygon</span>
+creates a polygon with a 4 x 3 aspect ratio, as a two-sided
+rectangle consisting of 4 triangles. It also assigns and updates
+an appropriate texturing property.</p>
+
+<h2>CreateScreenPolygon</h2>
+
+<p><span class=
+"NDLSystemFont">VideoTexture::CreateScreenPolygon</span> creates
+a small 2D screen rectangle with a 4 x 3 aspect ration near the
+lower right corner of the screen. It also assigns appropriate
+texturing and other properties and performs the appropriate
+updates.</p>
+
+<h2>CreateSoundSystem</h2>
+
+<p><span class=
+"NDLSystemFont">VideoTexture::CreateSoundSystem</span> is called
+to initialize the sound library on sound-enabled builds on
+platforms that currently have sound support.</p>
+
+<h2>AssociateSoundSystemWithVideoSystem</h2>
+
+<p><span class=
+"NDLSystemFont">VideoTexture::AssociateSoundSystemWithVideoSystem</span>
+directs the video decoding library (Bink, in this case) to use a
+specific audio library (the Miles Sound System, for Win32) as its
+sound output system.</p>
+
+<p>The <span class="NDLSystemFont">NiVideoDecoder</span> base
+class (which derives from <span class=
+"NDLSystemFont">NiRefObject</span>) defines numerous functions
+for representative functionality across video SDKs. Some of the
+base class functions do nothing or default to an error state, and
+are meant to be overridden by specific video SDK subclass
+implementations.</p>
+
+<p>The class <span class=
+"NDLSystemFont">NiVideoDecoder_Bink</span> (which derives from
+<span class="NDLSystemFont">NiVideoDecoder</span>) uses the Bink
+video SDK specifically as its video decoding system. Only a few
+functions are needed for the VideoTexture sample. The most
+important of these are discussed below:</p>
+
+<h2>Create</h2>
+
+<p><span class="NDLSystemFont">NiVideoDecoder_Bink::Create</span>
+allocates and returns a video decoder that specifically uses the
+Bink SDK.</p>
+
+<h2>OpenBinkFile</h2>
+
+<p><span class=
+"NDLSystemFont">NiVideoDecoder_Bink::OpenBinkFile</span> opens
+the specified Bink file for video decompression and holds onto
+the Bink handle. It also preloads the entire animation into
+memory for performance. Furthermore, it directs Bink to skip
+frames if the video begins to fall behind the audio, which is
+useful when you want the video quality to have precedence over
+the sound quality. Finally, it sets the total number of frames
+and initializes the status to a ready state.</p>
+
+<h2>CreateVideoTexture</h2>
+
+<p><span class=
+"NDLSystemFont">NiVideoDecoder_Bink::CreateVideoTexture</span>
+creates a dynamic texture (for use as a "video texture") and
+tries to get a format that matches the video source format for
+top speed.</p>
+
+<h2>ProcessVideoFrame</h2>
+
+<p><span class=
+"NDLSystemFont">NiVideoDecoder_Bink::ProcessVideoFrame</span>
+represents the bulk of the implementation of video frame playback
+as a texture. First, it directs Bink to ensure that the rendered
+frame will be 'synced' to the video frame rate. Then it
+decompresses a frame of video. Next, it locks the dynamic
+texture's buffer (so the decompressed frame may be copied into
+it), copies the decompressed video frame into the dynamic
+texture's buffer, and unlocks the dynamic texture's buffer. Then,
+it advances to the next video frame in the Bink video clip, even
+if the last processed frame was skipped. Finally, it adjusts the
+current frame count if the video loops.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

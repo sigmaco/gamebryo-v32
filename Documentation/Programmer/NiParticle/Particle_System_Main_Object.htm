@@ -1,0 +1,282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+
+<title>Particle System Main Object</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Particle System Main Object</h1>
+
+<p>The object in the scene graph that represents a particle 
+ system in Gamebryo is the <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span> 
+ object. <span class="NDLSystemFont">NiPSParticleSystem</span> is derived 
+ from <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ and thus itself represents the renderable geometry of the particles. The 
+ following sections provide more information about the main particle system 
+ object:</p>
+
+<ul>
+	
+	<li><a href="Particle_System_Main_Object.htm#Creating_a_Particle_System">Creating 
+ a Particle System</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Particle_Data">Particle 
+ Data</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Simulator_and_Generator">Simulator 
+ and Generator</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Resetting_the_System">Resetting 
+ the System</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#World_Space_Particles_vs__Model_Space_Particles">World-Space 
+ Particles vs. Model-Space Particles</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Emitters_and_Spawners">Emitters 
+ and Spawners</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Mesh_Particles">Mesh 
+ Particles</a></li>
+	
+	<li><a href="Particle_System_Main_Object.htm#Running_Up_a_Particle_System">Running 
+ Up a Particle System</a></li>
+</ul>
+
+<a name="Creating_a_Particle_System"></a><h2>Creating a Particle 
+ System</h2>
+
+<p>To create a particle system, use the static <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a>::Create</span> 
+ function. This function will create a simulator and all the necessary 
+ steps for it, along with optionally creating and adding an <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span> 
+ object (for computing a dynamic bounding volume). It also provides an 
+ option to create a default generator. Modifications can be made to the 
+ particle system after this function has been called.</p>
+
+<a name="Particle_Data"></a><h2>Particle Data</h2>
+
+<p>The per-particle data necessary to properly simulate 
+ the particle system is stored in aligned arrays in <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>. 
+ This data includes positions, colors, velocities, radii, and other parameters 
+ for the particles. A maximum number of particles is passed into the <span class="NDLSystemFont">NiPSParticleSystem</span> constructor that is used 
+ to set the size for the data arrays. It cannot be changed at any time 
+ after the particle system has been created, and thus the particle data 
+ arrays are never reallocated after creation. This number should represent 
+ the maximum number of particles that will ever exist in the system. If 
+ the system attempts to emit new particles after the maximum number of 
+ particles has been reached, no additional particles are created. In addition 
+ to this maximum number, the particle system also keeps track of the number 
+ of active particles. This number should be used as an upper limit when 
+ indexing into particle data arrays.</p>
+
+<p>The particle data arrays are owned by the <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ object and are not protected against concurrent access with locking structures 
+ due to performance implications. Since <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ kernels could be running on other cores simultaneously with application 
+ code, it is possible that an application could attempt to access the particle 
+ data at the same time as a particle system simulator or generator. Because 
+ of this, it is required that applications call the <span class="NDLSystemFont">ForceSimulationToComplete</span> 
+ function to ensure that it is safe to access the particle data before 
+ doing anything with it. The particle system internally ensures that its 
+ Floodgate kernels are not improperly accessing the data.</p>
+
+<a name="Simulator_and_Generator"></a><h2>Simulator and Generator</h2>
+
+<p>Because <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ is derived from <span class="NDLSystemFont">NiMesh</span>, it can have <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshModifier.htm">NiMeshModifier</a></span> 
+ objects attached to it. In particular, it must have an <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSimulator.htm">NiPSSimulator</a></span> 
+ object attached. This mesh modifier performs all the simulation work for 
+ the particle system, resulting in updated particle data arrays that can 
+ be consumed by a particle generator mesh modifier. The generator uses 
+ the particle data to generate and update renderable geometry for the particles. 
+ The standard generator that ships with Gamebryo is <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSFacingQuadGenerator.htm">NiPSFacingQuadGenerator</a></span>.</p>
+
+<p>During its update, <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ will kick off its simulator to perform the simulation of the system. It 
+ will then return, allowing the simulator to execute asynchronously during 
+ the remainder of the scene graph update. If the particle system is determined 
+ to be visible by a culling operation, the simulator is forced to complete 
+ at that point. If the particle system is not drawn, the simulator is completed 
+ on the next update. After the simulator has completed, the particle system 
+ object does some work to remove particles that have died and to spawn 
+ new particles prior to rendering. Particles that have been added to the 
+ system during simulation are not actually added until the beginning of 
+ the subsequent update. Once these operations are complete, a generator 
+ is kicked off to generate the renderable geometry for the particles. This 
+ geometry is stored as data streams on the <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ object itself. The generator is allowed to execute asynchronously until 
+ immediately before the particle system object is rendered.</p>
+
+<a name="Resetting_the_System"></a><h2>Resetting the System</h2>
+
+<p>If the time passed into the <span class="NDLSystemFont">NiPSParticleSystem::Update</span> 
+ function is less than the last time that was passed in, this condition 
+ is detected and all particles are removed from the system. The same functionality 
+ can be obtained manually by calling the <span class="NDLSystemFont">ResetParticleSystem</span> 
+ function. An <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSResetOnLoopCtlr.htm">NiPSResetOnLoopCtlr</a></span> 
+ time controller object can be attached to the particle system to cause 
+ it to remove all of its particles automatically when it loops.</p>
+
+<a name="World_Space_Particles_vs__Model_Space_Particles"></a><h2>World-Space 
+ Particles vs. Model-Space Particles</h2>
+
+<p>By default, <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ computes and stores the particles in world space. This means that the 
+ translation and rotation of the <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ object do not have any effect on the positions or velocities of the particles, 
+ allowing it to reside anywhere in the scene graph. There is an option 
+ to store particles in model space, if desired. In this case, moving the 
+ <span class="NDLSystemFont">NiPSParticleSystem</span> object has the effect 
+ of moving the entire cloud of active particles with it. This may be desirable 
+ in certain situations. For example, if you have a character inside a train 
+ holding a smoking cigarette. Because it is inside the train, the entire 
+ cloud of cigarette smoke would appear to move with the train to an observer 
+ standing on the ground outside, but it would not move with the tip of 
+ the cigarette relative to the train. The vast majority of situations will 
+ call for world-space particles, but the option for model-space particles 
+ is available, if needed.</p>
+
+<p><b>NOTE</b>
+: When <span class="NDLSystemFont">NiPSParticleSystem</span> is set to use world-space 
+ particles, its world scale still has an effect on the positions of the 
+ particles. Thus, just because the system is set to "world-space" 
+ does not mean that the positions of the particles as stored in their particle 
+ data array do not need to be multiplied by the world transform of the 
+ <span class="NDLSystemFont">NiPSParticleSystem</span> object. It does mean, 
+ however, that the world translate and the world rotate on that object 
+ will always be the identity. The world scale is preserved to allow the 
+ size and position of each particle to scale appropriately when the entire 
+ system is scaled. When the world scale is changed for a world-space particle 
+ system, an inverse scale is applied to all currently active particles 
+ to ensure that they do not change position. All newly emitted particles 
+ will observe the new scale.</p>
+
+<p><b><a name="StaticBoundNote"></a>ALSO 
+ NOTE</b>
+: When a world-space particle system has a static bounding 
+ volume (i.e., does not have an <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSBoundUpdater.htm">NiPSBoundUpdater</a></span> 
+ attached to it), its bounding volume will be transformed by the original 
+ world transform (before its translate and rotate are cleared), causing 
+ the bounding volume to move with the <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ object when it is transformed. If this was not done, the bounding volume 
+ would always remain in the same location, regardless of where the <span class="NDLSystemFont">NiPSParticleSystem</span> object was moved. This may 
+ be okay in certain circumstances, but it is not intuitive behavior for 
+ a static bounding volume, especially if the particle emitter is moved 
+ along with the <span class="NDLSystemFont">NiPSParticleSystem</span> object. 
+ If the bounding volume is dynamic, it will be properly computed in world 
+ space each frame by the <span class="NDLSystemFont">NiPSBoundUpdater</span> 
+ and will not move with the <span class="NDLSystemFont">NiPSParticleSystem</span> 
+ object.</p>
+
+<a name="Emitters_and_Spawners"></a><h2>Emitters and Spawners</h2>
+
+<p><span class="NDLSystemFont">NiPSParticleSystem</span> 
+ owns a set of <a href="Particle_System_Emitters_and_Spawners.htm#Particle_Emitters">emitters</a> 
+ and a set of <a href="Particle_System_Emitters_and_Spawners.htm#Particle_Spawners">spawners</a>. 
+ The emitters are used to specify initial parameters for particles that 
+ are added to the system. The spawners are used to spawn new particles 
+ from existing particles when they die or collide with colliders. <span class="NDLSystemFont">NiPSParticleSystem</span> also references a death 
+ spawner. The presence of this spawner determines whether or not new particles 
+ should get spawned when particles are killed. If this pointer is NULL, 
+ no spawning on death will occur. The death spawner does not have to point 
+ to a spawner that is owned by the same particle system. A spawner owned 
+ by a different particle system can be used to spawn entirely different 
+ particles when particles die.</p>
+
+<a name="Mesh_Particles"></a><h2>Mesh Particles</h2>
+
+<p><span class="NDLSystemFont">NiPSParticleSystem</span> 
+ represents a set of particles whose geometry is created by a generator 
+ mesh modifier and stored on that object in data streams. Some particle 
+ systems, however, require particles to be instances of a complex mesh 
+ or a scene graph. Such a system uses an <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSMeshParticleSystem.htm">NiPSMeshParticleSystem</a></span> 
+ object instead. <span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ internally stores a container <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ object whose children are the mesh particles in the system. Mesh particles 
+ can be any <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>, 
+ including an entire scene graph, and may optionally contain animations 
+ and time controllers (or even particle systems) themselves. Care must 
+ be taken when using mesh particles, however, to ensure that performance 
+ does not suffer too badly. By definition, each mesh particle constitutes 
+ at least one draw call, and an entire scene graph of objects may be several 
+ draw calls per particle. Ideally, a mesh particle should be just a single 
+ <span class="NDLSystemFont">NiMesh</span> object rather than an entire scene 
+ graph. When the <span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ object is updated, it iterates through all the mesh particles, calling 
+ <span class="NDLSystemFont">Update</span> on each one, passing in the particle's 
+ age as the time. This allows mesh particles to internally animate independently 
+ from each other.</p>
+
+<p><span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ holds pools of mesh particles that can be reused after they die, thereby 
+ reducing the overhead of cloning and deleting particles. These pools can 
+ be pre-filled when loading a NIF file to eliminate the performance hit 
+ of allocating the pools when the first particle dies. <span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ also stores an array of master particles. When a new mesh particle is 
+ added, the appropriate master particle is cloned and added to the container 
+ node. Multiple master particles may be stored to support spawning a different 
+ mesh type upon particle death or collision with a particle collider. The 
+ number of master particles must match the number of generations for the 
+ particle system (the number of times that collision or death will spawn 
+ new particles). Thus, multiple types of mesh particles can exist in the 
+ particle system at the same time.</p>
+
+<p>Because mesh particles are stored as scene graph children 
+ of a container node, the renderable geometry for these particles does 
+ not reside in data streams on the <span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ object. As such, an <span class="NDLSystemFont">NiPSMeshParticleSystem</span> 
+ object will not have a generator mesh modifier attached and will automatically 
+ exclude itself from rendering. Instead, it will render its container node 
+ of mesh particles.</p>
+
+<a name="Running_Up_a_Particle_System"></a><h2>Running Up a 
+ Particle System</h2>
+
+<p>When particle systems are exported from the art packages 
+ and are saved to disk, the number of active particles is not saved out. 
+ In fact, none of the per-particle data is saved to disk for a particle 
+ system. A particle system is inherently a simulation, and saving out its 
+ full state at any given moment would be wasteful and unnecessary in the 
+ vast majority of cases. Thus, if particles should already exist when the 
+ first frame is rendered, the particle system needs to be "run up". 
+ This involves determining the minimum time at which particles should start 
+ getting emitted and updating the particle system from that time until 
+ the time of the first rendered frame at some fixed interval.</p>
+
+<p>A function exists in <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span> 
+ that will return the time it takes to run up a given particle system. This function, NiPSParticleSystem<span class="NDLSystemFont">::GetRunUpTime()</span> 
+ can be useful when running up particle systems because it provides the 
+ minimum time at which particles should be emitted. Particle emitters can 
+ have a negative start time specified for them in Max and Maya. This results 
+ in animation keys on the <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSEmitParticlesCtlr.htm">NiPSEmitParticlesCtlr</a></span> 
+ with negative time values. These negative values, in combination with 
+ running up the particle system, can be used to ensure that some particles 
+ already exist at time 0.0 when the application begins.</p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

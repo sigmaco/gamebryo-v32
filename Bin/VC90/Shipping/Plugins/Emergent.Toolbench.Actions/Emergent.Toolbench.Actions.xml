@@ -1,0 +1,1936 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Emergent.Toolbench.Actions</name>
+    </assembly>
+    <members>
+        <member name="T:Emergent.Toolbench.Actions.UndoRedoActionProcessor">
+            <summary>
+            Implements an action processor that processes actions meant as 
+            undo/redo actions. This is done by passing along the actions to the 
+            action history aspect on the currently action document.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionProcessor">
+            <summary>
+            This interface is implemented by plug-ins that want to be informed when
+            the action executor processes actions. Plug-ins must implement this 
+            interface and define an extension for the action processor extension 
+            point defined in the Actions plug-in.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.CanAcceptAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Allows the action processor to determine if the specified action 
+            is compatible with the action processor. Certain processors may 
+            only work with certain types of actions so this gives the processor
+            a chance to filter incoming actions.
+            </summary>
+            <param name="action">The action to be accepted.</param>
+            <param name="context"></param>
+            <param name="style"></param>
+            <returns><c>true</c> if the action can be accepted; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnActionExecuting(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when the action executor processes an action.
+            </summary>
+            <param name="action">The action that was processed.</param>        
+            <param name="context"></param>
+            <param name="style"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnActionExecuted(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle,Emergent.Toolbench.Actions.ExecutionResult)">
+            <summary>
+            Called when the action executor has executed an action.
+            </summary>
+            <param name="action">The action that was processed.</param>        
+            <param name="context"></param>
+            <param name="style"></param>
+            <param name="result"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnActionAborted(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when the action executor has failed to execute an action because it was aborted 
+            prematurely because of an exception.
+            </summary>
+            <param name="action">The action that was processed.</param>
+            <param name="context"></param>
+            <param name="style"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnBeginActionFrame(System.String,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when an action frame is started. The action executor will 
+            automatically begin an action frame for each new action that is 
+            processed. This is to ensure that all side effect actions are 
+            all contained in the same frame resulting in one atomic action.
+            </summary>
+            <param name="description">Optional description of the frame.</param>
+            <param name="context"></param>
+            <param name="style"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnEndActionFrame(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when the current action frame has been terminated. This 
+            gives processors a change to update any internal state as a result
+            of a frame ending.
+            </summary>
+            <param name="context"></param>
+            <param name="style"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProcessor.OnAbortActionFrame(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when an action frame is aborted. This could happen if an 
+            action throws an exception or fails for some other reason.
+            </summary>
+            <param name="context"></param>
+            <param name="style"></param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.CanAcceptAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Allows the action processor to determine if the specified action 
+            is compatible with the action processor. Certain processors may 
+            only work with certain types of actions so this gives the processor
+            a chance to filter incoming actions.
+            </summary>
+            <param name="action">The action to be accepted.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+            <returns><c>true</c> if the action can be accepted; otherwise, 
+            <c>false</c>.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.CanAcceptFrameEvent(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Helper method to determine if the undo action processor can accept the frame event.
+            </summary>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+            <returns><c>true</c> if the frame can be accepted; otherwise, 
+            <c>false</c>.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnActionExecuting(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when the action executor processes an action.
+            </summary>
+            <param name="action">The action that was processed.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnActionExecuted(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle,Emergent.Toolbench.Actions.ExecutionResult)">
+            <summary>
+            Called when the action executor has executed an action.
+            </summary>
+            <param name="action">The action that was processed.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+            <param name="result">The result of the action after it was executed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnActionAborted(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when an action gets aborted.
+            </summary>
+            <param name="action">The action that was processed.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnBeginActionFrame(System.String,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when an action frame is started. The action executor will
+            automatically begin an action frame for each new action that is
+            processed. This is to ensure that all side effect actions are
+            all contained in the same frame resulting in one atomic action.
+            </summary>
+            <param name="description">Optional description of the frame.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnEndActionFrame(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when the current action frame has been terminated. This
+            gives processors a change to update any internal state as a result
+            of a frame ending.
+            </summary>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoRedoActionProcessor.OnAbortActionFrame(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called when an action frame is aborted. This could happen if an 
+            action throws an exception or fails for some other reason. Note, 
+            the abortion of an action frame only occurs on the action processor
+            that had the problem. Other action processors remain unaffected.
+            </summary>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style the action should obey when executing.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionFrame">
+            <summary>
+            A wrapper to manage the bundling of multiple, sequential actions into
+            a single operation.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionFrame.#ctor(Emergent.Toolbench.Actions.ActionExecutor,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Constructs an action frame with the description, execution style and
+            executes with the provided content.
+            </summary>
+            <param name="context">The context to associate the batch action with.</param>
+            <param name="executionStyle">The execution style of the action frame.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionFrame.Dispose">
+            <summary>
+            Cleans up the UndoFrame.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExtensionPoints.ActionProcessor">
+            <summary>
+            The action processor extension point.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.DataBound.ActionManager">
+            <summary>
+            Main class for managing actions on WPF-aware objects, that is, classes that implement
+            INotifyPropertyChanged or that inherit from DependencyObjects.  This will undo-able actions 
+            based on those changes to the <see cref="T:Emergent.Toolbench.Actions.IActionExecutor"/>.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ManagePropertyChange(System.ComponentModel.INotifyPropertyChanged,System.String,System.Object,System.Object)">
+            <summary>
+            Create the necessary actions to undo/redo the change to the specified property
+            on the specified object.
+            </summary>
+            <param name="target">The object with the property.</param>
+            <param name="propertyName">Name of the property.</param>
+            <param name="oldValue">The old value.</param>
+            <param name="newValue">The new value.</param>
+            <remarks>This is usually called in the setter of the property implementation.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ManagePropertyChange(System.ComponentModel.INotifyPropertyChanged,System.String,System.Object,System.Object,System.String)">
+            <summary>
+            Create the necessary actions to undo/redo the change to the specified property
+            on the specified object.
+            </summary>
+            <param name="target">The object with the property.</param>
+            <param name="propertyName">Name of the property.</param>
+            <param name="oldValue">The old value.</param>
+            <param name="newValue">The new value.</param>
+            <param name="description">A custom description to be used to describe the 
+                action.
+            </param>
+            <remarks>This is usually called in the setter of the property implementation.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ManagePropertyChange(System.ComponentModel.INotifyPropertyChanged,System.String,System.Object,System.Object,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Create the necessary actions to undo/redo the change to the specified property
+            on the specified object.
+            </summary>
+            <param name="target">The object with the property.</param>
+            <param name="propertyName">Name of the property.</param>
+            <param name="oldValue">The old value.</param>
+            <param name="newValue">The new value.</param>
+            <param name="style"></param>
+            <remarks>This is usually called in the setter of the property implementation.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ManageDependencyPropertyChange(System.Windows.DependencyObject,System.Windows.DependencyProperty,System.Object,System.Object)">
+            <summary>
+            Create the necessary actions to undo/redo the change to the specified
+            DependencyProperty on the specified DependencyObject.
+            </summary>
+            <param name="target">The dependency object with the property.</param>
+            <param name="property">The dependency property.</param>
+            <param name="oldValue">The old value.</param>
+            <param name="newValue">The new value.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ManageObservableCollectionChange(System.Collections.Specialized.INotifyCollectionChanged)">
+            <summary>
+            Instruct the manager to track the changes to the observable collection.
+            </summary>
+            <param name="collection">The collection to track.</param>
+            <remarks>This is usually called in the constructor the class exposing
+            the collection.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.DataBound.ActionManager.ForwardAction(Emergent.Toolbench.Actions.IActionHandler)">
+            <summary>
+            Use to add an external action to the active action frame.
+            </summary>
+            <param name="action">The action.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.ActionManager.IsBusy">
+            <summary>
+            Gets a value indicating whether the action manager is busy. 
+            </summary>
+            <value><c>true</c> if this instance is busy; otherwise, <c>false</c>.</value>
+            <remarks>
+            This is not for general usage and should be used with care by external code 
+            since the busy logic is usually handled internally. It is not a good practice to 
+            check this state in order to decide to create an action or not.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.ActionManager.PropertyChangeActionBusy">
+            <summary>
+            Gets or sets a value indicating whether the manager is executing a property
+            change undo/redo. This is useful to avoid re-entrancy.
+            </summary>
+            <value>
+                <c>true</c> if a property change is triggered by the manager; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.ActionManager.ObservableCollectionChangeBusy">
+            <summary>
+            Gets or sets a value indicating whether whether the manager is executing a collection
+            change undo/redo. This is useful to avoid re-entrancy.
+            </summary>
+            <value>
+                <c>true</c> if a collection change is triggered by the manager; otherwise, <c>false</c>.
+            </value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionFactory">
+            <summary>
+            The <see cref="T:Emergent.Toolbench.Actions.ActionFactory"/> is used to create a new instance of an 
+            <see cref="T:Emergent.Toolbench.Actions.IActionDescriptor"/> corresponding to the action data in an extension point.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.UndoAction">
+            <summary>
+            Implements the undo action on the active document.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ISerializableAction">
+            <summary>
+            Defines an action that may be serialized to and from XML.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionHandler">
+            <summary>
+            The interface for responding to actions generated in the system. Plug-ins that provide
+            actions rely on classes that implement this interface.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHandler.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Called to handle an action executed by the action executor.
+            </summary>
+            <param name="context">The execution context of the action.</param>
+            <param name="style">The execution style of the action.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ISerializableAction.ToXml">
+            <summary>
+            Converts the specified action's data into XML form.
+            </summary>
+            <returns>An XML node that describes the action.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ISerializableAction.FromXml(System.Xml.Linq.XElement)">
+            <summary>
+            Extracts the necessary action data from the specified XML data.
+            </summary>
+            <param name="node">Top level XML node containing the action's data.
+            </param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ISerializableAction.IsSerializable">
+            <summary>
+            Gets a value indicating if the action is serializable.  Use this
+            if your action can potentially become non-serializable based on
+            input conditions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ISerializableAction.Description">
+            <summary>
+            Gets a description used to display information about the serializable
+            action to the user.
+            </summary>
+            <value>The label.</value>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Passes on undo request to the action history attached to the
+            active document.
+            </summary>
+            <param name="context">The execution context of the action.</param>
+            <param name="style">The execution style of the action.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoAction.ToXml">
+            <summary>
+            Converts the specified action's data into XML form.
+            </summary>
+            <returns>An XML node that describes the action.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoAction.FromXml(System.Xml.Linq.XElement)">
+            <summary>
+            Extracts the necessary action data from the specified XML data.
+            </summary>
+            <param name="node">Top level XML node containing the action's data.
+            </param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoAction.IsSerializable">
+            <summary>
+            Gets a value indicating if the action is serializable.  Use this
+            if your action can potentially become non-serializable based on
+            input conditions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoAction.Description">
+            <summary>
+            Gets a description used to display information about the serializable
+            action to the user.
+            </summary>
+            <value>The label.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionExecutor">
+            <summary>
+            This interface defines the primary router for actions that occur in 
+            Toolbench. Actions represent high level user tasks that are executed by
+            processing them with the action executor service. When actions are 
+            executed, the action executor will build transactional actions such 
+            that side effect actions are grouped with the parent action that caused them.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.PushContent(Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Pushes an override content from the action executors private stack of active
+            or default content to associate with actions that do not explicitly specify
+            content to be associated with.  This allows you to change the scope of content 
+            context that the action executor can perform actions on.  This should be used 
+            when actions need to execute for content, but are unable to tell the action
+            executor which content they belong to.  Pushing some content to use higher in 
+            the chain of events will be used instead of the active content in the content 
+            service.  Every content pushed onto the action executor should be popped.
+            </summary>
+            <param name="content">The content to use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.PopContent">
+            <summary>
+            Pops an override content from the action executors private stack of active
+            or default content to associate with actions that do not explicitly specify
+            content to be associated with.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.PushContent(System.Threading.Thread,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Pushes an override content from the action executors private stack of active
+            or default content to associate with actions that do not explicitly specify
+            content to be associated with for a particular thread.
+            </summary>
+            <param name="thread">The thread to override the default content on.</param>
+            <param name="content">The content to override with.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.PopContent(System.Threading.Thread)">
+            <summary>
+            Pops an override content from the action executors private stack of active
+            or default content to associate with actions that do not explicitly specify
+            content to be associated with for a particular thread.
+            </summary>
+            <param name="thread">The thread to pop the overridden default content on.</param>
+            <returns>The content that was popped from the threads private override stack.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.  This will use a default execution style of 
+            <see cref="F:Emergent.Toolbench.Actions.ExecutionStyle.User"/>
+            </summary>
+            <param name="action">Action handler to process.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.  This will use a default execution style of 
+            <see cref="F:Emergent.Toolbench.Actions.ExecutionStyle.User"/>
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="content">The content the action is associated with.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="style">The style of execution to use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle,System.String)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="style">The style of execution to use.</param>
+            <param name="command">The command name for general actions.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action.  This method will forward the action to any action processors
+            that were discovered in the plug-in extension registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="content">The content the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle,System.String)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="content">The content the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+            <param name="command">The command name for general actions.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors that were discovered in the plug-in extension 
+            registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="content">The content the action is associated with.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="style">The style of execution.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="content">The content the action is associated with.</param>
+            <param name="style">The style of execution.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.Suspend">
+            <summary>
+            Suspends the action executor preventing it from sending actions to any action processor.
+            It also prevents the action executor from marking documents as dirty.  Suspend calls can
+            be nested inside each other, but every suspend call much have a matching resume call.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.Resume">
+            <summary>
+            Resumes the action executor allowing it to begin sending actions to action processors and 
+            marking documents dirty.  There must be one resume call for every suspend call.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.SuspendThread">
+            <summary>
+            Suspends the action executor preventing it from sending actions to any action processor.
+            It also prevents the action executor from marking documents as dirty.  Suspend calls can
+            be nested inside each other, but every suspend call much have a matching resume call.
+            This only affects the thread it is called on.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.ResumeThread">
+            <summary>
+            Resumes the action executor allowing it to begin sending actions to action processors and 
+            marking documents dirty.  There must be one resume call for every suspend call.  This 
+            only affects the thread it is called on.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.BeginFrame(System.String)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.BeginFrame(System.String,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <param name="content">The content to base the action frame around.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.BeginFrame(System.String,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <param name="content">The content to base the action frame around.</param>
+            <param name="style">The style of the action frame.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.EndFrame">
+            <summary>
+            Ends the last action frame pushed onto the action frame stack.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionExecutor.FindActionProcessor``1">
+            <summary>
+            Finds an action processor of a given class type.
+            </summary>
+            <typeparam name="T">The action processor to find.</typeparam>
+            <returns>The specified action processor or null if it cannot be 
+            found.</returns>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.IActionExecutor.InputCommitted">
+            <summary>
+            The commit input handler's job is to take focus or verify input upon request so that
+            actions that potentially save state can save the user expected state.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.IActionExecutor.InputRestored">
+            <summary>
+            The restore input handler's job is to restore the focus that was taken after an action
+            has completed executing an action that persists state.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionExecutor.IsSuspended">
+            <summary>
+            Gets a value indicating if the action executor is suspended.  When the action executor
+            is suspended no processors are notified of any events in the action executor, but 
+            actions and action frames are still managed correctly and executed.  If the action executor
+            is suspended is also stops marking documents as dirty when 
+            <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> actions are executed.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionExecutor.IsThreadSuspended">
+            <summary>
+            Gets a value indicating if the action executor is suspended.  When the action executor
+            is suspended no processors are notified of any events in the action executor, but 
+            actions and action frames are still managed correctly and executed.  If the action executor
+            is suspended is also stops marking documents as dirty when 
+            <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> actions are executed.  This only affects the 
+            thread it is called on.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ExecutionStyle">
+            <summary>
+            The execution style of an action denotes how the action
+            was invoked.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionStyle.User">
+            <summary>
+            Action executed by the user.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionStyle.Automated">
+            <summary>
+            Action executed by an automated process and should require no user action to complete 
+            execution.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionStyle.Silent">
+            <summary>
+            Silently executed actions can require user interaction, but are meant to be ignored 
+            by action processors.  So if you wanted to execute an action without reporting it to 
+            the undo action processor you would execute the action with the Silent style.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionDescriptor">
+            <summary>
+            Implements the IAction and IActionProxy interfaces. Actions hold the 
+            configuration information for an action extension contribution.  It 
+            also provides a "proxy" implementation which, when registered as an 
+            Event listener on UI elements, provides the ability to demand load the 
+            action's handler class.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionDescriptor">
+            <summary>
+            This interface defines the data for an action. Actions are loaded and
+            executed when certain events in the Toolbench occur. Actions may be 
+            mapped to toolbars, menus, or other items in the Toolbench.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionProxy">
+            <summary>
+            The interface for "proxy" objects that are registered to handle UI 
+            events. IActionProxy instances are stand ins for the real action
+            handlers provided by plugins. The IActionProxy allows for delayed 
+            loading of plugin resources.
+            
+            IActionProxy instances are registered with UI elements (like menus and
+            toolbars) to handle events from those objects. The proxy then retrieves
+            an instance of the real handler command and delegates the UI event to
+            the real handler.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionProxy.DoAction(System.Object,System.EventArgs)">
+            <summary>
+            The method registered as an event handler on UI elements.
+            </summary>
+            <param name="sender">The event source</param>
+            <param name="e">The event args.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.Id">
+            <summary>
+            Gets the unique id of the action.
+            </summary>
+            <value>The id.</value>        
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.ActionClass">
+            <summary>
+            Gets the full name of the class that contains the code to execute
+            when the action is invoked.
+            </summary>
+            <value>The action class.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.PluginDescriptor">
+            <summary>
+            Get the plugin that this action is defined in.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.ToolTip">
+            <summary>
+            Gets the tooltip that should be displayed if this action is displayed graphically to the
+            user.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.HasSmallIcon">
+            <summary>
+            Gets a value indicating if the action has an icon associated with it.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.SmallIconPath">
+            <summary>
+            Gets the full path to the icon used to represent the action.
+            </summary>
+            <value>The icon path.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.SmallImage">
+            <summary>
+            Gets the image for the action.
+            </summary>
+            <value>The action image.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.HasLargeIcon">
+            <summary>
+            Gets a value indicating if the action has an icon associated with it.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.LargeIconPath">
+            <summary>
+            Gets the full path to the icon used to represent the action.
+            </summary>
+            <value>The icon path.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.LargeImage">
+            <summary>
+            Gets the image for the action.
+            </summary>
+            <value>The action image.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.DefaultShortcut">
+            <summary>
+            Gets the default shortcut key combination used to execute the 
+            action. The default is used unless overridden by the user.
+            </summary>
+            <value>The default shortcut.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.Shortcut">
+            <summary>
+            Gets or sets the shortcut for the action.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.Label">
+            <summary>
+            Gets the label for the action. The label is typically used as a 
+            menu item label if the action gets mapped to a menu item, or it 
+            could be mapped to an entry in a toolbar combo-box for example.
+            </summary>
+            <value>The label text.</value>
+            <remarks>The label text should also be annotated with an ampersand
+                if mnemonics or quick access keys are required. (e.g. E&amp;xit)
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.HasPath">
+            <summary>
+            Gets a value indicating if the action has a path specified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.Path">
+            <summary>
+            Gets the path for the action.  The path does not represent where 
+            the action will actually be added but serves more as a guide if 
+            all you have is the action.
+            
+            So supposing you want to write a plug-in that generates a UI with 
+            the actions on the fly and is contextually driven, and not data 
+            driven with a predefined layout.  You can use the path as a way of 
+            grouping your actions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionDescriptor.Command">
+            <summary>
+            Gets the command for the action.
+            Used to define a parameter to the action for generic actions.
+            </summary>
+            <value>The command.</value>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionDescriptor.#ctor(Emergent.Toolbench.IElementData)">
+            <summary>
+            Initializes a new instance of the <see cref="T:System.Action"/> class.
+            </summary>
+            <param name="data">The configuration data for the action.</param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Emergent.Toolbench.Actions.ActionDescriptor.ToString" -->
+        <member name="M:Emergent.Toolbench.Actions.ActionDescriptor.DoAction(System.Object,System.EventArgs)">
+            <summary>
+            The method registered as an event handler on UI elements. When 
+            invoked, the method will create an instance of the handler class
+            defined for the action and execute it. If this is the first time 
+            the action has been executed the plug-in containing the action and 
+            all dependencies are loaded into the Toolbench.
+            </summary>        
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionDescriptor.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            This method will create the action handler if it does not exist
+            and execute the action.
+            </summary>
+            <param name="context">The execution context of the action.</param>
+            <param name="style">The execution style of the action.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.Id">
+            <summary>
+            Gets the unique id of the action.
+            </summary>
+            <value>The id.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.ActionClass">
+            <summary>
+            Gets the full name of the class that contains the code to execute
+            when the action is invoked.
+            </summary>
+            <value>The action class.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.PluginDescriptor">
+            <summary>
+            Get the plugin that this action is defined in.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.ToolTip">
+            <summary>
+            Gets the tooltip that should be displayed if this action is displayed graphically to the
+            user.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.HasSmallIcon">
+            <summary>
+            Gets a value indicating if the action has an icon associated with it.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.SmallIconPath">
+            <summary>
+            Gets the full path to the icon used to represent the action.
+            </summary>
+            <value>The icon path.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.SmallImage">
+            <summary>
+            Gets the image of the action if one exists, if no image was 
+            assigned <value>null</value> is returned.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.HasLargeIcon">
+            <summary>
+            Gets a value indicating if the action has an icon associated with it.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.LargeIconPath">
+            <summary>
+            Gets the full path to the icon used to represent the action.
+            </summary>
+            <value>The icon path.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.LargeImage">
+            <summary>
+            Gets the image of the action if one exists, if no image was 
+            assigned <value>null</value> is returned.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.DefaultShortcut">
+            <summary>
+            Gets the default shortcut key combination used to execute the
+            action. The default is used unless overridden by the user.
+            </summary>
+            <value>The default shortcut.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.Shortcut">
+            <summary>
+            Gets or sets the shortcut for the action.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.Label">
+            <summary>
+            Gets the label for the action. The label is typically used as a 
+            menu item label if the action gets mapped to a menu item, or it 
+            could be mapped to an entry in a toolbar combo-box for example.
+            </summary>
+            <value>The label text.</value>
+            <remarks>The label text should also be annotated with an ampersand
+                if mnemonics or quick access keys are required. (e.g. E&amp;xit)
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.HasPath">
+            <summary>
+            Gets a value indicating if the action has a path specified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.Path">
+            <summary>
+            Gets the path for the action.  The path does not represent where 
+            the action will actually be added but serves more as a guide if 
+            all you have is the action.
+            
+            So supposing you want to write a plug-in that generates a UI with 
+            the actions on the fly and is contextually driven, and not data 
+            driven with a predefined layout.  You can use the path as a way of 
+            grouping your actions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionDescriptor.Command">
+            <summary>
+            Gets the command for the action.
+            Used to define a parameter to the action for generic actions.
+            </summary>
+            <value>The command.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.UndoableBatchAction">
+            <summary>
+            Bundles a collection of ordered sub-actions to accomplish a
+            meta-action.  Sub-actions may be specified explicitly and/or collected
+            as side effects of execution.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoableBatchAction.#ctor(System.String)">
+            <summary>
+            Constructs an action batch.
+            </summary>
+            <param name="description">Potentially UI-visible text describing
+                the work to be accomplished by the batch.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoableBatchAction.BeginAction(Emergent.Toolbench.Actions.IUndoableActionHandler)">
+            <summary>
+            Appends a sub-action to the batch.
+            </summary>
+            <param name="action">Sub-action to append.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoableBatchAction.EndAction(Emergent.Toolbench.Actions.IUndoableActionHandler)">
+            <summary>
+            Appends a sub-action to the batch.
+            </summary>
+            <param name="action">Sub-action to append.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoableBatchAction.Undo">
+            <summary>
+            Undoes all batched actions.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.UndoableBatchAction.Redo">
+            <summary>
+            Repeats all batched actions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoableBatchAction.HasActions">
+            <summary>
+            Gets a value indicating if the undo-able batch action has any actions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoableBatchAction.Count">
+            <summary>
+            Gets the number of actions in the batch action.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoableBatchAction.ModifiesContent">
+            <summary>
+            Checks if any undo-able batch action modifies the content.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.UndoableBatchAction.Description">
+            <summary>
+            Gets a description for the undo-able set of actions.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.UndoableBatchAction.UndoActionContainer">
+            <summary>
+            The undo action container just maintains a reference to the undoable action and
+            whether or not it is the begin marker or the end marker for that action.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.UndoableDelegate">
+            <summary>
+            The <see cref="T:Emergent.Toolbench.Actions.UndoableDelegate"/> is designed to allow you to quickly wrap delegates
+            as undoable actions.  It can sometimes be tedious to need to create a specific action class
+            just to make a small chunk of code undoable.  When you encounter those situations you
+            may find it useful to instead just attach a few delegates to this class and use it as your
+            undo wrapper.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IUndoableActionHandler">
+            <summary>
+            The interface for action handlers that can be undone after having been executed.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IContentModifyingAction">
+            <summary>
+            The <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> interface is used by actions that wish to dirty
+            the content they are being executed on.  The IUndoableActionHandler implements this 
+            interface because almost every undo-able action is modifying the content.  The 
+            <see cref="T:Emergent.Toolbench.Actions.IActionExecutor"/> will look for this interface and dirty the content as 
+            specified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IContentModifyingAction.ModifiesContent">
+            <summary>
+            Gets a value indicating if the <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> should actually
+            dirty the content.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginUndo">
+            <summary>
+            The <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginUndo"/> is called in the same order that the action started 
+            executing in.  However, remember that when performing an undo typically the order of
+            actions needs to be reversed, so likely the bulk of your work will need to occur in
+            <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndUndo"/>.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndUndo">
+            <summary>
+            The <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndUndo"/> is called at the point in time when the original action 
+            finished executing.  It will contain the bulk of the work done by most undo actions, 
+            but users may find the need to set some state prior to any work that was performed
+            in a sub action be set in their <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginUndo"/> before the sub actions 
+            <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginUndo"/> or <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndUndo"/> is called.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginRedo">
+            <summary>
+            The <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.BeginRedo"/> is called at the point in time when the original begin 
+            executing, the code here should mimic fairly closely the code in your action's 
+            <see cref="M:Emergent.Toolbench.Actions.IActionHandler.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)"/>.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndRedo">
+            <summary>
+            The <see cref="M:Emergent.Toolbench.Actions.IUndoableActionHandler.EndRedo"/> is called at the point your action finished executing.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IUndoableActionHandler.IsUndoable">
+            <summary>
+            Gets a value indicating if the action is undo-able.
+            </summary>
+            <remarks>
+            Normally this value should be true but if the action can conditionally become 
+            non-undo-able, this property should reflect that, this value is only observed when the 
+            action is executed.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IUndoableActionHandler.Description">
+            <summary>
+            Gets a description used to display information about the undo/redo operation to the 
+            user.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.Plugin">
+            <summary>
+            Implements the plugin interface for the actions plugin. This method 
+            injects the action executor service.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.Plugin.Start">
+            <summary>
+            Starts the action plugin.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.HistoryChangedHandler">
+            <summary>
+            Delegate used to handle changes to the ActionHistoryAspect state.
+            </summary>
+            <param name="history">The history aspect that has changed.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.IActionHistoryAspect">
+            <summary>
+            Interface for managing the action history of a document, which is the
+            core of the undo system.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.GetActionText(System.Int32)">
+            <summary>
+            Gets descriptive UI text for a particular action in the history.
+            </summary>
+            <param name="index">A valid index into the action history.</param>
+            <returns>UI text describing an action.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.UndoAction">
+            <summary>
+            Reverses a single action at the current execution point in the
+            action history, if such an action is available.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.RedoAction">
+            <summary>
+            Re-performs a single action at the current execution point in the
+            action history, if such an action is available.
+            </summary> 
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.UndoActions(System.Int32)">
+            <summary>
+            Reverses a series of actions beginning at the current execution
+            point in the action history.
+            </summary>
+            <param name="reps">Number of actions to process.  Must not exceed
+                available actions.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.RedoActions(System.Int32)">
+            <summary>
+            Re-performs a series of actions beginning at the current execution
+            point in the action history.
+            </summary>
+            <param name="reps">Number of actions to process.  Must not exceed
+                available actions.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.IActionHistoryAspect.ClearHistory">
+            <summary>
+            Deletes the action history.  This will make any undo and redo
+            operations unavailable.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.IActionHistoryAspect.HistoryChanged">
+            <summary>
+            An event that fires when the history data changes.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionHistoryAspect.ActionCount">
+            <summary>
+            Gets the number of actions recorded to the history.
+            </summary>
+            <value>Size of history.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionHistoryAspect.ExecutionIndex">
+            <summary>
+            Index into the history of actions that corresponds to the current
+            state of the document.  This value changes during undo and redo
+            operations.
+            </summary>
+            <value>Index into the action history that represents the present
+                state.
+            </value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.IActionHistoryAspect.IsExecutingHistory">
+            <summary>
+            Gets a value indicating whether this instance is executing history.
+            </summary>
+            <value>
+                <c>true</c> if this instance is executing history; otherwise, 
+                <c>false</c>.
+            </value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionExecutor">
+            <summary>
+            Implements the action executor interface.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Initialize">
+            <summary>
+            Allows a service to perform initialization code. This method will 
+            search the plug-in extension registry for implementations of an 
+            action processor and register descriptors for those implementations
+            so they may be called when actions are processed by the executor.
+            </summary>
+            <exception cref="T:Emergent.Toolbench.PlatformException">Thrown is a catastrophic error
+                occurs during initialization.
+            </exception>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Dispose">
+            <summary>
+            Disposes the object
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension 
+            registry.  This will use a default execution style of 
+            <see cref="F:Emergent.Toolbench.Actions.ExecutionStyle.User"/> and will assume the active 
+            content is the correct content to associate with the action.
+            </summary>
+            <param name="action">The action handler to process.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension 
+            registry.  This will use a default execution style of 
+            <see cref="F:Emergent.Toolbench.Actions.ExecutionStyle.User"/> and will associate the action 
+            with the provided content.
+            </summary>
+            <param name="action">The action handler to process.</param>
+            <param name="content">The content to associate the action with.
+            </param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension 
+            registry.  This will use the provided style of execution and will 
+            assume the active content is the correct content to associate with 
+            the action.
+            </summary>
+            <param name="action">The action handler to process.</param>
+            <param name="style">The style in which to process the action.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action.  This method will forward the action to any action processors
+            that were discovered in the plug-in extension registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="content">The content the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle,System.String)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension 
+            registry.  This will use the provided style of execution and will 
+            assume the active content is the correct content to associate with 
+            the action.
+            </summary>
+            <param name="action">The action handler to process.</param>
+            <param name="style">The style in which to process the action.</param>
+            <param name="command">The command name for general actions.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle,System.String)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension
+            registry.
+            </summary>
+            <param name="action">The action handler to process.</param>
+            <param name="content">The content to associate the action with.</param>
+            <param name="style">The style in which to process the action.</param>
+            <param name="command">The command name for general actions.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Processes a new action. This method will forward the action to any
+            action processors what were discovered in the plug-in extension 
+            registry.
+            </summary>
+            <param name="action">Action handler to process.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="content">The content to associate the action with.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="style">The style of execution to use.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ForwardAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Forwards the action on to all the processors but does not actually
+            execute the action.  This is to be used when actions have already
+            occurred but because of limitations of exposed API's we are only
+            notified of the change after the event has already occurred.  In 
+            this situation actions representative of those events can be
+            forwarded onto the action system so that they maybe undone at a
+            later time.
+            </summary>
+            <param name="action">The action to execute.</param>
+            <param name="style">The style of execution.</param>
+            <param name="content">The content associated with the action.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.FindActionProcessor``1">
+            <summary>
+            Finds an action processor of a given class type.
+            </summary>
+            <returns>The specified action processor or null if it cannot be found.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Suspend">
+            <summary>
+            Suspends the action executor.  This can be stacked, but for every suspend call, there
+            must be an equivalent resume call.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Resume">
+            <summary>
+            Resumes the action executor.  There must be one resume call for every suspend call.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.SuspendThread">
+            <summary>
+            Suspends the action executor preventing it from sending actions to any action processor.
+            It also prevents the action executor from marking documents as dirty.  Suspend calls can
+            be nested inside each other, but every suspend call much have a matching resume call.
+            This only affects the thread it is called on.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ResumeThread">
+            <summary>
+            Resumes the action executor allowing it to begin sending actions to action processors and 
+            marking documents dirty.  There must be one resume call for every suspend call.  This 
+            only affects the thread it is called on.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.BeginFrame(System.String)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.BeginFrame(System.String,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <param name="content">The content to base the action frame around.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.BeginFrame(System.String,Emergent.Toolbench.ContentService.AbstractContent,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Begins a new action frame.  A new frame must be closed, or disposed of.
+            </summary>
+            <param name="description">The action frame description.</param>
+            <param name="content">The content to base the action frame around.</param>
+            <param name="style">The style of the action frame.</param>
+            <returns>A new action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.EndFrame">
+            <summary>
+            Ends the last action frame pushed onto the action frame stack.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.EndFrame(Emergent.Toolbench.Actions.ActionFrame)">
+            <summary>
+            Ends the action frame.
+            </summary>
+            <param name="frame">The frame ending.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Push(Emergent.Toolbench.Actions.ActionFrame)">
+            <summary>
+            Pushes an action frame onto the stack for the current thread.
+            </summary>
+            <param name="frame">The frame to push onto the stack.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Peek">
+            <summary>
+            Peeks at the action frame currently on the stack for the current thread.
+            </summary>
+            <returns>The action frame.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.Pop">
+            <summary>
+            Pops the action frame off the stack for the current thread.  If there are no more frames
+            and this isn't the main thread, then remove the frame stack from the map of thread id's
+            and action frames.
+            </summary>
+            <returns>The action frame removed from the stack.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.BeginActionFrame(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Begins the action frame.
+            </summary>        
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.EndActionFrame(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Ends the current action frame and pushes the transactional action
+            out to the action processors.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.AbortActionFrame(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Aborts an action frame that is currently being executed. This could
+            happen if an exception is thrown by one of the actions or side
+            effect actions in the frame.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ExecuteAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Executes the specified action. Before the action is actually 
+            executed, each processor is given a change to snoop the action.
+            </summary>
+            <param name="action">The action to process.</param>
+            <param name="context">The context the action is associated with.</param>
+            <param name="style">The style of execution to use.</param>
+            <returns>The result of the actions processing.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.SimulateAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            This call will process the action as if it is about to execute, 
+            notifying all action processors that the action has or is in-fact
+            executing.  This becomes necessary when an object's state is 
+            changed directly and action's can only be spawned after the fact.
+            </summary>
+            <param name="action">The action to simulate.</param>
+            <param name="style">The style to simulate it in.</param>
+            <param name="context">The context associated with the action being simulated.</param>
+            <returns>The execution result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.CheckForContentChangingAction(Emergent.Toolbench.Actions.IActionHandler,Emergent.Toolbench.Actions.ExecutionContext)">
+            <summary>
+            If an action being executed is a <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> then we need
+            to dirty the content the action was executed on.
+            </summary>
+            <param name="action">The action that executed.</param>
+            <param name="context">The execution context associated with the action.</param>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.ActionExecutor.InputCommitted">
+            <summary>
+            The commit input handler's job is to take focus or verify input upon request so that
+            actions that potentially save state can save the user expected state.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.ActionExecutor.InputRestored">
+            <summary>
+            The restore input handler's job is to restore the focus that was taken after an action
+            has completed executing an action that persists state.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.Name">
+            <summary>
+            Gets the name of this service. Services must have unique names.
+            </summary>
+            <value>"Emergent.Toolbench.Actions.ActionExecutor"</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.IsSuspended">
+            <summary>
+            Gets a value indicating if the action executor is suspended.  When the action executor
+            is suspended no processors are notified of any events in the action executor, but 
+            actions and action frames are still managed correctly, and executed.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.IsThreadSuspended">
+            <summary>
+            Gets a value indicating if the action executor is suspended.  When the action executor
+            is suspended no processors are notified of any events in the action executor, but 
+            actions and action frames are still managed correctly and executed.  If the action executor
+            is suspended is also stops marking documents as dirty when 
+            <see cref="T:Emergent.Toolbench.Actions.IContentModifyingAction"/> actions are executed.  This only affects the 
+            thread it is called on.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.FrameDepth">
+            <summary>
+            Gets the current frame depth for the thread.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionExecutor.ProcessorDescriptor">
+            <summary>
+            Helper class used to describe an action processor. The processor
+            instance is created (thus loading the plug-in containing the 
+            processor) when the action executor executes its first action.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionExecutor.ProcessorDescriptor.#ctor(Emergent.Toolbench.IElementData)">
+            <summary>
+            Constructs the processor descriptor.
+            </summary>
+            <param name="configData">Element data containing the definition
+                of the processor.
+            </param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.ProcessorDescriptor.ProcessorId">
+            <summary>
+            Gets the unique id of the action processor. (usually the fully
+            resolved class name).
+            </summary>
+            <value>The processor id.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionExecutor.ProcessorDescriptor.ActionProcessor">
+            <summary>
+            Gets the action processor implementation described by this 
+            descriptor. The action processor is created the first time this
+            property is accessed.
+            </summary>
+            <value>The action processor.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.PropertyChangeAction.IsUndoable">
+            <summary>
+            Gets a value indicating if the action is undo-able.
+            </summary>
+            <remarks>
+            Normally this value should be true but if the action can conditionally become 
+            non-undo-able, this property should reflect that.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.ObservableCollectionChangeAction.IsUndoable">
+            <summary>
+            Gets a value indicating if the action is undo-able.
+            </summary>
+            <remarks>
+            Normally this value should be true but if the action can conditionally become 
+            non-undo-able, this property should reflect that.
+            </remarks>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.ActionExecutorCrossThreadAccess">
+            <summary>
+              Looks up a localized string similar to Action Executor must be suspended when executing actions on a thread that is different than the main thread..
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.DuplicateActionProcessor">
+            <summary>
+              Looks up a localized string similar to Found a duplicate action processor &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.NestedActionThrewException">
+            <summary>
+              Looks up a localized string similar to A nested action threw the exception &apos;{0}&apos;.  It may not be possible to rollback the entire operation..
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UncaughtExceptionDuringExecution">
+            <summary>
+              Looks up a localized string similar to Uncaught exception while executing action &apos;{0}&apos;..
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UndoObservableCollectionChangeActionAddDescription">
+            <summary>
+              Looks up a localized string similar to Add {0}.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UndoObservableCollectionChangeActionMoveDescription">
+            <summary>
+              Looks up a localized string similar to Move {0}.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UndoObservableCollectionChangeActionRemoveDescription">
+            <summary>
+              Looks up a localized string similar to Remove {0}.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UndoObservableCollectionChangeActionReplaceDescription">
+            <summary>
+              Looks up a localized string similar to Replace {0}.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.Properties.Resources.UndoPropertyChangeActionDescription">
+            <summary>
+              Looks up a localized string similar to Change {0} value.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ExecutionContext">
+            <summary>
+            The execution context contains the information needed by an executing
+            action to know how it was executed and for what content it should be
+            executed with.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ExecutionContext.#ctor(System.Object,Emergent.Toolbench.Actions.IActionExecutor,Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Emergent.Toolbench.Actions.ExecutionContext"/>.
+            </summary>
+            <param name="sender">The sender of the action, which is usually the action executor 
+            unless the action was kicked off by a control, or someone else that specifies a 
+            sender.</param>
+            <param name="executor">The action executor that is processing the action.</param>
+            <param name="content">The content associated with the action.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ExecutionContext.#ctor(System.Object,Emergent.Toolbench.Actions.IActionExecutor,Emergent.Toolbench.ContentService.AbstractContent,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Emergent.Toolbench.Actions.ExecutionContext"/>.
+            </summary>
+            <param name="sender">The sender of the action, which is usually the action executor 
+            unless the action was kicked off by a control, or someone else that specifies a 
+            sender.</param>
+            <param name="executor">The action executor that is processing the action.</param>
+            <param name="content">The content associated with the action.</param>
+            <param name="command">The command sent to the action, this is generally used by 
+            action extension points to be able to re-use the same action with different 
+            results.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ExecutionContext.Sender">
+            <summary>
+            Gets the sender of the action, generally this is the <see cref="T:Emergent.Toolbench.Actions.IActionExecutor"/> but
+            can sometimes be a UI control if that is the source of the action.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ExecutionContext.Executor">
+            <summary>
+            Gets the action executor that is executing the action.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ExecutionContext.Content">
+            <summary>
+            Gets the content associated with the action.  This value is determined by a series 
+            of checks, if there is a thread specific override to the active content on the 
+            <see cref="T:Emergent.Toolbench.Actions.IActionExecutor"/> then that content will be used.  If there is a general
+            cross thread override to the active content on the <see cref="T:Emergent.Toolbench.Actions.IActionExecutor"/> then
+            that will be used.  If neither has been overridden, then the active content on the
+            <see cref="T:Emergent.Toolbench.ContentService.IContentService"/> will be used instead.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ExecutionContext.Command">
+            <summary>
+            Gets the command string associated with the action.  Generally used by extension 
+            points this string allows a single action class to be re-targeted to many different
+            possible outcomes.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ActionHistoryAspect">
+            <summary>
+            An aspect attached to all documents that manages the action history,
+            which is the core of the undo system.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_actionHistory">
+            <summary>
+            The list of action records that hold the history of a document.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_executionIndex">
+            <summary>
+            Index into the action history indicating the next available undo operation.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_cleanExecutionIndex">
+            <summary>
+            Index into the action history indicating when the dirty flag of the
+            document should be clear.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_document">
+            <summary>
+            Reference to the document reflected by this aspect.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_executingHistory">
+            <summary>
+            True while undo/redo operations are underway.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_undoFrame">
+            <summary>
+            Container for accumulating sub-actions.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ActionHistoryAspect.m_frameDepth">
+            <summary>
+            Count of nested undo frames.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.OnContentDirtyChanged(Emergent.Toolbench.ContentService.AbstractContent)">
+            <summary>
+            Called when the document's dirty status is changed.
+            </summary>
+            <param name="sender">The document that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.OnContentConnected">
+            <summary>
+            Called when content is attached to an aspect.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.OnContentChanged(System.Object)">
+            <summary>
+            Called by the content that the aspect is connected to when its 
+            content has been changed.
+            </summary>
+            <param name="genericData">The generic data.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.OnContentDisconnected">
+            <summary>
+            Called when content is disconnected from the aspect.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.GetActionText(System.Int32)">
+            <summary>
+            Gets descriptive UI text for a particular action in the history.
+            </summary>
+            <param name="index">A valid index into the action history.</param>
+            <returns>UI text describing an action.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.BeginAction(Emergent.Toolbench.Actions.IUndoableActionHandler)">
+            <summary>
+            Adds a record to the action history, which includes any data
+            needed to undo the action.  Then executes the action.
+            </summary>
+            <param name="action">The action record to process.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.EndAction(Emergent.Toolbench.Actions.IUndoableActionHandler)">
+            <summary>
+            Called when an action is aborted or is finished.
+            </summary>
+            <param name="action">The action record to process.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.UndoAction">
+            <summary>
+            Reverses a single action at the current execution point in the
+            action history, if such an action is available.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.RedoAction">
+            <summary>
+            Re-performs a single action at the current execution point in the
+            action history, if such an action is available.
+            </summary> 
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.UndoActions(System.Int32)">
+            <summary>
+            Reverses a series of actions beginning at the current execution
+            point in the action history.
+            </summary>
+            <param name="reps">Number of actions to process.  Must not exceed
+                available actions.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.RedoActions(System.Int32)">
+            <summary>
+            Re-performs a series of actions beginning at the current execution
+            point in the action history.
+            </summary>
+            <param name="reps">Number of actions to process.  Must not exceed
+                available actions.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.ClearHistory">
+            <summary>
+            Deletes the action history.  This will make any undo and redo
+            operations unavailable.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.BeginUndoFrame(System.String)">
+            <summary>
+            Opens a new undo frame, which bundles multiple actions and prevents
+            them from appearing as separate operations in the UI.
+            </summary>
+            <param name="description">Potentially UI-visible text describing
+                all work performed by actions within this frame.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.EndUndoFrame">
+            <summary>
+            Closes an undo frame and attempts to move accumulated sub-actions
+            into the history.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.AbortUndoFrame">
+            <summary>
+            Closes an undo frame without moving actions into the history.
+            Intended for error recovery.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ActionHistoryAspect.PushAction(Emergent.Toolbench.Actions.UndoableBatchAction)">
+            <summary>
+            Adds a batch of records to the action history, which includes any
+            data needed to undo the actions.
+            </summary>
+            <param name="action">The records to add to the history.
+            </param>
+        </member>
+        <member name="E:Emergent.Toolbench.Actions.ActionHistoryAspect.HistoryChanged">
+            <summary>
+            An event that fires when the history data changes.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionHistoryAspect.ActionCount">
+            <summary>
+            Gets the number of actions recorded to the history.
+            </summary>
+            <value>Size of history.</value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionHistoryAspect.ExecutionIndex">
+            <summary>
+            Index into the history of actions that corresponds to the current
+            state of the document.  This value changes during undo and redo
+            operations.
+            </summary>
+            <value>Index into the action history that represents the present
+                state.
+            </value>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.ActionHistoryAspect.IsExecutingHistory">
+            <summary>
+            Gets a value indicating whether this instance is executing history.
+            </summary>
+            <value>
+                <c>true</c> if this instance is executing history; otherwise, 
+                <c>false</c>.
+            </value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.RedoAction">
+            <summary>
+            Implements the redo action on the active document.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.RedoAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Passes on redo request to the action history attached to the
+            active document.
+            </summary>
+            <param name="context">The execution context of the action.</param>
+            <param name="style">The execution style of the action.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.RedoAction.ToXml">
+            <summary>
+            Converts the specified action's data into XML form.
+            </summary>
+            <returns>An XML node that describes the action.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.RedoAction.FromXml(System.Xml.Linq.XElement)">
+            <summary>
+            Extracts the necessary action data from the specified XML data.
+            </summary>
+            <param name="node">Top level XML node containing the action's data.
+            </param>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.RedoAction.IsSerializable">
+            <summary>
+            Gets a value indicating if the action is serializable.  Use this
+            if your action can potentially become non-serializable based on
+            input conditions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.RedoAction.Description">
+            <summary>
+            Gets a description used to display information about the serializable
+            action to the user.
+            </summary>
+            <value>The label.</value>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ExecutionResult">
+            <summary>
+            The execution result of an action denotes what was the final result of
+            processing the action, did it complete successfully, did a user cancel
+            it, or did something go wrong and it failed.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionResult.Success">
+            <summary>
+            The action completed successfully.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionResult.Canceled">
+            <summary>
+            The action was a canceled partially way through by the user.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.Actions.ExecutionResult.Failed">
+            <summary>
+            The action failed because something unexpected handled.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.Actions.DataBound.DependencyObjectPropertyChangeAction.IsUndoable">
+            <summary>
+            Gets a value indicating if the action is undo-able.
+            </summary>
+            <remarks>
+            Normally this value should be true but if the action can conditionally become 
+            non-undo-able, this property should reflect that.
+            </remarks>
+        </member>
+        <member name="T:Emergent.Toolbench.Actions.ClearUndoAction">
+            <summary>
+            Implements the clear undo action on the active document.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.Actions.ClearUndoAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Passes on clear undo request to the action history attached to the active document.
+            </summary>
+            <param name="context">The execution context of the action.</param>
+            <param name="style">The execution style of the action.</param>
+        </member>
+    </members>
+</doc>

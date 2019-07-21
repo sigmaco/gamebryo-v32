@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Collision Groups</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Collision Groups</h1>
+
+<p><!--kadov_tag{{<ignored>}}-->Gamebryo<!--kadov_tag{{</ignored>}}--> 
+ provides collision groups to help handle the <a href="Broad_and_Narrow_Phase.htm">broad 
+ phase</a> component of collision detection. Collision groups enable the 
+ application programmer to organize which objects have the possibility 
+ of colliding. Only objects within a given collision group can collide 
+ against one another (though, the same object could be found across multiple 
+ collision groups).</p>
+
+<p>Furthermore, within a collision group, objects may be 
+ sub-grouped as either &quot;<!--kadov_tag{{<ignored>}}-->colliders<!--kadov_tag{{</ignored>}}-->&quot; 
+ or &quot;<!--kadov_tag{{<ignored>}}-->collidees<!--kadov_tag{{</ignored>}}-->&quot;. 
+ The distinction is that <!--kadov_tag{{<ignored>}}-->colliders<!--kadov_tag{{</ignored>}}--> 
+ may be expected to move, but <!--kadov_tag{{<ignored>}}-->collidees<!--kadov_tag{{</ignored>}}--> 
+ are not. Whenever an object is added as a <!--kadov_tag{{<ignored>}}-->collidee<!--kadov_tag{{</ignored>}}-->, 
+ it is ensured that it will never be tested against any other <!--kadov_tag{{<ignored>}}-->collidee<!--kadov_tag{{</ignored>}}-->. 
+ Adding objects as collidees reduces the total number of collision tests 
+ significantly, especially since most applications have a large number 
+ of collidees and a small number of colliders in the scene at any time. 
+ In addition, most, if not all, of the collidees do not need to be updated, 
+ since they do not move, after an initial update.</p>
+
+<p>Objects should always be added as <!--kadov_tag{{<ignored>}}-->collidees<!--kadov_tag{{</ignored>}}--> 
+ whenever possible. Using domain specific knowledge, even moving objects 
+ can be added (objects on a path, animated trees, etc.) as <!--kadov_tag{{<ignored>}}-->collidees<!--kadov_tag{{</ignored>}}--> 
+ if you are careful with the assumptions that are made.</p>
+
+<p>One thing to note is that if a root of some tree is 
+ added to a collision group, then all objects of the tree will be tested 
+ recursively for collisions, subject to certain propagation flags, which 
+ will be discussed later. So a complicated tree of bones might describe 
+ two characters, but the individual bones would not have to be added to 
+ the collision group, only the roots of each of these character trees.</p>
+
+<p>In <!--kadov_tag{{<ignored>}}-->Gamebryo<!--kadov_tag{{</ignored>}}-->, 
+ collision groups are implemented by the class <span class="NDLSystemFont"><a href="NiCollisionGroup.htm"><!--kadov_tag{{<ignored>}}-->NiCollisionGroup<!--kadov_tag{{</ignored>}}--></a></span>. 
+ Most applications will make at least one instance of <span class="NDLSystemFont"><a href="NiCollisionGroup.htm">NiCollisionGroup</a></span>. 
+ Advanced users may provide there own broad phase solution by either bypassing 
+ <span class="NDLSystemFont"><a href="NiCollisionGroup.htm">NiCollisionGroup</a></span> 
+ or combining it with a multiple group solution. </p>
+
+<p>With Gamebryo collision groups, it is only necessary 
+ to make one collision call (per group) as the group handles collisions 
+ among the objects in that group. See <span class="NDLSystemFont"><a href="NiCollisionGroup.htm">NiCollisionGroup</a></span> 
+ for more information.</p>
+
+<p>A few examples can reveal the importance of limiting 
+ as many collisions from consideration as possible, using these grouping 
+ mechanisms.</p>
+
+<h2>An Example of 10X Performance Via Collidees</h2>
+
+<p>Consider a case of 100 objects that can participate 
+ in collisions with other objects. If you organize all these objects in 
+ one collision group as colliders, then you would experience 4950 (= 99 
+ + 98 + 97 + ... + 1) unique object-object collision tests for each collision 
+ time-span (which could be per frame). Also, there may be propagation down 
+ the respective scene graph sub-trees, depending on the propagation behavior.</p>
+
+<p>On the other hand, if 5 of the objects are moving (e.g., 
+ characters) and the remaining 95 objects are non-moving (e.g., fixtures, 
+ trees, walls), then you may identify 5 of the objects as colliders and 
+ the remaining 95 objects as collidees. Then you would experience 485 (= 
+ 99 + 98 + 97 + 96 + 95) unique object-object collision tests for each 
+ collision time-span, which, in this specific case, is a performance improvement 
+ of greater than 10:1.</p>
+
+<h2>An Example of 5X Performance Via Collision Groups</h2>
+
+<p>Additionally, you may be able to use multiple collision 
+ groups to segregate collision testing and further minimize unnecessary 
+ collision tests. (With this approach, you may also be able to spread collision 
+ detection across several frames by processing different collision groups 
+ in different frames.)</p>
+
+<p>As an example, assume you're able to extend the above 
+ example by organizing the 95 static objects into 5 separate regions, each 
+ consisting of 19 objects (e.g., maybe a character cannot possibly interact 
+ with objects in different areas of a great hall concurrently). Now, in 
+ those circumstances where the moving objects each appear in only 1 of 
+ the 5 static regions (possibly enforced by the application itself), you'll 
+ experience from 95 to 105 unique object-object collision tests per collision 
+ time-span, depending on whether moving objects appear in different regions 
+ or the same one(s). Those circumstances represent an additional performance 
+ improvement of roughly 5:1 (based on ~100 vs. 485 unique object-object 
+ tests).</p>
+
+<h2>An Example of 50X Performance Via Combined Approaches</h2>
+
+<p>Combining use of collidees vs. colliders with multiple 
+ collision groups as indicated in the specific examples above would result 
+ in a combined performance improvement of roughly 50:1 (~100 vs. 4950 unique 
+ object-object tests).</p>
+
+<p>The point of such examples is to emphasize how important 
+ it is to limit the number of impossible collisions from consideration, 
+ for the sake of substantial performance gains. Otherwise, the combinatorics 
+ can quickly dwarf other collision detection considerations.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

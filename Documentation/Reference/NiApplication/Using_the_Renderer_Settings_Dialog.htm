@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Using the Renderer Settings Dialog</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Using the Renderer Settings Dialog</h1>
+
+<p>There are a few important considerations regarding the 
+ <a href="Renderer_Settings_Dialog.htm">renderer 
+ settings dialog</a> that should be taken into account when creating an 
+ <span class="NDLSystemFont"><a href="NiApplication.htm">NiApplication</a></span> 
+ based program.</p>
+
+<h2>Additional Libraries</h2>
+ 
+<p>The Renderer Settings Dialog is created and managed by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiSettingsDialog/NiSettingsDialog_Introduction.htm">NiSettingsDialog</a></span> library. 
+<span class="NDLSystemFont">NiApplication</span> automatically links in that library, but DLL-based applications
+will need to be sure to define <span class="NDLSystemFont">NISETTINGSDIALOG_IMPORT</span> in order to correctly link the library in.</p>
+
+<p>In order to allow customers to link in only the renderer libraries they will be supporting, <span class="NDLSystemFont">NiSettingsDialog</span>
+does not actually contain the code to manage each of the D3D renderers. Instead, that code has been broken out into the libraries 
+<span class="NDLSystemFont"><a href="../../Reference/NiDX9RendererSetup/NiDX9RendererSetup_Introduction.htm">NiDX9RendererSetup</a></span>, 
+<span class="NDLSystemFont"><a href="../../Reference/NiD3D10RendererSetup/NiD3D10RendererSetup_Introduction.htm">NiD3D10RendererSetup</a></span>, and
+<span class="NDLSystemFont"><a href="../../Reference/ecrD3D11RendererSetup/Introduction_to_ecrD3D11RendererSetup_Class_Reference.htm">ecrD3D11RendererSetup</a></span>.
+These libraries are set up in such a manner that simply linking in the library is sufficient to enable that library's functionality - each library's
+SDM system is responsible for registering the library with <span class="NDLSystemFont">NiSettingsDialog</span>.</p>
+
+<p>As described in the <a href="../../Reference/NiApplication/Usage_of_NiApplication_in_Gamebryo.htm">Using NiApplication</a> documentation, there
+are preprocessor macros that <span class="NDLSystemFont">NiApplication</span>-based apps can use to link in the desired renderers. Those macros will 
+also link in the respective renderer setup libraries. Applications that do not use <span class="NDLSystemFont">NiApplication</span> but still want to use 
+<span class="NDLSystemFont">NiSettingsDialog</span> will need to link in the renderer setup libraries for the renderers the app will support. Otherwise,
+no renderer will be created when the settings dialog is run.</p>
+ 
+<h2>Resource Files</h2>
+
+<p>The dialog is implemented using resource files so it 
+ is being used then it is necessary to include <span 
+ class="NDLSystemFont">NiSettingsDialogResource.rc</span> 
+ in the project. If the dialog is not being used, this file can be omitted.</p>
+
+<p>If this file is not included and the program attempts 
+ to use the dialog, the following error message will be displayed:</p>
+
+<p><span class="NDLSystemFont">Error: <!--kadov_tag{{<spaces>}}-->&nbsp;<!--kadov_tag{{</spaces>}}-->Resource 
+ files are not linked in. Please link file NiSettingsDialogResource.rc into 
+ your project. This file can be found in SDK\Win32\Resource.</span></p>
+
+<p>Note that if the resource file is not linked into the 
+ final application, <span class="NDLSystemFont">NiApplication::CreateRenderer</span> 
+ will not be able to create an <span class="NDLSystemFont"><a href="../../Reference/NiSettingsDialog/NiRendererSettings.htm">NiRendererSettings</a></span> 
+ object.</p>
+
+<h2>Presetting Options</h2>
+
+<p>Sometimes an application will require certain settings 
+ to be in effect for proper execution, but it may still be desired to present 
+ other options to the user. For instance, if an application needs a stencil 
+ buffer, the dialog should not allow the user to select a depth buffer 
+ format that doesn't support stencil. In this case, the application can 
+ signal that it needs this by calling <span class="NDLSystemFont">SetStencil(true)</span> 
+ in the application class constructor, which sets the <span class="NDLSystemFont">m_bStencil</span> 
+ flag to true. Then, in <span class="NDLSystemFont"><a href="../../Reference/NiSettingsDialog/NiRendererSettings.htm">NiRendererSettings</a>::SyncFromNiApplication</span>, 
+ the <span class="NDLSystemFont"><a href="../../Reference/NiSettingsDialog/NiRendererSettings.htm">NiRendererSettings</a></span> 
+ object will load that flag and take it into account when presenting the 
+ dialog.</p>
+
+<p>Note that settings you specify this way will get overwritten 
+ by any settings loaded from the INI file.</p>
+
+<p>Following is a list of each <!--kadov_tag{{<spaces>}}-->&nbsp;<span 
+ class="NDLSystemFont"><a href="NiApplication.htm"><!--kadov_tag{{</spaces>}}-->NiApplication</a></span> 
+ function that can be called to preset renderer options that will affect 
+ the renderer settings dialog and a brief description of their effect.</p>
+
+<h3>SetStencil</h3>
+
+<p>Set to true to a flag that will force a stencil component 
+ in the depth/stencil buffer.</p>
+
+<h3>SetRendererDialog</h3>
+
+<p>Set to true to force the dialog to be shown.</p>
+
+<h3>SetFullscreen</h3>
+
+<p>Set to true to force fullscreen mode.</p>
+
+<h3>SetRendererID</h3>
+
+<p>Used to pass in the <span class="NDLSystemFont"><a 
+ HREF="../../Reference/efd/efd__SystemDesc.htm">efd::SystemDesc::RendererID</a></span> that corresponds to the renderer the application wishes to use.</p>
+
+<h3>SetD3D10Renderer</h3>
+
+<p>Set to true to force use of the <span class="NDLSystemFont"><a 
+ HREF="../../Reference/NiD3D10Renderer/Introduction_to_the_D3D10Renderer.htm">NiD3D10Renderer</a></span>.</p>
+ 
+<p>This function has been deprecated in favor of <span class="NDLSystemFont">SetRendererID</span>.</p>
+
+<h3>SetRefRast</h3>
+
+<p>Set to true to force the use of the Reference Rasterizer.</p>
+
+<h3>SetPerfHUD</h3>
+
+<p>Set to true to force the use of NVPerfHUD.</p>
+
+<h3>SetMultiThread</h3>
+
+<p>Set to true to force the use of multi-threading in the 
+ <a HREF="../../Reference/NiDX9Renderer/Threading_in_the_DX9Renderer.htm">DX9</a>, 
+ <a HREF="../../Reference/NiD3D10Renderer/Threading_in_the_D3D10Renderer.htm">D3D10</a>
+ or <a HREF="../../Reference/ecrD3D11Renderer/Threading_in_the_D3D11Renderer.htm">D3D11</a> 
+ renderer.</p>
+
+<h3>SetAppWindow</h3>
+
+<p>Set to true to force the app to be displayed in windowed 
+ mode.</p>
+
+<h3>SetWidth</h3>
+
+<p>Can be used to set the horizontal resolution of the 
+ application.</p>
+
+<h3>SetHeight</h3>
+
+<p>Can be used to set the vertical resolution of the application.</p>
+
+<h3>SetSWVertex</h3>
+
+<p>Set to true to force the use of software vertex processing.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

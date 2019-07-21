@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Animation Sequences</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Animation Sequences</h1>
+
+<p>Although animation can be created using various <span 
+ class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span> 
+ and <span class="NDLSystemFont"><a href="NiInterpolator.htm">NiInterpolator</a></span> 
+ objects to drive individual scene graph attributes, it is often useful 
+ to group these low level constructs into a higher level object representing 
+ the animated sequence as a whole. This sequence can then be played on 
+ a specific scene graph branch to animate an entire in-game character. 
+ Gamebryo implements this concept via the <span class="NDLSystemFont"><a 
+ href="NiSequenceData.htm">NiSequenceData</a></span> 
+ class.</p>
+
+<p>An <span class="NDLSystemFont">NiSequenceData</span> is 
+ a collection of <span class="NDLSystemFont"><a HREF="NiEvaluator.htm">NiEvaluator</a></span> 
+ objects that describe a full animation on a character, such as a walk 
+ or idle cycle. Evaluators perform a similar role as interpolators; however, 
+ evaluators are more efficient for sequence animation. Sequences have common 
+ begin and end times for all of their evaluators. Additionally, all evaluators 
+ within a sequence share common timing information, such as frequency and 
+ cycle type (loop or clamp). Not only does this shared timing information 
+ allow it to be stored in a single place (in the sequence itself), but 
+ it allows the scaled playback time (the update time modified by the timing 
+ information) to be computed just once for all evaluators in the sequence, 
+ which eliminates a number of calculations during execution.</p>
+
+<p><span class="NDLSystemFont">NiSequenceData</span> objects 
+ are exported from 3ds max and Maya in the form of KF files. These can 
+ be loaded from disk by an <a href="NiControllerManager.htm"><span 
+ class="NDLSystemFont">NiControllerManager</span></a> or <span class="NDLSystemFont"><a 
+ HREF="NiActorManager.htm">NiActorManager</a></span> 
+ (representing an in-game character or actor) for future playback on the 
+ character's associated scene graph branch. As a memory optimization, a 
+ given <span class="NDLSystemFont">NiSequenceData</span> can be shared by 
+ multiple characters if they utilize the same 3D model. For example, the 
+ baby lenguins in the <a HREF="../../Learn/FullDemos/Lenguins_on_Ice_Overview.htm">Lenguins 
+ on Ice</a> demo share a single set of <span class="NDLSystemFont">NiSequenceData</span> 
+ objects since the babies are all cloned from a template actor. Unlike 
+ interpolators, evaluators are completely shareable as they contain no 
+ instance-based state for playing animations on a specific character. This 
+ fact allows a given <span class="NDLSystemFont">NiSequenceData</span> to 
+ be shared by multiple characters with minimal memory overhead. </p>
+
+<p>An <span class="NDLSystemFont"><a HREF="NiControllerSequence.htm">NiControllerSequence</a></span> 
+ object is temporarily created whenever an <span class="NDLSystemFont">NiSequenceData</span> 
+ is activated (i.e. played) on a character. This <span class="NDLSystemFont">NiControllerSequence</span> 
+ represents the active animation and is destroyed or <a href="NiControllerManager.htm#Sequence_Recycling">recycled</a> 
+ shortly after the active sequence runs to completion. The <span class="NDLSystemFont">NiControllerSequence</span> 
+ manages an <span class="NDLSystemFont"><a href="NiScratchPad.htm">NiScratchPad</a></span> 
+ which stores any instance-based data required by the evaluators to play 
+ the sequence on the given character. Many evaluators cache their current 
+ animation curve segment in the scratch pad which allows the evaluators 
+ to reuse this localized data across successive update times thereby increasing 
+ runtime performance.</p>
+
+<p>Each <span class="NDLSystemFont">NiControllerSequence</span> 
+ owns an <span class="NDLSystemFont"><a HREF="NiPoseBuffer.htm">NiPoseBuffer</a></span> 
+ to which the <span class="NDLSystemFont">NiControllerSequence</span> writes 
+ its animated data for a given instant of time. Effectively, this pose 
+ buffer contains a time-based snapshot (or pose) of the animated sequence. 
+ Through the use of helper classes the controller manager propagates this 
+ snapshot data to the appropriate scene graph targets which ultimately 
+ results in an animated character. Additional information regarding the 
+ flow of animation data from sequences to the scene graph can be found 
+ in the <a HREF="NiControllerManager.htm">Overview</a> 
+ section of the controller manager.</p>
+
+<p>Visit the <a href="Introduction_to_Animation.htm">Introduction 
+ to Animation</a> to read about other animation concepts.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

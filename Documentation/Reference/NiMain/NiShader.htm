@@ -1,0 +1,475 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiShader</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiShader</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiRefObject.htm"><span>NiRefObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiShader.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiShader</span> represents the
+base implementation of a shader in the Gamebryo engine. This
+class is platform independent, and defines the interface that
+other derived classes will use. It is expected that any
+non-purely virtual derivation of this class will be associated
+with one particular <a href="NiRenderer.htm"><span class=
+"NDLSystemFont">NiRenderer</span></a>.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiShader()</p>
+
+<p class="NDLRefMemberDescription">The constructor for
+<span class="NDLSystemFont">NiShader</span> simply initializes
+the <span class="NDLSystemFont">m_kName</span> and <span class=
+"NDLSystemFont">m_uiImplementation</span> members to 0.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiFixedString.htm">NiFixedString</a>&amp; GetName() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the name
+of the shader.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetImplementation()
+const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+implementation value of the shader. The default implementation
+for a shader, meaning the best implementation available on a
+given hardware platform, is represented by the enumeration
+<span class=
+"NDLSystemFont">NiShader::DEFAULT_IMPLEMENTATION</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool IsInitialized()</p>
+
+<p class="NDLRefMemberDescription">Returns whether or not the
+shader has been initialized yet.</p>
+
+<p class="NDLRefMemberFunction">virtual bool Initialize()</p>
+
+<p class="NDLRefMemberDescription">This function will be called
+by the shader factory or material when the shader is created. The
+base implementation does nothing beyond setting the initialized
+flag to <span class="NDLSystemFont">true</span>, but derived
+shaders should use this function to load shader programs and
+perform other required initialization steps.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiVertexDeclarationCache.htm">NiVertexDeclarationCache</a>
+SetupGeometry(<a href="NiRenderObject.htm">NiRenderObject</a>*
+pkGeometry, <a href=
+"NiMaterialInstance.htm">NiMaterialInstance</a>*
+pkMaterialInstance)</p>
+
+<p class="NDLRefMemberDescription">This function is called by the
+system whenever a material assigns a shader to a piece of
+geometry. It allows for verification of the geometry as well as
+performing any special processing the geometry may need to be
+usable with the shader. The return parameter represents the
+renderer-specific linkage between the shader and the
+geometry.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+RenderMeshes(<a href="NiVisibleArray.htm">NiVisibleArray</a>*
+pkVisibleArray)</p>
+
+<p class="NDLRefMemberDescription">Renders a list of meshes in a
+visible array using this shader. Renders a list of meshes in a
+visible array using this shader. It can be assumed that the
+shader of the active material for each mesh is the same as
+<span class="NDLSystemFont">this</span>.</p>
+
+<p class="NDLRefMemberDescription">The default implementation of
+this method on each platform is what is responsible for calling
+the other shader rendering methods (<span class=
+"NDLSystemFont">PreProcessPipeline</span>, <span class=
+"NDLSystemFont">UpdatePipeline</span>, and so on). </p>
+
+<p class="NDLRefMemberDescription">By overriding this method, it
+is possible to create an optimized rendering path for a specific
+shader or shader+geometry combination which doesn't do any work
+which isn't necessary for that particular combination.</p>
+
+<p class="NDLRefMemberDescription">Note: The implementation of this
+method is also responsible for completing any mesh modifiers that
+have work to do in the render phase.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PreProcessPipeline(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called once per rendering
+of an object, the base implementation does nothing. This function
+is intended for any preprocessing a shader must do before
+updating the pipeline and entering the pass rendering
+loop.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+UpdatePipeline(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called once per rendering of
+an object, the base implementation does nothing. This function is
+intended for allowing a shader to perform any dynamic
+configuration its pipeline requires.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+FirstPass()</p>
+
+<p class="NDLRefMemberDescription">Called once per rendering of
+an object, the base implementation does nothing. It is intended
+to signal the shader that the renderer is about to perform the
+first rendering pass of an object. The return value is the number
+of passes required for the object.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupRenderingPass(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called on a per-pass basis,
+the base implementation does nothing. This function is intended
+to have the shader configure the device for the current rendering
+pass.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupTransformations(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called on a per-submesh basis,
+the base implementation does nothing. This function is intended
+to have the shader setup any transformation matrices or other
+per-object constant data required for the current pass.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+SetupShaderPrograms(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called on a per-pass basis,
+the base implementation does nothing. This function is intended
+to have the shader set any vertex and/or pixel shaders required
+for the current pass.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PreRenderSubmesh(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">This function is called prior
+to rendering a submesh.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PostRenderSubmesh(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">This function is called after
+rendering a submesh.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PostRender(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called on a per-pass basis,
+the base implementation does nothing. This function is intended
+to perform any tasks the shader may require be executed per pass
+immediately after the geometry is rendered.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+NextPass()</p>
+
+<p class="NDLRefMemberDescription">Called once per-pass, the base
+implementation does nothing. It is intended to signal the shader
+that the current rendering pass has completed, and the renderer
+is ready to perform the next one. The return value is the number
+of passes remaining for the object.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+PostProcessPipeline(<a href=
+"NiRenderCallContext.htm">NiRenderCallContext</a>&amp; kRCC)</p>
+
+<p class="NDLRefMemberDescription">Called once per rendering of
+an object, the base implementation does nothing. This function is
+intended to allowing a shader to perform post processing of the
+pipeline after the rendering of an object completes.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+IsGenericallyConfigurable()</p>
+
+<p class="NDLRefMemberDescription">Returns whether or not this
+particular class can be configured by an <span class=
+"NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>. If it
+can, then the following functions will all be valid.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+AppendRenderPass(unsigned int&amp; uiPassId)</p>
+
+<p class="NDLRefMemberDescription">Add an additional render pass
+to the shader. If the function succeeds, it will return the
+number of the new pass in <span class=
+"NDLSystemFont">uiPassId</span> and return <span class=
+"NDLSystemFont">true</span>. This function returns <span class=
+"NDLSystemFont">false</span> if the shader class is not meant to
+be configured by an <span class="NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+SetAlphaOverride(unsigned int uiPassId, bool bAlphaBlend, bool
+bUsePreviousSrcBlendMode, <a href=
+"NiAlphaProperty.htm#Alpha_Blending_Functions">NiAlphaProperty::AlphaFunction</a>
+eSrcBlendMode, bool bUsePreviousDestBlendMode, <a href=
+"NiAlphaProperty.htm#Alpha_Blending_Functions">NiAlphaProperty::AlphaFunction</a>
+eDestBlendMode)</p>
+
+<p class="NDLRefMemberDescription">Sets the alpha blending mode
+of the pass indicated by <span class=
+"NDLSystemFont">uiPassId</span>. The <span class=
+"NDLSystemFont">bAlphaBlend</span> parameter indicates whether
+alpha blending should be enabled. If <span class=
+"NDLSystemFont">bUsePreviousSrcBlendMode</span> is true, then the
+pass will not set the source blend mode, and will use whatever
+setting was already on the renderer; otherwise, it will set the
+source blend mode to <span class=
+"NDLSystemFont">eSrcBlendMode</span>. The parameters <span class=
+"NDLSystemFont">bUsePreviousDestBlendMode</span> and <span class=
+"NDLSystemFont">eDestBlendMode</span> work the same way. This
+function returns <span class="NDLSystemFont">false</span> if the
+shader class is not meant to be configured by an <span class=
+"NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+SetUsesNiRenderState(bool bRenderState)</p>
+
+<p class="NDLRefMemberDescription">Sets a flag that indicates
+that the shader should use set the render states from the
+<span class="NDLSystemFont"><a href=
+"NiPropertyState.htm">NiPropertyState</a></span> used to render
+the geometry. This function returns <span class=
+"NDLSystemFont">false</span> if the shader class is not meant to
+be configured by an <span class="NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+SetGPUProgram(unsigned int uiPassId, NiGPUProgram* pkProgram,
+NiGPUProgram::ProgramType&amp; eProgramType)</p>
+
+<p class="NDLRefMemberDescription">Sets the specified
+<span class="NDLSystemFont"><a href=
+"NiGPUProgram.htm">NiGPUProgram</a></span> on the pass identified
+by <span class="NDLSystemFont">uiPassId</span>. The <span class=
+"NDLSystemFont">e</span><span class=
+"NDLSystemFont">ProgramId</span> parameter is ignored. This
+function returns <span class="NDLSystemFont">false</span> if the
+shader class is not meant to be configured by an <span class=
+"NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual NiShaderConstantMap*
+CreateShaderConstantMap(unsigned int uiPassId,
+NiGPUProgram::ProgramType eProgramType)</p>
+
+<p class="NDLRefMemberDescription">Creates a new <span class=
+"NDLSystemFont"><a href=
+"NiShaderConstantMap.htm">NiShaderConstantMap</a></span> for the
+given pass that will service the type of GPU program specified by
+<span class="NDLSystemFont">eProgramID</span>. Valid values for
+<span class="NDLSystemFont">e</span><span class=
+"NDLSystemFont">ProgramID</span> are enumerations from
+<span class="NDLSystemFont"><a href=
+"NiGPUProgram.htm#ProgramType">NiGPUProgram::ProgramType</a></span>.
+This function returns <span class="NDLSystemFont">NULL</span> if
+the shader class is not meant to be configured by an <span class=
+"NDLSystemFont"><a href=
+"NiFragmentMaterial.htm">NiFragmentMaterial</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+AppendTextureSampler(unsigned int uiPassId, unsigned int&amp;
+uiSamplerId, const <a href=
+"NiFixedString.htm">NiFixedString</a>&amp; kSemantic, const
+<a href="NiFixedString.htm">NiFixedString</a>&amp; kVariableName,
+unsigned int uiInstance = 0)</p>
+
+<p class="NDLRefMemberDescription">Adds a texture sampler to the
+pass specified by <span class="NDLSystemFont">uiPassID</span>.
+The <span class="NDLSystemFont">kSemantic</span> parameter
+identifies what map from <span class="NDLSystemFont"><a href=
+"NiTexturingProperty.htm">NiTexturingProperty</a></span> to use;
+valid values include the standard maps from that class, such as
+"Base" "Dark" and "Normal". For "Shader" and "Decal" maps,
+<span class="NDLSystemFont">uiInstance</span> indicates which map
+of that type to use. The <span class=
+"NDLSystemFont">kVariableName</span> parameter identifies the
+name of the shader variable for the sampler. This function
+returns false if the shader class is not meant to be configured
+by an <a href="NiFragmentMaterial.htm"><span class=
+"NDLSystemFont">NiFragmentMaterial</span></a>.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiSemanticAdapterTable.htm">NiSemanticAdapterTable</a>&amp;
+GetSemanticAdapterTable() const</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiSemanticAdapterTable.htm">NiSemanticAdapterTable</a>&amp;
+GetSemanticAdapterTable()</p>
+
+<p class="NDLRefMemberDescription">Returns the shader's <a href=
+"NiSemanticAdapterTable.htm"><span class=
+"NDLSystemFont">NiSemanticAdapterTable</span></a> object.</p>
+
+<p class="NDLRefMemberFunction">void
+UpdateSemanticAdapterTable()</p>
+
+<p class="NDLRefMemberDescription">Causes the shader to re-create
+its <a href="NiSemanticAdapterTable.htm"><span class=
+"NDLSystemFont">NiSemanticAdapterTable</span></a> object based on
+the contents of the shader's <span class="NDLSystemFont"><a href=
+"NiShaderDeclaration.htm">NiShaderDeclaration</a></span>.</p>
+
+<p class="NDLRefMemberFunction">void <span class=
+"NDLSystemFont">SetSemanticAdapterTableFromShaderDeclaration(<a href="NiShaderDeclaration.htm">
+NiShaderDeclaration</a>* pkShaderDecl)</span></p>
+
+<p class="NDLRefMemberDescription">Shaders no longer own a
+<span class="NDLSystemFont"><a href=
+"NiShaderDeclaration.htm">NiShaderDeclaration</a></span> object,
+but can convert one into a semantic adapter table using this
+method. <!--kadov_tag{{<spaces>}}--> 
+<!--kadov_tag{{</spaces>}}-->Populates the semantic adapter table
+on the shader with information converted from the passed in
+shader declaration object.</p>
+
+<p class="NDLRefMemberFunction">void
+SetOutputStreamDescriptors(const <a href=
+"NiOutputStreamDescriptor.htm">NiOutputStreamDescriptorArray</a>&amp;
+kDescriptors)</p>
+
+<p class="NDLRefMemberDescription">Sets the array of <a href=
+"NiOutputStreamDescriptor.htm"><span class=
+"NDLSystemFont">NiOutputStreamDescriptor</span></a> objects for
+this shader. These descriptors will describe the characteristics
+of the stream-out buffers, if any.</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+GetOutputStreamCount() const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of output
+data streams that the shader will write to.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiOutputStreamDescriptor.htm">NiOutputStreamDescriptor</a>&amp;
+GetOutputStreamDescriptor(unsigned int uiIndex) const</p>
+
+<p class="NDLRefMemberDescription">Returns a descriptor for the
+output data stream indicated by <span class=
+"NDLSystemFont">uiIndex</span>.</p>
+
+<p class="NDLRefHead1">Nested Classes</p>
+
+<p class="NDLRefHead2"><a href="NiShader__NiShaderInstanceDescriptor.htm">NiShader::NiShaderInstanceDescriptor</a></p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Platform_Enumeration" id="Platform_Enumeration"></a><p class="NDLRefHead2">Platform Enumeration</p>
+
+<p>The following enumerations are supplied to allow for the
+shader to identify platforms it is valid for:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Platform</th>
+
+            <th>Meaning</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_DX9</span></td>
+
+            <td>Valid for the <span class=
+            "NDLSystemFont">NiDX9Renderer.</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_D3D10</span></td>
+
+            <td>Valid for the <span class=
+            "NDLSystemFont">NiD3D10Renderer.</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_D3D11</span></td>
+
+            <td>Valid for the <span class=
+            "NDLSystemFont">ecr::D3D11Renderer.</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_XENON</span></td>
+
+            <td>Valid for the <span class=
+            "NDLSystemFont">NiXenonRenderer.</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_PS3</span></td>
+
+            <td>Valid for the <span class=
+            "NDLSystemFont">NiPS3Renderer</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NISHADER_AGNOSTIC</span></td>
+
+            <td>Valid for the all renderers that support
+            shaders.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

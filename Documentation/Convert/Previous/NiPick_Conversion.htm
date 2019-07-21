@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPick Conversion</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>NiPick Conversion</h1>
+
+<h2>New Features</h2>
+
+<p>Picking now has an option to pick against the Alternate
+Bounding Volume (ABV) associated with a node in the scene graph.
+To activate this, there is a new member of the <span class=
+"NDLSystemFont">IntersectType</span> enumeration: <span class=
+"NDLSystemFont">INTERSECT_COLLISION_DATA</span>.</p>
+
+<p>Since not all nodes in the scene graph have collision data
+associated, a new property of the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a></span> class
+is the <span class="NDLSystemFont">FallbackType</span>, which
+defines the behavior of a pick if no collision data is found and
+the <span class="NDLSystemFont">IntersectType</span> is set to
+<span class="NDLSystemFont">INTERSECT_COLLISION_DATA</span>.</p>
+
+<p>Picking follows the propagation semantics in the same fashion
+as collisions using ABVs. An <span class=
+"NDLSystemFont">NiNode</span> object without ABV data will always
+propagate the pick request to its children.</p>
+
+<p>When picking on collision data, the intersection distance,
+intersection position, and normal are returned as part of the
+pick record. No other data (such as color, texture coordinate,
+etc) are valid, since the ABV does not contain such data.</p>
+
+<p>Picking now also supports a new <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiPick__PickObjectPolicy.htm">NiPick::PickObjectPolicy</a></span>.
+This class allows applications to insert custom behavior for
+invocation when triangle level picking is required.</p>
+
+<h2>API Changes</h2>
+
+<p>In order to clarify the behavior of the picking traversal,
+some changes have been made to the way the sorting and query are
+defined for a pick operation. The <span class=
+"NDLSystemFont">PickType</span> property has been renamed to
+<span class="NDLSystemFont">QueryType</span> and now has three
+members of the enumeration: <span class=
+"NDLSystemFont">QUERY_FIRST</span>, <span class=
+"NDLSystemFont">QUERY_CLOSEST</span> and <span class=
+"NDLSystemFont">QUERY_ALL</span>. The <span class=
+"NDLSystemFont">SortType</span> members have been renamed to
+<span class="NDLSystemFont">SORT_ON</span> and <span class=
+"NDLSystemFont">SORT_OFF</span> for clarity, and this property is
+only used for <span class="NDLSystemFont">QUERY_ALL</span>
+requests.</p>
+
+<p>The table below summarizes how to convert old code to the new
+properties:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Old PickType</th>
+
+            <th>Old SortType</th>
+
+            <th>New QueryType</th>
+
+            <th>New SortType</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class="NDLSystemFont">FIND_ALL</span></td>
+
+            <td><span class="NDLSystemFont">SORT</span></td>
+
+            <td><span class="NDLSystemFont">QUERY_ALL</span></td>
+
+            <td><span class="NDLSystemFont">SORT_ON</span></td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">FIND_ALL</span></td>
+
+            <td><span class="NDLSystemFont">NO_SORT</span></td>
+
+            <td><span class="NDLSystemFont">QUERY_ALL</span></td>
+
+            <td><span class="NDLSystemFont">SORT_OFF</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FIND_FIRST</span></td>
+
+            <td><span class="NDLSystemFont">SORT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">QUERY_CLOSEST</span></td>
+
+            <td><span class="NDLSystemFont">(unused)</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FIND_FIRST</span></td>
+
+            <td><span class="NDLSystemFont">NO_SORT</span></td>
+
+            <td><span class=
+            "NDLSystemFont">QUERY_FIRST</span></td>
+
+            <td><span class="NDLSystemFont">(unused)</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Upon creation, an NiPick instance now has the following
+defaults:</p>
+
+<p><span class="NDLSystemFont">QUERY_ALL</span></p>
+
+<p><span class="NDLSystemFont">SORT_ON</span></p>
+
+<p><span class=
+"NDLSystemFont">INTERSECT_COLLISION_DATA</span></p>
+
+<p><span class="NDLSystemFont">FALLBACK_TRIANGLE</span></p>
+
+<p><span class="NDLSystemFont">COORDINATES_WORLD</span></p>
+
+<p>For scenes that do not have any collision data attached to
+objects, this will result in the same behavior as under Gamebryo
+2.3. For scenes that do have collision data, that collision data
+will be used instead of triangles. To determine whether a
+<a href="../../Reference/NiCollision/NiPick__Record.htm"><span class="NDLSystemFont">
+NiPick::Record</span></a> object contains triangle data or proxy
+ABV data, call GetIndicesValid() on the object.</p>
+
+<p>For consistency, all enumeration members are now defined to
+have the first word the same throughout the enumeration, such as
+INTERSECT_BOUND and INTERSECT_TRIANGLE. In the previous versions,
+some were defined this way, while others had the shared word at
+the end (such as the old BOUND_INTERSECT and TRIANGLE_INTERSECT)
+or no shared word at all. Compilation errors about undefined
+enumeration members are likely to be rectified by checking the
+header for the new name.</p>
+
+<h3>Enabling CPU Read Access for Picking</h3>
+
+<p>N.B. The following information describes a method for
+converting an application at runtime to use picking. The
+preferred method is to use mesh profiles to set the appropriate
+data access flags on appropriate objects at export from the DCC
+tools. More information can be found in the <a href=
+"../../Reference/NiCollision/Collision_System_Usage.htm">collision
+documentation</a>.</p>
+
+<p>If your Gamebryo 2.3 application does picking and if it makes
+use of calls such as <span class=
+"NDLSystemFont">PrecacheGeometry()</span> and <span class=
+"NDLSystemFont">SetKeepFlags()</span> in order to enable CPU
+reads (required for the CPU-based picking system), then some code
+must be added to convert your application to Gamebryo 2.5.
+Specifically, your application should now set the convenience
+callback <span class=
+"NDLSystemFont">ForceCPUReadAccessCallback()</span> in the
+<span class="NDLSystemFont">NiDataStreamFactory</span> to enable
+CPU read access for all <span class=
+"NDLSystemFont">NiDataStream</span> objects that are created in
+the process of loading NIF files with "pickable" data. (The
+application calls to <span class=
+"NDLSystemFont">PrecacheGeometry()</span> and <span class=
+"NDLSystemFont">SetKeepFlags()</span> should be removed.)</p>
+
+<p>For example, you could add the following statement immediately
+before your calls to load NIF files with pickable data:</p>
+
+<p><span class=
+"NDLSystemFont">NiDataStream::GetFactory()-&gt;SetCallback(NiDataStreamFactory::ForceCPUReadAccessCallback);</span></p>
+
+<p>As a more detailed example, you may contrast the Picking demo
+in Gamebryo 2.3, with its calls to <span class=
+"NDLSystemFont">PrecacheGeometry()</span> and <span class=
+"NDLSystemFont">SetKeepFlags()</span> [necessary to enable CPU
+reads], with the Picking demo in Gamebryo 2.5, which no longer
+makes such calls, but which now requires <span class=
+"NDLSystemFont">ForceCPUReadAccessCallback()</span>, since the
+NIF file the demo uses has not been exported with ACCESS_CPU_READ
+set for its data streams.</p>
+
+<p>For pickable data in general, either (a) your assets must be
+exported or converted such that the pickable data streams have
+ACCESS_CPU_READ or (b) your app must include the step indicated
+above. Otherwise, attempts to do picking will likely result in
+errors comparable to:</p>
+
+<p><span class="NDLSystemFont">LOCK_READ on a stream without
+ACCESS_CPU_READ</span></p>
+
+<p><span class="NDLSystemFont">Warning: Geometry for NiPick
+operation is missing.</span></p>
+
+<p><span class="NDLSystemFont">   May need to ensure that
+CPU_READ is specified for POSITION</span></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

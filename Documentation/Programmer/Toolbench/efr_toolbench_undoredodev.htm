@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Undo/Redo System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+    WriteNavLink(2);
+</script>
+
+<h1>Undo/Redo system</h1>
+
+<p>One of the services Toolbench provides to plug-in authors is
+an undo/redo framework for content. The UI exposing this
+functionality lives in the core Toolbench assembly
+Emergent.Toolbench.Undo.dll, but its underpinnings are in the
+action system implemented in Emergent.Toolbench.Actions.dll.</p>
+
+<h2>Supporting Undo</h2>
+
+<p>The Toolbench action system breaks functionality down into
+specific tasks that can be tracked for features like undo/redo
+and automation, including macro record/playback, scripting, and
+automated functional testing. Actions are commands that can be
+presented to the user in menus or toolbar buttons. They can also
+be assigned shortcut keys.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Actions do not <b>always</b> represent commands
+                performed via menus or toolbars. In some cases
+                actions are wrappers around arbitrary code such
+                as property changes to certain classes.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Actions are the preferred way to expose functionality from a
+plug-in. Other plug-ins that may build on your plug-in can use
+these actions to execute features in a way recognized by the
+content system, ensuring that undo/redo functions as expected.
+Executing operations directly sidesteps the action system and
+potentially corrupts content system features.</p>
+
+<p>All actions must implement the IActionHandler interface, which
+includes the method Execute. Actions that modify content should
+implement the IUndoableActionHandler, which inherits from
+IActionHandler and adds Undo and Redo methods, plus a Description
+field. The Description is used when the action history is
+displayed.</p>
+
+<p>All content is given an associated history aspect which
+implements the IActionHistoryAspect interface. This aspect stores
+a list of all undoable actions that have been performed on the
+content. The undo/redo UI queries this aspect for information
+about the undo stack and tells it when to undo and redo stored
+actions.</p>
+
+<p>Be sure that performing undo and redo on your action actually
+recreates the original result of the operation. For example,
+consider an action that creates a new object with a generated ID.
+Undoing this action would remove the created object. Redoing the
+action should recreate the object with the same ID. This
+may mean storing additional data in the action.</p>
+
+<p>Sometimes actions will trigger the execution of additional
+actions. This cascade of operations is rolled up by the action
+system and presented as a single user-initiated event for UI
+purposes. Although this bundling happens automatically, action
+implementers do need to be aware that the action system will not
+attempt to unwind a cascade of executed actions in case of action
+failure. For actions that kick off chains of actions the best
+practice is to do thorough validation before allowing the initial
+action to proceed.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 7: User Input</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 7: User Input</h1>
+
+<p>This tutorial covers basic user input. Support for both the keyboard and gamepad are
+illustrated.</p>
+
+<h2>The Demo</h2>
+
+<p>In this demo, we add gamepad and keyboard support to the previous tutorial. This allows the user
+to control the helicopter using either the keyboard (left and right arrow keys) or a gamepad stick.
+You may wish to notice that native to the <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> framework is the ability to press the <span class=
+"NDLSystemFont">Tab</span> key in order to bring up a user input configuration screen to map
+keyboard keys to gamepad buttons. This can be done at any point during the demo, but because there
+are no gamepad buttons used in the demo (only the directional stick) it will not affect this demo
+in particular.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a village with a moving helicopter. The following screen capture
+was taken from the <span class="NDLSystemFont">Win32</span> platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial7.jpg" width="515" height="400" alt="Adding user input (49K)">
+
+    <p class="NDLFigureCaption">Adding user input</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>Because of the simplistic nature of this demo, our helicopter has no rotational velocity. Its
+rotational speed is dependent on the rate at which <span class="NDLSystemFont">Update</span> is
+called. Conveniently, <span class="NDLSystemFont">NiApplication</span> automatically frame-limits
+applications that are derived from it. The maximum frame rate can be checked and set via the
+<span class="NDLSystemFont">GetMaxFrameRate()</span> and the <span class=
+"NDLSystemFont">SetMaxFrameRate(float)</span> functions, respectively. By default, this value is
+100 frames per second. <span class="NDLSystemFont">NiApplication::OnIdle</span> will return without
+updating or rendering automatically if not enough time has passed and the frame rate would be
+higher than that. Thus, the <span class="NDLSystemFont">UpdateFrame</span> function for this
+tutorial is exactly the same as the one from the previous tutorial.</p>
+
+<p>Because our <span class="NDLSystemFont">FlightController</span> class will need some information
+about dealing with input, we need to give it the ability to obtain this information. Since input
+management is supported by <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> and our framework is <a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm"><span class=
+"NDLSystemFont">NiApplication</span></a> based, we can simply store a pointer as a member variable
+(<span class="NDLSystemFont">m_pkGameApp</span>) in our <span class=
+"NDLSystemFont">FlightController</span> class so that we can access the input managers.</p>
+
+<p>In <span class="NDLSystemFont">FlightController::Update</span>, the relevant code that has been
+added is concerned with obtaining and handling input. In the following lines, we check to ensure
+that our application is able to obtain a pointer to the input system. If it can, it obtains
+pointers to the input systems <span class="NDLSystemFont"><a href=
+"../../Reference/NiInput/NiInputGamePad.htm">NiInputGamePad</a></span> and <span class=
+"NDLSystemFont"><a href="../../Reference/NiInput/NiInputKeyboard.htm">NiInputKeyboard</a></span>
+objects.</p>
+<pre>
+        NiInputGamePad* pkGamePad = NULL;
+        NiInputKeyboard* pkKeyboard = NULL;
+ 
+        if (m_pkGameApp-&gt;GetInputSystem())
+        {
+            pkGamePad = m_pkGameApp-&gt;GetInputSystem()-&gt;GetGamePad(0,0);
+            pkKeyboard = m_pkGameApp-&gt;GetInputSystem()-&gt;GetKeyboard();
+        }
+</pre>
+
+<p>Since our application is only concerned about being able to move our helicopter left or right,
+we only poll on one axis for the value of the game pad stick. We store this value in <span class=
+"NDLSystemFont">iHorz</span>.</p>
+<pre>
+        int iHorz = 0;
+        if (pkGamePad != NULL)
+        {
+            int iVert = 0;
+            pkGamePad-&gt;GetStickValue(NiInputGamePad::NIGP_STICK_LEFT, iHorz,
+                iVert);
+        }
+</pre>
+
+<p>If the left or right arrow key is pressed, we allow it to preempt the value we obtained from the
+gamepad.</p>
+<pre>
+        if (pkKeyboard != NULL)
+        {
+            if (pkKeyboard-&gt;KeyIsDown(NiInputKeyboard::KEY_LEFT))
+                iHorz = -127;
+            if (pkKeyboard-&gt;KeyIsDown(NiInputKeyboard::KEY_RIGHT))
+                iHorz = 127;
+        }
+</pre>
+
+<p>Lastly, if we have some value for <span class="NDLSystemFont">iHorz</span> as a result of
+gamepad or keyboard input, a rotation matrix is created and then multiplied against the current
+rotation matrix of our helicopter object. Then the result is set as the new rotation for the
+helicopter.</p>
+<pre>
+        if (iHorz)
+        {
+            float fZ = iHorz * (1.0f / 127.0f);
+            float fZRot = m_fRotationIncrement * fZ;
+            NiMatrix3 kIncRototation;
+            kIncRototation.MakeZRotation(fZRot);
+            kRotation = kIncRototation * kRotation;
+            pkObject-&gt;SetRotate(kRotation);
+        }
+</pre>
+
+<p>At this point, the helicopter has not moved. Translation is based on the current direction of
+the helicopter and is done in the application's <span class=
+"NDLSystemFont">UpdatePositionAndOrientation</span> call. This call, it should be noted, also does
+some primitive "AI" to ensure that the helicopter does not go beyond a boundary specified by the
+application. If the helicopter goes beyond the specified bounds, the "AI" may add additional
+rotations to keep the helicopter in bounds.</p>
+
+<h2>Moving on...</h2>
+
+<p>We've covered the fundamentals for adding user input support. Next, we'll take a look at how to add screen textures. See <a href="Tutorial_8__Screen_Textures.htm">Core Runtime
+Tutorial 8: Screen Textures</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiInput/NiInputGamePad.htm">NiInputGamePad</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiInput/NiInputKeyboard.htm">NiInputKeyboard</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiMatrix3.htm">NiMatrix3</a></span></li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiPoint3.htm">NiPoint3</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Programmer Notes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Programmer Notes</h1>
+
+<p>Refer to the artist notes for an understanding of how
+collision is setup through the art pipeline. You should also read
+the <a href=
+"../../Art/Max/Collision_Detection_and_3ds_Max.htm">Collision
+Detection and 3ds Max</a> section for an understanding of
+<a href="../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">
+ABV</a>s with regards to collision. The rest of this section will
+deal mostly with programming and performance considerations.</p>
+
+<h2>Performance</h2>
+
+<p>The number of frames between collision calls is set by default
+to 16, though a real-world application would probably use a delta
+time metric rather than a frame count to determine when
+collisions should be found.</p>
+
+<h3>Wireframes: Flash-ABVs</h3>
+
+<p>The wireframes for selection, for displaying ABV, and for
+displaying Proxies, were all generated on export using the
+Gamebryo 3ds max Plug-in. The wireframes were attached to the
+parent nodes of the objects they represent. Flash-ABVs are the
+wireframe representations that are drawn while collisions
+occur.</p>
+
+<p>On first implementation of this sample, it was noted that when
+a large number of collisions were occurring at the same time, the
+determination of what Flash-ABVs to display became costly, as
+well as the actual collision calls. In an effort to keep this
+cost down, a hash table (<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiTMap.htm">NiTMap</a></span>) of records
+containing the Flash-ABV WireRecs and their current states was
+created. An array of currently displayed Flash-ABVs was used by
+the Update call to display the Flash-ABV's after a call to
+<span class="NDLSystemFont">FindCollisions</span>. When the
+wireframe is to be displayed, the application simply sets the
+objects <span class="NDLSystemFont">AppCull</span> status to
+<span class="NDLSystemFont">false</span> and its <span class=
+"NDLSystemFont">SelectiveUpdate</span> status to <span class=
+"NDLSystemFont">true</span>. The Flash-ABV state in the hash
+table was updated by the collision callback function, and if this
+state change causes the Update function's Flash-ABV array to
+become invalid, a dirty flag is set, causing the Update function
+to rebuild the array.</p>
+
+<p>Despite the extra work involved with maintaining the hash
+table, this careful selection of data structures resulted in a
+2:1 performance improvement while running collision testing every
+frame, with the soldiers fully colliding with each other.</p>
+
+<h3>Updates</h3>
+
+<p>There are some additional design decisions that were made to
+improve performance. Calls to the various <span class=
+"NDLSystemFont">Update</span> functions are also made as
+infrequently as possible, and are made on small branches, where
+feasible (if there are enough calls to <span class=
+"NDLSystemFont">Update</span>, it is more efficient to call it on
+a main ancestor-node).</p>
+
+<h3>NiCollisionGroup Improvements</h3>
+
+<p>The soldier on the right of the scene is added to the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiCollision/NiCollisionGroup.htm">NiCollisionGroup</a></span>
+object as a collider, since the user is able to move that
+character through the scene. However, the other soldier is added
+as a collidee, since it does not move through the scene. Since
+the stationary soldier (a collidee) is animating, we still must
+call <span class="NDLSystemFont">Update()</span> on it, but the
+collision testing is more efficient because of this
+segregation.</p>
+
+<p>For example, most of the collidees do not need to be updated.
+Second, the collidees are not tested against each other, which
+reduces the total number of collision tests significantly,
+especially since most applications have a large number of
+collidees and a small number of colliders in the scene at any
+time.</p>
+
+<p>For specific examples of some of the dramatic performance
+gains that are possible using these grouping mechanisms, see also
+the information on <a href=
+"../../Reference/NiCollision/Collision_Groups.htm">Collision
+Groups</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Setting up an Action Map</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Setting up an Action Map</h1>
+
+<p>Before an application can operate in <em>Action 
+ Mapping Mode</em>, it must create an <span class="NDLSystemFont"><a href="NiActionMap.htm">NiActionMap</a></span> 
+ instance to inform the system of what actions it wishes to have mapped. 
+ </p>
+
+<p>To create an instance of an action map named &quot;MyActionMap&quot;, 
+ applications running on the Win32 platform should execute code similar 
+ to the following:</p>
+
+<pre>
+// This code assume s_kMyActionMapGUID contains a valid GUID
+m_spActionMap = NiNew  NiActionMap("MyActionMap", (void*)&amp;s_kMyActionMapGUID);
+</pre>
+
+<p>Other platforms can just perform something similar to 
+ the following:</p>
+
+<p><span class="NDLSystemFont">m_spActionMap = NiNew  NiActionMap("MyActionMap", 0);</span></p> 
+
+<p>Once you have an instance of an action map, you can 
+ begin adding actions to it via the <span class="NDLSystemFont"><a href="NiActionMap.htm#NiActionMap::AddAction">NiActionMap::AddAction</a></span> 
+ function. This function allows an application to add actions to the map 
+ in a single call. While it contains a large number of parameters, it actually 
+ simplifies the creation of an action map to a great degree. The function 
+ will return a pointer to the <span class="NDLSystemFont">NiAction</span> 
+ instance it added, or will return <span class="NDLSystemFont">NULL</span> 
+ if it fails.</p>
+
+<p>Thanks to the <span class="NDLSystemFont">m_uiAppData</span> 
+ and <span class="NDLSystemFont">m_pvContext</span> parameters contained 
+ in <span class="NDLSystemFont">NiAction</span>, applications have a large 
+ amount of flexibility at their fingertips. Using these two parameters, 
+ there are a few approaches that can be taken with respect to how an application 
+ processes reported actions.</p>
+
+<a name="The_Enumeration_Method"></a><h2>The Enumeration Method</h2>
+
+<p>The first, and simplest, approach is to simply set the 
+ <span class="NDLSystemFont">m_uiAppData</span> parameter to a distinct value 
+ the application can recognize for each added action. For example, an application 
+ can have an enumeration of action codes, and for each one register an 
+ action with the action map.</p>
+
+<p>The following code snippet demonstrates this approach:</p>
+
+<pre>
+// The ActionCodes enumeration
+enum ActionCodes
+{
+    eActionCode_0 = 0,
+    eActionCode_1,
+    eActionCode_Count
+};
+ 
+// NOTE: we assume m_spActionMap is a valid NiActionMap instance
+ 
+// Add an action for eActionCode_0, assigning it to
+// the '0' key on the keyboard. Tell the system to return a
+// boolean value indicating the status of the action.
+if (!m_spActionMap-&gt;AddAction("Action 0", eActionCode_0,
+    KEY_MAP(NiInputKeyboard::KEY_0), NiAction::RETURN_BOOLEAN))
+{
+    // An error has occurred... Handle it in your app.
+}
+ 
+// Add an action for eActionCode_1, assigning it to
+// the '1' key on the keyboard, returning a boolean, but
+// require that the LSHIFT key is held down when pressed
+// to trigger the action.
+if (!m_spActionMap-&gt;AddAction("Action 1", eActionCode_1,
+    KEY_MAP(NiInputKeyboard::KEY_1),
+    NiAction::RETURN_BOOLEAN | NiAction::USE_MODIFIERS,
+    0, 0, 0, 0, NiInputKeyboard::KMOD_LSHIFT))
+{
+    // An error has occurred... Handle it in your app.
+}
+</pre>
+
+<p>For information on how to process input using the &quot;Enumeration 
+ Method&quot;, see <a href="Processing_Input_in_Action_Mapping_Mode.htm">Processing Input in Action Mapping Mode</a>.</p>
+
+<a name="The_Unique_Callback_Method"></a><h2>The Unique Callback Method</h2>
+
+<p>The second approach is to use the <span class="NDLSystemFont">m_uiAppData</span> 
+ parameter (or the <span class="NDLSystemFont">pvContext</span> parameter) 
+ as a pointer to the function you wish to execute when the action occurs.</p>
+
+<p>To utilize this approach, your application will have 
+ to define a common format that each callback function will follow. An 
+ alternative is to construct a callback object class that each specific 
+ instance derives from. This document will take the function pointer approach. 
+ For an example of the callback object approach, please refer to the Input 
+ Demo documentation.</p>
+
+<p>First, we will define our callback function format:</p>
+
+<p><span class="NDLSystemFont">typedef bool (*EXECUTEACTIONCALLBACK)(NiActionData*);</span></p>
+
+<p>As you can see, the function simply takes a pointer 
+ to the <span class="NDLSystemFont">NiActionData</span> instance that is 
+ reported by the system, and returns a boolean to indicate success or failure 
+ of acting on that data.</p>
+
+<p>Next, we can write some callback functions...</p>
+
+<pre>
+bool ExecuteAction0(NiActionData* pkActionData)
+{
+    // Process the action data here...
+    // If action execution failed return false
+    // Success case
+    return true;
+}
+ 
+bool ExecuteAction1(NiActionData* pkActionData)
+{
+    // ditto the above comments
+    return true;
+}
+</pre>
+
+<p>Now we need to add our actions to the action map. </p>
+
+<pre>
+// NOTE: we assume m_spActionMap is a valid NiActionMap instance
+ 
+// Add an action for the action callback ExecuteAction0.
+// Assign it to the left mouse button. Tell the system to
+// return a boolean value indicating the status of the action.
+if (!m_spActionMap-&gt;AddAction("Action 0",
+    (unsigned int)ExecuteAction0,
+    NiAction::MOUSE_BUTTON_LEFT,
+    NiAction::RETURN_BOOLEAN))
+{
+    // An error has occurred... Handle it in your app.
+}
+ 
+// Add an action for ExecuteAction1, assigning it to
+// the right mouse button, returning a boolean, but
+// require that the RCONTROL key held down when pressed
+// to trigger the action.
+if (!m_spActionMap-&gt;AddAction("Action 1",
+    (unsigned int)ExecuteAction1,
+    NiAction::MOUSE_BUTTON_RIGHT,
+    NiAction::RETURN_BOOLEAN | NiAction::USE_MODIFIERS,
+    0, 0, 0, 0, 0, NiInputMouse::MMOD_RCONTROL))
+{
+    // An error has occurred... Handle it in your app.
+}
+</pre>
+
+<p>We now have an action map with two unique-callback method 
+ actions in it. The action map is set in the system the same noted in the 
+ previous method:</p>
+
+<p><span class="NDLSystemFont">m_spInputSystem-&gt;SetActionMap(m_spActionMap);</span></p>
+
+<p>For information on how to process input using the &quot;Unique 
+ Callback Method&quot;, see <a href="Processing_Input_in_Action_Mapping_Mode.htm">Processing Input in Action Mapping Mode</a>.</p>
+
+<a name="The_Hybrid_Callback_Method"></a><h2>The Hybrid Callback Method</h2>
+
+<p>The third approach is to set the <span class="NDLSystemFont">m_uiAppData</span> 
+ parameter to a value the application can recognize and the <span class="NDLSystemFont">pvContext</span> 
+ parameter to a pointer to a function you wish to execute when the action 
+ occurs. </p>
+
+<p>This approach will allow for the application to define 
+ a smaller set of callback functions, but will require them to be a bit 
+ more complex. For example, one set of actions could be defined as 'movement 
+ actions' and can execute via a single <span class="NDLSystemFont">HandleMovementAction</span> 
+ function. A second set of actions could be defined as 'combat actions' 
+ and can execute via a single <span class="NDLSystemFont">HandleCombatAction</span> 
+ function.</p>
+
+<p>So, let's define a our enumerations:</p>
+
+<pre>
+// The ActionCodes enumeration
+enum ActionCodes
+{
+    eActionSet0_Code0 = 0,
+    eActionSet0_Code1,
+    eActionSet1_Code0,
+    eActionSet1_Code1,
+    eActionCode_Count
+};
+</pre>
+
+<p>Note that there are two 'sets', Set0 and Set1, each 
+ with two 'codes', Code0 and Code1.</p>
+
+<p>Next, we will define our callbacks (using the same format 
+ as the Unique method above):</p>
+
+<pre>
+ bool ExecuteActionSet0(NiActionData* pkActionData)
+{
+    // Execute different actions depending on the m_uiAppData
+    switch (pkActionData-&gt;GetAppData())
+    {
+    case eActionSet0_Code0:
+        // Handle this specific code for this set...
+        break;
+    case eActionSet0_Code1:
+        // Handle this specific code for this set...
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+ 
+bool ExecuteActionSet1(NiActionData* pkActionData)
+{
+    // Execute different actions depending on the m_uiAppData
+    switch (pkActionData-&gt;GetAppData())
+    {
+    case eActionSet1_Code0:
+        // Handle this specific code for this set...
+        break;
+    case eActionSet1_Code1:
+        // Handle this specific code for this set...
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+</pre>
+
+<p>Now we need to add our actions to the action map.</p>
+
+<pre>
+// NOTE: we assume m_spActionMap is a valid NiActionMap instance
+ 
+// Set the m_uiAppData to the enumeration, and the m_pvContext
+// to the function pointer.
+ 
+// Add actions for Set0 of our action codes.
+// Assign Code0 to the game pad START button.
+// Assign Code 1 to the game pad SELECT button.
+// Tell the system to return a boolean value.
+//
+if (!m_spActionMap-&gt;AddAction("ActionSet0Code0",
+    eActionSet0_Code0,
+    NiAction::GP_BUTTON_START,
+    NiAction::RETURN_BOOLEAN,
+    0, 0, 0,
+    (void*)ExecuteActionSet0))
+{
+    // An error has occurred... Handle it in your app.
+}
+if (!m_spActionMap-&gt;AddAction("ActionSet0Code1",
+    eActionSet0_Code1,
+    NiAction::GP_BUTTON_SELECT,
+    NiAction::RETURN_BOOLEAN,
+    0, 0, 0,
+    (void*)ExecuteActionSet0))
+{
+    // An error has occurred... Handle it in your app.
+}
+ 
+// Add actions for Set1 of our action codes.
+// Assign Code0 to the game pad RDOWN button.
+// Assign Code 1 to the game pad RLEFT button.
+// Tell the system to return a boolean value.
+//
+if (!m_spActionMap-&gt;AddAction("ActionSet1Code0",
+    eActionSet1_Code0,
+    NiAction::GP_BUTTON_RDOWN,
+    NiAction::RETURN_BOOLEAN,
+    0, 0, 0,
+    (void*)ExecuteActionSet1))
+{
+    // An error has occurred... Handle it in your app.
+}
+if (!m_spActionMap-&gt;AddAction("ActionSet1Code1",
+    eActionSet1_Code1,
+    NiAction::GP_BUTTON_RLEFT,
+    NiAction::RETURN_BOOLEAN,
+    0, 0, 0,
+    (void*)ExecuteActionSet1))
+{
+    // An error has occurred... Handle it in your app.
+}
+</pre>
+
+<p>We now have an action map with two hybrid-callback method 
+ actions in it. The action map is set in the system the same noted in the 
+ previous methods:</p>
+
+<p><span class="NDLSystemFont">m_spInputSystem-&gt;SetActionMap(m_spActionMap);</span></p>
+
+<p>For information on how to process input using the &quot;Hybrid 
+ Callback Method&quot;, see <a href="Processing_Input_in_Action_Mapping_Mode.htm">Processing Input in Action Mapping Mode</a>.</p>
+
+
+<p>For a more detailed example of setting up action maps, refer to the Input Demo documentation.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

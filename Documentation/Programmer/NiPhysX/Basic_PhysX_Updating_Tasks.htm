@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Basic PhysX Updating Tasks</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Basic PhysX Updating Tasks</h1>
+
+<p>PhysX updating can be thought of as three separate problems: 
+ performing a simulation step, transferring state between Gamebryo and 
+ PhysX, and additional application tasks related to PhysX. </p>
+
+<h2>Time and PhysX Updates</h2>
+
+<p>Each <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ keeps track of time passing, but it is important to understand that this 
+ is not necessarily the same as application time. Furthermore, PhysX itself 
+ has no notion of time, only of the current state and a step in time. You 
+ never pass an absolute time to PhysX, only step lengths. </p>
+
+<p>All the times passed to various update functions in 
+ <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ are in its local time. The find out what that time is, use the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_150a0b2893b50ac1a4a4ecd7c9ba6367b">NiPhysXScene::GetPrevFetchTime</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1036ef9b75f7e3f5b448b45140ac040e4">NiPhysXScene::GetNextFetchTime</a></span>. 
+ To set the internal time, use <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_17a673e90777cbe102072d7a267a05fae">NiPhysXScene::SetFetchTime</a></span>. 
+ In using this function, you are telling the scene what its current absolute 
+ time is. Calls to <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c1f5c6c3b715ce5a995301ac896be482">NiPhysXScene::Simulate</a></span> 
+ compute the PhysX time-step based on the previous fetch time and the time 
+ that is passed to <span class="NDLSystemFont">Simulate</span>, and update 
+ the internal time. </p>
+
+<p>If you do manipulate the PhysX time during the course 
+ of the simulation, you will likely have to call <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_125b17b6cb10936c6afd3f55fe41d1a50">NiPhysXScene::UpdateSources</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1d0ba9d929463d41fea4a4b0d990893ae">NiPhysXScene::UpdateDestinations</a></span> 
+ with the force flags true to reset their internal buffers.</p>
+
+<h2>The Simulation Step</h2>
+
+<p>A simulation step consists of a matched set of calls 
+ to <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c1f5c6c3b715ce5a995301ac896be482">NiPhysXScene::Simulate</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c730f723f9649aa93578bd40058cc289">NiPhysXScene::FetchResults</a></span>. 
+ Within the <span class="NDLSystemFont">simulate/fetchResult</span> block 
+ bounded by these calls, virtually no calls can be made into the PhysX 
+ SDK, certainly none that affect simulation state. </p>
+
+<p>Simulation is <em>synchronous</em> if the <span class="NDLSystemFont">simulate/fetchResult</span> 
+ block does not overlap with the rendering, which typically means these 
+ calls appear in given order in the <span class="NDLSystemFont">OnIdle</span> 
+ function, before rendering (or whatever function your application uses 
+ to step a frame). Simulation is <em>asynchronous</em> if the <span class="NDLSystemFont">simulate/fetchResult</span> 
+ block overlaps with rendering, which typically means <span class="NDLSystemFont">Simulate</span> 
+ appears at the end of the <span class="NDLSystemFont">OnIdle</span> function, 
+ after rendering, and <span class="NDLSystemFont">FetchResults</span> appears 
+ at the beginning. The <a href="../../Learn/Demos/PhysX_Timing_Demo_Overview.htm">PhysX 
+ Timing Demo</a> has examples of both options. </p>
+
+<p>Simulations can be stepped with fixed or variable timing. 
+ If working with fixed timing in the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object, a fixed length step may take the simulation beyond the next time, 
+ in which case <span class="NDLSystemFont">Simulate</span> on the next frame 
+ will have no effect. It is important to check the return values of <span 
+ class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c1f5c6c3b715ce5a995301ac896be482">NiPhysXScene::Simulate</a></span> 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c730f723f9649aa93578bd40058cc289">NiPhysXScene::FetchResults</a></span> 
+ under these circumstances, particularly if <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1c730f723f9649aa93578bd40058cc289">NiPhysXScene::FetchResults</a></span> 
+ is called to not block on result. Some functions, such as <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1d0ba9d929463d41fea4a4b0d990893ae">NiPhysXScene::UpdateDestinations</a></span>, 
+ are wasteful if a simulation step was not started or did not finish.</p>
+
+<p>It is not necessary to have one simulation step per 
+ rendered frame, nor even necessary that the same thread control simulation 
+ as is controlling rendering or animation. Gamebryo provides some support 
+ for this kind of multi-threading, in the form of locking mechanism to 
+ prevent multiple threads accessing the PhysX SDK. The PhysX API layer 
+ is not thread-safe. Pay attention to <a href="PhysX_Mesh_Modifiers.htm">Mesh 
+ Modifiers</a> and their synchronization points when working in a multi-threaded 
+ environment because the modifiers must start or complete at various points 
+ and threads may block while waiting for this to occur.</p>
+
+<h2>Updating Sources and Destinations</h2>
+
+<p>Applications must call<a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_125b17b6cb10936c6afd3f55fe41d1a50"> 
+ </a><span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_125b17b6cb10936c6afd3f55fe41d1a50">NiPhysXScene::UpdateSources</a></span> 
+ to push state from Gamebryo to PhysX, and <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_1d0ba9d929463d41fea4a4b0d990893ae">NiPhysXScene::UpdateDestinations</a></span> 
+ to extract from PhysX to set Gamebryo state. The <a href="../../Learn/Tutorials/Introduction_to_the_Gamebryo_PhysX_Tutorial.htm">PhysX 
+ Tutorial</a> and <a href="../../Learn/Demos/Demos_Introduction.htm">PhysX 
+ Demos</a> contain a wealth of examples of updating sources and destinations. 
+ </p>
+
+<p>The results of an <span class="NDLSystemFont">UpdateSources</span> 
+ will not be seen by PhysX until the start of the next <span class="NDLSystemFont">simulate/fetchResult</span>, 
+ and the effects of <span class="NDLSystemFont">UpdateDestinations</span> 
+ is not seen until after a call to <span class="NDLSystemFont">Update</span> 
+ on the Gamebryo scene graph affected by the simulation. </p>
+
+<p>Sources and destinations are individually enabled or 
+ disabled, allowing fine control of state transfer. For instance, you can 
+ disable updates if a simulation is inactive or an object is known to be 
+ stationary (you aren't animating it, for instance). The update of all 
+ the sources or destinations in a <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ can also be enabled or disabled with a single call to <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_132b44fbac4ea3e0209aed2fe8ca9fc7e">NiPhysXScene::SetUpdateDest(false)</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_132b44fbac4ea3e0209aed2fe8ca9fc7e">NiPhysXScene::SetUpdateSrc(false)</a></span>.</p>
+
+<p>It is not necessary to always have a sources and destinations 
+ update for every simulation step, although it is wasteful to have more 
+ updates than simulation steps (because the updated state will be the same). 
+ If there are no sources in a scene then there is no need to call <span 
+ class="NDLSystemFont">UpdateSources</span>. </p>
+
+<h2>Mesh Modifier Update</h2>
+
+<p>Mesh modifiers related to PhysX are automatically submitted 
+ and completed when their synchronization points are hit. See the <a href="PhysX_Mesh_Modifiers.htm">PhysX 
+ Mesh Modifiers</a> page for details.</p>
+
+<h2>Application Updates to PhysX</h2>
+
+<p>Almost all non-trivial applications will perform some 
+ actions directly on the PhysX SDK, such as modifying actor flags, applying 
+ forces, etc. All of these actions must happen outside the <span class="NDLSystemFont">simulate/fetchResult</span> 
+ block. You may use the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#class_ni_phys_x_scene_143731b209477c7ccf9d9a32ebbf8a910">NiPhysXScene::GetInSimFetch</a></span> 
+ call to check if the system is inside <span class="NDLSystemFont">simulate/fetchResult</span>. 
+ </p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

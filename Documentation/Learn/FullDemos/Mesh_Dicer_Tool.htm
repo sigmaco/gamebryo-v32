@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Mesh Dicer Tool</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Mesh Dicer Tool</h1>
+
+<p>The Mesh Dicer is a spatial partitioning tool primarily used
+to optimize the efficiency of host-based operations, such as
+picking or projected shadows, on relatively simple terrain
+meshes. The tool groups the triangles of a scene graph into
+partitions (or "bins") using a quad-tree organization. The
+quad-tree will continue to be subdivided until the number of
+triangles in a partition is lower than a user-defined threshold
+(up to a maximum depth). The resulting partitioned scene graph is
+then saved as a Gamebryo Nif file.</p>
+
+<p>Note, however, that use of the Mesh Dicer tool is intended for
+use with a single terrain mesh with a relatively low triangle
+count (fewer than 64K), as in Lenguins on Ice. For terrain
+solutions that deal with larger scale terrain, consider the
+<a href="../../Programmer/NiTerrain/Introduction_to_NiTerrain_Library.htm">
+NiTerrain</a> system.</p>
+
+<h2>Running the Tool</h2>
+
+<p>The command-line syntax of the Mesh Dicer tool is as
+follows:</p>
+
+<p><span class="NDLSystemFont">MeshDicer.exe [-in
+<em>TerrainNifName</em>] [-out <em>DicedTerrainNifName</em>] [-t
+<em>TriangleCount</em>] [-st] [-d]</span></p>
+
+<p><span class="NDLSystemFont">-in <em>TerrainNifName</em></span>
+(Required) This parameter specifies the full path and file name
+of the terrain Nif file used as input for the tool.</p>
+
+<p><span class="NDLSystemFont">-out
+<em>DicedTerrainNifName</em></span> (Required) This parameter
+specifies the full path and file name of the "diced" terrain Nif
+file produced by the tool. It represents a terrain scene graph
+that has been partitioned using a quad-tree organization, to
+optimize the efficiency of host-based operations, such as picking
+or projected shadows.</p>
+
+<p><span class="NDLSystemFont">-t <em>TriangleCount</em></span>
+(Optional) This option specifies the maximum number of triangles
+in a quadtree leaf partition. Its default value is 30.</p>
+
+<p><span class="NDLSystemFont">-st</span> (Optional) This option
+indicates that triangles which span two or more partitions will
+exist in all such partitions.</p>
+
+<p><span class="NDLSystemFont">-d</span> (Optional) This option
+indicates that each leaf partition will be self illuminated with
+a random color (for debugging).</p>
+
+<h2>How the Tool Works</h2>
+
+<h3>Assumptions</h3>
+
+<p>The following assumptions apply for the Mesh Dicer tool:</p>
+
+<ul>
+    <li>Triangles don't overlap, so the terrain is a uniform
+    manifold surface.</li>
+
+    <li>+Z is the world up axis.</li>
+
+    <li>The single triangle mesh representing the terrain has
+    fewer than 64K triangles.</li>
+
+    <li>The terrain constitutes a surface where holes are
+    possible, but caves, tunnels, and overhanging cliffs are not
+    handled.</li>
+
+    <li>The terrain is not animated.</li>
+
+    <li>Ideally, triangles are relatively small and relatively
+    uniform in size, which works best for a quad-tree subdivision
+    approach, although this characteristic is not a
+    requirement.</li>
+</ul>
+
+<h3>Quad-tree Partitioning</h3>
+
+<p>The input Gamebryo Nif file is a single terrain mesh. It could
+be created via digital content creation tools or by other means.
+The Mesh Dicer tool decomposes the terrain into a collection of
+world space triangles. To accomplish this step, the world vertex
+and normals are extracted from the scene into a large list.
+Because all the data is kept in memory during processing, this
+tool is not suitable for use with very large terrains (large in
+terms of triangle count).</p>
+
+<p>Next, a quad-tree is created for the terrain, oriented in the
+XY plane. The quad-tree is centered on the terrain's bounding
+volume center. A quad-tree node is created with a list of all the
+triangles that overlap that partition. If the number of triangles
+is below some threshold (the default is 30 triangles per
+partition), then geometry is created at that partition (node) and
+recursion stops. Otherwise, four new quad-tree nodes are created
+(as child nodes) and subdivision continues, as needed, for each
+child node, up to a maximum depth of 20.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

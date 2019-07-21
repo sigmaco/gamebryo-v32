@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Asset Infrastructure Command Line Reference</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Asset Infrastructure Command Line Reference</h1>
+
+<p>In addition to running alongside Toolbench, the Asset
+Controller also has several useful features that are accessible
+by using it as a command-line tool. This usage is handy for
+incorporating functionality into your build system and for some
+simple testing to troubleshoot problems with locating assets at
+run-time.</p>
+
+<h2>Testing Broken Asset Lookups</h2>
+
+<p>You may experience the problem where certain assets that are
+needed by your game are not being found by the <a href=
+"../../Reference/efd/efd__AssetLocatorService.htm">efd::AssetLocatorService::AssetLocate</a>
+API. One of the ways to troubleshoot this is to use the Asset
+Controller to perform the lookup that is failing so you can more
+easily inspect the problem. This is normally done by using the
+command-line configuration parameters for "<span class=
+"NDLSystemFont">AssetWeb.TestAndExit</span>" and "<span class=
+"NDLSystemFont">AssetWeb.QueryTest#</span>":</p>
+
+<p><span class="NDLSystemFont">AssetController.exe
+AssetWeb.Path=../MyAwesomeGame
+AssetWeb.QueryTest#=urn:gamebryo-scenegraph:ogre
+AssetWeb.TestAndExit=True</span></p>
+
+<p>The example sets the TestAndExit parameter to True which
+causes the Asset Controller to exit after running all specified
+tests. You can specify as many <span class=
+"NDLSystemFont">AssetWeb.QueryTest#</span> parameters as you need
+on one command line. You can also specify all of these parameters
+via a <span class="NDLSystemFont">Config.ini</span> file instead
+of using the command line.</p>
+
+<p>The results of the queries are reported in the log file. Most
+Framework applications create log output when they run and Asset
+Controller is no exception. The above example will produce output
+in <span class="NDLSystemFont">AssetController.log</span>. Search
+in the log for statements that include "<span class=
+"NDLSystemFont">Test Result</span>" to see the results of each
+query.</p>
+
+<h2>Updating Asset Metadata</h2>
+
+<p>A best practice for using the Asset Runtime Service is to
+update the asset metadata whenever you re-build your application.
+This is accomplished using the <span class=
+"NDLSystemFont">AssetWeb.ExportAndExit</span> parameter:</p>
+
+<p><span class="NDLSystemFont">AssetController.exe
+AssetWeb.Path=../MyAwesomeGame
+AssetWeb.ExportAndExit=True</span></p>
+
+<p>This command tells the Asset Controller to iterate over all
+assets, updating the metadata as necessary for assets that were
+added or removed. The system uses timestamps to keep track of
+which directories have been affected by changes since the last
+update. As a result when there are relatively few changes the
+update executes very quickly.</p>
+
+<p>On some occasions, you may want to forgo the intelligent
+updating and generate all the metadata from scratch. This is the
+approach to use if you have changed the tagging policy (in other
+words, when you have modified the configuration files in
+<span class="NDLSystemFont"><em>&lt;Asset Web Root
+Directory&gt;</em>/asset-web-config/</span>) or if you have
+performed extensive restructuring on your assets by modifying
+directory names, adding/removing directories, or moving assets
+into new locations. To do a full re-build of the metadata, simply
+delete the old metadata directory at <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root
+Directory&gt;</em>/asset-web-metadata/</span> and then run the
+Asset Controller as above using the <span class=
+"NDLSystemFont">AssetWeb.ExportAndExit</span> command.</p>
+
+<h2>Extracting Asset Listings</h2>
+
+<p>At some stages of development you will need to deploy assets
+to different locations. You will probably want to do this through
+scripting. A handy feature of the Asset Controller is that you
+can use it to generate lists of asset files that need to be
+copied during deployment. This is done using the "<span class=
+"NDLSystemFont">AssetWeb.ListAssets</span>" parameter, for
+example:</p>
+
+<pre>AssetController.exe AssetWeb.Path=../MyAwesomeGame AssetWeb.ListAssets=urn:Xbox360</pre>
+
+<p>This command will output a listing of all run-time assets that
+are tagged with the platform variation "<span class=
+"NDLSystemFont">Xbox360</span>" to a text file called "<span class=
+"NDLSystemFont">ListAssets.txt</span>". This is done using the
+normal rules for platform tags, meaning that there is automatic
+fall back to more generic assets when the specific variation
+requested does not exist. So this example would list all assets
+required for the specified variation.</p>
+
+<p>Keep in mind that if you use this method for deployment, you
+need to also copy all the *.nt files from <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root
+Directory&gt;</em>/asset-web-metadata/</span> to your target
+location.</p>
+
+<h2>Running the AssetController Standalone</h2>
+
+<p>The Asset Controller is normally started by just launching
+Toolbench. When you open your game's solution file the Asset
+Controller is automatically set to use the correct <span class=
+"NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em></span>
+for the solution. However, it is possible to run Asset Controller
+completely independent of Toolbench:</p>
+
+<p><span class="NDLSystemFont">AssetController.exe
+AssetWeb.Path=../MyAwesomeGame</span></p>
+
+<p>This command will start the Asset Controller and it will
+continue to run until you exit it. A task tray icon will show you
+its status. All of the normal asset monitoring functionality of
+the Asset Controller will work in this configuration. Therefore,
+you can perform Rapid Iteration work flows against this Asset
+Controller even if Toolbench is not running. Simply start your
+game and observe that the Asset Controller task tray icon turns
+green when the game connects. At this point, you may use any tool
+you desire to modify your assets. The game will receive
+notification of these changes and will re-load the affected
+assets if supported.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_features.htm">Asset Infrastructure Features</a></li>
+
+    <li><a href="asset_runtime_how_work.htm">How the Asset Locating Services Work</a></li>
+
+    <li><a href="asset_runtime_limitations.htm">Asset Runtime
+    Service limitations</a></li>
+
+    <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the Emergent Game Framework</a></li>
+
+    <li><a href="asset_runtime_reqs.htm">Requirements for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_best_practice.htm">Best Practices for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+
+    <li><a href="asset_runtime_troubleshoot.htm">Troubleshooting
+    the Asset Runtime Service</a></li>
+
+    <li><a href="asset_runtime_reference.htm">Asset Infrastructure Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

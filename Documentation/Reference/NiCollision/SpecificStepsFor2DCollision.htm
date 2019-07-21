@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Specific Steps for 2D Collision</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Specific Steps for 2D Collision</h1>
+
+<p>Here are some specific suggestions for steps
+for 2D collision detection:</p>
+
+<ol>
+    <li>Set up an "enabling" planar polygon (let's call it a
+    "walkabout" polygon) that represents the extent of where the
+    character can travel within the scene (ignoring static scene
+    elements such as "fixtures", trees, buildings, etc. for the
+    moment).
+
+        <p class="indent1">This walkabout polygon can be much
+        simpler than the actual terrain or interior geometry
+        (e.g., it could be a rectangle made up of 2 triangles, or
+        a circle made up of 50 triangles). Tag it with a unique
+        label for use by your application, e.g., "walkabout".
+        Position it below all the static geometry within your
+        scene, and "app cull" it so it is not displayed (except
+        maybe for debugging).</p>
+    </li>
+
+    <li>Create a portion of the scene graph consisting only of
+    this walkabout polygon and all the 2D obstruction polygons
+    that represent your fixed scene elements (fixtures, trees,
+    buildings, and so on).
+
+        <p class="indent1">This segregation from the rest of
+        the scene graph enables more efficient picking
+        operations, as well as exempting this static portion of
+        the scene graph from expensive calls to Update(). Note
+        that the obstruction polygons should be positioned above
+        the walkabout polygon. Creation of polygon edges may need
+        to factor in whether sliding is possible along that edge
+        (e.g., how rounded the edge may need to be).</p>
+    </li>
+
+    <li>Arrange picking to occur only with respect to the portion
+    of the scene graph which contains the walkabout polygon and
+    obstruction polygons, and have the picking sort the polygons
+    that it "picks" (i.e., "QUERY_ALL" pick type, "SORT_ON" sort
+    type).</li>
+
+    <li>Then at run-time:
+
+        <ol>
+            <li>Pick against the walkabout/obstruction polygons
+            only.
+
+                <p class="indent2">If the nearest polygon is
+                the "walkabout" polygon, then your position is
+                "valid".</p>
+
+                <p class="indent2">Otherwise, your position is
+                out-of-bounds, since either (i) you're not over
+                the walkabout polygon (picking returned no picked
+                items), or (ii) you're over an obstruction
+                polygon (picking returned an obstruction polygon
+                first; after sorting).</p>
+            </li>
+
+            <li>Perform the collision response.
+
+                <p class="indent2">One choice for collision
+                response (i.e., when the character is
+                out-of-bounds) is to keep the character at the
+                last known valid position, but change his
+                animation to a special idle animation. After
+                waiting a minimal amount of time (say, 1/3
+                second) to avoid jerkiness in the collision
+                response, new inputs from the user (e.g., to
+                turn) could enable the character to find a
+                direction where movement can continue. This
+                approach is simple to implement and seems to work
+                well for some applications.</p>
+
+                <p class="indent2">Another choice for collision
+                response would involve doing additional picks
+                when the character is about to go out-of-bounds
+                to find a direction "not far from forward" that
+                allows valid motion by the distance specified. In
+                this scenario, the character could be turned
+                "automatically" in a direction that makes sense.
+                Downside to this approach is the need to do
+                additional picking, with attendant aliasing
+                issues.</p>
+            </li>
+        </ol>
+    </li>
+</ol>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

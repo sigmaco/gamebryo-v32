@@ -1,0 +1,104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a C++ Revision Control Provider Plug-in</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="SCM" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a C++ Revision Control Provider Plug-in</h1>
+
+<p>The revision control library can be extended to support additional revision control systems. The
+first step in doing the integration with a new RCS provider is to write the C++ portion of the
+integration. This layer will be responsible for directly wrapping the provider to return
+information like status, as well as performing the basic commands shared by all integrations.</p>
+
+<ol>
+    <li>Name the new C++ dll project "etkRCS"; + MyProvider. Only dlls that start with etkRCS will
+    be scanned for RCS provider capability.</li>
+
+    <li>The RCS Provider project contains a string table with a string resource for the 101 entry
+    (the first entry), which is the user displayable name of the provider (for example,
+    Subversion).</li>
+
+    <li>The RCS Provider must contain an exported symbol to factory method used to create the new
+    revision control system provider object:
+        <pre>
+extern "C" __declspec (dllexport) etk::RCSProvider* CreateRCS(void);
+
+etk::RCSProvider* CreateRCS(void)
+{
+   return EE_NEW RCSMyProvider();
+}
+</pre>
+    </li>
+
+    <li>The object that is created by the factory method must inherit from <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/etkRCS/etk__RCSProvider.htm">etk::RCSProvider</a></span>. There are several
+    pure virtual methods on this class that are required to be implemented.</li>
+</ol>
+
+<p>Some helpful tips when doing your RCS Provider:</p>
+
+<ul>
+    <li>Remember, revision control commands are being run after the disk IO has already occurred.
+    (This is not the case for rename and delete, your integration is responsible for making sure
+    the file gets renamed).</li>
+
+    <li>Most of the logic for an RCS Provider is the same or similar for all providers when dealing
+    with fallback conditions. These are the cases where a user attempts to do things like rename a
+    file that is opened for add. Usually it is not possible for a provider to rename something
+    before it has actually been committed. This higher-level fallback logic is handled in three
+    tiers.</li>
+
+    <li>It is okay to block in this layer; do not waste time doing things asynchronously here. The
+    managed Toolbench layer that wraps this one takes care of all the non-blocking and threading
+    logic to run the commands asynchronously.</li>
+
+    <li>If your underlying RCS Provider is not thread-safe internally, you will need to wrap the
+    calls in critical sections. There will be a minimum of two threads accessing your provider
+    because status queries are not run on the same thread as typical commands.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="rcs_wrap_overview.htm">Revision Control Wrapper Overview</a></li>
+
+    <li><a href="rcs_wrap_fallbacks.htm">Understanding Fallbacks</a></li>
+
+    <li><a href="rcs_wrap_building.htm">Building Revision Control</a></li>
+
+    <li><a href="../../Tools/Toolbench/tb_scm_intro.htm">Toolbench Revision Control
+    Integration</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

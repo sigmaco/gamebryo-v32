@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Troubleshooting Built-in API Functions</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Troubleshooting Built-in API Functions</h1>
+
+<h4>General troubleshooting tips</h4>
+
+<p>It is important to remember that, like a behavior, a built-in API function is a function you can call from
+script. Therefore, the guidelines for <a href=
+"../Behaviors/behavior_troubleshoot.htm">Troubleshooting behaviors</a> apply to built-in API functions as
+well.</p>
+
+<p>Sometimes adding a built-in API function call to an already complex script can obscure the real problem. Try
+creating a new entity, give it a new behavior (a lifecycle behavior such as OnCreate is a good
+choice, since all you need to do to ensure the behavior gets called is add an instance of the
+entity to the world), and then see if you can call the built-in API function from within this behavior.</p>
+
+<h4>Troubleshooting missing functions</h4>
+
+<p>The most common problem you will encounter is that the scripting runtime cannot find the
+built-in API function. Here are some specific things to look for in this case:</p>
+
+<ul>
+    <li>Make sure you are using the fully-qualified name. It is not necessary to explicitly import
+    the function (e.g. using "require" in Lua or "import" in Python) but you must prefix the
+    function call with the module name:
+        <pre class="indent1">
+BehaviorAPI.LogMessage()
+ecr.GetAttachmentTransform()
+bapionline.SetReplicationCategory()
+MyModule.MyFunc()
+</pre>
+    </li>
+
+    <li>Spelling errors. Since scripts are not compiled, typos show up as runtime errors rather
+    than syntax errors. The places you need to compare are:
+
+        <ul>
+            <li>The calling script.</li>
+
+            <li>The exported module name. If you are loading the module statically, check the
+            SWIG-generated wrapper for a #define called "SWIG_name." If you are importing the
+            function from a DLL, check the appropriate LoadBuiltin directive in your config.ini
+            file, as described under <a href="builtin_custom_dynamic_load.htm">Dynamically loading
+            custom built-ins</a>.</li>
+
+            <li>The function name as exported by the initialization function. You will find this in
+            your SWIG-generated wrapper file in an array called swig_commands. If you exported the
+            function manually, then it will be wherever you put it!</li>
+        </ul>
+    </li>
+
+    <li>If you are dynamically loading a built-in API, make sure the DLL loaded correctly. It might
+    have been built with the wrong configuration (release DLL instead of debug DLL, for instance).
+    When the system can't find a built-in API DLL, it will log an error:
+        <pre class="indent1">
+2009/03/11 12:15:48.242|Err1|Lua|||Could not load built-in module 'eonLua',
+ensure that this file exists or update your configuration.|
+</pre>
+    </li>
+
+    <li>Make sure the initialization function is being called. Search the wrapper file for a
+    function declared using the #define "SWIG_init" and breakpoint it:
+        <pre class="indent1">
+/* this is the initialization function
+  added at the very end of the code
+  the function is always called SWIG_init, but an earlier #define will rename it
+*/
+SWIGEXPORT int SWIG_init(lua_State* L)
+</pre>In the case of dynamically loaded built-in API functions where you don't have the DLL source in the same
+project, look for the InitBuiltins function in the scheduler appropriate to your scripting
+language.
+    </li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_intro.htm">Working with the built-in API</a></li>
+
+    <li><a href="builtin_overview.htm">Built-in API overview</a></li>
+
+    <li><a href="builtin_features.htm">Built-in API features</a></li>
+
+    <li><a href="builtin_limitations.htm">Built-in API limitations</a></li>
+
+    <li><a href="builtin_reqs.htm">Requirements for working with built-in API functions</a></li>
+
+    <li><a href="builtin_best_practice.htm">Best practices for working with built-in API functions</a></li>
+
+    <li><a href="builtin_using.htm">Using built-in API functions</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

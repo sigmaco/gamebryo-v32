@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best practices for working with entities</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Best practices for working with entities</h1>
+
+<h2>When to use an entity</h2>
+
+<p>To make the best possible use of the entity mechanism it is important that you decide what
+should be modeled as an entity. Not every detail in the game should be modeled as a separate
+entity. Doing so could lower system performance with no gain in game design. However, it is
+surprisingly useful to model unanticipated things as an entity to make them tunable and available
+to be changed at run time. For example, game UI, ambient audio effects, and so on. It is worth
+giving considerable forethought to what needs to be modeled as an Entity versus a visual effect,
+and how.</p>
+
+<ul>
+    <li>An entity should have more than one possible state. If a tree has any dynamic game state,
+    for example if it can be cut down or burned, then it should be modeled as an entity. This true
+    even if the Entity has no encapsulated behavior.</li>
+
+    <li>An entity should be a <b>significant</b> concept in the game world. Not every rock in a
+    rock pile or gold coin in a bag needs to be represented as a separate entity. Instead a rock
+    pile might be an entity with a property that represents the number of rocks in the pile. Then
+    again if the player does not interact with the rock pile at all then it might not be its own
+    entity at all and should be baked into the terrain. A bag might be an entity that has a
+    property that represents the number of gold coins that it contains rather than containing
+    another entity to represent the pile of coins or a collection of single-coin entities. But if
+    individual pieces of loot need to be maintained, the bag should contain a collection property
+    of type EntityRef.</li>
+
+    <li>The representation of a logical entity can be made to change during game play. For example,
+    coins on the ground can be destroyed after increasing the counter in the player's gold
+    bag.</li>
+
+    <li>Not every entity that you model needs to be a physical thing. It can represent an abstract
+    concept or general world statistic. For example, the weather might be an entity with changing
+    state that affects game play even though it is not directly visible. The current quest a
+    character is on could be an entity with its own state and behaviors to track quest progress or
+    to trigger events.</li>
+
+    <li>AI coordination and planning might best be modeled as a central "planner" entity that tells
+    groups of NPC's how to form up and attack. That would be easier than building the planning
+    aspect of AI into each NPC and then developing a coordination conversation. A central planner
+    might also be more easily tuned. On the other hand, carrying out the orders and reacting to the
+    environment would almost certainly be best done by each NPC to give a more realistic
+    non-uniform experience.</li>
+
+    <li>Further, Entities should be developed using object oriented principles where each will
+    internally encapsulate the state and behaviors needed to present the desired external interface
+    to the game world. Using Models and mixing, complex inheritance, polymorphism, and reuse of
+    entity code is possible.</li>
+
+    <li>Some Entities will have a completely fixed set of property at run time. For example a tree
+    might never change state and whose purpose is only to provide scenery and perhaps inhibit
+    movement. At edit time, these static Entities are individually editable and relocatable in
+    World Builder. An Entity that meets this static definition could eventually be "baked" into the
+    scene and not consume resources as a runtime Entity.</li>
+
+    <li>Having a single global Entity can be useful to expose tuning values. A global Entity per
+    level or per game region can be useful for scripting the sequence of actions that challenge the
+    player, or doing initial set up.</li>
+
+    <li>You should plan for fewer than a few thousand entities being created at a time and fewer
+    than a few hundred being active. Beyond that point, the game would need to use streaming to
+    flush less relevant content or in some way suspend the execution of the unwanted entities.
+    These estimates of course are dependent on what language is used and how complex the Behaviors
+    are, and should be measured for your specific game.</li>
+
+    <li>Note that inactive entities have a memory overhead, but have compute overhead only when a
+    behavior is scheduled for them. For this reason we strongly recommend against ticking an Entity
+    every frame but instead using an event driven approach. One change in thinking is that the
+    animation system can update the appearance and possibly the location of the entity per frame
+    while the behavior system more infrequently sets the goals.</li>
+
+    <li>Entities should be somewhat long-lived to reduce creation and initialization overheads. A
+    missile would make sense, but a particle or a bullet from a chain gun would probably be
+    inappropriate. In an extreme situation, a developer could consider reusing an entity by using a
+    free-list mechanism to avoid repeated creates and destroys.</li>
+
+    <li>Animated articulated parts of a character are probably not appropriate to be represented as
+    entities. But dynamically snapped-on parts or weapons may make sense. Using that mechanism, the
+    separate character and weapon entity would be able to cooperate in computing damage and other
+    game effects as opposed to overloading the character entity with all conceivable combat
+    logic.</li>
+
+    <li>Consider referring to an Entity in C++ via their associated EntityID not directly via a
+    stored pointer. The Entity may be destroyed before you reuse that pointer. Some kinds of rapid
+    iteration (for example, deleting the entity in World Builder) can invalidate the Entity
+    pointer. If you use a SmartPointer, you should listen for entity-destroyed messages to unset
+    the direct reference.</li>
+</ul>
+
+<h2>Creating and destroying entities</h2>
+
+<p>If you need to create a set of related entities, consider creating a block file to represent the
+set. Blocks can be loaded and unloaded to create and destroy the contained entities. They are much
+more convenient for rapid iteration, since only change deltas are executed. This is in contrast to
+scripting and reexecuting the creation of a complex set of entities using a Behavior.</p>
+
+<p>Entities created dynamically at runtime that do not have strict timing requirements should be
+created using <span class="NDLSystemFont">egf::EntityManager::CreateEntity</span> from C++ or the
+<span class="NDLSystemFont">BehaviorAPI.CreateEntity</span> or <span class="NDLSystemFont">
+BehaviorAPI.CreateEntityAndWait</span> functions available in script. This ensure all the
+dependencies (behavior scripts, models, assets, etc) needed by the entity are also loaded.</p>
+
+<p>When dynamically creating entities that have strict timing requirements, you should preload the
+entity flat model and any assets required by the entity prior to instantiating the entity. You
+should also disable automatic asset preloading by setting the 'AssetPreload' flag from the
+Preloadable mix in model to 'False'. To further reduce potential delays, the entity flat model
+should not define the OnCreate or OnAssetsLoaded lifecycle behaviors.</p>
+
+<p>When you know the flat model has already been loaded, you can use <span class="NDLSystemFont">
+egf::FlatModelManager::FactoryEntity</span> method from C++ or the <span class="NDLSystemFont">
+BehaviorAPI.SpawnEntity</span> method from script to immediately create an entity. The returned
+entity will not have begun the <span class="NDLSystemFont">OnCreate</span> behavior yet and may not
+have all required assets available, which means it may not work with all built-in API methods.
+However, you can immediately read and write property values or queue behaviors on the created
+entity.</p>
+
+<p>When dynamically creating entities you are responsible for managing their eventual destruction.
+If one entity creates another entity during a behavior, consider having the parent entity keep
+track of the child with an EntityRef property. This way the parent can destroy the child during the
+parent's OnDestroy behavior. Alternatively, the created entity could destroy itself in response to
+some event or a system service could track the dynamic entities.</p>
+
+<p>If you pass a callback category to <span class="NDLSystemFont">egf::EntityManger::CreateEntity
+</span>, you should subscribe to the callback category in advance. If you subscribe to the callback
+category in the same tick in which you call <span class="NDLSystemFont">CreateEntity</span>, your
+message handler may not be called for the newly created entity.</p>
+
+<h2>Switching Levels</h2>
+
+<p>To switch levels in multi-level games it is recommended that block files be used.</p>
+
+<ul>
+    <li>We recommend using a system service to manage game state transitions such as level changes.
+    Such a service is a logical place to manage the loading and unloading of block files and assets
+    associated with a level.</li>
+
+    <li>A single level may consist of more than one block file. The designer may want to create
+    sections of the game world that can be reused in multiple levels. Or they could load a section
+    incrementally as the player moves through. For example:
+
+        <ul>
+            <li>Unload block file(s) for the current level using the EntityLoaderService. Unloading
+            a block file destroys all entities created by that block file causing all of their
+            OnDestroy behaviors to run. If those statically created entities track and destroy ones
+            they dynamically created, all outstanding entities will disappear when unloading the
+            block file.</li>
+
+            <li>Load block file(s) for next level. When all entities from this new block are fully
+            created you will receive a callback notification.
+
+                <ul>
+                    <li>OnEntitySetFinished is an entity lifecycle behavior. It is invoked on each
+                    entity in the block file that implements one after all entities in the block
+                    have completed their OnCreate behavior.</li>
+
+                    <li>elr_EntityCreationComplete is a message that is sent at the same point and
+                    can be subscribed to in a game service that needs to know when the entities
+                    have finished OnCreate.</li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_how_work.htm">How entities work</a></li>
+
+    <li><a href="entity_examples.htm">Entity examples</a></li>
+
+    <li><a href="entity_tuning.htm">Tuning entity performance</a></li>
+
+    <li><a href="entity_limitations.htm">Entity limitations</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Scripting Built-in API Functions</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Scripting Built-in API Functions</h1>
+
+<p>The behavior reference guide lists the C++ function signatures for the built-in API functions from the
+BehaviorAPI module, but knowing these doesn't obviously tell a script programmer how to call these
+functions without first knowing a few more important details. Here we will show examples using Lua of
+how to call these functions and deal with their return values.</p>
+
+<h2>Calling built-in API functions from script</h2>
+
+<p>Calling a built-in API function is just like calling any other function in Lua. We pre-load all of
+the required libraries so you do not even need to use "require" to load them, although you can use
+require to load additional Lua libraries as normal. To call a built-in API function you need to know
+which library the function is in. We have broken our built-in API into various libraries so that
+different portions can be used independently.</p>
+
+<p>Examples of calling built-in API functions in Lua:</p>
+<pre>
+function CallingBuiltinsExample(self, args)
+    local gameTime = BehaviorAPI.GetGameTime()
+    BehaviorAPI.LogMessage(1, string.format("The current time is %.4f", gameTime))
+end
+</pre>
+
+<h2>Using ParameterList from Lua</h2>
+
+<p>All behavior arguments are sent as parameter lists. A parameter list is an ordered list of
+    arbitrary data. The data in this list can be accessed in random order and each parameter can
+    optionally by given a string name which can be used for parameter access. All parameters are
+    type safe and can only be read as the correct type but a facility exists to add type conversions
+    between compatible types. ParameterList is implemented using a <em>userdata</em> type with a
+    <em>metatable</em> to implement access methods.</p>
+
+<p class="NDLHeadingRelatedTopic">For a detailed listing of Lua ParameterList methods, see:</p>
+
+<ul>
+    <li><a href="../../Programmer/Scripting/lua_datastream.htm">Lua ParameterList object
+    reference</a></li>
+</ul>
+
+<p>Examples of using ParameterList in Lua:</p>
+<pre>
+function ParameterListExample(self, args)
+    -- args is a ParameterList, we can read our parameters from this stream sequentially:
+    local intArg = args:GetUInt32()
+    local floatArg = args:GetFloat64()
+    
+    -- we can also read args from a specific index in the list
+    local pointArg = args:GetPoint3(4)
+    -- EntityID values are treated as unsigned 64-bit integers
+    local entityId = args:GetUInt64(5)
+	
+	-- get the Entity proxy object for the entity.
+	local entity = Emergent:GetEntity(entityId)
+
+    -- args can also be read by name
+    local stringArg = args::GetString("Argument Name")
+
+    -- If you are not concerned about argument type you can simply use Get. You could then use
+    -- Lua to inspect the returned type if desired.
+    local anArg = args:Get(3)
+    local anotherArg = args:Get("SomeName")
+
+    -- create a new stream for sending to another behavior
+    local stream = ParameterList.ParameterList()
+	
+    -- Parameters can be named, which is recommended
+    stream:PutString("OptionalParameterName", "Hello everybody!")
+	
+    -- All property types can be used as parameters
+    local myPosition = self.Position
+    stream:PutPoint3(myPosition)
+	
+    -- When putting parameters you must specify the type name because C++ has stronger type
+    -- rules than Lua. Otherwise you could only support a few data types.
+    stream:PutSInt16(5)
+    stream:PutUInt32(5)
+    
+	entity.SendEvent("SomeBehavior", stream)
+end
+</pre>
+
+<h2>Getting and setting properties from Lua</h2>
+
+<p>One of the most common things you will do from script is to read and write entity properties.
+Properties are accessed directly on Entity proxy objects in Lua. Lua only supports a small number of data
+types, but the property system supports a large range of property types. In addition properties also support scalar properties and associative array properties. The primary property access methods are:</p>
+
+<p class="NDLHeadingRelatedTopic">Primary property access methods:</p>
+
+<p>For getting and setting property values, see the "Property Bindings" section of the 
+<a href="../../Programmer/Scripting/lua_lib_Entity.htm">Lua Entity proxy documentation.</a></p>
+
+<p>For getting and setting default property values, see:
+
+    <a href=
+    "../../Programmer/Scripting/lua_lib_BehaviorAPI.htm#GetDefaultProperty">BehaviorAPI.GetDefaultProperty</a>
+    and
+    <a href=
+    "../../Programmer/Scripting/lua_lib_BehaviorAPI.htm#SetDefaultProperty">BehaviorAPI.SetDefaultProperty</a>
+</p>
+
+<p><b><i>Deprecated</i></b>The following BehaviorAPI functions remain available for accessing Entity
+properties. These methods are deprecated in favor of direct Property access via Lua Entity proxy instances.</p>
+
+<p class="NDLHeadingRelatedTopic">BehaviorAPI primary property access methods:</p>
+
+<ul>
+    <li><a href=
+    "../../Programmer/Scripting/lua_lib_BehaviorAPI.htm#GetProperty">BehaviorAPI.GetProperty</a></li>
+
+    <li><a href=
+    "../../Programmer/Scripting/lua_lib_BehaviorAPI.htm#SetProperty">BehaviorAPI.SetProperty</a></li>
+</ul>
+
+<p>Examples of accessing properties in Lua:</p>
+<pre>
+function PropertyExample(self, args)
+    -- In this example, MyChild is an EntityRef property:
+    local child = self.MyChild
+
+	-- We should ensure the entity is valid
+    if child ~= Entity.InvalidEntity then
+        local position = self.Position
+        local myHeight = self.Height
+
+        -- Properties like Point3 are returned as SWIG-generated userdata objects with metatables
+        -- so they behave like their C++ counterparts. In this case, Point3 has accessors to
+        -- allow you to access the x, y, and z values stored in index 1, 2, and 3.  
+        -- You can also use the Point3.x, .y, and .z attributes directly. 
+        -- Adjust the position to be on our head:
+        position.z = position.z + myHeight
+
+        -- I can set properties on other entities, move our child entity onto our head:
+		child.Position = position
+    end
+
+    -- Map style properties take an extra argument for the key.  The key is always a string and
+    -- can be any string value you want.  In this example, MyArray is a 'String map' type property.
+    self.MyArray["KeyNameHere"] = "some data value"
+    local value = self.MyArray["KeyNameHere"]
+end
+</pre>
+
+<h2>Calling built-in API functions that return EntityCheck values</h2>
+
+<p>Many built-in API functions accept an EntityID along with other arguments in order to call a C++
+function using the specified egf::Entity pointer. The EntityID is used to find the egf::Entity
+object but it is possible that the EntityID is not valid, for example the specified entity might
+have been deleted. If the entity was found then the called method could either succeed or fail. In
+order to distinguish between a missing entity, a successful result and a failure result many
+built-in API functions return an EntityCheck value. It is important to note that you cannot simply
+treat an EntityCheck value as a boolean value, this will likely have exactly the opposite of your
+intended meaning. Instead if you simply want to test for success you must compare the result
+against the ec_Yes value.</p>
+
+<p>Examples of using EntityCheck values in Lua:</p>
+<pre>
+function EntityCheckExample(self, args)
+    local someEntity = self.OtherEntity
+    if BehaviorAPI.IsKindOf(someEntity, "Chair") == BehaviorAPI.ec_Yes then
+        local stream = ParameterList.ParameterList()
+        stream:PutUInt64(self)
+        BehaviorAPI.CallBehavior(someEntity, "SitDown", stream)
+    end
+end
+</pre>
+
+<h2>Calling built-in API functions that return multiple values</h2>
+
+<p>In our SWIG bindings, if an argument to a bound C++ method is taken by non-const pointer then we
+treat that as an output parameter. If the argument is a non-const reference then it is treated as
+an input/output parameter. In Lua, functions can return multiple values and in both of these cases
+each output parameter becomes an additional return value.</p>
+
+<p>Examples of calling built-in API functions with multiple return values:</p>
+<pre>
+function MultipleReturnExample(self, args)
+    -- FindPropertyKeys returns an EntityCheck result and an array-style table containing all the
+    -- keys that are in use for the given map-style property:
+    local result, keys = BehaviorAPI.FindPropertyKeys(self, "SomeMapProperty")
+    if result == BehaviorAPI.ec_Yes then
+        for index,key in ipairs(keys) do
+            print(key .. "=" .. tostring(self.SomeMapProperty[key]))
+        end
+    end
+
+    -- Input/output parameters do not automatically affect the Lua data that is passed in, you
+    -- must also capture the return value in order to update your lua variables.  Lets assume you
+    -- have a custom built-in in bapiCustom called SnapToGround with the following C++ signature
+    -- which takes a point and adjusts it to the height of the ground:
+    --     bool SnapToGround(efd::Point3&amp; io_position)
+    -- To call this method you could use this code:
+    local position = self.Position
+    result, position = bapiCustom.SnapToGround(position)
+
+    -- in fact you could store the output position into a completely different variable without
+    -- affecting the input variable:
+    local newPosition
+    local oldPosition = self.Position
+    result, newPosition = bapiCustom.SnapToGround(oldPosition)
+    if result then
+        -- assuming a true result always adjusts the position, we could assert that the new
+        -- position is different from the old position:
+        BehaviorAPI.BreakIfFalse(newPosition ~= oldPosition)
+
+        self.Position = newPosition
+    end
+end
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_custom_creating.htm">Creating custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_deleting.htm">Deleting custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_dynamic_load.htm">Dynamically loading custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_static_load.htm">Statically loading custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_adding.htm">Adding custom built-in API functions to the scripting
+    system</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

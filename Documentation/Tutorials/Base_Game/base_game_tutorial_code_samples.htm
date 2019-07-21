@@ -1,0 +1,1257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Base Game: Tutorial Code Samples</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Base Game: Tutorial Code Samples</h1>
+
+<p>This section contains code samples from the Base Game tutorial.</p>
+
+<ul>
+    <li><a href="#EseBgDoor_lua">EseBgDoor.lua</a>&mdash;Source for behaviors defined for the
+    BgDoor model.</li>
+
+    <li><a href="#EseCollideExecuteRemote_lua">EseCollideExecuteRemote.lua</a>&mdash;Source for
+    behaviors defined for the CollideExecuteRemote model.</li>
+
+    <li><a href="#initial_basegame_source_files">Initial BaseGame source files</a>&mdash;Initial
+    source for main.cpp, BaseGameService.h, and BaseGameService.cpp.</li>
+
+    <li><a href="#EseBgAvatar_lua">EseBgAvatar.lua</a>&mdash;Source for behaviors defined for the
+    updated BgAvatar model.</li>
+
+    <li><a href="#final_basegame_source_files">Final BaseGame source files</a>&mdash;Final source
+    for BaseGameService.h, and BaseGameService.cpp.</li>
+</ul>
+
+<a name="EseBgDoor_lua" id="EseBgDoor_lua"></a><h2>EseBgDoor.lua</h2>
+
+<pre>
+module("EseBgDoor", package.seeall)
+
+-- Behavior
+function OnOpen(self, params)
+    local isOpen = self.isOpen
+    if not isOpen then
+        egmAnimation.SetTargetAnimationByName(self, "Open")
+        self.isOpen = true
+     end
+end
+
+-- Behavior
+function OnClose(self, params)
+    local isOpen = self.isOpen
+    local canClose = self.canClose
+    if isOpen and canClose then
+        egmAnimation.SetTargetAnimationByName(self, "Close")
+        self.isOpen = false
+    end
+end
+
+-- Behavior
+function OnOpenClose(self, params)
+    self:SendEvent("OnOpen", nil, "", 0.0)
+    -- Cause auto-close after 10 seconds.
+    self:SendEvent("OnClose", nil, "", 10.0)
+end
+</pre>
+
+<a name="EseCollideExecuteRemote_lua" id="EseCollideExecuteRemote_lua"></a><h2>EseCollideExecuteRemote.lua</h2>
+
+<pre>
+module(&quot;EseCollideExecuteRemote &quot;, package.seeall)
+
+-- Behavior
+function OnPhysXTrigger(self, params)
+	local time = params:GetFloat64(&quot;CollisionTime&quot;)
+	local eventType = params:GetSInt32(&quot;CollisionStatus&quot;)
+	local other = params:GetEntityID(&quot;CollidingEntity&quot;)
+	
+	local mymodel = self:GetModelName()
+	local othermodel = other:GetModelName()
+	
+	local targetEntity = self.RemoteEntity
+	local behavior = string.char()
+	local behaviorName = &quot;&quot;
+	
+	if (eventType == 1) then      -- On Enter Collision Shape
+	    behaviorName = &quot;OnEnterBehaviors&quot;
+	elseif (eventType == 2) then  -- On Stay in Collision Shape
+	    behaviorName = &quot;OnStayBehaviors&quot;
+	elseif (eventType == 3) then  -- On Leave Collision Shape
+	    behaviorName = &quot;OnLeaveBehaviors&quot;
+	end
+	
+	if self:ContainsPropertyWithKey(behaviorName, othermodel) then
+		behavior = self[behaviorName][othermodel]
+	else
+		return
+	end
+	
+	if (behavior ~= nil and behavior ~= string.char()) then
+	    -- Pass name of shapes colliding
+	    local outstrm = ParameterList.ParameterList()
+	    outstrm:PutString(mymodel)
+	    outstrm:PutString(othermodel)
+	
+	    -- Send the event
+	    BehaviorAPI.SendEvent(targetEntity.ID, behavior, outstrm)
+	end
+end
+</pre>
+
+<a name="initial_basegame_source_files" id="initial_basegame_source_files"></a><h2>Initial BaseGame source files</h2>
+
+<p>This section contains the first versions of the BaseGame Main.cpp, BaseGame.h, and BaseGame.cpp
+files.</p>
+
+<h3>Main.cpp</h3>
+
+<pre>
+#include &lt;NiStandardAllocator.h&gt;
+
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ILogger.h&gt;
+#include &lt;efd/MemoryDefines.h&gt;
+#include &lt;NiStaticDataManager.h&gt;
+
+#include &quot;BaseGame.h&quot;
+
+#define TITLE_SERVICE_NAME BaseGame
+
+//--------------------------------------------------------------------------------------------------
+#if defined(EE_PLATFORM_WIN32)
+// Support for D3D renderers
+
+// DX9 renderer
+#include &lt;NiDX9Renderer.h&gt;
+#include &lt;NiDX9RendererSetup.h&gt;
+
+// D3D10 renderer
+#include &lt;NiD3D10Renderer.h&gt;
+#include &lt;NiD3D10RendererSetup.h&gt;
+
+// D3D11 renderer
+#include &lt;ecrD3D11Renderer/D3D11Renderer.h&gt;
+#include &lt;ecrD3D11RendererSetup/D3D11RendererSetup.h&gt;
+
+#endif
+
+// Make use of the default memory allocator implementation.  For instructions
+// on how to use a custom allocator, see the notes in &lt;efd/MemoryDefines.h&gt;.
+#include &lt;efd/DefaultInitializeMemoryManager.h&gt;
+EE_USE_DEFAULT_ALLOCATOR;
+
+//--------------------------------------------------------------------------------------------------
+int GamebryoMain(
+    efd::InstanceRef instance,
+    efd::InstanceRef previousInstance,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Initialize Gamebryo
+    NiInitOptions* pInitOptions = EE_EXTERNAL_NEW NiInitOptions();
+    NiInit(pInitOptions);
+
+    // Disable writing the memory log to disk (saves time when it is not needed)
+    if (efd::MemTracker::Get())
+        efd::MemTracker::Get()-&gt;SetWriteToLog(false);
+
+    // Run the title
+    efd::SmartPointer&lt;TITLE_SERVICE_NAME&gt; spTitle = EE_NEW TITLE_SERVICE_NAME();
+    int returnCode = spTitle-&gt;Go(instance, previousInstance, commandLine, argcInit, argvInit);
+    spTitle = NULL;
+
+    // Shut down Gamebryo
+    NiShutdown();
+    EE_EXTERNAL_DELETE pInitOptions;
+
+    return returnCode;
+}
+//--------------------------------------------------------------------------------------------------
+#if defined(EE_PLATFORM_WIN32)
+int WINAPI WinMain(HINSTANCE hI, HINSTANCE hPI, CmdLineType cmdline, int /*iWinMode*/)
+{
+    return GamebryoMain(hI, hPI, cmdline, __argc, __argv);
+}
+#else
+int main(int argc, char* argv[])
+{
+    return GamebryoMain(NULL, NULL, NULL, argc, argv);
+}
+#endif
+//--------------------------------------------------------------------------------------------------
+</pre>
+
+<h3>BaseGame.h</h3>
+
+<pre>
+#pragma once
+#ifndef EE_BASEGAME_H
+#define EE_BASEGAME_H
+
+#include &lt;efd/ServiceManager.h&gt;
+#include &lt;egf/EntityChangeMessage.h&gt;
+#include &lt;ecrInput/InputActionMessage.h&gt;
+#include &lt;efdPhysX/PhysXSDKManager.h&gt;
+#include &quot;egfDemoSystemServiceIDs.h&quot;
+
+#if defined(EE_PLATFORM_WIN32)
+typedef LPTSTR CmdLineType;
+#else
+typedef const char* CmdLineType;
+#endif
+
+/**
+   The BaseGame class is a system service that represents the game itself. It is responsible
+   for setting up all the other system services required by the game, starting up the
+   ServiceManager which in turn runs the game's main loop and loading the main block file.
+   It also creates the default camera. BaseGame is built using a basic set of system
+   services.
+*/
+
+//------------------------------------------------------------------------------------------------
+class BaseGame : public efd::ISystemService
+{
+    EE_DECLARE_CLASS1 (BaseGame, efd::kCLASSID_BaseGame, IBase);
+    EE_DECLARE_CONCRETE_REFCOUNT;
+
+public:
+    /**
+        Constructor - Perform standard Gamebryo initialization and create a ServiceManager.
+    */
+    BaseGame();
+
+    /**
+        Destructor - Perform standard Gamebryo cleanup and deletes the ServiceManager.
+    */
+    ~BaseGame();
+
+    /**
+        Returns the name of this service. This name is used mainly for improving the readability
+        of various log statements and has no impact on functionality. Service names are not
+        guaranteed to be unique.
+
+        @return Display name for the current service.
+    */
+    virtual const char* GetDisplayName() const;
+
+    /**
+        Called from main to start the game. It sets up the required system services and
+        starts up ServiceManager.
+
+        @param instance Standard WinMain parameter. Not used by other platforms. It
+            is a handle to the current instance of the application.
+        @param previous Standard WinMain parameter. Not used by other platforms.
+        @param commandLine Standard WinMain parameter. Not used by other platforms.
+            It is a pointer to the command line for the application.
+        @param argcInit Number of command line parameters.
+        @param argvInit Command line arguments.
+        @return 0 if the game runs OK and 1 if game fails to start correctly.
+    */
+    efd::SInt32 Go(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+
+    /**
+        A message handler function for the EntityChangeMessage message. This message
+        is sent by the EntityManager in response to an entity create request. We
+        use this to know when our camera has been created and associate it with the
+        render surface.
+
+        @param pMessage EntityChangeMessage message.
+        @param targetCategory Category the message was sent on.
+     */
+    void HandleCameraDiscoverMessage(
+        const egf::EntityChangeMessage* pMessage,
+        efd::Category targetCategory);
+
+    /**
+    A message handler function for the InputActionMessage message. That message
+    is sent by the InputService when it detects user input. This method looks for
+    an event that indicates that the user wants to end the game. If that event is
+    seen then it shuts down the ServiceManager which in turn ends the game.
+
+    @param pMessage The InputActionMessage message.
+    @param targetChannel Category the message was sent on.
+    */
+    void HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+        efd::Category targetChannel);
+
+protected:
+    // We create the renderer and setup some input actions during init.
+    virtual efd::AsyncResult OnInit();
+
+    // The OnTick handler allows us to perform any periodic processing.
+    virtual efd::AsyncResult OnTick();
+
+    // Release resources.
+    virtual efd::AsyncResult OnShutdown();
+
+    void InitLoggingDestinations();
+    bool SetupServices(
+        efd::InstanceRef instance,
+        efd::InstanceRef previous,
+        CmdLineType commandLine,
+        int argcInit,
+        char** argvInit);
+    void SetupInputActions();
+
+private:
+    // As the &quot;Application&quot; object I hold the primary reference count for the service manager.
+    // Since I'm also an ISystemService myself this means I also have a plain pointer to the
+    // service manager, but that pointer is automatically managed by the ServiceManager itself
+    // so I need a separate pointer for application usage.
+    efd::ServiceManagerPtr m_spServiceManager;
+
+    // Category we use for additional action messages
+    efd::Category m_catQuitGame;
+
+    // The PhysXManager
+    efdPhysX::PhysXSDKManager* m_pPhysXSDKManager;
+};
+
+#endif
+</pre>
+
+<h3>BaseGame.cpp</h3>
+
+<pre>
+// Headers for the various system services we use:
+#include &lt;efd/ServiceAllocator.h&gt;
+#include &lt;egf/ServiceAllocator.h&gt;
+#include &lt;ecr/ServiceAllocator.h&gt;
+#include &lt;egfPhysX/ServiceAllocator.h&gt;
+
+#if defined(EE_PLATFORM_WIN32)
+#include &lt;efd/Win32/Win32PlatformService.h&gt;
+#elif defined(EE_PLATFORM_PS3)
+#include &lt;efd/PS3/PS3PlatformService.h&gt;
+#endif
+
+#include &lt;egmAnimation/AnimationService.h&gt;
+
+// Our main application service:
+#include &quot;BaseGame.h&quot;
+
+// Other various headers
+#include &lt;efd/SystemUniqueIndex.h&gt;
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ConfigManager.h&gt;
+#include &lt;egf/EntityLoaderService.h&gt;
+#include &lt;egf/FlatModelManager.h&gt;
+#include &lt;egf/EntityManager.h&gt;
+#include &lt;efd/AssetFactoryManager.h&gt;
+#include &lt;egf/StandardModelLibraryFlatModelIDs.h&gt;
+#include &lt;ecr/CameraService.h&gt;
+#include &lt;ecrInput/InputService.h&gt;
+#include &lt;egfLua/SchedulerLua.h&gt;
+
+//------------------------------------------------------------------------------------------------
+using namespace efd;
+using namespace egf;
+using namespace ecr;
+
+//------------------------------------------------------------------------------------------------
+#if !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+// This include is only necessary when static Lua game packs are being linked in.
+
+// Since we statically link game-pack built-ins we need to know about all these methods.  These
+// functions are typically auto-generated by SWIG.
+extern &quot;C&quot; int luaopen_ecr(lua_State *L);
+extern &quot;C&quot; int luaopen_egmAnimation(lua_State *L);
+extern &quot;C&quot; int luaopen_bapiPhysXBase(lua_State *L);
+
+#include &lt;NiLicense.h&gt;
+NiEmbedGamebryoLicenseCode;
+
+#endif // !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+
+//------------------------------------------------------------------------------------------------
+static const char g_AppName[] = &quot;BaseGame&quot;;
+static efd::SystemUniqueIndex g_uniqueIndex(&quot;BaseGame&quot;);
+
+//------------------------------------------------------------------------------------------------
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(BaseGame);
+
+EE_HANDLER_WRAP(BaseGame, HandleCameraDiscoverMessage, EntityChangeMessage,
+                kMSGID_OwnedEntityAdded);
+EE_HANDLER(BaseGame, HandleActionMessage, ecrInput::InputActionMessage);
+
+//------------------------------------------------------------------------------------------------
+BaseGame::BaseGame()
+{
+    // The ServiceManager is the heart of any Foundation based application.  It owns all
+    // of the System Services that compose your application and runs the main loop.
+    m_spServiceManager = EE_NEW ServiceManager();
+}
+
+//------------------------------------------------------------------------------------------------
+BaseGame::~BaseGame()
+{
+    m_spServiceManager = NULL;
+}
+
+//------------------------------------------------------------------------------------------------
+const char* BaseGame::GetDisplayName() const
+{
+    return &quot;BaseGame&quot;;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SInt32 BaseGame::Go(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    if (SetupServices(instance, previous, commandLine, argcInit, argvInit))
+    {
+        m_spServiceManager-&gt;Run();
+
+        if (m_pPhysXSDKManager)
+        {
+            m_pPhysXSDKManager-&gt;Shutdown();
+        }
+
+        // We need to release the service manager so that it will release all the services that it
+        // holds references to (which includes BaseGame itself) or else we'll have a circular
+        // reference which will prevent proper shutdown from occurring.
+        m_spServiceManager = NULL;
+        return 0;
+    }
+    return 1;
+}
+
+//------------------------------------------------------------------------------------------------
+void BaseGame::InitLoggingDestinations()
+{
+    // The Logger is a special Singleton, not a system service, so it must be created and
+    // registered by calling LoggerSingleton::Initialize. This should be created as early as
+    // possible to avoid missing any important log messages.
+    LoggerPtr spLogger = EE_NEW Logger();
+    efd::LoggerSingleton::Initialize(spLogger);
+
+    // You can specify one or more output handlers for each logging module.  In this case we
+    // are simply logging everything to a text file, but we could route different modules to
+    // different files or all critical errors to a separate file.  We could also log to other
+    // destinations like OutputDebugString or a network socket by using specialized
+    // ILogDestination implementations.
+    utf8string name =  g_uniqueIndex.GetName();
+    utf8string strLogFileName(Formatted, &quot;%s.log&quot;, name.c_str());
+    FileDestinationPtr logDest = EE_NEW FileDestination(&quot;default&quot;, strLogFileName,
+        FileDestination::kFileOverwrite);
+    spLogger-&gt;AddDest(logDest, true);
+
+    // Logging defaults to having level 0 to 3 errors and level 0 to 1 non-errors enabled.
+    // You can override those defaults here either for all categories or specific categories.
+    // See the following examples:
+    //  spLogger-&gt;SetLogLevel(efd::kALL, efd::ILogger::kLogMask_None);
+    //  spLogger-&gt;SetLogLevel(efd::kEntity, efd::ILogger::kLogMask_All);
+    // Also note that default logging settings can be changed via the config.ini file too, so
+    // there is no need to recompile your code to change the log configuration.
+}
+
+//------------------------------------------------------------------------------------------------
+bool BaseGame::SetupServices(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Setup the default logging as soon as possible so other services can log early
+    InitLoggingDestinations();
+
+    // Set the name displayed by this process when connected to Toolbench
+    m_spServiceManager-&gt;SetVirtualProcessName(&quot;BaseGame&quot;);
+
+    // Use the Service Allocator helper functions to create common game services needed by
+    // most applications.  This is a simplified approach to creating instances of the services
+    // directly.
+
+    // Foundation services - messaging, logging, asset service, application configuration
+    EE_VERIFY(efd::CreateFoundationServices(m_spServiceManager, argcInit, argvInit));
+
+    // Game Framework services - entities, behaviors, rapid iteration
+    EE_VERIFY(egf::CreateGameServices(m_spServiceManager));
+
+    // Core Runtime services - rendering, lights, cameras, scenes
+    EE_VERIFY(ecr::CreateRuntimeServices(
+        m_spServiceManager,
+        ecr::rsaf_NO_PICK_SERVICE));
+
+    // The AnimationService handles all actors, which are animating scene objects.
+    // A note on priority, we use a higher priority than the scene graph service so the actors
+    // get updated before their associated scene graph nodes.
+    egmAnimation::AnimationServicePtr spAnimationService = EE_NEW egmAnimation::AnimationService();
+    m_spServiceManager-&gt;RegisterSystemService(spAnimationService);
+
+    // The InputService service manages input from keyboard and joystick devices.  It uses an
+    // actionmap to convert device input into events.  Further you can register for either
+    // message based or behavior based callbacks when an input event occurs.
+    ecrInput::InputServicePtr spInputService = EE_NEW ecrInput::InputService(false, false);
+    m_spServiceManager-&gt;RegisterSystemService(spInputService);
+
+    // PhysX services -  PhysX simulation and collision/triggers
+    EE_VERIFY(egfPhysX::CreatePhysXServices(m_spServiceManager));
+
+    // Since we want to be able to run Lua behaviors we must add the Lua scripting runtime
+    // to the scheduler.
+    SchedulerLuaPtr spSchedulerLua = EE_NEW SchedulerLua();
+    Scheduler* pScheduler = m_spServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+    pScheduler-&gt;RegisterScriptingRuntime(&quot;Lua&quot;, egf::BehaviorType_Lua, spSchedulerLua);
+
+    // Our BaseGame application object is also a service that controls some game-specific logic
+    m_spServiceManager-&gt;RegisterSystemService(this);
+
+    IConfigManagerPtr spConfigManager = m_spServiceManager-&gt;GetSystemServiceAs&lt;IConfigManager&gt;();
+#if defined(EE_PLATFORM_WIN32)
+    // On windows you can use the Win32PlatformService to implement a simple default windows
+    // message pump.  It will create a main window and pump messages for it.
+    Win32PlatformServicePtr spWin32 = EE_NEW Win32PlatformService(instance, previous, commandLine);
+    spWin32-&gt;SetWindowTitle(g_uniqueIndex.GetName());
+
+    utf8string width, height;
+    UInt32 windowWidth = 640;
+    UInt32 windowHeight = 480;
+
+    if (spConfigManager-&gt;FindValue(&quot;Game.WindowWidth&quot;, width))
+    {
+        if (!width.empty())
+            windowWidth = atoi(width.c_str());
+    }
+
+    if (spConfigManager-&gt;FindValue(&quot;Game.WindowHeight&quot;, height))
+    {
+        if (!height.empty())
+            windowHeight = atoi(height.c_str());
+    }
+
+    spWin32-&gt;SetWindowWidth(windowWidth);
+    spWin32-&gt;SetWindowHeight(windowHeight);
+
+    int xSlots = GetSystemMetrics(SM_CXSCREEN) / windowWidth;
+    int ySlots = GetSystemMetrics(SM_CYSCREEN) / windowHeight;
+    UInt32 left = (windowWidth * ((g_uniqueIndex.GetIndex()-1)%xSlots)) + 1;
+    UInt32 top = (windowHeight * (((g_uniqueIndex.GetIndex()-1)/xSlots)%ySlots)) + 1;
+
+    spWin32-&gt;SetWindowLeft(left);
+    spWin32-&gt;SetWindowTop(top);
+
+    spWin32-&gt;SetWindowClass(g_AppName);
+
+    m_spServiceManager-&gt;RegisterSystemService(spWin32);
+#elif defined(EE_PLATFORM_PS3)
+    // This service is used to perform any PS3 specific behavior that may be required such
+    // as running PS3 specific initialization code.
+    const int callbackSlot = 0;
+    PS3PlatformServicePtr spPS3 = EE_NEW PS3PlatformService(callbackSlot);
+
+    m_spServiceManager-&gt;RegisterSystemService(PS3PlatformService::CLASS_ID, spPS3);
+#endif
+
+#if !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+    // For Statically linked built-ins we need to add the static ecr module to the Lua
+    // scheduler here before it starts ticking.  We do this by registering the SWIG-generated
+    // init function with the scheduler as a static built-in function.  Static built-ins can be
+    // used on any platform, but since DLLs are easy to use on Windows we are using DLLs on that
+    // platform.  With DLLs we can specify what modules to load purely through config.ini settings
+    // and we can also reload those DLLs on the fly which makes testing changes easier.
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_ecr));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmAnimation));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_bapiPhysXBase));
+#endif // !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+
+    // Startup PhysX
+    m_pPhysXSDKManager = efdPhysX::PhysXSDKManager::GetManager();
+    if (!m_pPhysXSDKManager-&gt;Initialize())
+    {
+        EE_FAIL(&quot;Could not initialize the PhysX SDK.&quot;);
+        return false;
+    }
+    m_pPhysXSDKManager-&gt;Configure(spConfigManager);
+
+
+    // Some shared code might run slightly different based on whether it is being used in
+    // a client application or a tool application.  We call this concept the Program Type,
+    // in order for such code to operate correctly you need to tell the ServiceManager what
+    // Program Type your application is running as.
+    m_spServiceManager-&gt;SetProgramType(ServiceManager::kProgType_Client);
+
+    return true;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnInit()
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it.  The value will be cleared when we are removed from the manager so
+    // we can pretty must always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // Initialize random number generator
+    HighPrecisionClock clock;
+    TimeType currentTime = clock.GetCurrentTime();
+    TimeType* pCurrentTime = &amp;currentTime;
+    UInt64* seed64 = reinterpret_cast&lt;UInt64*&gt;(pCurrentTime);
+    Srand((UInt32)*seed64);
+
+    // If there is no surface, add one.
+    RenderServicePtr spRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (!spRenderService-&gt;GetActiveRenderSurface())
+    {
+        RenderContext* pRenderContext = EE_NEW RenderContext(spRenderService);
+        spRenderService-&gt;AddRenderContext(pRenderContext);
+        pRenderContext-&gt;SetBackgroundColor(NiColorA(0.0f, 0.0f, 0.15f, 1.0f));
+        RenderSurfacePtr spSurface = spRenderService-&gt;CreateRenderSurface(NULL);
+        pRenderContext-&gt;AddRenderSurface(spSurface);
+        spRenderService-&gt;SetActiveRenderSurface(spSurface);
+
+        EE_ASSERT(spRenderService-&gt;GetActiveRenderSurface());
+    }
+
+    SetupInputActions();
+
+    // Subscribe to the local message category to receive entity discovery messages. Such a message
+    // will be generated when our camera is created, and we use this to associate the camera with
+    // the render surface later.
+    MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+    pMessageService-&gt;Subscribe(this, kCAT_LocalMessage);
+
+    // Load the main block file
+    efd::IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::IConfigManager&gt;();
+    efd::utf8string world_file = pConfig-&gt;FindValue(&quot;Game.InitialWorld&quot;);
+    if (world_file.empty())
+    {
+        EE_LOG(efd::kApp, efd::ILogger::kERR0, (&quot;No block file specified, set Game.InitialWorld.&quot;));
+    }
+    else
+    {
+        EntityLoaderService* els = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+
+        // We don't want to be notified when this set is loaded, so pass kCAT_INVALID.
+        BlockLoadParameters blp(kCAT_INVALID);
+        els-&gt;RequestEntitySetLoad(world_file, &amp;blp);
+    }
+
+    return efd::AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnTick()
+{
+    return AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnShutdown()
+{
+    return AsyncResult_Complete;
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::HandleCameraDiscoverMessage(
+    const egf::EntityChangeMessage* pMessage,
+    efd::Category targetCategory)
+{
+    Entity* pEntity = pMessage-&gt;GetEntity();
+    EE_ASSERT(pEntity);
+
+    // Ignore entities that do not contain a camera entity.
+    if (!pEntity-&gt;GetModel()-&gt;ContainsModel(kFlatModelID_StandardModelLibrary_Camera))
+        return;
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    EE_ASSERT(pRenderService);
+    CameraService* pCameraService = m_pServiceManager-&gt;GetSystemServiceAs&lt;CameraService&gt;();
+    EE_ASSERT(pCameraService);
+
+    pCameraService-&gt;CreateCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetRenderTargetGroup());
+
+    pCameraService-&gt;SetActiveCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetWindowRef());
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+    efd::Category targetCategory)
+{
+    if (pMessage-&gt;GetEventName() == &quot;GAME_QUIT&quot;)
+    {
+        m_pServiceManager-&gt;Shutdown();
+    }
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::SetupInputActions()
+{
+    ecrInput::InputService* pInputService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;ecrInput::InputService&gt;();
+    EE_ASSERT(pInputService);
+    MessageService* pMessageService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+
+    // activate our action map
+    pInputService-&gt;PushActionMap(&quot;GAMEPLAY_ACTION_MAP&quot;);
+
+    // create and subscribe to a category for quit messages
+    m_catQuitGame = pMessageService-&gt;GetGloballyUniqueCategory();
+    pInputService-&gt;ListenForInputActionEvent(&quot;GAME_QUIT&quot;, m_catQuitGame);
+    pMessageService-&gt;Subscribe(this, m_catQuitGame);
+}
+</pre>
+
+<a name="EseBgAvatar_lua" id="EseBgAvatar_lua"></a><h2>EseBgAvatar.lua</h2>
+
+<pre>
+module(&quot;EseBgAvatar&quot;, package.seeall)
+
+----------------------------------------------------------------------------------------------------
+-- Function
+function SetDirection(self)
+    local lateral = self.LateralMovement
+    local longitudinal = self.LongitudinalMovement
+    local stick = self.StickMovement
+
+    stick[1] = stick[1] + lateral
+    stick[2] = stick[2] + longitudinal
+
+    local cameraRotation = {0.0, 0.0, 0.0}
+    local camera = egmSample.GetActiveCamera()
+    if(camera ~= Entity.InvalidEntity) then
+        cameraRotation = camera.Rotation
+    end
+
+    local movement = egmSample.Idle
+    if (math.abs(stick[1]) &gt; 0.05 or math.abs(stick[2]) &gt; 0.05) then
+        local direction = {-stick[1], -stick[2], 0.0}
+        egmSample.SetTargetDirection(self, direction, cameraRotation)
+        if (math.abs(stick[1]) &gt; 0.6 or math.abs(stick[2]) &gt; 0.6) then
+            movement = egmSample.Running
+        else
+            movement = egmSample.Walking
+        end
+    end
+
+    -- update the movement type (animation)
+    local args = ParameterList.ParameterList()
+    args:PutUInt32(&quot;MovementType&quot;, movement)
+    self:SendEvent(&quot;SetMovement&quot;, args)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Behavior
+function OnStick(self, params)
+   local stickval = {params:GetFloat32(&quot;X&quot;), params:GetFloat32(&quot;Y&quot;), params:GetFloat32(&quot;Z&quot;)}
+
+   self.StickMovement = stickval
+
+   SetDirection(self)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Behavior
+function OnKeyUp(self, params)
+	local magnitude = params:GetFloat32(&quot;Magnitude&quot;)
+
+    self.LongitudinalMovement = -magnitude
+
+    SetDirection(self)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Behavior
+function OnKeyDown(self, params)
+	local magnitude = params:GetFloat32(&quot;Magnitude&quot;)
+
+    self.LongitudinalMovement = magnitude
+
+    SetDirection(self)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Behavior
+function OnKeyLeft(self, params)
+	local magnitude = params:GetFloat32(&quot;Magnitude&quot;)
+
+    self.LateralMovement = -magnitude
+
+    SetDirection(self)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Behavior
+function OnKeyRight(self, params)
+	local magnitude = params:GetFloat32(&quot;Magnitude&quot;)
+
+    self.LateralMovement = magnitude
+
+    SetDirection(self)
+end
+
+-- Behavior
+function SetMovement(self, params)
+    local movement = params:GetUInt32(&quot;MovementType&quot;)
+    egmSample.SetTargetMovementType(self, movement)
+end
+</pre>
+
+<a name="final_basegame_source_files" id="final_basegame_source_files"></a><h2>Complete BaseGame source files</h2>
+
+<p>This section contains the version of BaseGame.cpp that reflects the changes made at the end of
+the BaseGame tutorial. Note that the Main.cpp and BaseGame.h files are identical to the ones from
+the previous version, and not listed.</p>
+
+<h3>BaseGame.cpp</h3>
+
+<pre>
+// Headers for the various system services we use:
+#include &lt;efd/ServiceAllocator.h&gt;
+#include &lt;egf/ServiceAllocator.h&gt;
+#include &lt;ecr/ServiceAllocator.h&gt;
+#include &lt;egfPhysX/ServiceAllocator.h&gt;
+
+#if defined(EE_PLATFORM_WIN32)
+#include &lt;efd/Win32/Win32PlatformService.h&gt;
+#elif defined(EE_PLATFORM_PS3)
+#include &lt;efd/PS3/PS3PlatformService.h&gt;
+#endif
+
+#include &lt;egmAnimation/AnimationService.h&gt;
+
+// Our main application service:
+#include &quot;BaseGame.h&quot;
+
+// Other various headers
+#include &lt;efd/SystemUniqueIndex.h&gt;
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ConfigManager.h&gt;
+#include &lt;egf/EntityLoaderService.h&gt;
+#include &lt;egf/FlatModelManager.h&gt;
+#include &lt;egf/EntityManager.h&gt;
+#include &lt;efd/AssetFactoryManager.h&gt;
+#include &lt;egf/StandardModelLibraryFlatModelIDs.h&gt;
+#include &lt;ecr/CameraService.h&gt;
+#include &lt;ecrInput/InputService.h&gt;
+#include &lt;egfLua/SchedulerLua.h&gt;
+#include &lt;egmSample/EntityCameraService.h&gt;
+#include &lt;egmSample/MovementService.h&gt;
+
+//------------------------------------------------------------------------------------------------
+using namespace efd;
+using namespace egf;
+using namespace ecr;
+using namespace egmSample;
+
+//------------------------------------------------------------------------------------------------
+#if !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+// This include is only necessary when static Lua game packs are being linked in.
+
+// Since we statically link game-pack built-ins we need to know about all these methods.  These
+// functions are typically auto-generated by SWIG.
+extern &quot;C&quot; int luaopen_ecr(lua_State *L);
+extern &quot;C&quot; int luaopen_egmAnimation(lua_State *L);
+extern &quot;C&quot; int luaopen_bapiPhysXBase(lua_State *L);
+extern &quot;C&quot; int luaopen_egmSample(lua_State *L);
+
+#include &lt;NiLicense.h&gt;
+NiEmbedGamebryoLicenseCode;
+
+#endif // !defined(EE_DYNAMIC_BEHAVIOR_LOAD)
+
+//------------------------------------------------------------------------------------------------
+static const char g_AppName[] = &quot;BaseGame&quot;;
+static efd::SystemUniqueIndex g_uniqueIndex(&quot;BaseGame&quot;);
+
+//------------------------------------------------------------------------------------------------
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(BaseGame);
+
+EE_HANDLER_WRAP(BaseGame, HandleCameraDiscoverMessage, EntityChangeMessage,
+                kMSGID_OwnedEntityAdded);
+EE_HANDLER(BaseGame, HandleActionMessage, ecrInput::InputActionMessage);
+
+//------------------------------------------------------------------------------------------------
+BaseGame::BaseGame()
+{
+    // The ServiceManager is the heart of any Foundation based application.  It owns all
+    // of the System Services that compose your application and runs the main loop.
+    m_spServiceManager = EE_NEW ServiceManager();
+}
+
+//------------------------------------------------------------------------------------------------
+BaseGame::~BaseGame()
+{
+    m_spServiceManager = NULL;
+}
+
+//------------------------------------------------------------------------------------------------
+const char* BaseGame::GetDisplayName() const
+{
+    return &quot;BaseGame&quot;;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::SInt32 BaseGame::Go(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    if (SetupServices(instance, previous, commandLine, argcInit, argvInit))
+    {
+        m_spServiceManager-&gt;Run();
+
+        if (m_pPhysXSDKManager)
+        {
+            m_pPhysXSDKManager-&gt;Shutdown();
+        }
+
+        // We need to release the service manager so that it will release all the services that it
+        // holds references to (which includes BaseGame itself) or else we'll have a circular
+        // reference which will prevent proper shutdown from occurring.
+        m_spServiceManager = NULL;
+        return 0;
+    }
+    return 1;
+}
+
+//------------------------------------------------------------------------------------------------
+void BaseGame::InitLoggingDestinations()
+{
+    // The Logger is a special Singleton, not a system service, so it must be created and
+    // registered by calling LoggerSingleton::Initialize. This should be created as early as
+    // possible to avoid missing any important log messages.
+    LoggerPtr spLogger = EE_NEW Logger();
+    efd::LoggerSingleton::Initialize(spLogger);
+
+    // You can specify one or more output handlers for each logging module.  In this case we
+    // are simply logging everything to a text file, but we could route different modules to
+    // different files or all critical errors to a separate file.  We could also log to other
+    // destinations like OutputDebugString or a network socket by using specialized
+    // ILogDestination implementations.
+    utf8string name =  g_uniqueIndex.GetName();
+    utf8string strLogFileName(Formatted, &quot;%s.log&quot;, name.c_str());
+    FileDestinationPtr logDest = EE_NEW FileDestination(&quot;default&quot;, strLogFileName,
+        FileDestination::kFileOverwrite);
+    spLogger-&gt;AddDest(logDest, true);
+
+    // Logging defaults to having level 0 to 3 errors and level 0 to 1 non-errors enabled.
+    // You can override those defaults here either for all categories or specific categories.
+    // See the following examples:
+    //  spLogger-&gt;SetLogLevel(efd::kALL, efd::ILogger::kLogMask_None);
+    //  spLogger-&gt;SetLogLevel(efd::kEntity, efd::ILogger::kLogMask_All);
+    // Also note that default logging settings can be changed via the config.ini file too, so
+    // there is no need to recompile your code to change the log configuration.
+}
+
+//------------------------------------------------------------------------------------------------
+bool BaseGame::SetupServices(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    // Setup the default logging as soon as possible so other services can log early
+    InitLoggingDestinations();
+
+    // Set the name displayed by this process when connected to Toolbench
+    m_spServiceManager-&gt;SetVirtualProcessName(&quot;BaseGame&quot;);
+
+    // Use the Service Allocator helper functions to create common game services needed by
+    // most applications.  This is a simplified approach to creating instances of the services
+    // directly.
+
+    // Foundation services - messaging, logging, asset service, application configuration
+    EE_VERIFY(efd::CreateFoundationServices(m_spServiceManager, argcInit, argvInit));
+
+    // Game Framework services - entities, behaviors, rapid iteration
+    EE_VERIFY(egf::CreateGameServices(m_spServiceManager));
+
+    // Core Runtime services - rendering, lights, cameras, scenes
+    EE_VERIFY(ecr::CreateRuntimeServices(
+        m_spServiceManager,
+        ecr::rsaf_NO_PICK_SERVICE));
+
+    // The AnimationService handles all actors, which are animating scene objects.
+    // A note on priority, we use a higher priority than the scene graph service so the actors
+    // get updated before their associated scene graph nodes.
+    egmAnimation::AnimationServicePtr spAnimationService = EE_NEW egmAnimation::AnimationService();
+    m_spServiceManager-&gt;RegisterSystemService(spAnimationService);
+
+    // The InputService service manages input from keyboard and joystick devices.  It uses an
+    // actionmap to convert device input into events.  Further you can register for either
+    // message based or behavior based callbacks when an input event occurs.
+    ecrInput::InputServicePtr spInputService = EE_NEW ecrInput::InputService(false, false);
+    m_spServiceManager-&gt;RegisterSystemService(spInputService);
+
+    // PhysX services -  PhysX simulation and collision/triggers
+    EE_VERIFY(egfPhysX::CreatePhysXServices(m_spServiceManager));
+
+    // Create and register EntityCameraService. This camera differs from NiCamera in that it
+    // targets the player. The camera zooms and orbits around the selected target.
+    EntityCameraServicePtr spECameraService = EE_NEW EntityCameraService();
+    m_spServiceManager-&gt;RegisterSystemService(spECameraService);
+
+    // The MovementService works with the MovementHandler built-in model to calculate positional
+    // updates for entities that move about the world.
+    MovementServicePtr spMovementService = EE_NEW MovementService();
+    m_spServiceManager-&gt;RegisterSystemService(spMovementService);
+
+    // Since we want to be able to run Lua behaviors we must add the Lua scripting runtime
+    // to the scheduler.
+    SchedulerLuaPtr spSchedulerLua = EE_NEW SchedulerLua();
+    Scheduler* pScheduler = m_spServiceManager-&gt;GetSystemServiceAs&lt;Scheduler&gt;();
+    pScheduler-&gt;RegisterScriptingRuntime(&quot;Lua&quot;, egf::BehaviorType_Lua, spSchedulerLua);
+
+    // Our BaseGame application object is also a service that controls some game-specific logic
+    m_spServiceManager-&gt;RegisterSystemService(this);
+
+    IConfigManagerPtr spConfigManager = m_spServiceManager-&gt;GetSystemServiceAs&lt;IConfigManager&gt;();
+#if defined(EE_PLATFORM_WIN32)
+    // On windows you can use the Win32PlatformService to implement a simple default windows
+    // message pump.  It will create a main window and pump messages for it.
+    Win32PlatformServicePtr spWin32 = EE_NEW Win32PlatformService(instance, previous, commandLine);
+    spWin32-&gt;SetWindowTitle(g_uniqueIndex.GetName());
+
+    utf8string width, height;
+    UInt32 windowWidth = 640;
+    UInt32 windowHeight = 480;
+
+    if (spConfigManager-&gt;FindValue(&quot;Game.WindowWidth&quot;, width))
+    {
+        if (!width.empty())
+            windowWidth = atoi(width.c_str());
+    }
+
+    if (spConfigManager-&gt;FindValue(&quot;Game.WindowHeight&quot;, height))
+    {
+        if (!height.empty())
+            windowHeight = atoi(height.c_str());
+    }
+
+    spWin32-&gt;SetWindowWidth(windowWidth);
+    spWin32-&gt;SetWindowHeight(windowHeight);
+
+    int xSlots = GetSystemMetrics(SM_CXSCREEN) / windowWidth;
+    int ySlots = GetSystemMetrics(SM_CYSCREEN) / windowHeight;
+    UInt32 left = (windowWidth * ((g_uniqueIndex.GetIndex()-1)%xSlots)) + 1;
+    UInt32 top = (windowHeight * (((g_uniqueIndex.GetIndex()-1)/xSlots)%ySlots)) + 1;
+
+    spWin32-&gt;SetWindowLeft(left);
+    spWin32-&gt;SetWindowTop(top);
+
+    spWin32-&gt;SetWindowClass(g_AppName);
+
+    m_spServiceManager-&gt;RegisterSystemService(spWin32);
+#elif defined(EE_PLATFORM_PS3)
+    // This service is used to perform any PS3 specific behavior that may be required such
+    // as running PS3 specific initialization code.
+    const int callbackSlot = 0;
+    PS3PlatformServicePtr spPS3 = EE_NEW PS3PlatformService(callbackSlot);
+
+    m_spServiceManager-&gt;RegisterSystemService(PS3PlatformService::CLASS_ID, spPS3);
+#endif
+
+#if !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+    // For Statically linked built-ins we need to add the static ecr module to the Lua
+    // scheduler here before it starts ticking.  We do this by registering the SWIG-generated
+    // init function with the scheduler as a static built-in function.  Static built-ins can be
+    // used on any platform, but since DLLs are easy to use on Windows we are using DLLs on that
+    // platform.  With DLLs we can specify what modules to load purely through config.ini settings
+    // and we can also reload those DLLs on the fly which makes testing changes easier.
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_ecr));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmAnimation));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_bapiPhysXBase));
+    EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmSample));
+#endif // !defined (EE_DYNAMIC_BEHAVIOR_LOAD)
+
+    // Startup PhysX
+    m_pPhysXSDKManager = efdPhysX::PhysXSDKManager::GetManager();
+    if (!m_pPhysXSDKManager-&gt;Initialize())
+    {
+        EE_FAIL(&quot;Could not initialize the PhysX SDK.&quot;);
+        return false;
+    }
+    m_pPhysXSDKManager-&gt;Configure(spConfigManager);
+
+
+    // Some shared code might run slightly different based on whether it is being used in
+    // a client application or a tool application.  We call this concept the Program Type,
+    // in order for such code to operate correctly you need to tell the ServiceManager what
+    // Program Type your application is running as.
+    m_spServiceManager-&gt;SetProgramType(ServiceManager::kProgType_Client);
+
+    return true;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnInit()
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it.  The value will be cleared when we are removed from the manager so
+    // we can pretty must always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // Initialize random number generator
+    HighPrecisionClock clock;
+    TimeType currentTime = clock.GetCurrentTime();
+    TimeType* pCurrentTime = &amp;currentTime;
+    UInt64* seed64 = reinterpret_cast&lt;UInt64*&gt;(pCurrentTime);
+    Srand((UInt32)*seed64);
+
+    // If there is no surface, add one.
+    RenderServicePtr spRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (!spRenderService-&gt;GetActiveRenderSurface())
+    {
+        RenderContext* pRenderContext = EE_NEW RenderContext(spRenderService);
+        spRenderService-&gt;AddRenderContext(pRenderContext);
+        pRenderContext-&gt;SetBackgroundColor(NiColorA(0.0f, 0.0f, 0.15f, 1.0f));
+        RenderSurfacePtr spSurface = spRenderService-&gt;CreateRenderSurface(NULL);
+        pRenderContext-&gt;AddRenderSurface(spSurface);
+        spRenderService-&gt;SetActiveRenderSurface(spSurface);
+
+        EE_ASSERT(spRenderService-&gt;GetActiveRenderSurface());
+    }
+
+    SetupInputActions();
+
+    // Subscribe to the local message category to receive entity discovery messages. Such a message
+    // will be generated when our camera is created, and we use this to associate the camera with
+    // the render surface later.
+    MessageService* pMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+    pMessageService-&gt;Subscribe(this, kCAT_LocalMessage);
+
+    // Load the main block file
+    efd::IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::IConfigManager&gt;();
+    efd::utf8string world_file = pConfig-&gt;FindValue(&quot;Game.InitialWorld&quot;);
+    if (world_file.empty())
+    {
+        EE_LOG(efd::kApp, efd::ILogger::kERR0, (&quot;No block file specified, set Game.InitialWorld.&quot;));
+    }
+    else
+    {
+        EntityLoaderService* els = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+
+        // We don't want to be notified when this set is loaded, so pass kCAT_INVALID.
+        BlockLoadParameters blp(kCAT_INVALID);
+        els-&gt;RequestEntitySetLoad(world_file, &amp;blp);
+    }
+
+    return efd::AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnTick()
+{
+    return AsyncResult_Complete;
+}
+
+//------------------------------------------------------------------------------------------------
+efd::AsyncResult BaseGame::OnShutdown()
+{
+    return AsyncResult_Complete;
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::HandleCameraDiscoverMessage(
+    const egf::EntityChangeMessage* pMessage,
+    efd::Category targetCategory)
+{
+    Entity* pEntity = pMessage-&gt;GetEntity();
+    EE_ASSERT(pEntity);
+
+    // Ignore entities that do not contain a camera entity.
+    if (!pEntity-&gt;GetModel()-&gt;ContainsModel(kFlatModelID_StandardModelLibrary_Camera))
+        return;
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    EE_ASSERT(pRenderService);
+    CameraService* pCameraService = m_pServiceManager-&gt;GetSystemServiceAs&lt;CameraService&gt;();
+    EE_ASSERT(pCameraService);
+
+    pCameraService-&gt;CreateCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetRenderTargetGroup());
+
+    pCameraService-&gt;SetActiveCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetWindowRef());
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::HandleActionMessage(const ecrInput::InputActionMessage* pMessage,
+    efd::Category targetCategory)
+{
+    if (pMessage-&gt;GetEventName() == &quot;GAME_QUIT&quot;)
+    {
+        m_pServiceManager-&gt;Shutdown();
+    }
+}
+
+//-----------------------------------------------------------------------------------------------
+void BaseGame::SetupInputActions()
+{
+    ecrInput::InputService* pInputService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;ecrInput::InputService&gt;();
+    EE_ASSERT(pInputService);
+    MessageService* pMessageService = m_pServiceManager-&gt;
+        GetSystemServiceAs&lt;MessageService&gt;();
+    EE_ASSERT(pMessageService);
+
+    // activate our action map
+    pInputService-&gt;PushActionMap(&quot;GAMEPLAY_ACTION_MAP&quot;);
+
+    // create and subscribe to a category for quit messages
+    m_catQuitGame = pMessageService-&gt;GetGloballyUniqueCategory();
+    pInputService-&gt;ListenForInputActionEvent(&quot;GAME_QUIT&quot;, m_catQuitGame);
+    pMessageService-&gt;Subscribe(this, m_catQuitGame);
+}
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="base_game_tutorial_overview.htm">Base Game Tutorial Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

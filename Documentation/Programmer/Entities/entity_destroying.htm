@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Destroying entities</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Destroying entities</h1>
+
+<p>Entities that are loaded from an xblock file are destroyed automatically 
+when that xblock is unloaded. Entities that are created at runtime outside of 
+xblock file loading should be destroyed by calling <span class="NDLSystemFont">egf::Scheduler::DestroyEntity</span> before calling <span class="NDLSystemFont">efd::ServiceManager::Shutdown</span>. This can be accomplished by keeping track of dynamically-created Entities in
+a system service and destroying them before Shutdown is called. Any Entity that creates other Entities should keep track of them and destroy those Entities in <span class="NDLSystemFont">OnDestroy</span>.</p>
+
+<h4>Creating and Destroying an Entity from a Lua Behavior</h4>
+
+<pre>
+function CreateDestroyEntity(self, params)
+    -- create an entity, assumes there is a Model called ChildEntity
+    local childEntityID = BehaviorAPI.CreateEntity("ChildEntity")
+    -- make sure the entity id is valid (creation succeeded)
+    if childEntityID then
+        -- Delete the entity.  Normally you wait until OnDestroy to destroy an child entities
+        BehaviorAPI.DestroyEntity(childEntityID)
+    end
+end
+</pre>
+
+<h4>Creating and Destroying an Entity from a C++ Behavior</h4>
+
+<pre>
+void DestroyChildEntity(Entity* pEntity, ParameterList* pArgs)
+{
+    egf::Scheduler* pScheduler = g_bapiContext.GetSystemServiceAs&lt;egf::Scheduler&gt;();
+    // recall the saved ID of our child avatar
+    EntityID childEntityID;
+    // This example assumes that we created an Entity earlier and stored the EntityID in a property
+    // called ChildEntity
+    pEntity->GetPropertyValue( "ChildEntity", childEntityID );
+
+    // Use the Scheduler to find the Entity we created
+    Entity* pChildEntity = pScheduler->LookupEntity( childEntityID );
+    if ( pChildEntity == NULL )
+    {
+        return;
+    }
+    // Destroy the entity we created
+    pScheduler->DestroyEntity(pChildEntity);
+}
+</pre>
+
+<h4>Creating and Destroying an Entity from a C++ Service</h4>
+
+<pre>
+void DestroyChildEntity()
+{
+    // This example assumes that the Entity we created is stored in a member variable:
+    // EntityPtr m_spChildEntity
+    egf::Scheduler* pScheduler = GetSystemServiceAs&lt;egf::Scheduler&gt;();
+
+    // make sure our Entity is valid
+    if ( m_spChildEntity == NULL )
+    {
+        return;
+    }
+    // Destroy the entity we created
+    pScheduler->DestroyEntity(m_spChildEntity);
+}
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_creating.htm">Creating entities</a></li>
+    <li><a href="entity_lifecycle.htm">Entity lifecycles</a></li>
+    <li><a href="entity_world_state.htm">Controlling entity in-world/out-of-world state</a></li>
+    <li><a href="entity_rapid.htm">Rapidly iterating on Entities</a></li>
+    <li><a href="entity_debugging.htm">Debugging entity properties</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

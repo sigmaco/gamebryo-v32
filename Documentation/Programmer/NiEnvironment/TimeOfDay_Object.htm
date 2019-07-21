@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Time Of Day Object</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+
+  <h1>
+    Time Of Day Object
+  </h1>
+  <p>
+    A popular application of a sky rendering system is to simulate changes to the environmental
+    effects over time. These changes could be simulating changes in lighting over the
+    course of the day, or even a more specific animation over the course of time in
+    a level. To achieve this, the <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/Introduction_to_NiEnvironment_Class_Reference.htm">NiEnvironment</a></span> library has included a class to handle
+    basic animation of environmental effects according to a sequence of keyframes over
+    a timeline. This animation is controlled through an instance of a 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiTimeOfDay.htm">NiTimeOfDay</a></span> class.
+  </p>
+  <p>
+    This class not only allows for animation of the <span class="NDLSystemFont">NiEnvironment</span> but can also be used
+    to apply time of day animation to any object whose properties have been registered
+    with it.
+  </p>
+  <h2>
+    The Animation
+  </h2>
+  <p>
+    Time of day animation is controlled by first registering properties that may be
+    changed over the course of time. These properties may then be bound to an animation
+    sequence that will adjust them over time. The capabilities of the 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiAnimation/NiAnimation_Class_Reference_Intro.htm">NiAnimation</a></span> library
+    are harnessed to control the interpolation of values over time, while the NiTimeOfDay
+    class controls the loading, binding and progression of these animations through
+    time.
+  </p>
+  <p>
+    Basic usage of the <span class="NDLSystemFont">NiTimeOfDay</span> class involves the following steps:
+  </p>
+  <ol>
+    <li>Create an instance of <span class="NDLSystemFont">NiTimeOfDay</span>.</li>
+    <li>Register the properties of the scene to be animated.</li>
+    <li>Load the animations from disk.</li>
+    <li>Configure the speed of animation, and enable the animation.</li>
+    <li>Update the class regularly (every frame, or every N frames).</li>
+  </ol>
+  <p>
+    When using the EnvironmentService, all those steps are automatically handled when
+    a TimeOfDay entity is added to a scene and when TimeOfDayEditable objects are added.
+    Refer to the <a href="../egmTerrain/egmTerrain_EnvironmentService.htm">Environment - Game Framework documentation</a> for more information.
+  </p>
+  <p>
+    Further sections of this documentation describe how to carry out each of these steps.
+    This is mainly for users not using the Game Framework system or who want to use
+    their own EnvironmentService. For more detailed information on the interface, please
+    consult the class reference page for <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiTimeOfDay.htm">NiTimeOfDay</a></span>.
+  </p>
+  <h2>
+    Registering Properties
+  </h2>
+  <p>
+    All properties to be animated by the <span class="NDLSystemFont">NiTimeOfDay</span> class must first be registered.
+    Registration of properties that may be animated may be performed through invoking
+    the template function "BindProperty".
+  </p>
+  <p>
+    In order to bind a property, the developer must make sure the following requirements
+    are met.
+  </p>
+  <ul>
+    <li>A unique property name must be selected for the property. </li>
+    <li>The property must control one of the following types: </li>
+    <ul>
+      <li>Float, or </li>
+      <li>NiColorA. </li>
+    </ul>
+    <li>The property must be present on an instantiated object. </li>
+    <li>A functor class capable of setting the value of the property must be provided.
+    </li>
+  </ul>
+  <p>
+    A default templated functor is available in the core library allowing for properties
+    to be set while using a set function that only takes in the new value in parameter.
+  </p>
+  <p>
+    Once these requirements are met an instance of a functor can be created and bound
+    to the <span class="NDLSystemFont">NiTimeOfDay</span> as follows: (The following example uses the default functor)
+  </p>
+  <pre>
+NiTTimeOfDayDefaultFunctor&lt;NiAnimatedObject, PropertyType&gt; kFunctor = 
+  NiTTimeOfDayDefaultFunctor&lt;NiAnimatedObject, PropertyType&gt;(
+    pkAnimatedObject, &amp;NiAnimatedObject::SetPropertyFunction) 
+  pkTimeOfDay-&gt;BindProperty&lt;
+    NiTTimeOfDayDefaultFunctor&lt;NiAnimatedObject, PropertyType&gt;, PropertyType&gt;
+    ("PropertyName", kFunctor);
+</pre>
+  <p>
+    When updating the <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiTimeOfDayController.htm">NiTimeOfDayController</a></span> during the animation phase, the controller
+    will call the functor's SetValue function.
+  </p>
+  <h3>
+    The Default Functor
+  </h3>
+  <p>
+    When creating a default functor, the object that should be animated and the function
+    that should be called to set the property are passed in the constructor. The default
+    functor is templated to support all types. It also provides an inlined SetValue
+    function which will simply call the associated function pointer.
+  </p>
+  <p>
+    For more information, please consult the class reference page for 
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiTTimeOfDayDefaultFunctor.htm">NiTTimeOfDayDefaultFunctor</a></span>.
+  </p>
+  <h3>
+    </a>Creating a Custom Functor
+  </h3>
+  <p>
+    Custom functors can be created to suit any type of data being used as a animatable
+    property. The main requirements when creating a custom functor are as follows:
+  </p>
+  <ul>
+    <li>A functor <b>must</b> have a SetValue function. This should: </li>
+    <ul>
+      <li>be declared inline, and </li>
+      <li>follow the signature inline void SetValue(PropertyType value). </li>
+    </ul>
+    <li>The functor should be templated to support any type.&nbsp; </li>
+  </ul>
+  <h2>
+    Timing Configuration
+  </h2>
+  <p>
+    A number of timing options are available on the <span class="NDLSystemFont">NiTimeOfDay</span> class to allow the overall
+    animation to be adjusted. The following table lists the available timing options
+    that may be configured and what their effect on the animation will be.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>
+          Timing Option
+        </th>
+        <th>
+          Default Value
+        </th>
+        <th>
+          Usage
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <b>Active</b> </p>
+        </td>
+        <td>
+          false
+        </td>
+        <td>
+          This flag states whether the animation is active or not. If this value is false,
+          then the animation will not progress (essentially paused) and no values will be
+          changed.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Time</b>
+        </td>
+        <td>
+          0 seconds
+        </td>
+        <td>
+          This represents the current time in the animation. This value may be set directly,
+          or it will be updated over time while the animation is active.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Animation Duration</b>
+        </td>
+        <td>
+          0 seconds
+        </td>
+        <td>
+          This represents the length of the animation over time. Because day/night animations
+          are cyclic, this value is important in controlling the interpolation of values back
+          to their initial state for the next cycle.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <b>Time Multiplier</b>
+        </td>
+        <td>
+          1.0f
+        </td>
+        <td>
+          This value may be used to speed up/slow down the animation. It is also worth noting
+          that by setting this value to 0.0f, the regular updates will not advance the animation,
+          though the values will still be updated. This allows the developer to manage the
+          progression of time manually by manipulating the time value directly and still calling
+          update.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h2>
+    Updating the Animation
+  </h2>
+  <p>
+    In order to maintain the animation of the scene, the 
+    <span class="NDLSystemFont">NiTimeOfDay</span> object needs to
+    be updated regularly over the course of time. Usually this would be done once per
+    frame, though depending on how granular the animation needs to be, this may be limited
+    to every N frames by calling the update manually.
+  </p>
+  <p>
+    For convenience, the <span class="NDLSystemFont">NiTimeOfDay</span> object is a subclass of
+    <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>, and hence can
+    attach to the regular Gamebryo scene graph hierarchy. Upon attachment to the scene,
+    the <span class="NDLSystemFont">NiTimeOfDay</span> object will handle the progression of the animation as the scene
+    update is propagated each frame. Nothing more needs to be done. Alternatively, the
+    Update function may be called directly on the <span class="NDLSystemFont">NiTimeOfDay</span> object, with the amount
+    of time passed since the beginning of the animation passed in as a parameter.
+  </p>
+</body>
+</html>

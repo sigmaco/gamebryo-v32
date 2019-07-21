@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Exporting Textures</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Exporting Textures</h1>
+
+<p>Textures can be exported inside the main NIF, separate 
+ NIFs, and in their original form. These options can be set globally using 
+ the <a href="Gamebryo_3ds_max_Export_Options1.htm">Export 
+ dialog</a> or can be set individually using the <a href="Texture_Conversion_Custom_Attributes.htm">Texture 
+ Conversion Custom Attributes</a>. The following sections will discuss 
+ the pluses and minuses of each approach. </p>
+
+<p>An option to allow the export of non-power-of-two textures 
+ is available. This is discussed in more detail below.</p>
+
+<h3>Main NIF Textures</h3>
+
+<p>Use of main NIF textures makes the master NIF file a 
+ self-contained complete package. It will rely on no other files to finish 
+ loading and can therefore be loaded faster. Texture formatting and reduction 
+ can occur at export if this approach is taken. However, the images cannot 
+ be altered post-export while they are in this form. Texture sharing can 
+ still occur in this form to reduce memory consumption, but each master 
+ NIF file will have all of the data stored in the file. At load time, the 
+ duplicate texture data is discarded in favor of the already loaded version 
+ from a previous master NIF in memory.</p>
+
+<p>In addition, internal textures provide the option of 
+ having platform-specific source texture renderer data loaded directly 
+ into a renderer-specific resource at application load time, with the result 
+ that no texture format conversions are required at load time. These capabilities 
+ operate on the principle of streaming persistent versions of source texture 
+ renderer data (<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span>) 
+ to support platform-specific texture format conversions for &quot;internal 
+ textures&quot; (those included in a scene's NIF file) at export time. 
+ Assuming that the specific platform can support the pixel format in question 
+ at application load time, the renderer will load the persistent source 
+ texture renderer data directly into a renderer-specific resource, bypassing 
+ the application-level <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> 
+ object and all <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span>-based 
+ texture conversion at load time entirely. See <span class="NDLSystemFont"><a 
+ href="../../Programmer/Object_Systems/Streaming.htm#TextureStreamingOptions">Texture 
+ Streaming Options</a></span> for Internal Textures or the export options 
+ for <a href="Gamebryo_3ds_max_Export_Options1.htm">3ds 
+ max</a> or <a href="../Maya/Export_Display_Options.htm">Maya</a> 
+ for more details.</p>
+
+<p><b>Note: If application requirements 
+ dictate fully general support of textures within a NIF file on multiple 
+ platforms or graphics cards, then <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>-based 
+ textures should be used</b>, since they enable on the fly texture format 
+ conversions at load time. For example, DX9-specific textures may be problematic, 
+ since there are so many diverse graphics cards your application may have 
+ to support. To specify <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>-based 
+ textures for export from the art packages, you may select &quot;generic&quot; 
+ platform type, but include textures in the main NIF, for example.</p>
+
+<p>Note that each time a platform SDK (e.g., Xbox360 XDK, 
+ Playstation3 SDK, or Revolution SDK) changes, there is at least a possibility 
+ that the new SDK will cause textures to be formatted differently on that 
+ platform. It is not likely to happen frequently, but the possibility exists. 
+ In such a case, it may be desirable to re-export Nifs containing platform-specific 
+ textures using exporters built with that platform's most recent SDK version.</p>
+
+<h3>Separate NIF Textures</h3>
+
+<p>Separate NIF Textures makes the master NIF reliant on 
+ other NIF files to properly load. Each unique texture in the scene will 
+ be stored in its own NIF file. These texture NIF files can be shared amongst 
+ multiple master NIF files. Texture formatting and reduction can occur 
+ at export if this approach is taken. However, the images cannot be altered 
+ post-export while they are in this form. This option can be slower to 
+ load on consoles than the Main NIF textures due to the seek times for 
+ finding the additional NIF texture files.</p>
+
+<h3>Original Images</h3>
+
+<p>Original Images makes the master NIF reliant on the 
+ original image files to load properly. Each unique image file must be 
+ copied to the location in which textures are shared. If you enable the
+ Copy External option, the original textures will be copied to the export
+ location. Alternatively, this can be done easily with the Resource Collector 
+ utility provided by Max. However, only supported Gamebryo image types can 
+ be shared as Original Images. Unsupported types will be exported as Separate 
+ NIF textures. Another advantage of this approach is that it allows continued 
+ modification of the image after export. This option can be slower to load on 
+ consoles than the Main NIF textures due to the seek times for finding the 
+ additional texture files. This option may also fragment memory due to the 
+ fact that intermediary pixels must be created before the renderer can 
+ consume this image. </p>
+
+<h3>Original Images VRAM</h3>
+
+<p>This option is the same as the Original Images option 
+ above with one major exception: the files are directly loaded into the 
+ renderer data without an intermediary representation in Gamebryo. This 
+ allows for image formats that are not directly supported in Gamebryo and 
+ potentially faster load times. </p>
+
+<h3>Allow NPOT Textures</h3>
+
+<p>Checking the 'Allow NPOT textures' option will allow 
+ non-power-of-two textures to be exported without resizing. Non-power-of-two 
+ textures will have different capabilities on different graphics cards 
+ and can impact performance so it is usually better to use power of two 
+ textures instead. If this option is not checked, the default behavior is 
+ to size the texture down to its nearest power-of-two dimensions and give 
+ the user a warning when the exporter encounters a non-power-of-two texture. 
+ If this option is checked, any non-power-of-two texture that is encountered 
+ will be exported without mipmap support even if filtering mode is set 
+ to pyramidal.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

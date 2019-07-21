@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Updating an NiPhysXPSFluidSystem or NiPhysXPSMeshFluidSystem</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Updating an NiPhysXPSFluidSystem or NiPhysXPSMeshFluidSystem 
+ </h1>
+
+<p>There are three steps to updating a <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysXFluid/NiPhysXPSFluidSystem.htm">NiPhysXPSFluidSystem</a></span> 
+ object (<span class="NDLSystemFont"><a href="../../Reference/NiPhysXFluid/NiPhysXPSMeshFluidSystem.htm">NiPhysXPSMeshFluidSystem</a></span> 
+ is the same). The following cycle must be followed, but note that you 
+ can open the loop at any point. For example, if processing physics asynchronously, 
+ then the frame is split between <span class="NDLSystemFont">Simulate</span> 
+ and <span class="NDLSystemFont">FetchResults</span>. If simulation is synchronous 
+ and an application is culling geometry, then the loop is probably best 
+ split after <span class="NDLSystemFont">Update</span> on the particle system, 
+ when the bounding volumes are up to date. </p>
+
+<ul>
+	
+	<li>Call <span class="NDLSystemFont">Update</span> 
+ on the particle system (or the scene graph in which it resides). This 
+ updates the particle counts and runs through all the simulation steps. 
+ The update of a particle system is performed asynchronously in Gamebryo 
+ using the <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a> 
+ library and mesh modifiers. The physics simulation must not be active 
+ during the entire period that the particle system update taking place. 
+ Gamebryo enforces this requirement by completing any particle system update 
+ modifiers when simulation is started. For optimal performance it is advantageous 
+ to do as must other work as possible between updating the particle system 
+ and starting simulation, so that the parallel particle simulation has 
+ time to finish.</li>
+	
+	<li>Call <span class="NDLSystemFont">Simulate</span> 
+ on the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ with which the fluid system is associated. This begins the simulation 
+ step. Note that you can use any timing scheme you like. The physics simulation 
+ and the particle system use independent timing mechanisms.</li>
+	
+	<li>Call <span class="NDLSystemFont">FetchResults</span> 
+ on the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ with which the fluid system is associated. This finishes the simulation 
+ and causes particles to be emitted in the particle system and updates 
+ caches of transformation state. If your particles aren't appearing, it 
+ may be because the <span class="NDLSystemFont"><a href="../../Reference/NiPhysXFluid/NiPhysXFluidDest.htm">NiPhysXFluidDest</a></span> 
+ object is disabled, or simulation is not finishing. The position update 
+ step is done here because transformation information is available at this 
+ point.</li>
+</ul>
+
+<p>As stated above, this loop need not correspond to a 
+ single frame - rendering could happen at any point in the cycle. However, 
+ <b>there must be at least one Gamebryo particle 
+ system update for every simulation step that adds or removes fluid
+ particles</b>
+. The creation 
+ and deletion of particles may be missed if the simulation steps multiple 
+ times between particle system update, which will result in instability 
+ and likely crashes.</p>
+
+<h2>Simulation Timing </h2>
+
+<p>Particle positions are not interpolated between physics 
+ time steps under any circumstances (it is too expensive to maintain dual 
+ particle state for interpolation). It is hence important to step the physics 
+ at a rate that is high enough to ensure smooth-looking particle motion. 
+ </p>
+
+<p>If the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ object is using fixed-step timing for updating the physics, then there 
+ are situations in which multiple calls to <span class="NDLSystemFont">Update</span> 
+ occur for each <em>effective</em> call to <span class="NDLSystemFont">Simulate</span> 
+ and <span class="NDLSystemFont">FetchResults</span>. This happens when the 
+ frame rate is higher than the physics update frequency. It should not 
+ cause problems, but if you notice particle locations staying the same 
+ over calls to <span class="NDLSystemFont">Simulate</span> and <span class="NDLSystemFont">FetchResults</span>, 
+ it may just be that the simulation was already ahead of the current frame 
+ and hence didn't step.</p>
+
+<h2>Fluid System Reset</h2>
+
+<p>When the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm#snapshots">NiPhysXScene::RestoreSceneFromSnapshot</a></span> 
+ function is called the fluid systems in the scene will reset, which means 
+ removing all particles. The particle system rendering the fluid is also 
+ reset. The particle system must also be explicitly reset if, for any reason, 
+ the <span class="NDLSystemFont">NxFluid::removeAllParticles</span> function 
+ is called directly on the fluid.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

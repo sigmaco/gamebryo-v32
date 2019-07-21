@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Working With Physical Sequences in Animation Tool</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Working with physical sequences in the Animation Tool</h1>
+
+<p>To use animation with physics, you need to define physical animation sequences in Max or Maya using the Gamebryo Animation Manager interface. Use the following steps to do this:</p>
+
+<ul>
+	
+	<li>Set up a rag-doll skeleton on the character.</li>
+	
+	<li>Choose a set of frames during which the character skeleton will be physically controlled. The duration of the sequence will be the time that the Animation Tool uses when deciding how long to play the physics before or after a transition preview. It will not affect how long physics plays in your game or during basic preview in the Animation Tool.</li>
+	
+	<li>Add any secondary animation to the character. Physics only controls bones that have physics properties attached. Any other bones or effect can be animated. For example, you can make the head one physical object, and you can animate facial bones (children of the head) to form an expression while the character is rag-doll. You can also animate particle systems or material effects.</li>
+	
+	<li>Use the Animation Manager to define a sequence for the chosen frames, and give it some name that you will later use to reference the sequence. Set the sequence to Loop. You can set any accumulation or other properties that you like. This sequence is now ready for use.</li>
+	
+	<li>You can define more than one physical sequence, and each sequence can have its own sequence root.</li>
+	
+	<li>You can include other physics objects, such as a cloth cape or rigid body hanging off a belt. If these are dynamic objects, they will be physically simulated in the Animation Tool as the animations play, whether the animation sequence is physical or not. In this way you can preview how secondary physics will behave with various animations.</li>
+	
+	<li>Export your scene using the Gamebryo Tool plug-ins for both PhysX and KFM extraction. It is important to select (check) the <span class="NDLGUILabel">Initial States from Sequences</span> check-box in the options for the PhysX Extractor tool plug-in. This ensures that initial states are available for each sequence which prevents bad PhysX behavior when sequences are played.</li>
+</ul>
+
+<h2>Special requirements for accumulation</h2>
+
+<p>When you work with animation accumulation, the bind pose of the character (frame 0 in the art tools) must have the accumulation root node at the origin in any accumulated dimension. For example, if you are accumulating in the X direction and about the Z axis, then the accumulation root must have an X translation of 0 and it has no rotation about Z in the bind pose. The other dimensions can be at any value. Failure to meet this requirement will result in PhysX geometry being offset from the Gamebryo geometry in the Animation Tool.</p>
+
+<h2>Physical sequences in Animation Tool</h2>
+
+<p>When a KFM file is loaded into the Animation Tool and physics is present on the skeleton, all of the sequences are automatically set up to drive the physical model of the character. If you enable debug geometry and play a sequence, you will see the physics shapes moving with the character. In a game, this means that the physics will always precisely follow the animation and push around any other dynamic physical objects. The physics skeleton might lag one frame behind the animation&mdash;this is an unfortunate consequence of the way in which physics is updated.</p>
+
+<p>There is no way for the tool to know which sequences are intended to be physical (controlled by physics). Unfortunately, this information is not stored in the KFM file; it is stored in the settings file for the Animation Tool project so is retained once a project has been saved once. To inform the Animation Tool of which sequence should be physical, use the <span class="NDLGUILabel">Physical Sequence > Add/Remove</span> button in the Physics View form. You can use this same button to revert a physical sequence back to standard animation.</p>
+
+<p>Once a sequence is tagged as physical, the Animation Tool will activate physics to provide the frame-to-frame poses for the character in that sequence. These poses can then be blended with other animations as if they came from key framed data, with some exceptions.</p>
+
+<ul>
+	
+	<li>When a physical sequence is played alone, the physics simulation simply runs from the start pose. The time slider will show the length of the sequence, but when it loops the physics simulation does not reset. To reset the sequence you must explicitly click the <span class="NDLGUILabel">First Frame</span> button. It is a bad idea to use the mouse to drag around the time scrubber. When animation accumulation is in use, a reset of a physical sequence also resets the accumulation.</li>
+	
+	<li>When a transition is playing, the physics system is providing input whenever the physical sequence is providing input to the transition. In long transitions you may see the debug geometry diverge briefly from the animated motion. This divergence tells you that physics thinks the character is someplace other than the rendered position. This is because there is no feedback from the output of the blend back to the physics (for stability reasons such feedback is a bad idea). The physics sequence is reset every time the transition preview loops.</li>
+	
+	<li>In general, physical sequences should not be combined with key-framed sequences in a sequence group. The results are unlikely to be what you expect because there is no way for physics to know what the blended animation is doing, and it will tend to rapidly diverge from the layered, rendered result. A sequence group with physics might be useful if it is short-lived, the physical sequence has very high weight, and the animated sequence has very low weight. This is particularly true for cases where the sequence root of the physical sequence is only a subset of the complete character, such as an arm. Unfortunately, you cannot preview such groups in the Animation Tool.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+ 
+<ul>
+  <li><a href="../../Art/Max/Creating_Ragdolls_with_Max.htm">Creating Rag-dolls with Max</a></li>
+  <li><a href="../../Art/Maya/Creating_Ragdolls_with_Maya.htm">Creating Rag-dolls with Maya</a></li>
+  <li><a HREF="../../Reference/Tool_Plug_ins/PhysX_Extractor.htm">PhysX Extractor tool plug-in</a></li>
+  <li><a HREF="Physics_View_in_Animation_Tool.htm">Physics View</a></li>
+  <li><a HREF="Tips_for_Physics_in_Animation_Tool.htm">Tips for working with physics in the Animation Tool</a></li>
+</ul>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

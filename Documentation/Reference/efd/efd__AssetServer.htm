@@ -1,0 +1,583 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>efd::AssetServer</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">efd::AssetServer</p>
+
+<p class="NDLRefParentage">: public <a href="efd__IAssetServer.htm">efd::IAssetServer</a></p>
+
+<p class="NDLRefHeaderFile">&lt;AssetServer.h&gt;</p>
+
+<div class="FigureContainer">
+    <img src="./images/classefd_1_1_asset_server.png" alt="Inheritance graph for efd::AssetServer">
+
+    <p class="FigureCaption">Inheritance graph for efd::AssetServer</p>
+</div>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>The <span class="NDLSystemFont">AssetServer</span> class is a system service that provides the
+functionality for servicing asset lookup and fetch requests from a remote client.</p>
+
+<p>The service is used as the foundation for the Asset Server process. This process runs alongside
+your application during development, and allows changes made to assets by the developer to be
+immediately visible in the running application without a restart.</p>
+
+<p>This service should not be used by any process other than the Asset Server. Only a single Asset
+Server should exist in a development environment, and developers should not normally share an Asset
+Server (though this is possible for certain collaboration scenarios).</p>
+
+<a name="public_methods" id="public_methods"></a><p class="NDLRefHead1">Public Methods</p>
+
+<a name="classefd_1_1_asset_server_1c32576a7822e6388e69eca9c1fff5939" id="classefd_1_1_asset_server_1c32576a7822e6388e69eca9c1fff5939"></a><p class="NDLRefMemberFunction">AssetServer()</p>
+
+<a name="classefd_1_1_asset_server_1e0c3af178d09c8f89803a8ebcec2a68e" id="classefd_1_1_asset_server_1e0c3af178d09c8f89803a8ebcec2a68e"></a><p class="NDLRefMemberFunction">virtual ~AssetServer()</p>
+
+<a name="classefd_1_1_asset_server_13c255e34910dfe0ccc4ef3ab16166f05" id="classefd_1_1_asset_server_13c255e34910dfe0ccc4ef3ab16166f05"></a><p class="NDLRefMemberFunction">virtual <a href=
+"../Namespaces/efd.htm#namespaceefd_162e4d1bc94248c629612480b748bfd0e">efd::SyncResult</a>
+OnPreInit()</p>
+
+<p class="NDLRefMemberDescription">Called by the framework after the service has been registered
+and before the service receives the call to OnInit.</p>
+
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any synchronous
+setup. You can query for the existence of other services (for example, to cache a smart pointer to
+a tightly coupled service). However, at this point, you should not call any methods on other
+services unless the method explicitly states that it is safe to call during OnPreInit. If the
+method does not indicate that it is safe to call from OnPreInit, you should not call it because it
+may not have had a change to setup yet. Wait until OnInit before you rely on cross-service
+interaction.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><em>Return Value</em></td>
+
+                <td>
+                    SyncResult the service's progress through the initialization state, one of:
+
+                    <ul>
+                        <li>SyncResult_Success : The PreInit phase succeeded and this service
+                        component is ready to be moved to the OnInit <span class=
+                        "NDLSystemFont"><a href="efd__queue.htm">queue</a></span>.</li>
+
+                        <li>SyncResult_Failure : The PreInit phase failed, this will cause
+                        framework to begin shutdown and unload of all services.</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1f89af7940ae419e1b32764290f650215" id="classefd_1_1_asset_server_1f89af7940ae419e1b32764290f650215"></a><p class="NDLRefMemberFunction">virtual <a href=
+"../Namespaces/efd.htm#namespaceefd_1d81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a>
+OnInit()</p>
+
+<p class="NDLRefMemberDescription">Called by the framework after the service has had OnPreInit
+called and before the service receives its first OnTick.</p>
+
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any initialization
+that it requires. During the OnInit phase, it should be safe to call methods on other services
+because all services will have had a chance to be pre-initialized already. This phase is primarily
+intended for establishing cross-service relationships such as registering message handlers. The
+OnInit phase is asynchronous. This means that you can stay in this phase for multiple ticks. Once a
+service returns AsyncResult_Complete from OnInit on the next tick, OnTick will be called even if
+not all of the other services have completed their OnInit.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><em>Return Value</em></td>
+
+                <td>
+                    AsyncResult the service's progress through the initialization state, one of:
+
+                    <ul>
+                        <li>AsyncResult_Pending : More initialization work is required. OnInit will
+                        be called again until it completes or fails.</li>
+
+                        <li>AsyncResult_Failure : Initialization has critically failed. The entire
+                        framework will be shut down and the process will exit.</li>
+
+                        <li>AsyncResult_Complete : Initialization has completed for this component.
+                        It will receive no more OnInit calls.</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1f465f3a4bc2bba7a84bad9d2468c6986" id="classefd_1_1_asset_server_1f465f3a4bc2bba7a84bad9d2468c6986"></a><p class="NDLRefMemberFunction">virtual <a href=
+"../Namespaces/efd.htm#namespaceefd_1d81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a>
+OnTick()</p>
+
+<p class="NDLRefMemberDescription">Called by the framework every cycle to allow the service to do
+its work.</p>
+
+<p class="NDLRefMemberDetailedDescription">The service should perform a small slice of work and
+return as quickly as possible. This is where your application will spend the vast majority of its
+lifetime.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><em>Return Value</em></td>
+
+                <td>
+                    AsyncResult the service's progress through the running state, one of:
+
+                    <ul>
+                        <li>AsyncResult_Pending : This is the normal result, your service is still
+                        running and will continue to receive future OnTick calls.</li>
+
+                        <li>AsyncResult_Failure : The service has critically failed. The entire
+                        framework will be shut down and the process will exit.</li>
+
+                        <li>AsyncResult_Complete : The service no longer requires OnTick calls. It
+                        will remain registered and might still have things like message handlers
+                        that are active but it will not receive future OnTick calls.</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_121410f9c49b620f957387901ae4ba465" id="classefd_1_1_asset_server_121410f9c49b620f957387901ae4ba465"></a><p class="NDLRefMemberFunction">virtual <a href=
+"../Namespaces/efd.htm#namespaceefd_1d81d366c75ea1e1119513a730f79910d">efd::AsyncResult</a>
+OnShutdown()</p>
+
+<p class="NDLRefMemberDescription">Called by the framework after the framework shutdown has been
+requested.</p>
+
+<p class="NDLRefMemberDetailedDescription">This allows the service to perform any clean up that it
+requires. The service should cleanly shutdown. This might involve persisting various states. If the
+service is unregistered while the framework is running, it should be careful not to spend too much
+time in a single block and should instead do a small amount of work on each call while returning
+"pending" to request additional calls.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><em>Return Value</em></td>
+
+                <td>
+                    AsyncResult the service's progress through the initialization state, one of:
+
+                    <ul>
+                        <li>AsyncResult_Pending : More shutdown work is required. OnShutdown will
+                        be called again until it completes or fails.</li>
+
+                        <li>AsyncResult_Failure : Shutdown has critically failed. The framework
+                        shutdown state will be aborted and the process will exit immediately.</li>
+
+                        <li>AsyncResult_Complete : Shutdown has completed for this component. It
+                        will receive no more OnShutdown calls.</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1cf263eeb4d8396197431f5033ee17c4d" id="classefd_1_1_asset_server_1cf263eeb4d8396197431f5033ee17c4d"></a><p class="NDLRefMemberFunction">virtual const char* GetDisplayName() const</p>
+
+<p class="NDLRefMemberDescription">Returns the name of this service.</p>
+
+<p class="NDLRefMemberDetailedDescription">This name is used only for improving the readability of
+various log statements and has no impact on functionality. Overriding this method in derived
+services is completely optional but highly recommended.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><em>Return Value</em></td>
+
+                <td>const char* Display name for the current service.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_117203a501fb8e712f25b6f520530c708" id="classefd_1_1_asset_server_117203a501fb8e712f25b6f520530c708"></a><p class="NDLRefMemberFunction">virtual void SendResponse(<br>
+<a href="efd__AssetLocatorResponse.htm">AssetLocatorResponse</a>* pMessage,<br>
+const <a href="efd__Category.htm">Category</a>&amp; category)</p>
+
+<a name="classefd_1_1_asset_server_13e40a0b28a7a4bfb31b24c8987eb96d1" id="classefd_1_1_asset_server_13e40a0b28a7a4bfb31b24c8987eb96d1"></a><p class="NDLRefMemberFunction">virtual void ChangeNotify(<br>
+<a href="efd__utf8string.htm">efd::utf8string</a> assetRelativePath,<br>
+<a href=
+"efd__IAssetServer.htm#classefd_1_1_i_asset_server_1d34628ec8dc86c91e2f32e8cab3bcee7">AssetChangeType</a>
+changeType)</p>
+
+<a name="classefd_1_1_asset_server_1c500334c5d3ceecbe5819c05c00779d1" id="classefd_1_1_asset_server_1c500334c5d3ceecbe5819c05c00779d1"></a><p class="NDLRefMemberFunction">virtual void CheckAsset(<a href=
+"efd__utf8string.htm">efd::utf8string</a> assetRelativePath)</p>
+
+<p class="NDLRefMemberDescription">Check that an asset file is accounted for in the metadata.</p>
+
+<p class="NDLRefMemberDetailedDescription">This is used during initialization to ensure that the
+assets in the file system are also listed in the metadata.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">assetRelativePath</span></td>
+
+                <td>Relative path to the file in the asset-web.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1bcf059e7d92a13417ca6169d14ac0306" id="classefd_1_1_asset_server_1bcf059e7d92a13417ca6169d14ac0306"></a><p class="NDLRefMemberFunction">virtual void CheckAssetDir(<a href=
+"efd__utf8string.htm">efd::utf8string</a> assetDirectory)</p>
+
+<p class="NDLRefMemberDescription">Check that an asset directory actually contains all of the asset
+files that it is supposed to contain.</p>
+
+<p class="NDLRefMemberDetailedDescription">Update metadata for any asset files that are missing,
+probably because they were intentionally deleted.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">assetDirectory</span></td>
+
+                <td>Relative path to the directory in the asset-web.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_164657b7e1146b0996ae9f0ddda43fe0d" id="classefd_1_1_asset_server_164657b7e1146b0996ae9f0ddda43fe0d"></a><p class="NDLRefMemberFunction">virtual void SendChangeNotifications()</p>
+
+<p class="NDLRefMemberDescription">Sends broadcast message to all client listeners, notifying them
+that one or more assets have been updated in the Asset Web.</p>
+
+<p class="NDLRefMemberDetailedDescription">The sent message will include the Asset ID and all of
+its tags for each change. From this information, the listeners determine whether to initiate a
+reload of the assets.</p>
+
+<a name="classefd_1_1_asset_server_1666d1636391e1dd9d59b236db05b842f" id="classefd_1_1_asset_server_1666d1636391e1dd9d59b236db05b842f"></a>
+
+<p class="NDLRefMemberFunction">void HandleRequest(<br>
+const <a href="efd__IMessage.htm">efd::IMessage</a>* pMessage,<br>
+<a href="efd__Category.htm">efd::Category</a> targetChannel)</p>
+
+<p class="NDLRefMemberDescription">Handles a <a href=
+"efd__AssetLocatorRequest.htm">AssetLocatorRequest</a> message.</p>
+
+<p class="NDLRefMemberDetailedDescription">This method is registered with the local message service
+in <span class="NDLSystemFont"><a href=
+"efd__AssetServer.htm#classefd_1_1_asset_server_1f89af7940ae419e1b32764290f650215">OnInit()</a></span>.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">pMessage</span></td>
+
+                <td>Pointer to an <span class="NDLSystemFont"><a href=
+                "efd__IMessage.htm">IMessage</a></span>.</td>
+            </tr>
+
+            <tr>
+                <td><span class="NDLSystemFont">targetChannel</span></td>
+
+                <td>Target category.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1110e5bd57bcc0618e917f21ab373fdcb" id="classefd_1_1_asset_server_1110e5bd57bcc0618e917f21ab373fdcb"></a><p class="NDLRefMemberFunction">void HandleTagsInfoRequest(<br>
+<a href="efd__IMessage.htm">efd::IMessage</a>* pMessage,<br>
+<a href="efd__Category.htm">efd::Category</a> targetChannel)</p>
+
+<p class="NDLRefMemberDescription">Handles a TagsInfo Request message.</p>
+
+<p class="NDLRefMemberDetailedDescription">This method is registered with the local message service
+in <a href=
+"efd__AssetServer.htm#classefd_1_1_asset_server_1f89af7940ae419e1b32764290f650215">OnInit()</a>.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">pMessage</span></td>
+
+                <td>Pointer to an <span class="NDLSystemFont"><a href=
+                "efd__IMessage.htm">IMessage</a></span>.</td>
+            </tr>
+
+            <tr>
+                <td><span class="NDLSystemFont">targetChannel</span></td>
+
+                <td>Target category.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_11ea153e32b20f9f808176bdd29939b8d" id="classefd_1_1_asset_server_11ea153e32b20f9f808176bdd29939b8d"></a><p class="NDLRefMemberFunction">void HandleServerResponse(<br>
+<a href="efd__IMessage.htm">efd::IMessage</a>* pMessage,<br>
+<a href="efd__Category.htm">efd::Category</a> targetChannel)</p>
+
+<p class="NDLRefMemberDescription">Handles a <a href=
+"efd__AssetLocatorResponse.htm">AssetLocatorResponse</a> message when acting as a proxy.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">pMessage</span></td>
+
+                <td>Pointer to an <span class="NDLSystemFont"><a href=
+                "efd__IMessage.htm">IMessage</a></span>.</td>
+            </tr>
+
+            <tr>
+                <td><span class="NDLSystemFont">targetChannel</span></td>
+
+                <td>Target category.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1cff4e03be28b74786725ceee443dd5ab" id="classefd_1_1_asset_server_1cff4e03be28b74786725ceee443dd5ab"></a><p class="NDLRefMemberFunction">void HandleConnect(<br>
+const <a href="efd__StreamMessage.htm">efd::StreamMessage</a>* pMessage,<br>
+<a href="efd__Category.htm">efd::Category</a> targetChannel)</p>
+
+<p class="NDLRefMemberDescription">Handles a NetServiceConnectionEstablished message.</p>
+
+<p class="NDLRefMemberDetailedDescription">This method is registered with the local message service
+in <span class="NDLSystemFont"><a href=
+"efd__AssetServer.htm#classefd_1_1_asset_server_1f89af7940ae419e1b32764290f650215">OnInit()</a></span>.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">pMessage</span></td>
+
+                <td>Pointer to an <span class="NDLSystemFont"><a href=
+                "efd__IMessage.htm">IMessage</a></span>.</td>
+            </tr>
+
+            <tr>
+                <td><span class="NDLSystemFont">targetChannel</span></td>
+
+                <td>Target category.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_1723a0fe94ec28deeabf2ef20eddf4f2c" id="classefd_1_1_asset_server_1723a0fe94ec28deeabf2ef20eddf4f2c"></a><p class="NDLRefMemberFunction">virtual efd::Bool AssetWebOpen(const <a href=
+"efd__utf8string.htm">efd::utf8string</a>&amp; web_root)</p>
+
+<p class="NDLRefMemberDescription">Open the specified asset web location.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">web_root</span></td>
+
+                <td>The path of the asset-web to use for asset lookups. This can be a relative path
+                or a platform-specific absolute path.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a name="classefd_1_1_asset_server_14a1f8e893ea1bc91cd4e795a85199a7e" id="classefd_1_1_asset_server_14a1f8e893ea1bc91cd4e795a85199a7e"></a><p class="NDLRefMemberFunction">void AssetWebClose()</p><a name=
+"classefd_1_1_asset_server_10efd01b44a8e81423d32f45ed8e7f3db" id=
+"classefd_1_1_asset_server_10efd01b44a8e81423d32f45ed8e7f3db"></a>
+
+<p class="NDLRefMemberFunction">void Checkpoint()</p>
+
+<p class="NDLRefMemberDescription">Save the current metadata contents of the Asset Web to
+files.</p>
+
+<a name="classefd_1_1_asset_server_16e1a1ebe708a91a79269a0fa113476ea" id="classefd_1_1_asset_server_16e1a1ebe708a91a79269a0fa113476ea"></a><p class="NDLRefMemberFunction">void RegisterTagger(<a href=
+"efd__SmartPointer.htm">efd::AssetTaggerPtr</a> tagger)</p>
+
+<p class="NDLRefMemberDescription">Get the time of the last successful metadata Checkpoint.</p>
+
+<p class="NDLRefMemberDetailedDescription">Register an asset tagger class.</p>
+
+<p class="NDLRefMemberDetailedDescription">Used to provide custom tagging of assets as they are
+discovered by the server.</p>
+
+<!--(Table)=====================================================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class="NDLSystemFont">tagger</span></td>
+
+                <td>Instance of an <span class="NDLSystemFont"><a href=
+                "efd__IAssetTagger.htm">IAssetTagger</a></span> derived class</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

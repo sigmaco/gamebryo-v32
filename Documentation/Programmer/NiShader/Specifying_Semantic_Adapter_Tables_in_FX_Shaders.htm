@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Specifying Semantic Adapter Tables in FX Shaders</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Specifying Semantic Adapter Tables in FX Shaders</h1>
+
+<p>A <a href=
+"../../Reference/NiMain/NiSemanticAdapterTable.htm">semantic
+adapter table</a> is the mechanism used to wire data streams on a
+mesh to varying parameters required by a shader. There is a
+default mechanism that will wire 'standard' named data streams to
+corresponding FX semantics, but a custom semantic adapter table
+can also be specified per technique via a special annotation.</p>
+
+<h2>Default Semantic Adapter Table</h2>
+
+<p>If the technique does not specify its own semantic adapter
+table, Gamebryo will provide one by default. It does this by
+merging the input semantics from the vertex shaders on each pass
+and converting the resulting list to a semantic adapter table
+using the following process:</p>
+
+<ul>
+    <li>The generic semantic and renderer semantic are both set
+    to be the string representation of the D3D usage (eg,
+    "POSITION" for D3DDECLUSAGE_POSITION). Note that only those
+    D3D usages listed below will be honored; others will simply
+    be skipped.</li>
+
+    <li>The semantic index is always set to 0, except for texture
+    coordinates, which will honor the D3D usage index.</li>
+
+    <li>The component count will be set according to the D3D
+    usage as follows:
+
+        <ul>
+            <li>Position: 3</li>
+
+            <li>Normal: 3</li>
+
+            <li>Texcoord: 2</li>
+
+            <li>Color: 4</li>
+
+            <li>Blend weight: 3</li>
+
+            <li>Blend indices: 4</li>
+
+            <li>Tangent: 3</li>
+
+            <li>Binormal: 3</li>
+        </ul>
+    </li>
+
+    <li>The stream is always set to 0.</li>
+
+    <li>The shared renderer semantic position is always set to
+    0.</li>
+</ul>
+
+<p>If a shader requires a different adapter table than will be
+automatically generated, then a custom semantic adapter table
+will need to be provided.</p>
+
+<h2>Custom Semantic Adapter Tables</h2>
+
+<p>To create a custom semantic adapter table for an FX shader,
+there must be a string annotation on the technique named
+"SemanticAdapterTable". Different techniques may have different
+semantic adapter tables defined for the various implementations
+of a common shader (for example, one for skinned characters and one for
+rigid objects).</p>
+
+<p>The precise syntax for this string is documented in the
+<a href=
+"../../Reference/NiMain/NiSemanticAdapterTableParser.htm"><span class="NDLSystemFont">
+NiSemanticAdapterTableParser</span></a> reference.</p>
+
+<p>Here is an example FX file fragment from a modified
+GeneralDiffuseSpecular shader showing the additional semantic
+adapter table annotation.</p>
+<pre>
+technique GeneralDiffuseSpecularSkinned
+&lt;
+    string NBTMethod = "ATI";
+    string description = "Shader for skinned character of MetalWars demo. "
+        "Base map, 2 point lights, diffuse cube map, "
+        "specular cube map, and normal map (with gloss in alpha channel) ."
+        "This shader was designed and built specifically for the "
+        "MetalWars demo.";
+    bool UsesNiRenderState = true;
+    bool UsesNiLightState = false;
+    int BonesPerPartition = MAX_BONES;
+    
+    string SemanticAdapterTable =
+        "3 POSITION_BP POSITION;"
+        "3 BLENDWEIGHT:0;"
+        "4 BLENDINDICES:0;"
+        "2 TEXCOORD:0;"
+        "3 NORMAL_BP NORMAL;"
+        "3 BINORMAL_BP BINORMAL;"
+        "3 TANGENT_BP TANGENT;";
+&gt;
+{
+    pass Single_Pass
+    {
+        VertexShader = compile vs_1_1 VSMainSkinned();
+        PixelShader = compile ps_2_0 PSMainSkinned();
+    }
+}
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

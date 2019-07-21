@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>SoftParticles Demo Functional Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>SoftParticles Demo Functional Overview</h1>
+
+<h2>Basic Concepts</h2>
+
+<p>The problem that soft particles are trying to solve is the
+hard intersections that occur when particle billboards intersect
+with scene geometry. This demo contains a graphical effect
+designed to smooth out that intersection. Below is a side view of
+a billboarded particle intersecting with the scene.</p>
+
+<div class="FigureContainer">
+    <img src="images/softparticles_diagram.png" width="580"
+    height="313" alt="softparticles_diagram (24K)"> 
+    <!-- <p class="FigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>In the normal rendering pipeline, the intersection between the
+particle and the scene will be a hard line. In the diagram, this
+line would be coming out of point P3. Even with depth maps on
+particles that modify its z-value, there will still be unsightly
+hard lines. To eliminate this problem this effect decreases the
+alpha value of the particle as the particle approaches the scene
+behind it. In order to give an artist some more control over how
+the effect looks, we use a user specified shader constant to
+determine the distance (in world space) over which we will
+modulate the particle's alpha. Any particles that are farther
+away from the scene than that distance will not have their alpha
+modified.</p>
+
+<p>In the diagram, consider point <span class=
+"NDLSystemFont">P1</span> to be at this distance. The points from
+<span class="NDLSystemFont">P1</span> to <span class=
+"NDLSystemFont">P3</span> will be increasingly alpha blended. The
+smaller the distance that is specified, the more similar to hard
+particles the effect will seem. However, if very a large distance
+is specified relative to the world size, then the particle system
+can seem very sparse as the soft particle effect will fade the
+particles out more frequently.</p>
+
+<p>This method of softening particle edges is an approximation.
+The approximation fails when the normals of the scene start to
+become perpendicular to the camera's direction. In this
+situation, the particle is actually quite close to the
+intersecting surface but reports a large depth value since the
+camera vector is nearly tangent to the intersecting surface. In
+addition, because the particle only checks parallel to the camera
+direction for its distance to the scene, it has no other
+knowledge of the rest of the scene that surrounds it in other
+directions.</p>
+
+<h2>Application-side Setup</h2>
+
+<p>The rendering of the soft particles requires the camera-space
+depth values of the rest of the scene. The soft particles need to
+be rendered after the scene. One method of storing the depth is
+to store it in destination alpha of the default render target.
+Another method is just to store the additional information in
+another render target, which is the approach that this demo
+takes.</p>
+
+<p>In this demo, the <span class=
+"NDLSystemFont">SoftParticlesManager</span> object handles the
+deferred rendering of the particle system. When the application
+is initialized, the particle systems are added to the
+<span class="NDLSystemFont">SoftParticlesManager</span>, and set
+to be application culled. The <span class=
+"NDLSystemFont">SoftParticlesManager</span> object is itself a
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderClick.htm">NiRenderClick</a></span>
+object and is manually inserted after the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderClick.htm">NiRenderClick</a></span>
+object for the main scene. The <span class=
+"NDLSystemFont">SoftParticlesManager</span> object creates an
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiParticle/NiPSParticleSystem.htm">NiPSParticleSystem</a></span>
+object to hold all of the particles that have been added.</p>
+
+<p>The default material of the scene is set to use the
+<span class="NDLSystemFont">MRT_ColorDepthMaterial</span> class.
+This class derives from <span class=
+"NDLSystemFont">NiStandardMaterial</span>. In addition to the
+standard material behavior, it also writes out the camera-space
+z-value (i.e. non-projected depth value) to an additional render
+target. The additional render target gets created during the
+application initialization and added to the render target group
+that the main scene renders into. If this demo had any additional
+custom shaders, they would have to be modified to write out to
+the additional render target as well.</p>
+
+<h2>Modifying NiStandardMaterial</h2>
+
+<p>This class has three different materials that derive from
+standard material. The motivation for using standard material is
+to gain all of the benefits of flexible shaders that can handle
+skinned vs. non-skinned objects with different kinds of lighting
+and textures. Deriving from it allows the application to be able
+to inject some custom functionality without losing any of that
+per-object and cross-platform flexibility. See the <a href=
+"SoftParticles_demo_Code_Overview.htm">code overview</a> for more
+details about each of these materials.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

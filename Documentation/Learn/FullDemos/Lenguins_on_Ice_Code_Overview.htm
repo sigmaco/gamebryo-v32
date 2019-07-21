@@ -1,0 +1,414 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Lenguins on Ice Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Lenguins on Ice Code Overview</h1>
+
+<p>The Lenguins on Ice source code is divided into several files
+constituting the application's C++ classes. Each class is
+contained within source files (.h, .inl, and .cpp) of the same
+name. The following descriptions give developers a brief idea of
+the way that the collections of classes in Lenguins on Ice work
+together to provide overall functionality. For this reason, the
+dependency listings for each class should be of high
+interest.</p>
+
+<h2>Lenguins</h2>
+
+<p>Lenguins is the <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a>-</span>derived class for the Lenguins on Ice
+application. The specific interfaces it relies on from
+<span class="NDLSystemFont">NiApplication</span> are for
+initialization (<span class=
+"NDLSystemFont">Lenguins::Initialize</span>), shutdown
+(<span class="NDLSystemFont">Lenguins::Terminate</span>),
+renderer and scene creation (<span class=
+"NDLSystemFont">Lenguins::CreateRenderer</span> and <span class=
+"NDLSystemFont">Lenguins::CreateScene</span>), and rendering
+(<span class="NDLSystemFont">Lenguins::OnIdle</span>).</p>
+
+<p>Somewhat unique to the Lenguins on Ice sample (relative to
+other Gamebryo sample applications) is the fact that little of
+the real work done in the application is maintained in the
+<span class="NDLSystemFont">Lenguins</span> class itself. As
+such, and in addition to its dependency on <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span>, the <span class=
+"NDLSystemFont">Lenguins</span> class is dependent on the
+<span class="NDLSystemFont">Scheduler</span>, <span class=
+"NDLSystemFont">LevelManager</span>, and <span class=
+"NDLSystemFont">ScreenOverlay</span> classes.</p>
+
+<h2>Scheduler</h2>
+
+<p><span class="NDLSystemFont">Scheduler</span> is responsible
+for executing all the tasks in the application. In this demo all
+units of work are broken up into individual tasks. Each task is
+defined as one of three different types: <span class=
+"NDLSystemFont">TYPE_TIME</span>, <span class=
+"NDLSystemFont">TYPE_FRAME</span>, or <span class=
+"NDLSystemFont">TYPE_RENDER</span>. A <span class=
+"NDLSystemFont">TYPE_TIME</span> task is only executed on time
+intervals specified by the task. A <span class=
+"NDLSystemFont">TYPE_FRAME</span> task is executed every frame
+before rendering occurs. A <span class=
+"NDLSystemFont">TYPE_RENDER</span> task is executed every frame
+during the scene rendering process. These tasks are responsible
+for many different operations within the demo some of which
+include: flocking, player controls, scene updates, and rendering.
+When the sample is initialized these tasks are inserted into the
+scheduler, which is then responsible for executing the task at
+the appropriate time, including scheduling additional tasks.</p>
+
+<h2>LevelManager</h2>
+
+<p><span class="NDLSystemFont">LevelManager</span> provides a
+central location to manage the level data, control logic, and
+rendering process for the demo. The update provided by the
+<span class="NDLSystemFont">LevelManager</span> is tasked with
+pausing execution of PhysX, fetching the PhysX results, updating
+the locations and orientations of source and destination based
+PhysX objects. <span class="NDLSystemFont">LevelManager's</span>
+Update method is the primary source from which most game logic is
+executed and updated. It is responsible for rendering the entire
+scene and properly organizing different render dependent
+effects.</p>
+
+<p><span class="NDLSystemFont">LevelManager</span> is dependent
+on seven other application classes:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">CameraController</span>: The
+    <span class="NDLSystemFont">CameraController</span> is used
+    during the rendering process to render the scene with the
+    current view; it is updated by the <span class=
+    "NDLSystemFont">InputManager</span>.</li>
+
+    <li><span class="NDLSystemFont">EffectManager</span>: This
+    class is used to manage particle effects in the sample that
+    are triggered by in game collisions. Namely it is used to
+    handle the particle effects for puffs of snow and baby fur.
+    It is used by the <span class=
+    "NDLSystemFont">LevelManager</span> both for updating and
+    rendering the scene.</li>
+
+    <li><span class="NDLSystemFont">FlockManager</span>: The
+    <span class="NDLSystemFont">FlockManager</span> controls the
+    AI for the baby lenguins. It handles all the flocking logic
+    causing the babies to gather near their momma and to chase
+    after ice blocks. It is used by the <span class=
+    "NDLSystemFont">LevelManager</span> both for updating and
+    rendering the scene.</li>
+
+    <li><span class="NDLSystemFont">IceBlockManager</span>: This
+    handles all the ice blocks in the application. It is used to
+    create new ice blocks, break ice blocks, and remove them from
+    the scene. It is used by the <span class=
+    "NDLSystemFont">LevelManager</span> both for updating and
+    rendering the scene.</li>
+
+    <li><span class="NDLSystemFont">MommaManager</span>: This is
+    used to facilitate interactions between the player input
+    provided by the input manager and the momma lenguin in the
+    demo. It is used by the <span class=
+    "NDLSystemFont">LevelManager</span> both for updating and
+    rendering the scene.</li>
+
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    manage and render the terrain in the scene, to determine if a
+    portion of terrain is traversable or not, and used when
+    shadow geometry is created. It is used by the <span class=
+    "NDLSystemFont">LevelManager</span> for both for updating and
+    rendering the scene.</li>
+</ul>
+
+<h2>ScreenOverlay</h2>
+
+<p><span class="NDLSystemFont">ScreenOverlay</span> is used to
+display all 2D elements on the screen that are not a part of the
+actual playable world. This consists of all the heads up display
+elements during game play as well as the menu items. When a menu
+is displayed input from the <span class=
+"NDLSystemFont">InputManager</span> passed to <span class=
+"NDLSystemFont">ScreenOverlay</span> where it quits, restarts, or
+resumes the current game.</p>
+
+<p><span class="NDLSystemFont">ScreenOverlay</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">InputManager</span>: When a
+    menu is open all relevant the <span class=
+    "NDLSystemFont">InputManager</span> polls is passed to
+    <span class="NDLSystemFont">ScreenOverlay</span> so it can
+    respond the input appropriately.</li>
+</ul>
+
+<h2>LenguinManager</h2>
+
+<p><span class="NDLSystemFont">LenguinManager</span> is
+responsible for controlling, updating, and drawing each lenguin
+in the demo. Each lenguin is controlled with a single
+<span class="NDLSystemFont">LenguinManager</span>. Two of its
+more significant methods are <span class=
+"NDLSystemFont">AvoidCollisions</span> and <span class=
+"NDLSystemFont">UpdateBipedTransforms</span>. Each tree in the
+scene is assigned a collider which described a non-walkable area
+around the tree. <span class=
+"NDLSystemFont">AvoidCollisions</span> is used when determining
+which direction a lenguin is going to move to ensure that they do
+not walk through any trees. <span class=
+"NDLSystemFont">UpdateBipedTransforms</span> is used to calculate
+a lenguins new location and orientation based on which direction
+the lenguins wants to move and where it is located on the
+terrain. The <span class="NDLSystemFont">TerrainManager</span> is
+polled to ensure the lenguin only walks on allowed areas and to
+determine the height of the lenguin.</p>
+
+<p><span class="NDLSystemFont">LenguinManager</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used to
+    manage and render the terrain in the scene, to determine if a
+    portion of terrain is traversable or not, and used when
+    shadow geometry is created. <span class=
+    "NDLSystemFont">LenguinManager</span> polls the <span class=
+    "NDLSystemFont">TerrainManager</span> when determining if a
+    lenguin is trying to move to a non-walkable area.</li>
+</ul>
+
+<h2>BabyManager</h2>
+
+<p><span class="NDLSystemFont">BabyManager</span> is derived from
+the <span class="NDLSystemFont">LenguinManager</span> class and
+primarily serves as a control layer between the <span class=
+"NDLSystemFont">FlockManager</span> logic and the lenguin's
+animation controller. The desired direction of movement for the
+baby is input from the <span class=
+"NDLSystemFont">FlockManager</span> and based on the baby's
+current location, orientation, and animation the baby's new
+orientation will be updated accordingly. The <span class=
+"NDLSystemFont">BabyManager</span> is also responsible for
+turning control of the baby over to PhysX when the baby has been
+hit by an ice block and for returning control back after the baby
+is not longer stunned from the ice block. The <span class=
+"NDLSystemFont">BabyManager</span> handles other miscellaneous
+tasks such as updating the baby's current level of detail,
+causing the baby to chase after ice blocks, and rendering the
+baby's ghost if they die.</p>
+
+<p><span class="NDLSystemFont">BabyManager</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">LenguinManager</span>: This
+    is used by the <span class="NDLSystemFont">BabyManager</span>
+    to handle updating the orientation and location of the baby's
+    animation controller along with rendering.</li>
+
+    <li><span class="NDLSystemFont">IceBlockManager</span>: When
+    the desired direction for a baby is being computed if it does
+    not already have an ice block target the <span class=
+    "NDLSystemFont">FlockManager</span> will have the
+    <span class="NDLSystemFont">BabyManager</span> search for a
+    possible ice block it would like to go after. If an ice block
+    is found and the baby is far enough away from its mother, the
+    baby will deviate from the flock towards the ice block.</li>
+</ul>
+
+<h2>MommaManager</h2>
+
+<p><span class="NDLSystemFont">MommaManager</span> is derived
+from the <span class="NDLSystemFont">LenguinManager</span> class
+and primarily serves as a control layer between the player input
+and the animation controller of the momma. The input provided by
+the <span class="NDLSystemFont">InputManager</span> is passed to
+the <span class="NDLSystemFont">MommaManager</span> and
+interpreted to determine how the momma should move and interact
+with the world.</p>
+
+<p><span class="NDLSystemFont">MommaManager</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">LenguinManager</span>: This
+    is used by the <span class=
+    "NDLSystemFont">MommaManager</span> to handle updating the
+    orientation and location of the lenguins' animation
+    controller along with rendering the lenguin.</li>
+
+    <li><span class="NDLSystemFont">InputManager</span>: This is
+    used to provide the <span class=
+    "NDLSystemFont">MommaManager</span> with the users current
+    desired actions for the momma.</li>
+</ul>
+
+<h2>FlockManager</h2>
+
+<p><span class="NDLSystemFont">FlockManager</span> is used as the
+primary AI for controlling the baby lenguins. Standard flocking
+techniques using cohesion, separation, and alignment are employed
+to cause the babies to move as a group. Unlike normal flocking,
+extra logic is implemented to give the babies an odd fascination
+with ice blocks. This causes babies that have trailed away from
+their mother to chase after ice blocks.</p>
+
+<p><span class="NDLSystemFont">FlockManager</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">BabyManager</span>: The
+    <span class="NDLSystemFont">BabyManager</span> class is used
+    as both a form of input and output for the <span class=
+    "NDLSystemFont">FlockManager</span>. The current location and
+    orientation of each baby is used when computing the baby
+    neighborhood. After all the babies in the flock have been
+    analyzed their new orientation and movement is then provided
+    to them. The <span class="NDLSystemFont">BabyManager</span>
+    is also used to determine if a baby wants to chase an ice
+    block. In this case the <span class=
+    "NDLSystemFont">FlockManager</span> releases control of the
+    baby until the baby is done chasing the ice block.</li>
+
+    <li><span class="NDLSystemFont">IceBlockManager</span>: When
+    the desired direction for a baby is being computed if it does
+    not already have an ice block target the <span class=
+    "NDLSystemFont">FlockManager</span> will have the
+    <span class="NDLSystemFont">BabyManager</span> search for a
+    possible ice blocks it might want to go after. If a desirable
+    ice block is found the baby will deviate from the flock
+    towards the ice block.</li>
+</ul>
+
+<h2>EffectAccumulator</h2>
+
+<p><span class="NDLSystemFont">EffectAccumulator</span> is a
+specialized accumulator derived from the <span class=
+"NDLSystemFont">AlphaAccumulator</span> class. It is used to sort
+objects with alpha properties just as <span class=
+"NDLSystemFont">AlphaAccumulator</span>, except for when an
+object has a shader attached that requires processing of the data
+in the back buffer. These objects are rendered in back to front
+order and before an object with such a shader is rendered the
+contents of the back buffer is copied to a texture so that its
+color data can be used by the shader. There are two shaders in
+the demo that trigger this specialized case, the IceCube shader
+and the HeatShimmer shader. Being able to ensure that these
+objects are rendered in back to front order allows the IceCube
+shader to refract light from everything behind it including other
+ice cubes, and the HeatShimmer shader to bend the light from
+everything behind.</p>
+
+<h2>IceBlockManager</h2>
+
+<p><span class="NDLSystemFont">IceBlockManager</span> handles the
+spawning, breaking, and removal of ice blocks. Each ice block in
+the level is an instance of a single ice block model and also has
+an ice block pieces model associated with it. A scheduled task
+will call the <span class="NDLSystemFont">IceBlockManager</span>
+informing it to spawn new ice blocks. New ice blocks will then be
+spawned at a geyser location with a given velocity. As the ice
+blocks interact with the world, they maybe either broken by the
+momma lenguin, hit and injure baby lenguins, or eventually slide
+off the cliff. When they are broken the current ice block is
+replaced with an instance of its associated ice block pieces
+model. The <span class="NDLSystemFont">IceBlockManager</span> is
+also responsible for rendering the shadows of each ice block.</p>
+
+<h2>InputManager</h2>
+
+<p><span class="NDLSystemFont">InputManager</span> polls input
+from the keyboard, mouse, and a game pad (if one is available).
+The input data is either polled for game play use or for
+interacting with a game menu.</p>
+
+<h2>ShadowGeometry</h2>
+
+<p>The <span class="NDLSystemFont">ShadowGeometry</span> class
+supports automatic, projected shadows. The class includes the
+ability to generate a shadow image each frame from a set of
+"caster" geometry. The class supports projection of the shadow
+onto a set of "recipient" geometry, culling pieces of geometry
+that do not need to receive the shadow. This creates a
+high-quality, high-performance shadow effect with minimal
+application-level code. The <span class="NDLSystemFont"><a href=
+"MOUT_Sample_Code_Overview.htm">ShadowGeometry</a></span> is used
+mostly intact as described in the MOUT sample.</p>
+
+<p>The sample can afford a higher texture resolution for each
+shadow for the Momma Lenguin and the ice blocks, since there are
+relatively fewer of them in a given frame. However, due to the
+large number of baby Lenguin shadows that must be rendered, a
+lower texture resolution than might be desired is used for the
+babies for performance reasons. As a result, visible aliasing may
+be noticeable around the edges of each of those shadows. To
+address this problem, a blur shader is applied to each shadow.
+Blurring the projected shadow creates a soft shadow edge with no
+aliasing.</p>
+
+<p><span class="NDLSystemFont">ShadowGeometry</span> is dependent
+on:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">TerrainManager</span>: The
+    <span class="NDLSystemFont">TerrainManager</span> is used in
+    several places to determine the geometry upon which the
+    shadow is cast. The terrain is picked in order to locate a
+    center of the projected shadow volume, and the diced terrain
+    triangles are tested against the shadow camera clipping
+    planes. Geometry from the terrain manager that is found to
+    fall within the shadow camera's frustum is added to the list
+    of recipient geometry in each frame.</li>
+</ul>
+
+<h2>TerrainManager</h2>
+
+<p><span class="NDLSystemFont">TerrainManager</span> loads and
+manages two separate NIF files. The first file is assumed to
+contain a single object that represents only the ground plane
+against which picking should be done (via <a href=
+"../../Reference/NiCollision/NiPick.htm">NiPick</a>) to determine
+height placement for objects above the terrain. The second file
+is assumed to contain a diced version of the terrain from which
+the <span class="NDLSystemFont">ShadowGeometry</span> class can
+be easily polled to determine how to generate and clip the shadow
+geometry.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

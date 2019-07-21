@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Handling Lost or Removed Devices</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Handling Lost or Removed Devices</h1>
+
+<p>In the course of an application running, input devices can be
+removed, re-inserted, or hot-swapped by users. In addition, new
+devices can be plugged into previously empty ports.</p>
+
+<p>When either of these events occur, the <span class=
+"NDLSystemFont"><a href=
+"NiInputSystem.htm#NiInputSystem::UpdateAllDevices">NiInputSystem::UpdateAllDevices</a></span>
+or <span class="NDLSystemFont"><a href=
+"NiInputSystem.htm#NiInputSystem::UpdateActionMap">NiInputSystem::UpdateActionMap</a></span>
+calls will return one of error messages contained in the
+following table:</p>
+<!--(Table)=========================================================-->
+
+<table>
+    <thead>
+        <tr>
+            <th>Return Value</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NIIERR_DEVICECHANGE</span></td>
+
+            <td>Indicates that a device has been removed or
+            inserted. This includes devices plugged into
+            previously 'empty' ports.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NIIERR_DEVICELOST</span></td>
+
+            <td>Typically indicates that one type of device has
+            been removed, and a different type of device has been
+            inserted in that port.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>In order to supply some amount of flexibility in how
+applications utilize the <span class=
+"NDLSystemFont">NiInput</span> library, it is not assumed that
+the devices being used will be 'held onto' by the app. However,
+this document is written from the standpoint that they are.</p>
+
+<p>If your application receives the <span class=
+"NDLSystemFont">NIIERR_DEVICECHANGE</span> return value from one
+of the input calls, it should check each device it uses to
+determine which ones have been affected. This can be done by
+viewing the <span class="NDLSystemFont"><a href=
+"NiInputDevice.htm#NiInputDevice::Status">NiInputDevice::Status</a></span>
+member of each device it holds onto by calling <span class=
+"NDLSystemFont"><a href=
+"NiInputDevice.htm#NiInputDevice::GetStatus">NiInputDevice::GetStatus</a></span>.
+If the status is <span class="NDLSystemFont">REMOVED</span>, the
+application could pause game play and display a message
+indicating the offending device should be reinserted.</p>
+
+<p>Note that the <span class=
+"NDLSystemFont">NIIERR_DEVICECHANGE</span> will also be received
+when a device is inserted. This could indicate that a new device
+has been inserted as well as a previously present device being
+plugged back in. If your application is interested in detecting
+new device insertions on previously empty ports, it should
+iterate over the device descriptions using <a href=
+"NiInputSystem.htm#NiInputSystem::GetFirstDeviceDesc"><span class="NDLSystemFont">
+NiInputSystem::GetFirstDeviceDesc</span></a> and <a href=
+"NiInputSystem.htm#NiInputSystem::GetNextDeviceDesc"><span class=
+"NDLSystemFont">NiInputSystem::GetNextDeviceDesc</span></a> to
+find the 'new' device.</p>
+
+<p>If you application receives the <span class=
+"NDLSystemFont">NIIERR_DEVICELOST</span> return value, things are
+a bit more complicated. When this occurs, the offending device(s)
+will report their status as <span class=
+"NDLSystemFont">LOST</span>. In this case, the application should
+release their reference to said device and re-acquire it through
+another call to <span class=
+"NDLSystemFont">NiInputSystem::Open*</span>. Note that it is
+important to check the description of the device at the port of
+interest to ensure that the type is one that the application
+desires.</p>
+
+<p>For a more thorough example of handling lost and removed
+devices, please refer to the InputDemo documentation.</p>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

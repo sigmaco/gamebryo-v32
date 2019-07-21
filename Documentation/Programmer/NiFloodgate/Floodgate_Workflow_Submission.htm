@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Workflow Submission</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Workflow Submission</h1>
+
+<p>Once an <a href="../../Reference/NiFloodgate/NiSPWorkflow.htm"><span 
+ class="NDLSystemFont">NiSPWorkflow</span></a> has been assigned <a href="../../Reference/NiFloodgate/NiSPTask.htm"><span 
+ class="NDLSystemFont">NiSPTask</span></a> objects, it is submitted to the 
+ <a href="../../Reference/NiFloodgate/NiStreamProcessor.htm"><span 
+ class="NDLSystemFont">NiStreamProcessor</span></a> for scheduling and, ultimately, 
+ execution. During the scheduling phase, <span class="NDLSystemFont">NiSPTask</span>s 
+ are broken down into multiple Workloads internally based on various factors 
+ including the dependencies between tasks, the amount of data in the <a href="../../Reference/NiFloodgate/NiSPStream.htm"><span 
+ class="NDLSystemFont">NiSPStream</span></a> objects, and the alignment of 
+ the <span class="NDLSystemFont">NiSPStream</span> data. A Workload is a 
+ subset of the total data required to complete an <span class="NDLSystemFont">NiSPTask</span> 
+ along with a description of the Kernel that should be used to process 
+ the data streams. Splitting the data set into Workloads is necessary on 
+ platforms where the complete set of data required to complete a task doesn't 
+ fit into memory at one time. On the PS3, Kernels are executed on the SPUs 
+ as SPURS Jobs where Main Memory is not accessible. In this case, each 
+ Workload specifies a subset of data which is loaded into SPU local store 
+ from main memory for processing. The following diagram illustrates the 
+ process. </p>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/Segmentation.jpg" width="734" height="332"
+/>
+    <p class="NDLFigureCaption">Large Task segmented into multiple Workloads</p>
+</div>
+
+
+<p>On PC and Xbox 360, the data streams for an <span class="NDLSystemFont">NiSPTask</span> 
+ don't necessarily need to be segmented since the data will be accessed 
+ directly from main memory. However, prefetching subsets of the data can 
+ provide additional optimization.</p>
+
+<h2>Source Code</h2>
+
+<p>The following code shows how an <span class="NDLSystemFont">NiSPWorkflow</span> 
+ is submitted for scheduling and execution. This method returns immediately 
+ upon adding the <span class="NDLSystemFont">NiSPWorkflow</span> to the queue. 
+ The method does not block while scheduling or executing the <span class="NDLSystemFont">NiSPWorkflow</span>. 
+ Scheduling is handled on the <span class="NDLSystemFont">NiStreamProcessor</span>'s 
+ background thread. Execution is handled on the background thread on PC 
+ and Xbox 360. On PS3, execution is performed on the SPUs.</p>
+ 
+<pre>
+//---------------------------------------------------------------------------
+bool MyApplication::UpdateFrame()
+{
+    // Update base class
+    NiApplication::UpdateFrame();
+ 
+    // Initialize data buffers
+    for (NiUInt32 i = 0; i &lt; 256; i++)
+    {
+        auiInputBuffer1[i] = i;
+        auiInputBuffer2[i] = i;
+    }
+    memset(auiOutputBuffer1, 0, sizeof(auiOutputBuffer1));
+    memset(auiOutputBuffer2, 0, sizeof(auiOutputBuffer2));
+ 
+    // Initialize streams
+    NiTSPStream&lt;NiUInt32&gt; kStream0(auiInputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream1(auiInputBuffer2, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream2(auiOutputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream3(auiOutputBuffer2, 256);
+ 
+    // Initialize fixed input
+    NiTSPFixedInput&lt;NiUInt32&gt; kFixedInput(&amp;uiFixedInput, 1);
+ 
+    // Obtain NiSPWorkflow from NiStreamProcessor
+    NiSPWorkflowPtr spWorkflow = NiStreamProcessor::Get()-&gt;GetFreeWorkflow();
+ 
+<span class="CodeHighLight">    // Setup tasks
+    // Task1 - kStream2 = kStream0 + kStream1
+    NiSPTaskPtr spTask1 = spWorkflow-&gt;AddNewTask();
+    spTask1-&gt;SetKernel(&amp;m_kSum2Kernel);
+    spTask1-&gt;AddInput(&amp;kStream0);
+    spTask1-&gt;AddInput(&amp;kStream1);
+    spTask1-&gt;AddOutput(&amp;kStream2);
+    
+    // Task2 - Stream3 = FixedInput * Stream2
+    NiSPTaskPtr spTask2 = spWorkflow-&gt;AddNewTask();
+    spTask2-&gt;SetKernel(&amp;m_kScaleKernel);
+    spTask2-&gt;AddInput(&amp;kFixedInput);
+    spTask2-&gt;AddInput(&amp;kStream2);
+    spTask2-&gt;AddOutput(&amp;kStream3);
+ 
+    // Submit workflow for execution with Medium priority
+    NiStreamProcessor::Get()-&gt;Submit(spWorkflow, NiStreamProcessor::MEDIUM);
+</span> 
+    ...
+}
+//---------------------------------------------------------------------------
+</pre>
+ 
+
+<p>Finally, we <a href="Floodgate_Workflow_Completion_Monitoring.htm">wait 
+ on the workflow to complete</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

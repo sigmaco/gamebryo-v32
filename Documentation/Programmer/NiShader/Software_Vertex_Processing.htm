@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Software Vertex Processing</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Software Vertex Processing</h1>
+
+<p>Most modern graphics hardware performs transform and 
+ lighting of vertices in hardware, as opposed to in software. This allows 
+ an significant increase in performance, and should be used for vertices 
+ that use the default fixed-function pipeline in nearly every case.</p>
+
+<p>For vertex shaders, however, there are cases where an 
+ application may choose to force vertex processing to happen in software 
+ rather than hardware. While the hardware performance is much faster, software 
+ vertex processing usually offers more functionality than the hardware 
+ version. Applications that want to make use of advanced shader models 
+ may also choose to run a vertex shader through the software vertex processing 
+ pipeline rather than provide a less capable vertex shader on graphics 
+ hardware that can't handle the complex shader.</p>
+
+<p>Gamebryo provides a way for applications to specify, 
+ on a per-vertex-shader-basis, whether or not to use software vertex processing. 
+ Applications can also explicitly switch to software processing for all 
+ vertices if they choose to.</p>
+
+<p>Important note: Software vertex processing is only available 
+ through the <span class="NDLSystemFont">NiDX9Renderer</span>, 
+ not the <span class="NDLSystemFont">NiXenonRenderer</span>.</p>
+
+<h2>Device Creation</h2>
+
+<p>Before any software vertex processing can take place, 
+ the Direct3D device must be created to allow it. During creation of an 
+ <span class="NDLSystemFont">NiDX9Renderer</span> the application will need 
+ to request a device that is capable of software vertex processing. The 
+ place to make this selection is in the <span class="NDLSystemFont">eDesc</span> 
+ parameter of the static renderer <span class="NDLSystemFont">Create</span> 
+ function. Creating a renderer using <span class="NDLSystemFont">DEVDESC_PURE</span> 
+ or <span class="NDLSystemFont">DEVDESC_HAL_HWVERTEX</span> will result in 
+ a device that is only capable of hardware vertex processing. Similarly, 
+ passing <span class="NDLSystemFont">DEVDESC_HAL_SWVERTEX</span> will return 
+ a device that is only capable of software vertex processing. In either 
+ of these instances, the settings on the vertex shader will be completely 
+ ignored, since the device cannot switch between software and hardware 
+ processing. The only value for the parameter that will result in a renderer 
+ that can switch processing modes is <span class="NDLSystemFont">DEVDESC_HAL_MIXEDVERTEX</span>. 
+ Refer to the documentation on <a href="../../Reference/NiDX9Renderer/Creation_of_a_DX9Renderer.htm">creating 
+ an <span class="NDLSystemFont">NiDX9Renderer</span></a> for more details. 
+ By default, the a renderer created with <span class="NDLSystemFont">DEVDESC_HAL_MIXEDVERTEX</span> 
+ will use hardware vertex processing, but if the renderer makes use of 
+ a vertex shader created for software processing, or if the application 
+ switches modes, the renderer will use software vertex processing. </p>
+
+<h2>Vertex Shader Creation</h2>
+
+<p>In addition to creating the device correctly, vertex 
+ shaders must also be initialized for software vertex processing. Applications 
+ that make use of NSF or FX shaders have only to indicate that a shader 
+ implementation that uses a vertex shader either requires or is able to 
+ fall back to software processing in the shader file. See the documentation 
+ on <a href="NSF_File_Format_Reference.htm">NSF</a> 
+ or <a href="Introduction_!FX_Shaders.htm">FX</a> shaders for more details. 
+ Applications that create a vertex shader from directly may pass <span 
+ class="NDLSystemFont">true</span> for the <span class="NDLSystemFont">bSoftwareVP</span> 
+ parameter of <span class="NDLSystemFont">NiD3DShaderProgramFactory::CreateVertexShaderFromFile</span> 
+ to get a software vertex shader. It is not possible to switch a vertex 
+ shader from hardware mode to software mode; the choice can only be made 
+ during shader creation.</p>
+
+<p>Any vertex shader that does not explicitly require software 
+ processing is considered to require hardware processing. When the renderer 
+ encounters a software vertex shader, if it was created to be able to, 
+ it will switch to software vertex processing for that vertex shader, and 
+ then will switch back to hardware processing for any subsequent objects.</p>
+
+<h2>Switching Processing Modes</h2>
+
+<p>The application can also explicitly switch vertex processing 
+ modes, if the renderer is able to. The function <span class="NDLSystemFont">NiD3DRenderState::SetSoftwareVertexProcessing</span> 
+ can be used to explicitly enter software vertex processing mode. The renderer 
+ will remain in that mode until another call to <span class="NDLSystemFont">NiD3DRenderState::SetSoftwareVertexProcessing</span> 
+ resets the mode to hardware vertex processing. This will cause all vertices, 
+ including those using the fixed function pipeline, to use software vertex 
+ processing.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

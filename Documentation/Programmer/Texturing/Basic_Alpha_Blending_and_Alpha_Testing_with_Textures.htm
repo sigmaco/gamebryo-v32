@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Basic Alpha Blending and Alpha Testing with Textures</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Basic Alpha Blending and Alpha Testing with Textures</h1>
+
+<p>Gamebryo supports both alpha blending and alpha testing 
+ on textures that include alpha channels. Neither alpha blending nor alpha 
+ testing is automatically used when an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexture.htm">NiTexture</a></span> 
+ with an alpha channel is loaded, however. Because Gamebryo supports a 
+ wide range of alpha blending and alpha testing options, it cannot automatically 
+ set the alpha blending-mode based on the incoming texture. Note that content 
+ exported from a Gamebryo exporter such as the Gamebryo 3ds max Plug-in 
+ or the Gamebryo Maya Plug-in will already have alpha blending enabled 
+ for textures that were selected by the artist as translucent. The following 
+ discussion is intended for programmatic content.</p>
+
+<p>In order to use alpha blending, a Gamebryo application 
+ must:</p>
+
+<ul>
+	
+	<li>Attach an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAlphaProperty.htm">NiAlphaProperty</a></span> 
+ to the object that is to be blended.</li>
+	
+	<li>Enable alpha blending 
+ with <span class="NDLSystemFont">NiAlphaProperty::SetAlphaBlending(true)</span></li>
+	
+	<li>Ensure that the Base 
+ Map texture, the vertex colors, or the material color contain the appropriate 
+ alpha data.</li>
+	
+	<li>Set the desired source 
+ and destination alpha blending functions using <span class="NDLSystemFont">NiAlphaProperty::SetSrcBlendMode</span> 
+ and <span class="NDLSystemFont">SetDestBlendMode</span>. 
+ Examples of common source/destination pairs are as follows:</li>
+</ul>
+
+<table>
+	<thead>
+		<tr>
+			<th>Source Mode</th>
+			<th>Destination Mode</th>
+			<th>Effect</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td>ALPHA_SRCALPHA</td>
+       	<td>ALPHA_INVSRCALPHA</td>
+       	<td>"Classic" alpha blending.</td>
+		</tr>
+		<tr>
+       	<td>ALPHA_ONE</td>
+       	<td>ALPHA_ONE</td>
+       	<td>Object color "glows" over scene. Alpha data is ignored.</td>
+		</tr>
+		<tr>
+       	<td>ALPHA_ZERO</td>
+       	<td>ALPHA_SRCCOLOR</td>
+       	<td>Object color "tints" or darkens scene. Alpha data is ignored.</td>
+		</tr>
+	</tbody>	
+</table>
+
+<p>Alpha testing is a related effect, but is somewhat independent of alpha blending. Alpha testing assumes that the desired alpha blending mode is (or would be) (ALPHA_SRCALPHA, ALPHA_INVSRCALPHA), also known as standard alpha blending. One problem with alpha blending is that the framebuffer and depth buffer are written, even if the alpha value of the pixel causes the blended surface to be invisible. As a result, translucent sections of objects can "block" more distant objects when the distant objects are drawn out of sorted order.</p>
+
+<p>Alpha testing allows the alpha channel of a texture to be tested against a global reference value. If the test fails, the pixel is not written to the framebuffer or depth buffer. This can avoid the need to sort objects that can exist with alpha blending. To enable alpha testing, an application must:</p>
+
+<ul>
+	
+	<li>Ensure that an <span class="NDLSystemFont">NiAlphaProperty</span> 
+ is attached to the object (it may already be attached if alpha blending 
+ is used). </li>
+	
+	<li>Enable alpha testing 
+ with <span class="NDLSystemFont">NiAlphaProperty::SetAlphaTesting(true)</span></li>
+	
+	<li>Set the reference value 
+ with <span class="NDLSystemFont">NiAlphaProperty::SetTestRef</span>, 
+ which is the 0-255 value to which the texture pixel alpha will be compared. 
+ This higher this value is, the more opaque a pixel can be and still be 
+ left undrawn.</li>
+	
+	<li>Set the test function 
+ to skip pixels whose alpha values are less than the reference value, using 
+ <span class="NDLSystemFont">NiAlphaProperty::SetTestMode(NiAlphaProperty::TEST_GREATER)</span>.</li>
+	
+	<li>Enable or disable alpha blending as desired</li>
+</ul>
+
+<p>Alpha blending need not be turned on for alpha testing 
+ to work. Using alpha blending with alpha testing will tend to smooth the 
+ opaque/translucent boundaries, but can lead to "halo" effects 
+ when the objects are not drawn in back-to-front order.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

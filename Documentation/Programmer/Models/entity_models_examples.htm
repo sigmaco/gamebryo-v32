@@ -1,0 +1,316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Model examples</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Model examples</h1>
+
+<p>This section provides several examples of different entity models you can create and mix
+together to define your Entities.</p>
+
+<h2>Composing models</h2>
+
+<p>Individual models are used to capture the properties and behaviors for a known type of entity.
+The Entity Modeling Tool (EMT) has a set of pre-built models you can combine to create more
+interesting and specialized models for your application. Each individual model defines a set of
+properties and behaviors common to all entities based on that model. EMT lets you define default
+values for all properties associated with a model.</p>
+
+<p>There is little runtime overhead for default properties, regardless of the number of active
+entities in the world. The properties use copy-on-write semantics to share a single common instance
+of default properties. A new property instance is created at runtime only when the property is
+changed from the default. All entities having the default value for a property point to the one in
+the Model, which is shared across all entities of that model.</p>
+
+<p>Each model can have a set of Behaviors. When composing models by mix-in, your final entity
+responds to events that match these Behaviors in a model-specific way. For example, Rocks don't
+have a damage model so they do not mix-in a damage model. A statue might have a CrumbleDamage model
+so it can fall to pieces when attacked.</p>
+
+<h2>Creating a palette of reusable models</h2>
+
+<p>A designer can take advantage of composability to construct many types of entities from a much
+smaller set of carefully designed models. For example, rocks cannot be damaged if they have no
+damage model but a Statue has a CrumbleDamage model, so it falls to pieces when attacked. A
+fire-attack might be used by a dragon, by a flame-thrower, and by spontaneous human combustion.
+Debugging or extending the capability in one place upgrades the capability everywhere that class
+was mixed in.</p>
+
+<p>Using EMT, you can quickly create a palette of reusable models that you can then use as building
+blocks for your application. By creating a set of common models, you're defining the runtime design
+of your application. This gives your designers the flexibility to be creative but within the
+constraints of the overall themes and goals of the application.</p>
+
+<p>Here are some representative samples of the families of models you can create.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Model family</th>
+
+            <th>Examples</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Visual</td>
+
+            <td>Mesh, Actor, Particle System</td>
+        </tr>
+
+        <tr>
+            <td>AI</td>
+
+            <td>Graze, Patrol, Follow, Go to waypoint</td>
+        </tr>
+
+        <tr>
+            <td>Attack</td>
+
+            <td>Melee, Missile, Fire-breath</td>
+        </tr>
+
+        <tr>
+            <td>Damage</td>
+
+            <td>Bruise, Gash, Burn, Pop, Crumble</td>
+        </tr>
+
+        <tr>
+            <td>Motion</td>
+
+            <td>Bi-Ped, Quadra-ped, Wheeled</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Examples of composed models</h3>
+
+<p>By creating a well-defined set of base models, you can design more complex models by mix-in.
+Some examples of such composed models might be:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Composed model</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Fire breathing cow</td>
+
+            <td>mix-in a visual, attack, and damage model.</td>
+        </tr>
+
+        <tr>
+            <td>Walking bear</td>
+
+            <td>mix-in a visual, AI, and motion model.</td>
+        </tr>
+
+        <tr>
+            <td>Stone dragon that cannot be cut, but will crumble</td>
+
+            <td>mix in a visual and damage model</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Runtime composition</h3>
+
+<p>A very different kind of composability is one that can be changed at run time. This is
+accomplished by having a character contain a set of other entities that provide additional
+capabilities. The container would delegate actions to the dynamically composed entities to achieve
+incrementally more abilities. This kind of composability would require more work to develop and
+tune, and would consume more runtime resources. But for some kinds of games it is required for
+character development or expansion packs.</p>
+
+<h2>Composition Examples</h2>
+
+<h3>A fire-breathing bear.</h3>
+
+<p>We want to add a dangerous fire-breathing bear to our game. The bear model is a composition of
+an Actor, which is an mobile entity in our world, and FireBreath that defines what it means for an
+entity to breath fire.</p>
+
+<h4>Use a base model for all Actors</h4>
+
+<p>The Emergent Standard Model Library contains a model that represents an animated entity in the
+scene called <em>Actor</em>. An actor is an entity model that represent an entity with a set of
+animation sequences. We compose the Actor out of a Renderable that defines visibility, Shadowable
+that defines whether the actor can cast or receive shadows, and a BaseEntity model that defines
+virtual functions common to all entities.</p>
+
+<div class="FigureContainer">
+    <img src="images/Actor.png" width="429" height="411" alt="Actor (20K)">
+</div>
+
+<h4>Create a Bear actor model</h4>
+
+<p>Now we define our bear model. The Bear model mixes in the Actor model. We want to identify which
+animation to play when the bear is at rest and when it is moving. We extend our Actor model and add
+two new properties to define these animations. Alternatively we could model these animations as a
+single property that changes at runtime depending on the state of our bear.</p>
+
+<div class="FigureContainer">
+    <img src="images/BearModel.png" width="201" height="385" alt="BearModel (10K)">
+</div>
+
+<h4>Define a Fire breath attack model</h4>
+
+<p>We don't want just any bear, we want a fire-breathing bear. To accomplish this we create another
+model that represent a fire-breath attack. This mixes in fire damage (with a damage duration and a
+damage amount) and fire particles for display (with particle range, falloff, cone diameter, and
+speed). We override the default particle information to provide reasonable default values for these
+properties.</p>
+
+<div class="FigureContainer">
+    <img src="images/FireBreathModel.png" width="308" height="390" alt="FireBreathModel (14K)">
+</div>
+
+<p align="center"><img src="FireBreathModel.png"></p>
+
+<h4>Create our FireBreathingBear model</h4>
+
+<p>Now we combine the non-fire breathing bear model with the fire breath attack model to create our
+fire-breathing bear. We override the default damage and increase it to 225 to indicate this is a
+powerful attack. We also override the particle range and reduce it from 20 to 10 to indicate our
+fire-breathing bear can't breath as far as, say, a dragon. We override the default 'DamageTarget'
+behavior to play the appropriate animation when our bear attacks and to apply damage to any entity
+within range.</p>
+
+<div class="FigureContainer">
+    <img src="images/FireBreathingBearFull.png" width="536" height="519" alt=
+    "FireBreathingBearFull (32K)">
+</div>
+
+<p>There is still work to do with our FireBreathingBear. We have to define the position where the
+fire-breath attack originates. These values are updated as we move around the scene; we can do this
+either in script as part of handling entity movement or as a built-in property model that is
+updated by a controlling entity. We need to identify any enemies that are in range of the attack.
+We need a way to indicate the attack is complete and update the state of our bear(s)
+appropriately.</p>
+
+<p>The full object model for our Fire breathing bear might look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/FireBreathingBearFull.png" width="536" height="519" alt=
+    "FireBreathingBearFull (32K)">
+</div>
+
+<h3>Fire-breathing bear revisited</h3>
+
+<p>A different approach would be to design the Bear to have a collection of spells.</p>
+
+<h4>Define a Spell model</h4>
+
+<p>Each spell would be implemented as a separate Model (for example FireSpellModel).</p>
+
+<div class="FigureContainer">
+    <img src="images/FireSpell.png" width="349" height="319" alt="FireSpell (14K)">
+</div>
+
+<h4>Create a magic user model</h4>
+
+<p>When the magic user "learns" the fire spell an instance of the fire spell entity is created and
+added to the entity's spell list, which is a collection of EntityIDs. The magic user model.</p>
+
+<div class="FigureContainer">
+    <img src="images/MagicUser.png" width="122" height="85" alt="MagicUser (2K)">
+</div>
+
+<h4>Mix-in the magic user model with the bear model</h4>
+
+<p>We create a magic-using bear by mixing in the magic user model with the bear model. Since all
+spell entities have the same BaseSpell model, the bear (or more generally the magic user) would
+call the CastSpell Behavior of the desired spell enitity. The spell entity would contain spell
+effects, and could reach back and modify the bear to subtract mana.</p>
+
+<div class="FigureContainer">
+    <img src="images/MagicUsingBear.png" width="276" height="265" alt="MagicUsingBear (9K)">
+</div>
+
+<p>The full object model for our magic-using bear might look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/MagicUsingBearFull.png" width="617" height="559" alt=
+    "MagicUsingBearFull (35K)">
+</div>
+
+<h4>The shovel example</h4>
+
+<p>A character has a backpack. He adds a shovel to his inventory, and the handle now shows sticking
+out.</p>
+
+<p>The AddToInventory behavior looks up the "backpack", and adds the Shovel's EntityId to the
+inventory list. The AddToInventory behavior on the character or the backpack or the BeAdded
+behavior on the shovel finds the most containing Entity. The behavior then calls a
+SceneGraphService built-in (AttachSceneGraph), to add a shovel-handle bump to the character's
+mesh.</p>
+
+<p>The shovel-handle is relative to the biped, but the asset used to draw it is associated with the
+Shovel object, so it is easier to add content to a game, and organize it.</p>
+
+<h4>Trigger system example</h4>
+
+<p>A concrete trigger model is composed of two models: a source and a response.</p>
+
+<p>Various sources might be collision, level start, passage of time, entity destruction, and so
+on.</p>
+
+<p>Various responses might be spawn an entity, play a sound, activate remote triggers, property
+change on a given entity, and so on.</p>
+
+<p>By using the extends trait on the DoResponse behavior, any number of response models can be
+mixed into a concrete trigger, and each response will run in turn when that behavior is
+invoked.</p>
+
+<p>Note that using composition like this allows entirely new types of entities to be composed out
+of existing models without writing any more script.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_models_overview.htm">Models overview</a></li>
+    <!--<li><a href="entity_models_how_relates_efr.htm">How models relates to the Emergent Game Framework</a></li>-->
+
+    <li><a href="entity_models_best_practice.htm">Best practices for working with models</a></li>
+
+    <li><a href="entity_models_principles.htm">Modeling Principles</a></li>
+
+    <li><a href="entity_models_using.htm">Using models</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

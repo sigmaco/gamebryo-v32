@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+<title>Toolbench Plug-in Architecture</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="AudioKinetic/Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Toolbench Plug-in Architecture</h1>
+
+<p>
+    Below is an overview of the Toolbench plug-in architecture along with a 
+    description of the core concepts one must be familiar with in order to 
+    understand how the tool was designed and should be used. The goal of this 
+    section is not to explain how to write plug-ins. For more information on plug-in 
+    development refer to the
+    <a href="../../Programmer/Toolbench/efr_toolbench_createplugin.htm">Toolbench 
+    programmer&#39;s guide</a>.</p>
+
+<h2>Toolbench Kernel</h2>
+
+<p>
+    Toolbench, by design, does not provide a lot of functionality out of the box. The 
+    core of Toolbench (the Toolbench kernel) upon which all plug-ins are written, 
+    consists of various interfaces and low level helper classes useful to all 
+    plug-ins. The primary role of the Toolbench kernel is to manage the loading of 
+    plug-ins, the methods by which plug-ins communicate with one another, and the 
+    dependencies between plug-ins.</p>
+    <p>
+        When an application is written using the Toolbench architecture, the entry point 
+        for said application is actually a plug-in as well. When the Toolbench kernel is 
+        loaded, it scans the plug-in registry for any &quot;runnable&quot; plug-ins. A runnable 
+        plug-in contains specialized code and serves as an application's entry point. 
+        The Workbench plug-in is an example of a runnable plug-in since it provides the 
+        core user interface (UI) entry point for any Toolbench application requiring UI 
+        elements.</p>
+    <p>
+        It is important to note that runnable plug-ins may also be completely command 
+        line driven. For example, if one were to create a asset build plug-in meant to 
+        run from the command line one could do so while still leveraging the additional 
+        plug-ins used to process assets in the UI version of the tool.</p>
+
+<h3>Plug-in manifest</h3>
+    <p>The plug-in manifest is simply an XML file with an associated schema. The 
+        manifest contains important information and is used as the basis for delayed 
+        loading of Toolbench plug-ins. When the Toolbench kernel is loaded, it 
+        determines what plug-ins are available but scanning a plug-ins folder for any 
+        available plug-in manifest files. However, Toolbench only loads the plug-ins that are 
+        necessary based on what the user is currently working on. For example, when 
+        Toolbench first loads very few plug-ins have actually been loaded and 
+        initialized. This allows 
+        a large federation of plug-ins in addition to facilitating fast start up 
+        times for the user. </p>
+    <p>As the user begins working on various pieces of game content, additional plug-ins 
+        are loaded on demand as needed. Additional information may be found in the 
+        programmer's guide for the
+        <a href="../../Programmer/Toolbench/efr_manifest_plugin.htm">plug-in manifest</a>.</p>
+    
+<h3>Extension points</h3>
+    <p>Extension points are used by plug-ins to define functionality extendable by other 
+        plug-ins. Extension points are identified by a unique name (usually the fully 
+        qualified path of the plug-in plus the extension point name) and an associated 
+        schema. The schema is used by the extension point to define the expected 
+        interface and data required by plug-ins who choose to attach new functionality 
+        to the extension point.</p>
+    <p>The Toolbench kernel manages a repository of extension points such that a given 
+        plug-in may query for all plug-ins implementing a given extension point. For 
+        additional information on extension points refer to the programmer's guide for
+        <a href="../../Programmer/Toolbench/efr_manifest_plugin_extensionpoint.htm">
+        extension points</a>.</p>
+
+<h3>Extensions</h3>
+    <p>Extensions are the means by which plug-ins contribute functionality to Toolbench. 
+        As stated above, everything in Toolbench is a plug-in. Plug-ins must provide 
+        extension points for other plug-ins to hook into via extensions. The extension 
+        and extension point system is designed to provide absolute flexibility for 
+        plug-ins to define whatever information is necessary for one plug-in to talk to 
+        another. For additional information on plug-in extensions refer to the 
+        programmer's guide for
+        <a href="../../Programmer/Toolbench/efr_manifest_plugin_extension.htm">
+        extensions</a>.</p>
+
+<h2>Workbench Plug-in</h2><a name="Workbench"></a>
+    <p>
+        The Workbench plug-in provides the primary entry points for other plug-ins 
+        wishing to add UI elements to Toolbench. UI elements include toolbars, menus, views, 
+        icons, and any other constructs necessary for user interaction.</p>
+    <p>
+        Workbench groups UI elements into various 
+        <a href="tb_fundmtls_ui_main.htm">perspectives</a> which target a given task 
+        at hand. The easiest perspective paradigm to understand is the document 
+        perspective. The Workbench UI is dynamically generated based on several factors, 
+        one of which is the document perspective. The document perspective refers to the 
+        currently active document where different documents may require different UI 
+        elements to be present. This design allows for a cleaner UI since only the 
+        applicable UI elements are present for a given document. For example, when using 
+        the <a href="../EntityModelingTool/emt_intro.htm">Entity Modeling Tool</a>, 
+        certain UI elements like toolbars and menus contain commands that are 
+        meaningless when working in <a href="../WorldBuilder/wb_intro.htm">World Builder</a>. 
+        For more information on the Workbench plug-in, refer to the
+        <a href="tb_fundmtls_ui_main.htm">Toolbench UI overview</a>. The
+        <a href="../../Programmer/Toolbench/efr_toolbench_workbench.htm">Workbench 
+        documentation</a> under the programmer's guide section provides a more in depth 
+        view in terms of how the system is actually implemented.
+        Below is a high level overview showing how the Toolbench kernel, Workbench 
+        plug-in, and user contributed plug-ins relate to each other.</p>
+        
+    <div class="FigureContainer">
+        <img alt="" src="./images/tb_architecture_highlevel.png" 
+            width="513" height="231" />
+            <p class="FigureCaption">Toolbench plug-in overview</p>
+    </div> 
+    
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

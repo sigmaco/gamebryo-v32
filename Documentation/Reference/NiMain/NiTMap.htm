@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTMap</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiTMap</p>
+
+<p class="NDLRefHeaderFile">: public <span><a href="NiTMapBase.htm">NiTMapBase</a></span></p>
+
+<p class="NDLRefHeaderFile">&lt;NiTMap.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>A mapping or hash table, allowing keys of pointer size to map to objects of any type. Also forms
+a base class for a related string key-based map. Applications must not use this class for
+string-based maps, but should instead use the subclass <span class="NDLSystemFont"><a href=
+"NiTStringMap.htm">NiTStringMap</a></span>. See below for restrictions on the templated types
+<span class="NDLSystemFont">TKEY</span> and <span class="NDLSystemFont">TVAL</span>. Prefer
+<a href="NiTPointerMap.htm"><span class="NDLSystemFont">NiTPointerMap</span></a> or <a href=
+"NiTStringPointerMap.htm"><span class="NDLSystemFont">NiTStringPointerMap</span></a> if
+sizeof(TVAL) is 4 bytes; those classes automatically block allocate elements, improving performance
+and memory use. Prefer <span class="NDLSystemFont"><a href=
+"NiTFixedStringMap.htm">NiTFixedStringMap</a></span> if the keys are <span class=
+"NDLSystemFont"><a href="NiFixedString.htm">NiFixedString</a></span> objects.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiTMap(NiUInt32 uiHashSize = 37);</p>
+
+<p class="NDLRefMemberDescription">The argument (if supplied) for this default constructor
+determines the number of slots in the hash table. This number should be on the order of the number
+of items that are expected to be in the table at any time. The number should be prime, as such a
+selection will maximize performance. The table may hold any number of items, no matter what its
+hash size is. However, using a hash size that is larger than is recommended will tend to waste
+memory. Similarly, using a smaller table will decrease performance.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetCount() const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of key-value pairs that are currently in the
+map.</p>
+
+<p class="NDLRefMemberFunction">bool IsEmpty() const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class="NDLSystemFont">true</span> if there are no
+elements in the map, <span class="NDLSystemFont">false</span> otherwise</p>
+
+<p class="NDLRefMemberFunction">bool GetAt(TKEY key, TVAL&amp; val) const</p>
+
+<p class="NDLRefMemberDescription">Returns <span class="NDLSystemFont">true</span> if there is a
+value for the given key in the map. If <span class="NDLSystemFont">true</span> is returned, then
+the <span class="NDLSystemFont">val</span> argument holds the value associated with the given
+<span class="NDLSystemFont">key</span>.</p>
+
+<p class="NDLRefMemberFunction">void SetAt(TKEY key, TVAL val)</p>
+
+<p class="NDLRefMemberDescription">Sets the given <span class="NDLSystemFont">key-val</span> pair
+in the map, replacing any old value associated with the key (if the key already existed in the
+map).</p>
+
+<p class="NDLRefMemberFunction">bool RemoveAt(TKEY key)</p>
+
+<p class="NDLRefMemberDescription">Removes the <span class="NDLSystemFont">key val</span> pair for
+the given key from the map. Returns <span class="NDLSystemFont">true</span> if there was a
+key-value pair for the given <span class="NDLSystemFont">key</span> in the map, or <span class=
+"NDLSystemFont">false</span> otherwise.</p>
+
+<p class="NDLRefMemberDescription">Note that this function will not delete objects pointed to by
+regular pointers (if TVAL is a regular pointer type), but will decrement the reference count of an
+object if the associated data was a smart pointer.</p>
+
+<p class="NDLRefMemberFunction">void RemoveAll()</p>
+
+<p class="NDLRefMemberDescription">Removes all pairs from the list, with the same deletion behavior
+as for <span class="NDLSystemFont">RemoveAt</span>.</p>
+
+<p class="NDLRefMemberFunction">NiTMapIterator GetFirstPos() const</p>
+
+<p class="NDLRefMemberDescription">Returns an iterator pointing to the first pair in the map (if
+the map is viewed as a linear list)</p>
+
+<p class="NDLRefMemberFunction">void GetNext(NiTMapIterator&amp; pos, TKEY&amp; key, TVAL&amp; val)
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the <span class="NDLSystemFont">key</span> and
+<span class="NDLSystemFont">val</span> in the map to which the iterator points, and <em>then</em>
+moves the iterator to the next item. Returns the iterator as <span class=
+"NDLSystemFont">NULL</span> if there are no more pairs in the map following the one returned by
+this call. Must <em>not</em> be called with a <span class="NDLSystemFont">NULL</span>
+<em>iterator</em>.</p>
+
+<p class="NDLRefMemberFunction">void Resize(NiUInt32 uiNewHashSize)</p>
+
+<p class="NDLRefMemberDescription">Resize the map. The hash table of the map is resized to the
+given size (which must be non-zero), and all of the entries in the map are re-mapped to new
+locations. Any iterators will be invalid after this operation. Note that this operation is
+expensive for large maps&mdash;the cost is at least linear in the number of entries.</p>
+
+<a name="TemplateRestrictions" id="TemplateRestrictions"></a><p class="NDLRefHead1">Template Classes and Restrictions</p>
+
+<p>The <span class="NDLSystemFont">NiTMap</span> class is declared with the following template
+types:</p>
+<pre>
+template &lt;class TKEY, class TVAL,
+    class THASH = NiTMapHashFunctor&lt;TKEY&gt;,
+    class TEQUALS = NiTMapEqualsFunctor&lt;TKEY&gt; &gt; class NiTMap
+</pre>
+
+<p>The <span class="NDLSystemFont">TKEY</span> class has the following restrictions:</p>
+
+<ul>
+    <li>It must be the same size as a pointer (<span class="NDLSystemFont">size_t</span>). This
+    enables a memory optimization that significantly reduces the size of the table. If you would
+    like keys of a larger size, store pointers to keys and write custom hash and equality classes
+    (below).</li>
+
+    <li>It must have a default constructor, <span class="NDLSystemFont">TKEY::TKEY()</span></li>
+
+    <li>It must have a copy constructor, <span class="NDLSystemFont">TKEY::TKEY(const
+    TKEY&amp;)</span></li>
+
+    <li>It must have the assignment operator, <span class="NDLSystemFont">TKEY&amp; operator=(const
+    TKEY&amp;)</span></li>
+
+    <li>It must have the equality operator, <span class="NDLSystemFont">bool TKEY::operator==(const
+    TKEY&amp;)</span>, or you can supply a class to do the equality comparison (see <span class=
+    "NDLSystemFont">EQUALS</span> below).</li>
+
+    <li>It must have implicit conversion to an unsigned int, <span class=
+    "NDLSystemFont">TKEY::operator size_t()</span>, for building the hash key, or you can define a
+    class to create the hash key using the <span class="NDLSystemFont">HASH</span> template
+    class.</li>
+</ul>
+
+<p>The <span class="NDLSystemFont">TVALUE</span> class has the following restrictions:</p>
+
+<ul>
+    <li>It must have a default constructor, <span class="NDLSystemFont">TVAL::TVAL()</span></li>
+
+    <li>It must have a copy constructor, <span class="NDLSystemFont">TVAL::TVAL(const
+    TVAL&amp;)</span></li>
+
+    <li>It must have the assignment operator, <span class="NDLSystemFont">TVAL&amp; operator=(const
+    TVAL&amp;)</span></li>
+</ul>
+
+<p>The compiler-generated default constructor, copy constructor, and assignment operator are
+acceptable for both <span class="NDLSystemFont">TKEY</span> and <span class=
+"NDLSystemFont">TVALUE</span>.</p>
+
+<p>The THASH class must implement the following function:</p>
+
+<p><span class="NDLSystemFont">static unsigned int THASH::KeyToHashIndex(TKEY key, unsigned int
+uiTableSize)</span></p>
+
+<p>The function takes a key and the size of the table and must return the index for that key in the
+hash table, which must be greater than or equal to 0 and less than <span class=
+"NDLSystemFont">uiTableSize</span>. It implements a hash function, and should be carefully designed
+to ensure that the various keys that will go in the map are evenly distributed among the map
+entries. The default hash function for <span class="NDLSystemFont">NiTMap</span> and <span class=
+"NDLSystemFont"><a href="NiTPointerMap.htm">NiTPointerMap</a></span> is:</p>
+
+<p><span class="NDLSystemFont">(unsigned int) (((size_t) key) % uiTableSize)</span></p>
+
+<p>The TEQUALS class must implement the following function:</p>
+
+<p><span class="NDLSystemFont">bool TEQUALS::IsKeysEqual(TKEY key1, TKEY key2)</span></p>
+
+<p>The function should return true if the keys are equal for the purposes of the hash table, or
+false if not. The default class uses <span class="NDLSystemFont">operator==</span>.</p>
+
+<p class="NDLRefHead1">Supported Static Functions</p>
+
+<p class="NDLRefMemberFunction">static NiUInt32 NextPrime(const NiUInt32 uiTarget)</p>
+
+<p class="NDLRefMemberDescription">Tries to return a prime larger than <span class=
+"NDLSystemFont">uiTarget</span>. The largest prime it will return is 999983. This is a convenience
+function to generate a value to initialize the map size to in the constructor.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

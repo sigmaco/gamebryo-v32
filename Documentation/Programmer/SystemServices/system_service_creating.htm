@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a system service</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a system service</h1>
+
+<p>Applications are expected to extend the set of available system services by creating their own.
+When you create a system service, you must inherit from the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></span> base class, identify
+any other required system services during <span class="NDLSystemFont">OnPreInit</span>, and
+override other <span class="NDLSystemFont">ISystemService</span> methods to perform the work of your
+service.</p>
+
+<p class="NDLHeadingProcedure">To create a system service</p>
+
+<ol>
+    <li>Create a class that inherits from the <span class="NDLSystemFont">efd::ISystemService</span>
+        interface. Each system service must implement the Foundation RTTI which requires a unique
+        class identifier. Further, the ClassID range allowed by services is reduced to values less
+        than <span class="NDLSystemFont">EE_INTERNAL_SERVICE_MAX</span>. All services must support
+        reference counting semantics. This implies that all system services must be allocated from
+        the heap and should be assigned to a smart pointer when allocated. The Service Manager will
+        hold a reference to the service once the service is registered.
+
+        <p class="indent1">In LogService.h:</p>
+        <pre>
+class LogService : public efd::ISystemService 
+{
+    EE_DECLARE_CLASS1(LogService, efd::kCLASSID_LogService, efd::ISystemService); 
+    EE_DECLARE_CONCRETE_REFCOUNT;
+    ...
+};
+typedef efd::SmartPointer&lt;LogService&gt; LogServicePtr;
+</pre>
+    </li>
+
+    <li>Override any <span class="NDLSystemFont">efd::ISystemService</span> methods that you need to
+    do your work. Use <span class="NDLSystemFont">OnPreInit</span> and <span class="NDLSystemFont">
+    OnInit</span> to handle initial startup of the application process. The <span class=
+    "NDLSystemFont">OnTick</span> method is called repeatedly as your application runs. <span
+    class="NDLSystemFont">OnShutdown</span> will be called when the process is exiting.
+
+        <p class="indent1">In LogService.h:</p>
+        <pre>
+public:
+    virtual efd::SyncResult OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar);
+    virtual efd::AsyncResult OnInit();
+    virtual efd::AsyncResult OnTick();
+    virtual efd::AsyncResult OnShutdown();
+    virtual const char* GetDisplayName() const;
+</pre>
+
+        <p class="indent1">In LogService.cpp:</p>
+        <pre>
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(LogService);
+
+LogService::LogService()
+{
+    // The m_defaultPriority is inherited from efd::ISystemService and should be set to the default
+    // service priority during the constructor.
+    m_defaultPriority = 800;
+}
+
+efd::SyncResult LogService::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar)
+{
+    // Depend on the message service so it will initialize before our service and remain avilable
+    // until after we complete OnShutdown.
+    pDependencyRegistrar->AddDependency&lt;MessageService&gt;();
+    
+    // we use the message service extensively so keep a reference to it.
+    m_spMessageService = m_pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+
+    // Register log service message factories and subscribe to messages.
+    ...
+    
+    // return Success to indicate we are done with PreInit.
+    return efd::SyncResult_Success;
+}
+
+efd::AsyncResult LogService::OnInit()
+{
+    // Because of our dependency, MessageService is already initialized so we can its methods
+    m_netid = m_spMessageService-&gt;GetNetID();
+
+    // Indicate we are done with initialization. 
+    return efd::AsyncResult_Complete;
+}
+
+efd::AsyncResult LogService::OnTick()
+{
+    // do the main work of the service.
+    
+    // Indicate we have more work to do by returning efd::ASyncResult_Pending
+    // otherwise return efd::ASyncResult_Complete. Once complete the 
+    // service manager will no longer tick this service.The service manager 
+    // will eventually call OnShutdown to give the service a chance to perform 
+    // any additional cleanup before destruction.
+    return efd::AsyncResult_Pending;
+}
+
+efd::AsyncResult LogService::OnShutdown()
+{
+    // perform any necessary cleanup before the system service is deleted.
+    ...
+
+    // Any cached service pointers should be freed during OnShutdown
+    m_spMessageService = NULL;
+
+    // Note that OnShutdown is an asynchronous method. The service manager
+    // will continue to call OnShutdown until either AsyncResult_Complete
+    // or AsyncResult_Failure is returned.
+    return efd::AsyncResult_Complete;
+}
+
+const char* LogService::GetDisplayName() const 
+{ 
+    return "LogService";
+}
+</pre>
+    </li>
+
+    <li>Create an instance of the system service and register the service with the Service Manager.
+    The priority controls the order in which the Service Manager executes system services, where
+    services with higher priorities are executed first. Registered services that have the same
+    priority are executed in arbitrary order with respect to each other. You may optionally override
+    the default priority when calling <span class="NDLSystemFont">RegisterSystemService</span> by
+    passing a second parameter.
+<pre>
+// Assumes you have a pointer to the Service Manager "pServiceManager"
+LogServicePtr pService = EE_NEW LogService();
+EE_ASSERT(pService != 0); 
+
+pServiceManager-&gt;RegisterSystemService(pService);
+</pre>
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="system_service_modifying.htm">Modifying a system service</a></li>
+    <li><a href="system_service_deleting.htm">Deleting a system service</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efdLogService/efd__LogService.htm">efd::LogService</a></li>
+    <li><a href="../../Reference/efd/efd__MessageService.htm">efd::MessageService</a></li>
+</ul>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

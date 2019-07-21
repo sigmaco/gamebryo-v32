@@ -1,0 +1,438 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiCamera</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiCamera</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiAVObject.htm"><span>NiAVObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiCamera.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiCamera</span> objects represent
+cameras in the scene graph. They have no inherent geometric
+representation, but use their parents' transforms to determine
+their location and orientation in world space. This organization
+enables cameras in Gamebryo to be attached to scene graph objects
+and automatically follow them for "in-car" cameras and
+"missile-cams". See the <a href=
+"../../Programmer/General_Topics/Cameras.htm">camera
+documentation</a> for details on the camera model in
+Gamebryo.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiCamera()</p>
+
+<p class="NDLRefMemberDescription">Default constructor.
+Constructs a perspective camera with the following default
+settings:</p>
+<!--(Table)=========================================================-->
+
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Variable</th>
+
+                <th>Default Setting</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>Frustum (L, R, T, B, N, F,O)</td>
+
+                <td>-0.5, 0.5, 0.5, -0.5, 1.0, 2.0, false</td>
+            </tr>
+
+            <tr>
+                <td>Port (L, R, T, B)</td>
+
+                <td>0.0, 1.0, 1.0, 0.0</td>
+            </tr>
+
+            <tr>
+                <td>Minimum near plane distance</td>
+
+                <td>0.1</td>
+            </tr>
+
+            <tr>
+                <td>Maximum far-to-near distance ratio</td>
+
+                <td>10,000</td>
+            </tr>
+
+            <tr>
+                <td>LOD Adjust</td>
+
+                <td>1.0</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<a name="Camera_World_Information" id="Camera_World_Information"></a><p class="NDLRefHead2">Camera World Information</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; GetWorldLocation() const</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiPoint3.htm">NiPoint3</a> GetWorldDirection() const</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiPoint3.htm">NiPoint3</a> GetWorldUpVector() const</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiPoint3.htm">NiPoint3</a> GetWorldRightVector() const</p>
+
+<p class="NDLRefMemberDescription">Retrieve the world-space
+versions of the various camera basis vectors. These camera basis
+vectors represent the coordinate system in which the view
+coordinates (and the view itself) are defined. They correspond to
+the model-space origin, model-space X-axis, model-space Y-axis,
+and model-space Z-direction, respectively. The directions are
+updated during each <span class="NDLSystemFont">Update</span>
+pass that passes through the camera object.</p>
+
+<a name="View_Frustum_Functions" id="View_Frustum_Functions"></a><p class="NDLRefHead2">View Frustum Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiFrustum.htm">NiFrustum</a>&amp; GetViewFrustum() const</p>
+
+<p class="NDLRefMemberFunction">void SetViewFrustum(const
+<a href="NiFrustum.htm">NiFrustum</a>&amp; kFrustum)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the view
+frustum parameters. The values for the near and far view frustum
+planes are checked to conform to the minimum near plane distance
+and maximum far-to-near-plane-distance ratio defined for the
+<span class="NDLSystemFont">NiCamera</span> class. The near plane
+is adjusted if the settings do not conform. The mechanism for the
+check is as follows: if the near plane value is less than the new
+far plane divided by the maximum far-to-near ratio (set with
+functions below), then the near plane is set to be the new far
+plane divided by the maximum ratio. If this value for the near
+plane is less than the minimum near plane distance value, it is
+increased to the minimum value. The control values for this check
+can be set using the <span class=
+"NDLSystemFont">SetMinNearPlaneDist</span> and <span class=
+"NDLSystemFont">SetMaxFarNearRatio</span> functions described
+later.</p>
+
+<p class="NDLRefMemberFunction">bool FitNearAndFarToBound(const
+<a href="NiBound.htm">NiBound</a>&amp; kBound)</p>
+
+<p class="NDLRefMemberDescription">Fits the near and far planes
+of the current camera (the camera is assumed to have been updated
+prior to the call) to be tangent to a given world-space bound. If
+the sphere is entirely behind the camera, then the planes will
+not be changed and the function will return <span class=
+"NDLSystemFont">false.</span> If the computed near plane value is
+less than the new far plane divided by the maximum far-to-near
+ratio (set with functions below), then the near plane is set to
+be the new far plane divided by the maximum ratio.</p>
+
+<p class="NDLRefMemberDescription">This approach avoids creating
+a near and far plane ratio that is too large for Z-buffer and
+projection accuracy. The function returns <span class=
+"NDLSystemFont">true</span> on success, and the planes will have
+been updated (<span class="NDLSystemFont">Update</span> need not
+be called upon the camera after a call to this function).</p>
+
+<p class="NDLRefMemberDescription">NOTE: this function is
+designed for use with viewer, editor, and CAD-like applications,
+where a single object is to be viewed in it entirety. It should
+not be used to set the near and far distances in interior games
+and large exterior databases. In the former case, the application
+should use knowledge of the database to limit the far distance to
+whatever could be seen from the current room. In the latter case,
+fogging or line-of-sight should be used to limit the far plane
+distance.</p>
+
+<p class="NDLRefMemberFunction">float GetMinNearPlaneDist()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetMinNearPlaneDist(float
+fMin)</p>
+
+<p class="NDLRefMemberDescription">Set and retrieve the minimum
+view frustum near plane distance. The Gamebryo default is
+<span class="NDLSystemFont">0.1</span>.</p>
+
+<p class="NDLRefMemberFunction">float GetMaxFarNearRatio()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetMaxFarNearRatio(float
+fMax)</p>
+
+<p class="NDLRefMemberDescription">Set and retrieve the maximum
+ratio for a view-frustum's far vs. near plane distance. The
+Gamebryo default value is <span class=
+"NDLSystemFont">10,000</span>.</p>
+
+<p class="NDLRefMemberFunction">void AdjustAspectRatio(float
+fTargetAspectRatio, bool bAdjustVerticalDims = false)</p>
+
+<p class="NDLRefMemberDescription">Adjust the camera to the
+target aspect ratio. By default, the horizontal dimensions of the
+frustum will be altered. Passing true for bAdjustVerticalDims
+will fix the horizontal and adjust the vertical dimensions of the
+frustum.</p>
+
+<a name="View_Port_Functions" id="View_Port_Functions"></a><p class="NDLRefHead2">View Port Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; GetViewPort() const</p>
+
+<p class="NDLRefMemberFunction">void SetViewPort(const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; kPort)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the port on
+the backbuffer to which the view frustum is mapped. The left edge
+of the backbuffer is <span class="NDLSystemFont">0.0</span>; the
+right edge is <span class="NDLSystemFont">1.0</span>. The top
+edge of the backbuffer is <span class="NDLSystemFont">1.0</span>;
+the bottom edge is <span class="NDLSystemFont">0.0</span>. All of
+these values must be between <span class=
+"NDLSystemFont">0.0</span> and <span class=
+"NDLSystemFont">1.0</span>and are not error-checked.</p>
+
+<a name="Point_Mapping_Functions" id="Point_Mapping_Functions"></a><p class="NDLRefHead2">Point Mapping Functions</p>
+
+<p class="NDLRefMemberFunction">bool LookAtWorldPoint(const
+<a href="NiPoint3.htm">NiPoint3</a>&amp; kWorldPt, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldUp)</p>
+
+<p class="NDLRefMemberDescription">This function changes the
+local rotation matrix of the given camera so that the camera is
+looking at the given world-space point, with an up vector that is
+as close as possible to the given world-space up vector. This
+function will work even if the camera is not the root of a scene
+graph (i.e. it has parent transforms), but the camera must be
+up-to-date (i.e. Update must have been called on the camera or an
+ancestor since the last transform change). The function returns
+false if it cannot satisfy the given request, which, for example,
+might occur when the given world-space location is equal to the
+camera location, or true on success.</p>
+
+<p class="NDLRefMemberFunction">bool WorldPtToScreenPt(const
+<a href="NiPoint3.htm">NiPoint3</a>&amp; kPt, float&amp; fBx,
+float&amp; fBy, float fZeroTolerance = 1e-5f) const</p>
+
+<p class="NDLRefMemberDescription">Projects the given point to
+the screen. Returns <span class="NDLSystemFont">true</span> if
+the point can be projected and the projection is within the
+camera's view, or <span class="NDLSystemFont">false</span>
+otherwise. The returned point is normalized to the backbuffer
+size, not port size. However, the port is taken into account
+during the calculation. The left edge of the backbuffer is
+<span class="NDLSystemFont">0.0</span>; the right edge is
+<span class="NDLSystemFont">1.0.</span> The top edge of the
+backbuffer is <span class="NDLSystemFont">1.0</span>; the bottom
+edge is <span class="NDLSystemFont">0.0</span>. Note that this
+coordinate system is flipped vertically relative to the
+coordinate system used by <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span>.
+The final argument (<span class=
+"NDLSystemFont">fZeroTolerance</span>) allows the caller to
+specify the desired near plane distance, behind which the
+function will return <span class="NDLSystemFont">false</span>.
+<span class="NDLSystemFont">fZeroTolerance</span> must be greater
+than or equal to zero. The function clamps this value to that
+range internally for safety.</p>
+
+<p class="NDLRefMemberDescription">Regardless of the return value
+of the function, the values in fBx and fBy will be valid for any
+point that passes the near plane distance test. A failure of the
+near plane test will return false and have the value FLT_MAX in
+fBx and fBy. Additionally, note that even though the returned
+coordinates are normalized to the backbuffer, the view port is
+taken into account. Thus, a point that projects to the lower left
+corner of the camera frustum in normalized device coordinates
+will map to the lower left corner of the view port in backbuffer
+coordinate space. For example, if the view port is <span class=
+"NDLSystemFont">{0.25, 0.75, 0.75, 0.25}</span> a point projected
+to the lower left corner would return <span class=
+"NDLSystemFont">0.25</span> and <span class=
+"NDLSystemFont">0.25</span> rather than <span class=
+"NDLSystemFont">0.0</span> and <span class=
+"NDLSystemFont">0.0</span>.</p>
+
+<p class="NDLRefMemberFunction">bool WorldPtToScreenPt3(const
+<a href="NiPoint3.htm">NiPoint3</a>&amp; kPt, float&amp; fBx,
+float&amp; fBy, float&amp; fBz, float fZeroTolerance = 1e-5f)
+const</p>
+
+<p class="NDLRefMemberDescription">Same as above, but also
+includes the Z value. The Z value is projected non-linearly such
+that values on the near plane of the camera frustum return a Z of
+<span class="NDLSystemFont">0.0</span> and values on the far
+plane of the camera frustum return Z of <span class=
+"NDLSystemFont">1.0</span>. Values inside the near-plane but
+greater than <span class="NDLSystemFont">fZeroTolerance</span>
+will return negative Z values.</p>
+
+<p class="NDLRefMemberFunction">bool WindowPointToRay(long lWx,
+long lWy, <a href="NiPoint3.htm">NiPoint3</a>&amp; kOrigin,
+<a href="NiPoint3.htm">NiPoint3</a>&amp; kDir, const <a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>* pkTarget =
+NULL) const</p>
+
+<p class="NDLRefMemberDescription">Maps a point in the window
+coordinate system of the rendering window (i.e. the coordinates
+returned by a windows mouse event) to a ray in world space. The
+<span class="NDLSystemFont">pkTarget</span> parameter indicates
+which <span class="NDLSystemFont"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span> the
+screen coordinates refer to. If it is <span class=
+"NDLSystemFont">NULL</span>, then the default render target group
+is used. The ray that is returned represents the ray whose
+projection is the center of the given pixel. This function is
+useful for 3D picking. The function returns false if the given
+point could not be back-projected (normally because the point was
+outside of the view port).</p>
+
+<p class="NDLRefMemberFunction">void ViewPointToRay(float fVx,
+float fVy, <a href="NiPoint3.htm">NiPoint3</a>&amp; kOrigin,
+<a href="NiPoint3.htm">NiPoint3</a>&amp; kDir) const</p>
+
+<p class="NDLRefMemberDescription">Maps a point in view frustum
+coordinates to a ray in world space. The input point
+(<span class="NDLSystemFont">fVx</span>, <span class=
+"NDLSystemFont">fVy</span>) is in frustum coordinates, with
+<span class="NDLSystemFont">frustum.L &lt;= fVx &lt;= frustum.R
+and frustum.B &lt;= fVy &lt;= frustum.T</span>. The output is the
+ray, in world coordinates, whose origin is the camera location
+and whose direction is from the camera origin to the world point
+corresponding to (<span class="NDLSystemFont">fVx</span>,
+<span class="NDLSystemFont">fVy</span>).</p>
+
+<a name="Sorting_Functions" id="Sorting_Functions"></a><p class="NDLRefHead2">Sorting Functions</p>
+
+<p class="NDLRefMemberFunction">void ScreenSpaceBoundBound(const
+<a href="NiBound.htm">NiBound&amp;</a> kS, <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kMinBound, <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kMaxBound, float fZeroTolerance
+= 1e-5f) const</p>
+
+<p class="NDLRefMemberDescription">Computes the smallest
+axis-aligned box in normalized projection coordinates
+(<span class="NDLSystemFont">near = 0.0</span>, <span class=
+"NDLSystemFont">far = 1.0</span>, <span class=
+"NDLSystemFont">left = -1.0</span>, <span class=
+"NDLSystemFont">right = 1.0</span>, <span class=
+"NDLSystemFont">bottom = -1.0</span>, <span class=
+"NDLSystemFont">top = 1.0</span>) containing the bounding sphere
+<span class="NDLSystemFont">kS</span>. Two diagonal corners of
+the box are <span class="NDLSystemFont">kMinBound</span> and
+<span class="NDLSystemFont">kMaxBound</span>. The final argument
+determines the minimum distance from the depth = 0 plane at which
+the projected size can be computed. If the bound center is closer
+than this distance to the depth = 0 plane, then the result will
+be marked as filling the entire screen.</p>
+
+<p class="NDLRefMemberFunction">void ScreenSpaceBoundSize(const
+<a href="NiBound.htm">NiBound&amp;</a> kS, <a href=
+"NiPoint2.htm">NiPoint2</a>&amp; kBoundSize, float fZeroTolerance
+= 1e-5f) const</p>
+
+<p class="NDLRefMemberDescription">Computes the dimensions of the
+smallest axis-aligned screen space rectangle (where an object
+whose bounding sphere exactly fits the screen has a bound size of
+<span class="NDLSystemFont">1.0</span>) that contains the
+perspective projection of the bounding sphere <span class=
+"NDLSystemFont">kS</span>. The final argument determines the
+minimum distance from the depth = 0 plane at which the projected
+size can be computed. If the bound center is closer than this
+distance to the depth = 0 plane, then the returned bound size
+will be <span class="NDLSystemFont">x = y =
+FLT_MAX</span>.</p>
+
+<a name="Transform_Functions" id="Transform_Functions"></a><p class="NDLRefHead2">Transform Functions</p>
+
+<p class="NDLRefMemberFunction">const float*
+GetWorldToCameraMatrix()</p>
+
+<p class="NDLRefMemberDescription">Returns the 4x4
+world-to-camera transform matrix in row-major order. This
+function enables an application to perform screen space
+measurements.</p>
+
+<a name="LOD_Adjustment" id="LOD_Adjustment"></a><p class="NDLRefHead2">LOD Adjustment</p>
+
+<p class="NDLRefMemberFunction">float GetLODAdjust() const</p>
+
+<p class="NDLRefMemberFunction">void SetLODAdjust(float
+fLODAdjust)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the
+Level-of-Detail adjustment value for the camera. This value is
+used by <span class="NDLSystemFont"><a href=
+"NiLODNode.htm">NiLODNode</a></span> objects to multiply the
+distance between the object whose LOD is being computed and the
+camera. A higher value for this setting will tend to lower the
+LOD of the objects drawn by the camera.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Cloning_Behavior" id="Cloning_Behavior"></a><p class="NDLRefHead2">Cloning Behavior</p>
+
+<p>When a camera is cloned by <span class=
+"NDLSystemFont"><a href="NiAVObject.htm">NiAVObject::Clone</a></span>,
+<span class="NDLSystemFont">NiCamera</span> creates a complete
+duplicate of the camera object.</p>
+
+<a name="Camera_Collisions" id="Camera_Collisions"></a><p class="NDLRefHead2">Camera Collisions</p>
+
+<p>It might be desired to have the camera collide with the scene
+geometry, to prevent it from moving inside of it, or to simulate
+a first-person viewpoint. As the camera has no geometry, either
+an ABV needs to be defined for it (preferred) or proxy geometry
+should be created to give it some volume.</p>
+
+<a name="Scale" id="Scale"></a><p class="NDLRefHead2">Scale</p>
+
+<p>Since NiCamera inherits from NiAVObject it is possible to
+change both the world and model scale on an NiCamera object.
+However, the renderers do not take the scale applied to a camera
+into consideration.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

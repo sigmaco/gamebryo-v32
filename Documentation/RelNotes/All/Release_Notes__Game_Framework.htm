@@ -1,0 +1,1045 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Game Framework Release Notes</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Game Framework Release Notes</h1>
+
+<a name="Added_Features_and_Fixed_Bugs" id="Added_Features_and_Fixed_Bugs"></a>
+<h2>Added Features, Changed Behavior, and Fixed Bugs</h2>
+
+<h3>Gamebryo LightSpeed 3.2</h3>
+
+<h4>Entity and behavior</h4>
+<ul>
+<li>New entity lifecycles were added for OnEnterWorld and OnExitWorld. By default created entities
+    will automatically enter the world in order to match legacy behavior, but may optionally be
+    created out of the world in order to better control when they begin to render and simulate.
+    Entities can be moved in and out of the world as many times as needed and the corresponding
+    lifecycles will execute on each transition. For further details, see
+    <a href="../../Programmer/Entities/entity_lifecycle.htm">Entity Lifecycles</a>.</li>
+
+<li>The <span class="NDLSystemFont">EntityManager</span> now sends two new local messages to inform
+    services as to when entities enter or exit the world. Services should consider listening to
+    these new messages instead of the current entity added and removed messages in order to avoid
+    spending time simulating entities that are out of the world. For details on these new messages,
+    see the <a href="..\..\Reference\QuickRef_Services\svc_qckref_entity_mgr.htm">Entity Manager
+    Quick Reference</a>.</li>
+
+<li>The OnCreate behavior now has an optional boolean parameter, named "AutoEnterWorld," to inform
+    the behavior whether the entity will automatically enter the world after OnCreate finishes. This
+    parameters is automatically handled by the framework itself so there is no required action.
+    This parameter can also be passed to various Entity creation methods such as <span class=
+    "NDLSystemFont">BehaviorAPI.CreateEntity</span> from script or to <span class="NDLSystemFont">
+    EntityManager::CreateEntity</span> from C++ to turn auto-entry on or off when dynamically
+    creating entities.</li>
+
+<li>Many memory growths during block loading have been fixed. Memory was previously being held
+    until shut down that should have been freed once the block was loaded.</li>
+
+<li>Callbacks associated with block loading and unloading are now more reliably invoked. In
+    particular, the callbacks used when a block was first loaded will now receive all messages
+    associated with the unloading of a block. Typically this means that the call to unload a block
+    will not need to pass a callback unless that callback is different from the one used when
+    loading the block. Using the same callback for both load and unload will now result in the
+    callback being invoked twice.</li>
+
+<li>When asynchronously creating an entity from either C++ or script you can now optionally provide
+    a list of initial property values that should be set on the entity as soon as it is created. In
+    many cases this can remove the need to implement an OnCreate behavior which provides improved
+    performance. For further details, see <a href="../../Programmer/Entities/entity_creating.htm">
+    Creating entities</a>.</li>
+
+<li>One entity may now be attached to another, so that its position will track that of the
+    target entity. The target must have a scene graph for this to functionality to be available,
+    while the attached entity simply requires the Placeable model. See the documentation for
+    <span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__SceneGraphService.htm">ecr::SceneGraphService</a></span>,
+    the built-in script function <span class="NDLSystemFont">AttachEntity</span> in
+    <a href="../../Reference/Namespaces/bapiCoreRuntime.htm">the ecr bindings</a> and an
+    <a href="../../Programmer/Entity_Interaction/entity_interaction_examples.htm">example</a>.</li>
+</ul>
+
+<h4>Built-in Models</h4>
+
+<ul>
+    <li>Two new macros (EE_BUILTINMODELPROPERTY_ACCESSOR_REF and EE_BUILTINMODELPROPERTY_READONLY_ACCESSOR_REF) were
+    added to egf::BuiltinModelHelper.h to support 'Get' accessors that return properties by const reference instead of
+    by value. This is used to avoid unnecessary temporary variables when returning these property values. For example,
+    efd::utf8string properties can now be returned by const reference in 'Get' built-in model property accessor methods.
+     See the <a href=
+    "../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm#BuiltinModelAccessorReturnValues">Conversion Guide</a> for
+    details.</li>
+    
+    <li>The <a href="../../Reference/QuickRef_Models/StandardModelLibrary__Placeable.htm">Placeable</a>
+    model is built-in in this release. The built-in provides a callback interface that services
+    may subscribe to for notifications of Placeable property changes. This avoids the need for
+    services to handle entity update messages for position properties. The built-in also provides
+    functionality to set the Placeable properties directly. Services may use this if they move
+    entities in C++ code; it provides a mechanism to set the value and not receive the callback,
+    which simplifies calling code. Currently, the Scene Graph Service and the Animation Service
+    make use of this functionality.</li>
+
+    <li>The <a href="../../Reference/QuickRef_Models/StandardModelLibrary__Renderable.htm">Renderable</a>
+    model is built-in in this release. The built-in provides a callback interface that services
+    may subscribe to for notifications of Renderable property changes. This avoids the need for
+    services to handle entity update messages for Renderable properties. The built-in also provides
+    functionality to set the Renderable properties directly. Services may use this if they adjust
+    the visibility of entities in C++ code; it provides a mechanism to set the value and not
+    receive the callback, which simplifies calling code.</li>
+
+    <li>A new
+    <span class="NDLSystemFont"><a href="../../Reference/egf/egf__IPropertyCallbackInvoker.htm">IPropertyCallbackInvoker</a></span>
+    class has been added to provide common callback functionality for
+    built-in models that use callbacks to notify other systems of property changes. This class is useful
+    in cases where a built-in model is primarily a data container while some other system is responsible
+    for responding to property changes. It is used by the Placeable and Renderable built-in models.
+    </li>
+</ul>
+
+<h4>Lua Scripting</h4>
+
+<ul>
+    <li>The DataStream module was replaced by the ParameterList module. Existing DataStreams passed
+	to Lua functions must be converted to using the new ParameterList module.  See the
+	<a href="../../Convert/Previous/DataStream_Deprecation.htm">DataStream Deprecation</a> conversion
+	guide for details.</li>
+	
+    <li>Foundation utility types used as Entity property types are now bound directly in Lua. The
+        following classes now have Lua functionality similar to their C++ counterparts: Point2,
+        Point3, Point4, Color, ColorA, Matrix3, and Quaternion. See the <a href=
+        "../../Programmer/Scripting/scripting_intro.htm">Lua Scripting</a> section for more details.
+        These changes require additional defines when compiling SWIG-generated wrapper files.  See
+        the <a href=
+        "../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm#ExternalSWIGLuaRuntime">
+        Conversion Guide</a> for details.</li>
+    
+    <li>The 'point3.lua' script found in Media/Samples/Common/Lua has been removed. Functionality
+        found in this script was incorporated into the Point3 class exposed directly in Lua. See the
+        <a href="../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm#Point3LuaRemoval">
+        Conversion Guide</a> for details.</li>
+
+    <li>Entities are now bound directly in Lua. Applications that previously used the EntityID as a
+        UInt64 should switch to the new Lua Entity proxies. See the <a href=
+        "../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm#AutoconversionEntityID">
+        Conversion Guide</a> for details.</li>
+
+    <li>Lua scripts ending with a comment no longer have trouble running.</li>
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_entity_loader_svc.htm">EntityLoaderService</a></h4>
+<ul>
+    <li>The <span class="NDLSystemFont"><a href="../../Reference/egf/egf__EntityLoaderService.htm">
+    egf::EntityLoaderService</a></span> has been significantly improved to more reliably send the
+    expected callback messages. Notably, the callbacks used when a block is loaded will now be
+    notified when the block is unloaded regardless of how the block is unloaded.</li>
+    <li>The same block file can now be loaded multiple times by specifying an instance number. See
+    <a href="../../Programmer/Blocks/block_loading.htm">Loading Blocks</a> for details.</li>
+    <li>A block can be optionally rotated or offset when loaded. Any rotation or offset provided
+    will be applied to every entity in the block that mixes-in the <span class="NDLSystemFont">
+    Positionable</span> standard model.</li>
+    <li>When loading a block you can now specify which callback results should send a message or
+    invoke a behavior. For example, you may only wish to be notified in the event of failure or you
+    may wish to avoid receiving block loading progress messages.</li>
+    <li>All block loading options can be specified when loading blocks from script.</li>
+    <li>For additional details on block loading options including C++ and scripting examples, see
+    <a href="../../Programmer/Blocks/block_options.htm">Block Loading Options</a>.</li>
+    <li>New documentation has been added covering block files in more detail and offing advice for
+    using block files. See <a href="../../Programmer/Blocks/block_intro.htm">Block Files:
+    Introduction</a> for a listing of available block documentation.</li>
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_scene_graph_svc.htm">Scene Graph Service</a></h4>
+
+<ul>
+    <li>The Scene Graph Service was modified to make use of the
+        <a href="../../Reference/ecr/ecr__MeshModel.htm">Mesh built-in model</a>. An entity
+        with such a model is now detected when the built-in is added to the entity, and the process
+        of loading assets for the entity begins at that point. This is earlier in the entity
+        life cycle than the prior behavior. Similary, entity removal for Mesh-based entities is
+        detected when the Mesh built-in is removed from the entity.
+        </li>
+
+    <li>The Scene Graph Service was modified to make use of the
+        <a href="../../Reference/egf/egf__PlaceableModel.htm">Placeable built-in model</a>
+        and now uses the callback mechanism to handle updates to entity pose. An additional parameter has
+        been added to the various API calls that add entity scene graphs to disable the pose update
+        for such entities. Pose update should be disabled if the service adding the entity itself
+        handles callbacks from the Placeable model. For example, the Animation Service disables
+        Scene Graph Service Placeable updates so that it can apply updates to the accumulation root
+        of an animated character instead of the NIF root.</li>
+    
+    <li>The Scene Graph Service was modified to make use of the
+        <a href="../../Reference/ecr/ecr__RenderableModel.htm">Renderable built-in model</a>
+        and now uses the callback mechanism to handle updates to entity visibility.</li>
+
+    <li>Added a new
+        <span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__IAttachedObjectsProperty.htm">IAttachedObjectsProperty</a></span>
+        class to hold data for built-in models that include the properties for attaching Nif
+        Objects to a scene graph.
+        </li>
+
+    <li>A new API method, <span class="NDLSystemFont">EnablePlaceableFeedback</span>, has been
+        added. Placeable Feedback sets the properties of a Placeable model (on any entity) to match
+        the pose of a given scene graph node, which may be located anywhere in a scene graph. A
+        corresponding <span class="NDLSystemFont">DisablePlaceableFeedback</span> was also added.
+        The Placeable Feedback functionality should be used by other services that wish to have an
+        entity track a particular scene graph node. It provides a method for attaching one entity to
+        another, with the potential for no frame lag in the update. The Animaiton Service uses this
+        functionality to receive updated accumulation root locations and hence report the actual
+        position of the character as the entity's position.</li>
+    
+    <li>The service was modified to handle entity Enter/Exit world events. An entity is known to
+        the service and may be accessed by other services even when out of world, but it is not
+        rendered or updated when out of world.</li>
+
+    <li>Added the <span class="NDLSystemFont">GetEntityFromSceneGraphNode</span> method to provide
+        the entity that holds a given node anywhere in its scene graph.</li>
+ 
+    <li>The <span class="NDLSystemFont">CreateSceneGraphUnmanaged</span> method has been renamed to
+        <span class="NDLSystemFont">CreateExternalSceneGraph</span> to better reflect its
+        functionality. The method also gained a parameter to enable updating of the external scene
+        graph.</li>
+
+    <li>Almost all of the methods in the Scene Graph Service that took an
+        <span class="NDLSystemFont">egf::EntityID</span> now take
+        an <span class="NDLSystemFont">egf::Entity*</span> instead.</li>
+    
+    <li>The <span class="NDLSystemFont">FlushUnusedPreloadedAssets</span> method has been removed
+        because it serves no purpose. Unneeded assets will be removed when the entity using them is
+        removed, or they are explicitly un-cached.</li>
+
+    <li>Internal code for managing rapid iteration of NIF assets has been moved from the Scene Graph
+        Service into the <span class="NDLSystemFont"><a href=
+        "../../Reference/ecr/ecr__SceneGraphCache.htm">SceneGraphCache.htm</a></span> class in order
+        to simplify the Scene Graph Service implementation.</li>
+        
+    <li>The <span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__SceneGraphService.htm">
+    SceneGraphService::GetEntityFromObject</a></span> function has been fixed and now works as
+    documented.
+    </li>
+    
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_animation_svc.htm">Animation Service</a></h4>
+
+<ul>
+    <li>The Animation Service asset handling code has been completely re-written to simplify the
+        implementation. Some changes to the APIs and behavior resulted from this:
+        <ul>
+            <li>The <span class="NDLSystemFont">Cache</span> member function changed to fill a
+                vector of handles to cached actors. See the <a href=
+                "../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm">Conversion
+                Guide</a> for information on this change.</li>
+
+            <li>The code for loading and rapidly iterating on Actor releated assets has been moved
+                to the new
+                <span class="NDLSystemFont"><a href="../../Reference/egmAnimation/egmAnimation__KFMCache.htm">egmAnimation::KFMCache</a></span>
+                class. A method has been added to the Animation Service to obtain the cache object.</li>
+                
+            <li>Memory usage will increase slightly as the cache holds an unmodified copy of every
+                actor, whereas previously one entity's actor served as the unmodified copy.</li>
+            
+            <li>Calls to set the current active animation should always be routed through the
+            animation service rather than directly setting the
+            <span class="NDLSystemFont">NiActorManager</span> active animation. Failure to use
+            Animation Service functionality will result in failure to maintain the
+            active sequence across rapid iteration events.</li>
+        </ul>
+    </li>
+
+    <li>The Animation Service now handles
+        <a href="../../Programmer/Entities/entity_lifecycle.htm">Entity Enter/Exit world</a>. Entities are created when their
+        <a href="../../Reference/egmAnimation/egmAnimation__ActorModel.htm">Actor built-in model</a>
+        is added to the entity, and removed when the Actor built-in is removed.
+        However, the actors are not displayed nor updated until EntityEnterWorld occurs. Note that
+        the target animation may be set when the entity is out of world and it will apply when the
+        entity enters the world.</li>
+
+    <li>The Position, Rotation and Scale properties of an entity with the <a href=
+        "../../Reference/QuickRef_Models/StandardModelLibrary__Actor.htm">Actor</a> model now
+        contain the pose of the accumulation root node of an animated character that has such a node
+        (characters with active accumulation). This information is updated on a frame-by-frame basis
+        as the character moves. See <a href="Release_Notes__Model_Libraries.htm">Model Library
+        Release Notes</a> for more information. The Animation Service class gained a tool mode
+        argument to its constructor in order to disable this new feature in tools.</li>
+
+    <li>The Actor Added message is only sent when the scene graph for the actor is
+        successfully set. The Actor Removed message is sent when the scene graph for the actor
+        is removed. Hence, rapid iteration of an actor's scene graph will result in Actor Added
+        and Actor Removed messages even when the KFM file does not change on disk.</li>
+        
+    <li>Actor Add and Removed messages are now sent on a special category that may be obtained
+        using the <span class="NDLSystemFont">GetMessageCategory</span> method in the Animation
+        Service class. Services that receieve such messages must subscribe to the new category
+        after the Animation Service has had <span class="NDLSystemFont">PreInit</span> called,
+        as would be the case in the <span class="NDLSystemFont">Init</span> function of the
+        receiving service.</li>
+
+    <li>Actor Add and Removed messages are now sent using <span class="NDLSystemFont"
+        >SendLocal</span> instead of <span class="NDLSystemFont">SendImmediate</span>. This is to
+        comply with best practices and avoid ambiguity in the message ordering. Actor Added messages
+        will now always come after Scene Graph Added messages for the actor's scene graph, and Actor
+        Removed will follow Scene Graph Removed.</li>
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_camera_svc.htm">Camera Service</a></h4>
+
+<ul>
+    <li>A method has been added to the Camera Service to enable an existing scene graph camera
+        to be added to the set tracked by the service. This enables a camera that is present in
+        a loaded scene graph to be used with the service. Previously, only entity-based
+        cameras were available.</li>
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_render_svc.htm">Render Service</a></h4>
+
+<ul>
+    <li>The following functions of the <span class="NDLSystemFont">
+    <a href="../../Reference/ecr/ecr__RenderService.htm">ecr::RenderService</a></span> and
+    <span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__RenderContext.htm">
+    ecr::RenderContext</a></span> classes were changed to deal with entity pointers instead of
+    entity IDs: <span class="NDLSystemFont">AddRenderedEntity</span> and
+    <span class="NDLSystemFont">RemoveRenderedEntity</span>.</li>
+    
+    <li>Two new callback functions were added to <span class="NDLSystemFont">
+    <a href="../../Reference/ecr/ecr__IRenderServiceDelegate.htm">ecr::IRenderServiceDelegate</a>
+    </span>: <span class="NDLSystemFont">OnRenderedEntityAdded</span> and
+    <span class="NDLSystemFont">OnRenderedEntityRemoved</span>.
+    These functions are called on delegates when an entity scene graph is added or removed from
+    the render service.  This allows other services that deal with rendered objects to be informed
+    when rendered objects appear or disappear from the world.</li>
+</ul>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_light_svc.htm">Light Service</a></h4>
+
+<ul>
+    <li><span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__LightService.htm">
+    ecr::LightService</a></span> has been modified to support entities entering and exiting the
+    world.  The implementation takes advantage of the new callback functions in the
+    <span class="NDLSystemFont">IRenderServiceDelegate</span> class rather than using the scene
+    graph added and scene graph removed messages.  Thus, the functionality of the previous
+    <span class="NDLSystemFont">HandleSceneGraphAddedMessage</span> and
+    <span class="NDLSystemFont">HandleSceneGraphRemovedMessage</span> have been moved to the new
+    <span class="NDLSystemFont">OnRenderedEntityAdded</span> and
+    <span class="NDLSystemFont">OnRenderedEntityRemoved</span> functions.</li>
+</ul>
+
+<h4>PhysX</h4>
+
+<ul>
+    <li>The <span class="NDLSystemFont"><a href=
+        "../../Reference/QuickRef_Services/svc_qckref_scene_svc.htm">PhysX Scene Service</a></span>
+        has been refactored to use a
+        <a href="../../Reference/egfPhysX/egfPhysX__PhysXSceneModel.htm">built-in model</a>
+        for the <a href=
+        "../../Reference/QuickRef_Models/PhysXModelLibrary__PhysXScene.htm">PhysXScene</a> model.
+        As part of this work, some of the APIs for accessing scenes in the PhysX Scene Service have
+        changed, and the timing of messages has also been affected. Most importantly, most methods
+        to access scenes by entity ID have been removed. Get the scene name from the entity and use
+        that to find it in the PhysX Scene Service. Internally, the built-in model now handles most
+        aspects of scene management while the service handles messaging and external access to the
+        scenes.</li>
+        
+    <li>Several system services have been removed and their functionality replaced by Frame Events.
+        The <span class="NDLSystemFont">egfPhysX::StartSimulationService</span> and
+        <span class="NDLSystemFont">egfPhysX::FinishSimulationService</span> classes have been
+        replaced by frame events, named <span class="NDLSystemFont">SceneService!Simulate</span>
+        and <span class="NDLSystemFont">SceneService!FetchResults</span>, managed by the
+        <span class="NDLSystemFont"><a href=
+        "../../Reference/QuickRef_Services/svc_qckref_scene_svc.htm">PhysX Scene Service</a></span>.
+        The <span class="NDLSystemFont">ecrPhysX::UpdateDestinationsService</span> and
+        <span class="NDLSystemFont">ecrPhysX::UpdateSourcesService</span> classes have been
+        replaced by frame events, named <span class="NDLSystemFont">PropService!UpdateDestinations</span>
+        and <span class="NDLSystemFont">PropService!UpdateSources</span>, managed by the
+        <span class="NDLSystemFont"><a href=
+        "../../Reference/QuickRef_Services/svc_qckref_prop_svc.htm">PhysX Prop Service</a></span>.
+        See the <a href="../../Convert/Previous/Converting_to_Gamebryo_3_2_Overview.htm">
+        Gamebryo 3.2 Conversion Guide</a> for information on modifying an application to accommodate
+        this change.
+    </li>
+
+    <li>Message sending from the <a href="../../Reference/QuickRef_Services/svc_qckref_prop_svc.htm">
+        PhysX Prop Service</a> has been changed. Previously, messages were sent as raw
+        <span class="NDLSystemFont"><a href="../../Reference/efd/efd__StreamMessage.htm">efd::StreamMessage</a></span>
+        objects that needed to be unpacked by the application. Now, there is a specific message
+        class for <span class="NDLSystemFont"><a href="../../Reference/ecrPhysX/ecrPhysX__NiPhysXSceneAdded.htm">
+        NiPhysXSceneAdded</a></span> messages. There is a generic message class,
+        <span class="NDLSystemFont"><a href="../../Reference/ecrPhysX/ecrPhysX__PhysXPropMessage.htm">
+        PhysXPropMessage</a></span> that is wrapped to provide the
+        <span class="NDLSystemFont">PhysXPropAddedToScene</span> and
+        <span class="NDLSystemFont">PhysXPropRemovingFromScene</span> messages. Services that
+        receive any of these messages must be updated to handle the new types.</li>
+</ul>
+
+<h4>
+  <a href="../../Programmer/egmTerrain/egmTerrain_Index.htm">Terrain</a></h4>
+  
+  <ul>
+    <li>Support for the latest version of the NiTerrain library. </li>
+    <li>Support for multi-sector terrain assets. </li>
+    <li>Support for painting and deformation in tools. </li>
+  </ul>
+  
+  <h4>
+    <a href="../../Programmer/egmTerrain/egmTerrain_EnvironmentService.htm">
+      Environment</a>
+  </h4>
+  <ul>
+    <li>Creation of the required services to allow edition of Environment in Toolbench.
+    </li>
+    <li>EnvironmentService support to be used with the GameFramework.
+    </li>
+  </ul>
+
+<h4><a href="../../Reference/eon/eon__ReplicationService.htm">Replication Service</a></h4>
+<ul>
+    <li>The <span class="NDLSystemFont"><a href="../../Reference/eon/eon__IReplicationGroupPolicy.htm">
+    eon::IReplicationGroupPolicy</a></span> has been refactored to give custom implementations much
+    greater power. Previously the <span class="NDLSystemFont">ReplicationService</span> did most of
+    the work while <span class="NDLSystemFont">IReplicationGroupPolicy</span> mearly provided
+    configuration settings. Now the <span class="NDLSystemFont">IReplicationGroupPolicy</span> does
+    the majority of the work which can allow custom implimentations to completely replace or highly
+    optimize the message passing used during replication.</li>
+</ul>
+
+
+
+
+<h3>Gamebryo LightSpeed 3.1.1</h3>
+
+<h4><a href="../../Reference/QuickRef_Services/svc_qckref_animation_svc.htm">Animation Service</a></h4>
+
+<ul>
+    <li>A bug that resulting in incorrect accumulation settings on Actor-based entities has been
+        fixed.</li>
+</ul>
+
+<h4>PhysX</h4>
+
+<ul>
+    <li>PhysX-based particle systems may now be used with the Game Framework provided the PhysXScene
+        entity that is controlling simulation has the BlockOnFetch property true.</li>
+        
+    <li>A bug in the
+        <a href="../../Reference/QuickRef_Services/svc_qckref_trigger_svc.htm">
+        Trigger Service</a> that caused memory corruption when an entity or scene was removed
+        has been fixed. Memory holding issues in this class have also been fixed.</li>
+
+    <li>The <span class="NDLSystemFont">AddEntityActor</span> and
+        <span class="NDLSystemFont">RemoveEntityActor</span> methods in the
+        <a href="../../Reference/QuickRef_Services/svc_qckref_trigger_svc.htm">
+        Trigger Service</a> have been changed. Trigger Service ownership of the entity's actor
+        is now set when the entity is added. If owned, the Trigger Service will release
+        the entity's actor when the entity is removed.</li>
+</ul>
+
+<h4>Toolbench</h4>
+<ul>
+    <li>World Builder can now be used to create whiteboxes. See <a href="..\..\Tools\WorldBuilder\wb_entity_whiteboxing.htm">Working with Whiteboxes</a> for more information
+        on authoring whiteboxes and <a href="..\..\Programmer\CoreRuntimeServices\core_services_egmWhitebox.htm">The egmWhitebox Library</a> for
+        runtime service information.</li>
+</ul>
+
+
+
+
+<h3>Gamebryo LightSpeed 3.1</h3>
+
+<h4>Asset Loading</h4>
+
+<ul>
+    <li>Most of the asset types supported by Gamebryo are now background loaded by default. This
+    has a significant impact on applications. See the <a href=
+    "../../Convert/Previous/Converting_to_Gamebryo_3_1_Overview.htm">Conversion Guide</a> for
+    details.</li>
+
+    <li>The entity asset preloading system has been substantially changed. See the description of
+    the new <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Models/StandardModelLibrary__Preloadable.htm">Preloadable</a></span>
+    model and <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a></span> for more details.
+    <em>All flat models will need to be re-exported</em>.</li>
+
+    <li>The <span class="NDLSystemFont">egf::EntityManager::RegisterRequiredAssetPreload</span> and
+    <span class="NDLSystemFont">BehaviorAPI::PreloadRequiredAssetByProperty</span> functions have
+    been removed as part of the new entity preloading system.</li>
+
+    <li>The egf::FlatModelManager::FindOrLoadModel function is now deprecated. Use <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/egf/egf__FlatModelManager.htm#classegf_1_1_flat_model_manager_1021ebae92d387c74e82adcf46726e8e6">
+    egf::FlatModelManager::PreloadModel</a></span> if you need to load flat models dynamically at
+    runtime.</li>
+
+    <li>The <a href=
+    "../../Reference/egf/egf__EntityLoaderService.htm">egf::EntityLoaderService</a>, the <a href=
+    "../../Reference/ecr/ecr__SceneGraphService.htm">ecr::SceneGraphService</a>, and the <a href=
+    "../../Reference/egmAnimation/egmAnimation__AnimationService.htm">egmAnimation::AnimationService</a>
+    are now all dependent on the AssetFactoryManager and will fail to initialize of the
+    AssetFactoryManager is not available.</li>
+
+    <li>The <a href="../../Reference/egf/egf__FlatModelManager.htm">egf::FlatModelManager</a> no
+    longer pre-caches the location of flat model files during initialization. Flat models are
+    loaded when loading world files or creating new entities at runtime. They can also be preloaded
+    programatically. See <a href=
+    "../../Convert/Previous/convert_background_asset_load_3_1.htm">Converting to background Asset
+    Loading</a> for further details.</li>
+
+    <li>The <a href="../../Reference/egfLua/egf__SchedulerLua.htm">egfLua::SchedulerLua</a> class
+    no longer pre-caches the location of all Lua behavior scripts during initialization. Lua
+    scripts are loaded when loading flat model files or creating new entities at runtime. They can
+    also be preloaded programmatically. See <a href=
+    "../../Convert/Previous/convert_background_asset_load_3_1.htm">Converting to background Asset
+    Loading</a> for further details.</li>
+</ul>
+
+<h4>Scripting and Lua</h4>
+
+<ul>
+    <li>The bindings in bapiLua::LuaTraits have been improved to provide additional type safety.
+    Previously crashes could result from passing incompatible data to a built-in API method but now
+    these cases should simply generate a Lua error with a descriptive error string.</li>
+
+    <li>The third parameter to the <span class="NDLSystemFont">EE_SWIG_LUA_TYPE_WRAP</span> macro
+    has been removed. This macro was used in Swig .i files for Lua. Instead a new method named
+    <span class="NDLSystemFont">IsType</span> has been added to all <span class=
+    "NDLSystemFont">bapiLua::LuaTraits</span> specializations. This method allows greater control
+    over what Lua objects can be converted to what C++ data types.</li>
+
+    <li>The Lua implementations of BehaviorAPI.GetProperty and BehaviorAPI.SetProperty can now be
+    extended to support custom property types by implementing instances of the <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/egfLua/egf__ILuaPropertyHandler.htm">egf::ILuaPropertyHandler</a></span> class
+    and registering them with <span class="NDLSystemFont"><a href=
+    "../../Reference/egfLua/egf__SchedulerLua.htm#classegf_1_1_scheduler_lua_1e69622b36874d9f7c3aaf61b304985a6">
+    egf::SchedulerLua::RegisterPropertyHandler</a></span>. This is demonstrated in the <span class=
+    "NDLSystemFont"><a href=
+    "../../Programmer/Entity_Properties/entity_property_adding.htm">CustomTypeExample2</a></span>
+    sample.</li>
+
+    <li>Fixed a bug in the <span class="NDLSystemFont"><a href=
+    "../../Programmer/Scripting/lua_lib_ecr.htm#ClosestObjectOnRay">ecr.ClosestObjectOnRay</a></span>
+    built-in API function where the Entity ID returned was always invalid.</li>
+</ul>
+
+<h4>Input Service</h4>
+
+<ul>
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_input_svc.htm">Input Service</a></span> now
+    supports binding of input actions directly to entity behaviors. The action map callbacks for
+    both behavior or message callbacks can now be configured at run time. In addition the
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputHandler.htm">InputHandler</a></span> built-in model
+    can be used to provide a data driven binding between the behaviors on an entity and actions
+    which allows for full rapid iteration of action handling. This new functionality deprecates the
+    "<span class="NDLSystemFont">EventCategory</span>" attribute on the "<span class=
+    "NDLSystemFont">Event</span>" tag in .actionmap files. See <a href=
+    "../../Programmer/CoreRuntimeServices/core_services_ecrInput.htm">The ecrInput Library</a>
+    documentation for details.</li>
+
+    <li>Added support for mice in Action Maps via <span class=
+    "NDLSystemFont">ActionClsID="MOUSE"</span>, implemented in <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputServiceMouse.htm">ecrInput::InputServiceMouse</a></span>.</li>
+
+    <li>Modified the <a href="../../Reference/ecrInput/ecrInput__InputService.htm">Input
+    Service</a> to load action maps in the background. This also added a new message type,
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputActionMapsLoaded.htm">ecrInput::InputActionMapsLoaded</a></span>
+    that is sent when an action map has completed loading or failed to load. Samples that use
+    action maps were also updated.</li>
+
+    <li>The <a href="../../Reference/ecrInput/ecrInput__InputService.htm">Input Service</a> now
+    supports the specification of an action map in the config files, through <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Config/config_qckref.htm#InputService">InputService.ActionMapURN</a></span>.</li>
+</ul>
+
+<h4>Light Service</h4>
+
+<ul>
+    <li>The following additions have been made to the StandardModelLibrary in regards to lighting:
+        <ul>
+            <li>Added a Lightable model, which specifies the maximum number of lights by type an
+                entity can support. Defaults to a maximum of 3 point, 2 spot, and 3 directional
+                lights.</li>
+            <li>Added a UpdateLightingOnMove property to the Light model. When this is set to false
+                (default), adjusting any of the light's properties will not force lighting to be
+                recomputed for all entities.</li>
+            <li>Added a LightPriority property to the Light model. The Light Service now computes
+                the 'influence' of a light on an entity, which takes its priority into account. When
+                choosing which lights will affect an entity, lights with the greatest influence win.
+                </li>
+            <li>Added support for explicit Always Affected/Never Affected lists to the Light model.
+                This allows you to manually override lighting.</li>
+        </ul>
+    </li>
+
+    <li>Added a tool version of the Light service that always acts as if the UpdateLightingOnMove 
+    property is set to TRUE.</li>
+
+    <li>The Light Service will now only consider light entities that mix-in the Lightable model 
+    for lighting. The StandardModelLibrary has been updated so that the Actor, Mesh, and Terrain
+    models now mix-in the Lightable model. Applications will need to update their local copy of 
+    the StandardModelLibrary with the shipped StandardModelLibrary. If you do not make this update,
+    the Light Service will ignore all entities, and nothing will be affected by lights.</li>
+</ul>
+
+<h4>Scene Graph Service</h4>
+
+<ul>
+    <li>The behavior of the Scene Graph Service has been clarified in cases where a NIF file is
+    loaded without a valid top level <span class="NDLSystemFont">NiAVObject</span>. Such cases
+    arise due to file load errors or the use of a texture NIF for a scene graph. An
+    <span class="NDLSystemFont"><a href="../../Reference/ecr/ecr__SceneGraphAddedMessage.htm">
+    ecr::SceneGraphAddedMessage.htm</a></span> message is only sent when the scene graph
+    has valid top level objects. Internally, asset data is held for the asset but no objects are
+    present in the data. If the empty scene graph was loaded in response to an property
+    change or asset change, and an existing scene graph is already in use, that existing scene
+    graph will be removed and a corresponding message sent. If an asset cannot be located at
+    all (no file name is available) the asset will be totally removed from the system and can
+    only be reinstated with a game restart or reset. The same rules apply to scene graphs used
+    for attachments.
+    </li>
+
+    <li>Preloading of scene graphs now includes preloading of any scene graph attachments.
+    </li>
+    
+    <li>An asset locate is no longer performed when an asset that was cached using a multi-file
+    urn is subsequenly requested alone. This reduces the delay in creating an entity with a
+    scene graph, assuming the scene graph has been pre-cached and the cache operation has
+    completed.
+    </li>
+    
+    <li>The functions <span class="NDLSystemFont">ecr::SceneGraphService::ReloadAsset(const
+    efd::utf8string&amp;, efd::DataStream*)</span> and <span class=
+    "NDLSystemFont">ecr::SceneGraphService::CreateSceneGraphURN(const efd::utf8string&amp;, const
+    efd::Bool, const efd::Bool)</span> have been removed.</li>
+    
+    <li>A parameter, <span class="NDLSystemFont">delayRender</span>, has been added to several
+    public API functions that create scene graphs in order to support entity creation but not
+    display. An additional function, <span class=
+    "NDLSystemFont">ecr::SceneGraphService::DisplayEntity</span>, has been added to cause delayed
+    render objects to be displayed. It must be explicitly invoked when delayed render is
+    requested.</li>
+
+    <li>A new function, <span class="NDLSystemFont"><a href=
+    "../../Reference/ecr/ecr__SceneGraphService.htm#classecr_1_1_scene_graph_service_1a816f578cdbe8766f627d33df404b9ff">
+    ecr::SceneGraphService::GetAttachedSceneGraph</a></span>, has been added to enable access to an
+    attached scene graph.</li>
+
+    <li>Fixed a bug in SceneGraphService where loading PhysX content in a non-PhysX based
+    application caused a crash during cloning. This was likely to occur when adding MangledMetal
+    assets into a non-PhysX application such as HelloWorld.</li>
+</ul>
+
+<h4>Animation Service</h4>
+
+<ul>
+    <li>Actors that are preloaded or cached in <span class="NDLSystemFont">AnimationService</span>
+    now respect the accumulation property of the entity.</li>
+
+    <li>Under some circumstances the scene graph for an animated entity could be displayed before
+    the entity discovery message was received and data was updated. This issue has been fixed so
+    that objects only appear upon entity discovery and their parameters are correctly set before
+    display.</li>
+
+    <li>An asset locate is no longer performed when an asset that was cached using a multi-file
+    urn is subsequenly requested alone. This reduces the delay in creating an entity with an
+    animated scene graph, assuming that KFM has been pre-cached and the cache operation has
+    completed.
+    </li>
+
+    <li>The previously public strings, <span class="NDLSystemFont"><a href=
+    "../../Reference/egmAnimation/egmAnimation__AnimationService.htm">egmAnimation::AnimationService</a>::kAnimationTag</span>
+    and <span class="NDLSystemFont">kAnimationKFTag</span> are now protected.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/egmAnimation/egmAnimation__AnimationService.htm#classegm_animation_1_1_animation_service_1aa097d58a6bc9b06067f2e7e00da38a1">
+    egmAnimation::AnimationService::GetAnimationIdFromName</a></span> method now returns
+    <span class="NDLSystemFont">NiActorManager::INVALID_SEQUENCE_ID</span> when an unrecognized
+    sequence is specified instead of 0 which is a valid sequence id.</li>
+</ul>
+
+<h4>PhysX</h4>
+
+<ul>
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_prop_svc.htm">PhysX Prop Service</a></span> will
+    now try to add a new prop to the PhysX scene as soon as the prop is discovered instead of
+    waiting until the Prop Service's OnTick method. If the scene is in simulation when the prop is
+    discovered, then it will be added to the scene during the OnTick method as it did
+    previously.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_prop_svc.htm">PhysX Prop Service</a></span>
+    now modifies the name of each collision mesh in a given prop by prepending the file path
+    to the mesh name. This significantly reduces the chances of mesh naming conflicts between
+    props from different files.
+    </li>
+
+    <li>Fixed a bug in the <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_physx_terrain_svc.htm">PhysX Terrain
+    Service</a></span> that prevented RTTI from working correctly. The PhysX Terrain Service was
+    improperly registering itself using the Terrain Service class ID.</li>
+</ul>
+
+<h4>Miscellaneous Changes</h4>
+
+<ul>
+    <li>Rapid iteration for built-in model property default values (in other words, changes to
+    built-in model properties made in the Entity Modeling Tool) has been implemented. Rapid
+    iteration of built-in model properties in a block file worked previously and continues to work
+    the same. Rapid iteration of built-in model properties should now work exactly like normal
+    properties.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_visual_tracker_svc.htm">Visual Tracker
+    Service</a></span> now supports multiple pages of trackers and has scatter graph support. The
+    scatter graph support is used to provide a page that displays a top-down view of the currently
+    created entities. Pages can be cycled through by triggering a "<span class=
+    "NDLSystemFont">VISUAL_TRACKER_ACTION</span>" action in the InputService.</li>
+
+    <li>Convenience functions that allocate and register common sets of system services have been
+    added to simplify application startup code. These are useful when the default settings are
+    correct for your application. See <span class="NDLSystemFont"><a href=
+    "../../Reference/Namespaces/efd.htm">efd::CreateFoundationServices</a></span>,
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/Namespaces/egf.htm">egf::CreateGameServices</a></span>,
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/Namespaces/egfPhysX.htm">egfPhysX::CreatePhysXServices</a></span>,
+    <span class="NDLSystemFont"><a href=
+    "../../Reference/Namespaces/ecr.htm">ecr::CreateRuntimeServices</a></span>,
+    and <span class="NDLSystemFont"><a href=
+    "../../Reference/Namespaces/eon.htm">eon::CreateOnlineServices</a></span>
+    for details about which services are allocated by which methods.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_render_svc.htm">ecr::RenderService</a></span> now
+    has a configuration parameter, <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Config/config_qckref.htm#RenderService">RenderService.ShaderCachePath</a></span>,
+    for setting the shader cache path and no longer takes this path as a constructor
+    parameter.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Services/svc_qckref_rapid_iteration_svc.htm">Rapid Iteration System
+    Service</a></span> now creates its owning <span class=
+    "NDLSystemFont">efd::MessageService</span> for communication with Toolbench.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__NotificationService.htm">Notification Service</a></span> no longer
+    takes a <span class="NDLSystemFont">propertyGroup</span> parameter in any of its methods. This
+    parameter previously did not function correctly and only the value zero reliably worked.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__IBuiltinModelImpl.htm">egf::IBuiltinModelImpl</a></span> class is no
+    longer a templated class; see the <a href=
+    "../../Convert/Previous/Converting_to_Gamebryo_3_1_Overview.htm#IBuiltinModelImpl">conversion
+    guide</a> for details. In addition this class now supports associative array style property
+    bindings. See the <a href="../../Reference/Macros/efd_macros_builtin_model.htm">Built-in Model
+    Macros</a> documentation for details.</li>
+
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__EntityLoaderService.htm#classegf_1_1_entity_loader_service_1026614d0db717cabfd09da00da31e6a2">
+    egf::EntityLoaderService::RequestEntitySetUnload</a></span> method now supports both urn and
+    logical IDs to identify the world file to unload. This fixes a bug in LightSpeed 3.0 where one
+    could load a world file with either a urn or a logical Asset ID but could only unload that
+    world using the logical Asset ID. For example, if you used 'urn:emergent-world-file:world' to
+    load your world, you can now use this same urn to unload it.</li>
+
+    <li>Several new functions have been added to <span class="NDLSystemFont"><a href=
+    "../../Reference/efd/efd__MessageService.htm#categorization_functions">efd::MessageService</a></span>
+    for simplifying generation of public, private and unique Categories.</li>
+
+    <li><span class="NDLSystemFont"><a href=
+    "../../Tools/DataDrivenEnum/DataDrivenEnum_usage.htm">DDE Header Generator</a></span> now
+    supports the "Bitfield" type which will automatically assign enum values to bits of an unsigned
+    integer type. Those enum value can also be combined with the bitwise or (|) operator in data
+    driven enum files.</li>
+</ul>
+
+<h3>Gamebryo LightSpeed 3.0</h3>
+
+<ul>
+    <li>The Emergent Game Framework is new in this release. For information about programming
+    concepts and tasks that are related to the Game Framework, see <a href=
+    "../../Programmer/Introduction_to_GameFramework_Programming.htm">Game Framework Programming:
+    Introduction</a>. For more general information about new features in this release, see <a href=
+    "../../GetStart/All/What_s_New_in_Gamebryo.htm">What's New in Gamebryo LightSpeed</a>.</li>
+</ul><a name="Known_Issues_and_Limitations" id="Known_Issues_and_Limitations"></a>
+
+<a name="Known_Issues_and_Limitations" id="Known_Issues_and_Limitations"></a>
+<h2>Known Issues and Limitations</h2>
+
+
+<h3>Gamebryo LightSpeed 3.1 Specific Notes</h3>
+
+<ul>
+    <li>The <span class="NDLSystemFont"><a href=
+    "../../Reference/egf/egf__FlatModelManager.htm">efd::FlatModelManager::FindOrLoadModel</a></span>
+    function no longer loads flat model files that are not already loaded if using the <span class=
+    "NDLSystemFont">efd::AssetFactoryManager</span>. If this function is required by your
+    application, you can work around this problem by using the <span class=
+    "NDLSystemFont">FlatModelManager::PreloadModel</span> function to ensure the model is available
+    at runtime.</li>
+
+    <li>Care should be taken when using the Standard Model Library <span class=
+    "NDLSystemFont"><a href=
+    "../../Reference/QuickRef_Models/StandardModelLibrary__Preloadable.htm">Preloadable</a></span>
+    module to preload entity assets. These assets are loaded based on properties found in the
+    entity model when the entity is created. Because these assets are loaded asynchronously, it is
+    possible to change these properties in the time between the start of the asset preload request
+    and the completion of the preload operation. If your application changes entity assets at
+    runtime, you should validate that the assets associated with your entities match the asset
+    property values. If there is a mismatch, you should ensure the assets are reloaded using the
+    updated property values. You cannot assume assets loaded during preload match the current asset
+    property values if these properties change at runtime.</li>
+    
+    <li>When script encryption is enabled for the PS3, the presence of an unencrypted script can cause
+    an assert instead of a general failure to load the asset.  Under no circumstances will the unencrypted
+    script be loaded, but it's presence in the asset web will cause the library to assume that it's available
+    until it actually attempts to load and fails due to the lack of encryption.  To avoid this issue,
+    make sure that scripts are encrypted during deployment when encryption is enabled.</li>
+</ul>
+
+<h3>All Gamebryo LightSpeed Releases</h3>
+
+<h4>Asset Runtime Services</h4>
+<ul>
+    <li>The Asset Controller automatically scans directories in your <span class=
+    "NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em></span> for new assets. For
+    efficiency, it only scans the directories that have timestamps that are newer than the last
+    scan time. If you use file system archiving, revision control, or mirroring software that
+    modifies directory timestamps, new changes may be undetected by the Asset Controller. The
+    workaround is to cause a full scan by deleting the file <span class=
+    "NDLSystemFont"><em>&lt;Asset Web Root Directory&gt;</em>/asset-web-metadata/awebckpt.nt</span>
+    and then running the Asset Controller.</li>
+
+    <li>New projects inherit the default asset tagging policies, which include the use of
+    non-persistent logical asset IDs. This has the advantage of not requiring you to check-in and
+    share source metadata files among developers. The disadvantage is that you will not be able to
+    re-arrange your assets into a new directory structure without also updating all of the logical
+    asset ID references in your game content (block and model files). The other alternative is to
+    enable persistent logical IDs by setting <span class=
+    "NDLSystemFont">LogicalIdTagger.PersistentIds=True</span> in the file <span class=
+    "NDLSystemFont"><em>&lt;Asset Web Root
+    Directory&gt;</em>/asset-web-config/LogicalIdTagger.ini</span></li>
+
+    <li>Using multiple classification tags (for example, combining a platform classification with a
+    locale specification such as "urn:D3D10:French") in the 'GlobalTagSpace' parameter for the
+    AssetLocatorService constructor will return non-deterministic asset lookup results for some use
+    cases. Selection via multiple classifications should be avoided until this is corrected.
+    Selection with a single classification tag (for example, use just a locale specification such
+    as "urn:French") produces the expected results.</li>
+</ul>
+
+<h4>Entity, Property and Behavior</h4>
+<ul>
+    <li>A block file cannot remove individual entries from map or list style properties that are
+    specified in the model file, it can only override existing entries or add new entries. Specific
+    map or list entries can be removed at runtime if needed.</li>
+</ul>
+
+<h4>Input Service</h4>
+<ul>
+    <li>When an <span class="NDLSystemFont">ACTION_COMBO</span> event times-out partway through,
+    the actions that have activated to progress the combo to its current point are reprocessed and
+    messages are sent for them in cases where they appear in other events. For example, say one
+    event is the combo actions Start-Select and another event is the action Start. When the user
+    presses Start, the combo will begin waiting for the Select to fire. Depending on the time-out,
+    it may wait several frames before deciding that no Select is ever coming. The Start message is
+    then sent in response to the Start only event. The delayed messages that are sent in this
+    situation have invalid magnitude and coordinate data, and may not reflect the current state of
+    the activating button. In general, the handling of combo events that time-out is poorly defined
+    and we recommend avoiding events that are sub-sets of other events, and certainly do not rely
+    on the state stored in messages that result from combo time-outs.</li>
+</ul>
+
+<h4>Lua Scripting</h4>
+<ul>
+    <li>Immediate behaviors that are called from C++ using <span class=
+        "NDLSystemFont">Entity::CallImmediate</span> or from script via <span class=
+        "NDLSystemFont">BehaviorAPI.CallBehavior</span> cannot be debugged using the Lua Behavior
+        Debugger.</li>
+
+    <li>The <span class="NDLSystemFont">table.foreach()</span> Lua method is deprecated in Lua 5.1
+        and should not be used. This method is not compatible with coroutines and can result in a
+        crash if used. Instead use the <span class="NDLSystemFont">pairs</span> or <span
+        class="NDLSystemFont">ipairs</span> method with a <span class="NDLSystemFont">for</span>
+        loop.</li>
+</ul>
+
+<a name="PhysX_Framework_Known_Issues" id="PhysX_Framework_Known_Issues"></a>
+<h4>PhysX</h4>
+<ul>
+    <li>When a scene graph (NIF file) is attached to another using entity properties, its
+    physics properties are not recognised by the PhysX services. For example, an axe with a
+    physics rigid body associated with it will not be instantiated into the physics scene
+    when the axe is attached to a character's hand. A custom service is required to work
+    around this problem, or modifications or sub-classing of the PhysXProp service to handle
+    scene graph attachment messages.
+    </li>
+    
+    <li>The origin of PhysX trigger shapes (cubes, cylinders, and capsules) is at the center of
+    their lower face, while the origin of the standard visualizers in World Builder is at the
+    center of their volume. This leads to PhysX instantiating shapes significantly above where they
+    are displayed in World Builder if Entities mixing in PhysXShape are set to use the Cube
+    visualizer. The PhysXModelLibrary uses the correct PhysXBox visualizers, but MangledMetal does
+    not.</li>
+
+    <li>OnPhysXTrigger callbacks are only supported for rigid bodies.</li>
+
+    <li>If you change the scale of an entity in response to the OnEnter event of a trigger
+    it will immediately generate another OnEnter event for the trigger. This can lead to
+    expensive cyclical behavior invocation.
+    </li>
+    
+    <li>The activation or deactivation of a physical sequence (rag-doll) from script may sometimes
+    happen within a PhysX simulate/fetchResult block, which produces error messages and prevents
+    the transition to/from rag-doll from occurring. Setting the BlockOnFetch property of the
+    <a href="../../Reference/QuickRef_Models/PhysXModelLibrary__PhysXScene.htm">PhysXScene</a>
+    entity model may help reduce the frequency with which this problem occurs.
+    </li>
+    
+    <li>Static props from the Maya export pipeline may cause runtime warning messages from
+    PhysX.</li>
+
+    <li>Props that use assets containing PhysX-based particle systems require the BlockOnFetch
+    property of the controlling PhysXScene entity to true.</li>
+
+    <li>The PropService has C++ built-ins to control PhysX debug rendering, but there are no Lua
+    bindings to allow script to access them. Using NVIDIA's Visual Remote Debugger often provides
+    better debugging support.</li>
+
+    <li>Runtime state of PhysX scenes is not maintained across renaming during rapid iteration. A
+    PhysXScene entity that is simulating when its SceneName property is changed will stop
+    simulating. You will need to have a script call bapiPhysXBase.StartSimulating(), or reload your
+    game, to resume physics.</li>
+	
+    <li>A bug in the
+        <a href="../../Reference/QuickRef_Services/svc_qckref_trigger_svc.htm">
+        Trigger Service</a> allows you to set the size property for a PhysX trigger box to negative values.
+		This creates an inverted trigger volume that never generates trigger reports yet generates correct
+		debug geometry. This results in what appears to be correct PhysX volumes not triggering when
+		expected.  To avoid this issue, ensure all of your PhysX trigger volumes are specified using 
+		positive numbers only.</li>
+		
+	
+</ul>
+
+<h4>Rapid Iteration</h4>
+<ul>
+    <li>If a game uses the Rapid Iteration service (egf::RapidIterationService) and attempts to
+    read from a different asset web root than the Asset Controller is servicing, then all asset
+    requests will fail once the connection to Asset Controller is made. This can be be a problem if
+    a Game Solution is opened in Toolbench, and a game is subsequently run that points to a
+    different asset web root, as Toolbench will modify the asset web root serviced by Asset
+    Controller to the asset web root indicated by the GSL.</li>
+
+    <li>Composition changes that are made to a model in EMT require a game reset. A composition
+    change is any change that modifies the mix-ins that are used by the model. Entities that are
+    based on models whose composition is changed will be removed from the simulation, but will
+    return when you perform a Game Reset from Toolbench.</li>
+
+    <li>Rapid iteration of entity properties directly in World Builder causes the affected entities
+    to reset to those new property values. Any in-game property updates that occurred since the
+    start of the application are over-written.</li>
+
+    <li>Rapid iteration cannot remove individual entries from map or list style properties, it can
+    only add new entries. Default values can be removed from the model file during rapid iteration
+    but this may not effect the runtime property if the property has has been modified by any block
+    file or runtime change.</li>
+
+    <li>Setting up to perform Rapid Iteration is fairly simple, but there are subtle differences
+    between the platforms. See the <a href="../../Tutorials/Rapid_Iteration/rapid_intro.htm">Rapid
+    Iteration</a> documentation for more information.</li>
+
+    <li>Rapid iteration on the name of a PhysXScene entity may require the game to be restarted for
+    simulation to be correct.</li>
+
+    <li>Rapid iteration on an actor with PhysX props may cause the actor to be incorrectly
+    animated. You can work around this issue by resetting the game.</li>
+
+    <li>Changes to the material masks in Scene Designer are not properly updated when viewing the
+    terrain on a console or remote PC. This is due to the fact that only the material xml file is
+    changing and getting uploaded. The mask files are not uploaded correctly. When working with a
+    local file system, changes are properly reflected.</li>
+
+    <li>Rapid iteration in World Builder on entities that mix in a built-in model will result in
+    all properties from the built-in model being changed to their flat model default value, even if
+    that matches their current value. Further, any built-in model properties that are overridden in
+    the block file will be changed twice on a rapid iteration, once to their default and then again
+    to the override value.</li>
+
+    <li>In some situations, entity links can break during rapid iteration. For example, this occurs
+    when the target entity of a link was deleted at run-time and then the block is rapidly iterated
+    but the source entity was not modified. The reload re-creates the deleted entity but does not
+    update the linked property on the source entity because that entity was not modified.</li>
+
+    <li>During a Toolbench world reset, all existing entities are destroyed and recreated, however
+    the existing entities are destroyed immediately and by-pass the normal OnDestroy
+    lifecycle.</li>
+</ul>
+
+<h4>Scene Graph Service</h4>
+<ul>
+    <li>The NIF attachment mechanism will apply both parent and child scale during attachment. This
+    means that if an object with an attachment point had Scale=2 and the object to be attached had
+    Scale=3, then the effective scale of the attached object will be 6. This can be worked around
+    by authoring art with a uniform scale (typical assets having Scale=1) or by applying the
+    inverse of the parent scale when an object is attached.</li>
+</ul>
+
+<h4>SWIG</h4>
+<ul>
+    <li>Various projects use <a href="http://www.swig.org/" target="_blank">SWIG</a> to generate
+    script binding code for built-in API methods. The build commands used to run SWIG do not have
+    proper dependency checking. As a result, when changing header files that are included in a SWIG
+    .i file, it may be necessary to manually rebuild the .i files. When adding .i files to your own
+    projects, we recommend that dependencies be manually specified.</li>
+</ul>
+
+  <h4>
+    Terrain</h4>
+  <ul>
+    <li>Currently, most functionality within the terrain service does not support multiple
+      terrains being loaded simultaneously. For this reason, it is not recommended to
+      have two terrains loaded at the same time as doing so may cause unexpected issues.</li>
+  </ul>
+  
+  <h4>
+    Environment
+  </h4>
+  <ul>
+    <li>A specific time of day file must be defined for each entity.</li>
+  </ul>
+  
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

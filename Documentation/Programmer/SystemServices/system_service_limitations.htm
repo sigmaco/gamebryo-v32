@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>System service limitations</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>System service limitations</h1>
+
+<ul>
+<li>All SSID (System Service IDentifier) values, both primary ClassID and any registered aliases,
+    must be unique.</li>
+<li>A system service is ticked only once per frame.</li>
+<li>Any work requiring a pointer to the ServiceManager cannot be done in a system service
+    constructor and should instead be done in <span class="NDLSystemFont">OnPreInit</span>, <span
+    class="NDLSystemFont">OnInit</span>, <span class="NDLSystemFont">OnTick</span> or <span class=
+    "NDLSystemFont">OnShutdown</span>.</li>
+<li>In general a system service should not use any api on another system service in <span
+    class="NDLSystemFont">OnPreInit</span> unless that api is specifically documented as working at
+    that time. Further, to ensure safe access to a service during <span class="NDLSystemFont">OnInit
+    </span> and <span class="NDLSystemFont">OnShutdown</span> you should register a dependency on
+    that service during <span class="NDLSystemFont">OnPreInit</span>.</li>
+<li>System services rely on cooperative multitasking so calls to sleep or yield should be avoided
+    from <span class="NDLSystemFont">OnPreInit</span>, <span class="NDLSystemFont">OnInit</span>,
+    <span class="NDLSystemFont">OnTick</span> and <span class="NDLSystemFont">OnShutdown</span>.
+    </li>
+<li>A system service cannot block to wait for a message to be delivered. This is because the 
+    Message Service is a service and delivers messages during its <span class="NDLSystemFont">OnTick
+    </span> method, so if one service blocks no messages will get delivered.</li>
+<li><span class="NDLSystemFont">ServiceManager::RunOnce</span> is not re-entrant. You cannot block
+    and call <span class="NDLSystemFont">ServiceManager::RunOnce</span> while waiting for an event.
+    </li>
+<li>Many system services expect other services they can use to exist by the time <span class=
+    "NDLSystemFont">OnPreInit</span> is called. In many cases a service will optionally use another
+    system service if it exists and existence is checked in <span class="NDLSystemFont">OnPreInit
+    </span>.  There is no notification of late adding a system service, so if you late add a system
+    service many services will continue to run as if that service had not been added.</li>
+<li>Some services return failure from <span class="NDLSystemFont">OnPreInit</span> or <span class=
+    "NDLSystemFont">OnInit</span> if a service they depend on does not exist. If a service returns
+    failure from <span class="NDLSystemFont">OnPreInit</span>, <span class="NDLSystemFont">OnInit
+    </span> or <span class="NDLSystemFont">OnTick</span> the Service Manager will transition to 
+    the shutdown state and will return from <span class="NDLSystemFont">Run</span>. This usually
+    will cause an application to exit.</li>
+</ul>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+    <li><a href="system_service_overview.htm">System services overview</a></li>
+    <li><a href="system_service_features.htm">System service features</a></li>
+    <li><a href="system_service_how_work.htm">How system services work</a></li>
+    <li><a href="system_service_priority_and_dependency.htm">Understanding System Service Priorities
+        and Dependencies</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the Emergent Game
+        Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_best_practice.htm">Best practices for working with system services
+        </a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

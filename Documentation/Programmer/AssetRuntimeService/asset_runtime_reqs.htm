@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Requirements for Working with the Asset Infrastructure</title>
+
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Requirements for Working with the Asset Infrastructure</h1>
+
+<p>There are many Gamebryo standard system services that are
+responsible for loading game assets at run-time.  Some examples
+are the Entity Loader Service, Flat Model Manager, Scenegraph
+Service, and Shader Service.  All of these services require the
+Asset Factory Manager and will
+automatically take advantage of the Asset Locator Service when
+you include it in your application.</p>
+
+<h2>Using the Asset Factory Manager in your application</h2>
+
+<p>Any application that loads Gamebryo supported assets must include
+the <a href="../../Reference/QuickRef_Services/svc_qckref_asset_factory_mgr.htm">
+Asset Factory Manager</a> service. See the
+<a href="asset_load_loading.htm">Loading Assets with the Asset Factory Manager</a>
+page for the details of using this service.
+</p>
+
+<h2>Using the Asset Locator Service in your application</h2>
+
+<p>The first step to using
+the asset locating services is to instance the Asset Locator
+Service in your application's Main() function.</p>
+
+<pre>
+#include &lt;efd/AssetLocatorService.h&gt;
+...
+AssetLocatorServicePtr spAssetLocatorService = EE_NEW AssetLocatorService(m_spServiceManager);
+m_spServiceManager-&gt;RegisterSystemService(
+    AssetLocatorService::CLASS_ID,
+    spAssetLocatorService,
+    ServiceManager::kSysServPrio_Normal);
+</pre>
+
+<p>Once you incorporate the service into your application, you
+need to set up the service with some basic configuration.  The
+critical configuration setting that your application will require
+is the path to the Asset Web Root directory that has all the game
+assets. Typically, you will have created this directory of assets
+ahead of time, and specified it as part of creating your solution
+file in the Gamebryo Toolbench.  The Asset Web Root path used for
+your project in Toolbench will typically be the same path that
+you configure the Asset Locator Service to use.  In your
+application's main Config.ini file, you would specify this
+variable as follows:</p>
+
+<pre>
+[AssetWeb]
+Path = ../../relative/path/to/assets
+</pre>
+
+<p>Note that you will normally want to specify a relative path
+for development on Windows.  This allows other developers to have
+a different absolute path where the application binaries and
+assets are stored without having to modify the config file. 
+However, sometimes you will specify an absolute path here.  A
+good example is the configuration provided for your application
+when running on a game console.</p>
+
+<p>Once you have correctly instanced the Asset Locator Service,
+and given it the path it needs via configuration, the AssetLocate
+API will function to resolve asset Id's to specific asset files
+at runtime.  For the most part, all calls to <span class=
+"NDLSystemFont">efd::AssetLocatorService::AssetLocate</span>
+already exist in the standard services that perform asset
+loading.  You will generally only need to call the AssetLocate
+API in your code if you are creating a new loader service for an
+unsupported asset type.</p>
+
+<h2>Preparing Asset Metadata for use by your application</h2>
+
+<p>The Asset Runtime Service relies on optimized metadata files
+that are stored in <span class="NDLSystemFont"><em>&lt;Asset Web
+Root Directory&gt;</em>/asset-web-metadata</span>.  These files
+are automatically created and updated by the Asset Controller
+application.  In order for your game to correctly locate all of
+the runtime assets that you have created in your Asset Web Root,
+the Asset Controller must be given a chance to run prior to the
+Asset Runtime Service initializing. The update process is
+incremental, and will only process assets that have changed since
+the last update.</p>
+
+<p>The Asset Controller is automatically started by Toolbench
+when you open a solution file.  As you manipulate your project in
+Toolbench, and use other tools, the Asset Controller monitors for
+file changes and updates the metadata accordingly.  It also
+persists the changes in the metadata to your local asset web
+periodically.</p>
+
+<p>In addition to running Toolbench and opening your solution
+file to update metadata, you can also incorporate the update as a
+build step.  By running the AssetController from the commandline
+during a build, the metadata is appropriately updated, and the
+application is ready to run with latest asset changes. This
+pre-built metadata could then be shared out to content
+developers.</p>
+
+<p>To summarize, there are two options for having your asset
+metadata updated during the development process:</p>
+
+<ul>
+  <li>Your first option is to open Toolbench and your solution file.
+  Allow it and the Asset Controller to run while you modify the
+  files in your Asset Web Root.</li>
+  
+  <li>Your second option is to run the Asset Controller as a
+  pre-build or post-build step to update the metadata associated
+  with your game assets.  When there is little change to the
+  content, this process executes very quickly, but major changes
+  will slow down a build by several seconds.</li>
+</ul>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                If your game uses the Rapid Iteration System
+                Service, all requests for assets will be funneled
+                through the Asset Controller, and results will be
+                based on the latest state of your assets.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="asset_runtime_overview.htm">Asset Infrastructure Overview</a></li>
+
+    <li><a href="asset_runtime_features.htm">Asset Infrastructure Features</a></li>
+
+    <li><a href="asset_runtime_how_work.htm">How the Asset Locating Services Work</a></li>
+
+    <li><a href="asset_runtime_limitations.htm">Asset Runtime
+    Service limitations</a></li>
+
+    <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the Emergent Game Framework</a></li>
+
+    <li><a href="asset_runtime_best_practice.htm">Best Practices for Working with the Asset Infrastructure</a></li>
+
+    <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

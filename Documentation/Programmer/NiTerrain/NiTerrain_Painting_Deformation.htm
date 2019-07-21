@@ -1,0 +1,468 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Painting and Deformation</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+  <h1>
+    NiTerrain Painting and Deformation</h1>
+  <p>
+    This section of the documentation discusses the use of the 
+    <span class="NDLSystemFont"><a href="../../Reference/NiTerrain/NiTerrain.htm">NiTerrain</a></span> interfaces
+    to paint and deform the terrain programatically. For information on how to use the
+    tools provided in toolbench, please refer to the artist's guide to the terrain toolbench
+    plugin.</p>
+  <p>
+  The terrain engine supports painting and deformation through a set of interfaces
+  on the <span class="NDLSystemFont">NiTerrain</span> object. These functions allow both the ability to read data from
+  the terrain's deformable information, and to write new data through transactions
+  with the interface. Transactions are defined as either a read or a write operation
+  and revolve around 'deformation buffers'.</p>
+ <p>
+  Currently the terrain supports changes to the heightfield and blend masks. The toolbench
+  plugin for terrain utilizes these interfaces to provide a painting system for building
+  scenes with terrains. The following functions make up the terrain deformation interface.
+  </p>
+<pre>bool NiTerrain::GetHeightMap(NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, 
+    HeightMapBuffer* pkBuffer, NiTerrainDataSnapshot* pkSnapshot = NULL);
+  
+bool NiTerrain::SetHeightMap(HeightMapBuffer* pkBuffer);
+  
+bool NiTerrain::GetSurfaceMask(const NiSurface* pkSurface, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);
+  
+bool NiTerrain::GetSurfaceMask(efd::SInt32 uiSurfaceIndex, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);
+  
+bool NiTerrain::SetSurfaceMask(const NiSurface* pkSurface, SurfaceMaskBuffer* pkBuffer,
+    SurfaceMaskBuffer* pkMaskSumBuffer);
+  
+bool NiTerrain::SetSurfaceMask(efd::SInt32 uiSurfaceIndex, SurfaceMaskBuffer* pkBuffer,
+    SurfaceMaskBuffer* pkMaskSumBuffer);
+  
+void RestoreDataSnapshot(NiTerrainDataSnapshot* pkSnapshot);</pre>
+  
+  <p>
+    These functions abstract the duplication of data within the terrain engine that
+    is required to eliminate seams between meshes and morphing and relevant lighting
+    data, allowing the developer to naively set the data and be confident that the desired
+    effect will be acheived in the geometry or blendmasks.</p>
+  <p>
+    All write operations are limited to operating when the Terrain engine is in 'toolmode',
+    which may be configured at the beginning of an application through the following
+    static function.</p>
+  <pre>static void NiTerrain::SetInToolMode(bool bInToolMode);</pre>
+  <p>
+    Please consult the <a href="Introduction_to_NiTerrain_Library.htm">Terrain documentation</a> and
+    <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/Introduction_to_NiTerrain_Class_Reference.htm">
+    NiTerrain</a></span> class
+    reference for more detailed information on the use of this interface.</p>
+  <h2>
+    Deformation Buffers
+  </h2>
+  <p>
+    Deformation buffers generic objects used to store data of a specific type for a
+    specific region of the terrain. Two types of deformation buffers exist in the painting
+    and deformation system, these include the HeightMapBuffer object and the SurfaceMaskBuffer
+    object.</p>
+  <p>
+    Each deformation buffer object stores the following information about its stored
+    data:</p>
+  <ul>
+    <li>The terrain space region that the buffer represents - represented in floats to identify the deviation from the requested data</li>
+    <li>The range of sectors that the buffer spans. </li>
+    <li>The relative data point indexes for those sectors that the buffer spans. </li>
+    <li>The width and height of the buffer. </li>
+    <li>A buffer containing a copy of the data in the described region. </li>
+  </ul>
+  <p>
+    The <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainDeformationBuffer.htm">NiTerrainDeformationBuffer</a></span> object is a templated class, allowing the type of
+    data stored within it to be customized according to the data field being modified.
+    As such, HeightMapBuffers store a buffer of UInt16 values, and the SurfaceMaskBuffer
+    object stores a buffer of UInt8 values.</p>
+  <h2>
+    Heightmap Painting
+  </h2>
+  <p>
+    The process of changing the terrain's heightmap is fairly simple and can be burned
+    down into three steps:</p>
+  <ol>
+    <li>Fetch the current heightmap data from the terrain. </li>
+    <li>Modify the data that needs changing. </li>
+    <li>Push the new heightmap data back to the terrain. </li>
+  </ol>
+  <h3>
+    Step 1
+  </h3>
+  <p>
+    The first step in this process is acomplished by using the following function defined
+    on the <span class="NDLSystemFont">NiTerrain</span> class.</p>
+    
+<pre>bool NiTerrain::GetHeightMap(NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, 
+    HeightMapBuffer* pkBuffer, NiTerrainDataSnapshot* pkSnapshot = NULL);</pre>
+  <p>
+    There are three main parameters to this function, the first parameter (kTerrainSpaceRegion)
+    defines the region of the terrain that the user wishes to fetch the heightmap data
+    for. The second parameter defines the buffer object that the data is to be copied
+    into, and the third allows snapshots of the existing terrain data to be appended
+    for storage (details on the data snapshot system can be found later in this section
+    of the documentation).</p>
+  <p>
+    The main task involved in this step is defining the region of the terrain to get
+    the data for. This involves selecting the inclusive region of verticies to get the
+    height data for from the terrain object. The following diagram is used to illustrate
+    how the data region is calculated:</p>
+  <div class="FigureContainer">
+    <img alt="Calculated data region" src="images/dataregioncalc.png">
+    <p class="FigureCaption">
+      Diagram: <i>Calculated data region</i></p>
+  </div>
+  <p>
+    In the above diagram, a Multi-sector 8x8 terrain is depicted. In the diagram sector
+    [0,0] is in the bottom left corner, the intersection of each blue line is the location
+    of a vertex, the terrain space index of each vertex is determined by the numbers
+    allong the axis of the diagram, the red, dashed lines represent the borders of sectors
+    and the shaded yellow area represents the region of the terrain we wish to fetch
+    the data for.</p>
+  <p>
+    The 'terrain space region' for the shaded area in the diagram would be defined by
+    the following rectangle object:</p>
+  <ul>
+    <li>kTerrainSpaceRegion.m_left = 5 </li>
+    <li>kTerrainSpaceRegion.m_bottom = 3 </li>
+    <li>kTerrainSpaceRegion.m_right = 11 </li>
+    <li>kTerrainSpaceRegion.m_top = 11 </li>
+  </ul>
+  <p>
+    Note: The specified region is an inclusive range, thus the returned buffer object
+    will return data for the specified verts within the region including the extreme
+    values. This also means that if a region with the values all equal to '0' then only
+    the data for the vert at [0,0] would be returned in the buffer object. It is also
+    important to note that if the specified region overlaps areas of the terrain where
+    no sectors exist, then those areas of the buffer will contain 0 values.</p>
+  <p>
+    The following code demonstates the execution of this step:</p>
+
+<pre>NiRect&lt;NiInt32&gt; kRegion;
+kRegion.m_left = 5;
+kRegion.m_right = 11; 
+kRegion.m_top = 11;
+kRegion.m_bottom = 3;
+
+HeightMapBuffer buffer;
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;GetHeightMap(kRegion, &amp;buffer);</pre>
+  <h3>
+    Step 2
+  </h3>
+  <p>
+    The data from the HeightMapBuffer object may now be modified according to the deformation
+    required by the application. The data from the buffer may be accessed through the
+    HeightMapBuffer::GetBuffer() function. Each UInt16 value in the buffer represents
+    one vert The following code snippet demonstrates increasing the height of the verts
+    in the specified region by 10 points.</p>
+    
+<pre>NiUInt16* puiHeights = buffer.GetBuffer();
+for (NiUInt32 iX = 0; iX &lt; buffer.GetWidth(); ++iX)
+{
+    for (NiUInt32 iY = 0; iY &lt; buffer.GetHeight(); ++iY)
+    {
+        NiUInt32 uiIndex = iX + iY * buffer.GetWidth();
+        puiHeights[uiIndex] += 10;
+    }
+}</pre>
+  <p>
+    Users may feel free develop their own algorithms for modifying the heights returned
+    in the heightmap buffer object.</p>
+  <h3>
+    Step 3
+  </h3>
+  <p>
+    The final step of the heightmap deformation process is to push the data back to
+    the terrain. This is done through the following function interface:</p>
+    
+<pre>bool NiTerrain::SetHeightMap(HeightMapBuffer* pkBuffer);</pre>
+  <p>
+    By calling this function, the terrain will take the heightmap buffer object and
+    copy the information it stores back into the relevant sectors. These sectors will
+    then request that the streaming system regenerate all the relevant information from
+    the heightmap, such as normals, tangents, and the low detail normal map. Note that
+    these new calculations are only performed upon the area that has been defined by
+    the heightmap buffer (the region given back in step 1). This function blocks until
+    the terrain's data has been completely updated and finished recalculating.</p>
+  <p>
+    The following code would be used to complete the example code of this section:</p>
+
+<pre>pkTerrain-&gt;SetHeightMap(&amp;buffer);</pre>
+  <h2>
+    Surface Mask Painting
+  </h2>
+  <p>
+    Like heightmap sculpting, surface mask painting is composed of a few steps, though
+    with a few extra complexities that need to be taken into account at each stage.
+    These steps are as follows:</p>
+  <ol>
+    <li>Fetch the current surface mask data for the surface from the terrain. </li>
+    <li>Modify the surface mask data in the buffer and update the sum mask data buffer.
+    </li>
+    <li>Push the surface mask information back to the terrain. </li>
+    <li>Force an update of the terrain's textures. </li>
+  </ol>
+  <p>
+    Note: All surface mask painting operations occur in the context of a single surface
+    at a time. To paint multiple surfaces at once, follow steps 1 through 4 for each
+    surface, then execute step 5 once.</p>
+  <h3>
+    Step 1
+  </h3>
+  <p>
+    Similar to the first step when deforming the heightmap of the terrain, surface mask
+    painting first requires the user to fetch the set of data that exists on the terrain.
+    This is done using one of the following functions:</p>
+    
+<pre>bool NiTerrain::GetSurfaceMask(const NiSurface* pkSurface, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);
+
+bool NiTerrain::GetSurfaceMask(efd::SInt32 uiSurfaceIndex, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);</pre>
+  <p>
+    Note: These functions are functionally identical except for the first parameter
+    that they take. The second function simply takes the terrain wide surface index
+    of the surface being queried. The surface index of a particular surface can be queried
+    from the terrain object via a call to the following function:</p>
+    
+<pre>NiInt32 NiTerrain::GetSurfaceIndex(const NiSurface* pkSurface);</pre>
+  <p>
+    Once again, the function takes a terrain space region to describe the region of
+    data to be fetched from the terrain. Like the heightmap functions, this terrain
+    space region is specified in terms of verticies on the terrain, however, the surface
+    mask pixels rarely directly line up with the verticies of the terrain, in this case,
+    the region is expanded to include any partial pixels that the region overlaps. The
+    following diagram illustrates how the region is expanded to include the partially
+    covered pixels.</p>
+  <div class="FigureContainer">
+    <img alt="Partly covered pixels" src="images/partlycoveredpixels.png">
+    <p class="FigureCaption">
+      Diagram: <i>Partly covered pixels</i></p>
+  </div>
+  <p>
+    In the above diagram, a Multi-sector 8x8 terrain is depicted. In the diagram sector
+    [0,0] is in the bottom left corner, the intersection of each blue line is the location
+    of a vertex, the terrain space index of each vertex is determined by the numbers
+    allong the axis of the diagram, the red dashed lines represent the borders of sectors,
+    the green dashed lines represent the borders of the pixels in the blend mask of
+    the terrain, the shaded yellow area represents the region of the terrain we wish
+    to fetch the data for, and the shaded red area shows how that region is extended
+    to include partially covered pixels.</p>
+  <p>
+    The 'terrain space region' for the shaded area in the diagram would be defined by
+    the following rectangle object:</p>
+  <ul>
+    <li>kTerrainSpaceRegion.m_left = 4 </li>
+    <li>kTerrainSpaceRegion.m_bottom = 4 </li>
+    <li>kTerrainSpaceRegion.m_right = 10 </li>
+    <li>kTerrainSpaceRegion.m_top = 12 </li>
+  </ul>
+  <p>
+    Due to the expansion of the region to cover the overlapped pixels, the user could
+    expect the buffer to contain a 9x12 buffer of surface mask pixels for the surface.<br />
+    Note: If the surface being queried does not exist at the pixels being queried (the
+    underlying leafs may not contain the surface) then the returned pixel values will
+    be 0.</p>
+  <p>
+    The main other difference to the heightmap defomation process in this step is the
+    inclusion of a second buffer object in the function call. This parameter is the
+    pkMaskSumBuffer object. Whilst this object is optional, it is recommended to retrieve
+    at least one copy of the mask sum buffer when painting the surface mask buffer as
+    it will help in painting algorithms. This buffer will be the same size as the mask
+    buffer, but will instead contain the sum of all the mask values of all the surfaces
+    at that pixel. A value of 0 represents no surfaces affecting that pixel, and a value
+    of 255 indicates that the pixel is completely painted.</p>
+  <p>
+    The following code demonstates the execution of this step:</p>
+    
+  <pre>NiRect&lt;NiInt32&gt; kRegion;
+kRegion.m_left = 4;
+kRegion.m_right = 10; 
+kRegion.m_top = 12;
+kRegion.m_bottom = 4;
+      
+SurfaceMaskBuffer buffer;<br>
+SurfaceMaskBuffer sumBuffer;
+NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;GetSurfaceMask(pkSurface, kRegion, &amp;buffer, &amp;sumBuffer;</pre>
+
+  <h3>
+    Step 2
+  </h3>
+  <p>
+    In this step the user must modify the buffers to acheive the desired painting outcome.
+    The user should modify the mask buffer to contain the values the surface mask should
+    have and the sum mask buffer should be adjusted according to how the adjustment
+    of the mask should be acheived. The sum buffer is used to determine how the changes
+    to the surface mask will affect the other surfaces that are also painted upon the
+    same pixels. The following examples demonstrate how the sum mask buffer can be changed
+    to acheive different results.</p>
+  <ul>
+    <li>Set the sum mask buffer to a lower value </li>
+    <ul>
+      <li>All surfaces on the terrain in those areas will be gradually unpainted from the
+        surface </li>
+    </ul>
+    <li>Set the sum mask buffer to a higher value </li>
+    <ul>
+      <li>All surfaces on the terrain in those areas will be gradually increased in strength
+      </li>
+    </ul>
+    <li>Increase the sum mask buffer by the same amount that the surface mask buffer is
+      increased by </li>
+    <ul>
+      <li>The surface will increase in strength in the area </li>
+    </ul>
+    <li>Keep the sum mask buffer constant whilst increasing the surface mask buffer
+    </li>
+    <ul>
+      <li>The surface will increase in strength and decrease the other surface's strengths
+      </li>
+    </ul>
+  </ul>
+  <p>
+    The following code demonstrates a simple painting algorithm and implements a hybrid
+    of the last two techniques listed above:</p>
+    
+<pre>efd::UInt8* pMaskData = buffer.GetBuffer();
+efd::UInt8* pMaskSumData = sumBuffer.GetBuffer();
+for (efd::UInt32 uiIndex = 0; uiIndex &lt; pMaskBuffer-&gt;GetSize(); ++uiIndex)
+{
+    efd::UInt8 uiOldValue = pMaskData[uiIndex];
+    efd::UInt8 uiNewValue = efd::Clamp(uiOldValue + 10, 0, 255);
+ 
+    efd::UInt8 uiOldSum = pMaskSumData[uiIndex];
+    efd::UInt8 uiNewSum = efd::Clamp(uiOldSum - uiOldValue + uiNewValue, 0, 255);
+
+    pMaskData[uiIndex] = uiNewValue;
+    pMaskSumData[uiIndex] = uiNewSum;
+ }</pre>
+  <h3>
+    Step 3
+  </h3>
+  <p>
+    Once the surface mask has been modified appropriately, the data must be sent back
+    to the terrain object. This is done by executing the following code:</p>
+    
+  <pre>pkTerrain-&gt;SetSurfaceMask(pkSurface, &amp;buffer, &amp;sumBuffer);</pre>
+  <p>
+    By calling this function, the data stored in the buffer is sent out to the various
+    related textures to create the rendered effect of changing the blend mask. It is
+    worth noting, that by calling this function, the terrain object will attempt to
+    add the specified surface to the relevant leafs in the area, if the surface cannot
+    be added to a leaf (because the leaf cannot accomodate another surface) then the
+    data from that region of the buffer will be ignored. It is also worth noting that
+    if the surface mask for a surface on a particular leaf becomes completely blank,
+    then that surface will be removed from the leaf automatically to make room for other
+    surfaces to be painted in its place.</p>
+  <h3>
+    Step 4
+  </h3>
+  <p>
+    The final step when painting surface masks is to update the low detail textures
+    of the terrain so they match the result of using the new blend mask, and send an
+    update pass through the terrain to ensure all the texturing data is up to date after
+    the paint operation has finished. This step is executed using the following code:</p>
+    
+<pre>pkTerrain-&gt;RenderLowDetailTextures();
+pkTerrain-&gt;Update(0.0f);</pre>
+  <p>
+    Note: When painting multiple surface masks at once, this step only needs to be performed
+    once.</p>
+  <h2>
+    Data Snapshots
+  </h2>
+  <p>
+    Data snapshots are used as a mechanism to store the current state of the terrain,
+    generally before it has been painted and changed. The main application for this
+    information is to store the state of the terrain at the beginning of painting actions
+    efficiently, so that that state may be restored at a later point in time, such as
+    required by an undo/redo system.</p>
+  <p>
+    The main functions relevant to data snapshots are:</p>
+    
+<pre>bool NiTerrain::GetHeightMap(NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, 
+    HeightMapBuffer* pkBuffer, NiTerrainDataSnapshot* pkSnapshot = NULL);
+
+bool NiTerrain::GetSurfaceMask(const NiSurface* pkSurface, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);
+      <br>
+bool NiTerrain::GetSurfaceMask(efd::SInt32 uiSurfaceIndex, 
+    NiRect&lt;efd::SInt32&gt; kTerrainSpaceRegion, SurfaceMaskBuffer* pkMaskBuffer, 
+    SurfaceMaskBuffer* pkMaskSumBuffer = NULL, NiTerrainDataSnapshot* pkSnapshot = NULL);</pre>
+  <p>
+    Each of these functions may be given a data snapshot object as its last parameter,
+    when supplied to the function, the snapshot will be queried to check if data for
+    the selected region has already been stored, if the data already exists within the
+    snapshot, it will not be modified. If the data does not already exist, then it will
+    be added.</p>
+  <p>
+    In the event that the user then wishes to restore the state of the terrain stored
+    in the snapshot, the following function may be called:</p>
+    
+  <pre>void RestoreDataSnapshot(NiTerrainDataSnapshot* pkSnapshot);</pre>
+  <p>
+    This will then restore the terrain to the stored state.<br>
+    Note: If the snapshot contains surface mask data, then step 4 of the surface mask
+    painting process must be executed after calling this function.</p>
+  <h2>
+    Painting Across Multiple Sectors
+  </h2>
+  <p>
+    Whilst the painting system abstracts away a lot of the concerns involved in painting
+    across multiple sectors. The following set of guidelines should always be followed
+    when painting:</p>
+  <ul>
+    <li>When painting or deforming terrain on the edge of sectors, make sure the adjacent
+      sector is loaded as well. </li>
+    <ul>
+      <li>Data is replicated across the seams of sectors, without the adjacent sectors loaded
+        when the painting actions are made seams and cracks may appear between the sectors.
+      </li>
+    </ul>
+    <li>Be sure to save all the relevant sectors to disk once your changes are complete
+      or they will not persist and may cause cracks and seams at a later time. </li>
+    <li>The row of pixels on the very edge of a sector in the surface mask are replicated
+      to the sector adjacent to the row. Be sure to have the adjacent sector loaded when
+      modifying these pixels. </li>
+  </ul>
+  
+      
+</body>
+</html>

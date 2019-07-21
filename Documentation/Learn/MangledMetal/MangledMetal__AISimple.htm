@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>AISimple Model</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Toolbench" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)==========================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+<h1>AISimple Model</h1>
+<p>Found in project: <a href="MangledMetal__ProjectIntro.htm">MangledMetal</a></p>
+<p>Mixes In: <a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></p>
+<p>Mixed Into: <a href="MangledMetal__Enemy.htm">Enemy</a>, <a href="RuntimeEntityModels__AIPedestrian.htm">AIPedestrian</a></p>
+<h4>Description</h4>
+<p>Simple combat AI.  Implements patrolling behavior until an enemy is spotted, then moves directly toward enemy until within combat distance.</p>
+<h4>Properties</h4>
+<table>
+<thead>
+<tr><th>Name</th> <th>Type</th>  <th>Source Model</th> <th>Default Value</th> <th>Traits</th> <th>Description</th></tr>
+</thead>
+<tbody>
+	<tr>
+		<td>PerceptionRadius</td>
+		<td>Float32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>2000</td>
+		<td>Mutable</td>
+		<td>Maximum radius at which enemies are perceived by this AI</td>
+	</tr>
+	<tr>
+		<td>MoveToPoint</td>
+		<td>Point3</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>0, 0, 0</td>
+		<td></td>
+		<td>Point towards which this AI is moving.  Will only be honored if DoMoveTo is true and MoveToEntity is 0.  Use MoveToEntity if possible since C++ code updates the move-to point more smoothly than when the Lua script does it.</td>
+	</tr>
+	<tr>
+		<td>DoMoveTo</td>
+		<td>Boolean</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>False</td>
+		<td></td>
+		<td>If true, this AI will move towards its MoveToEntity or MoveToPoint.  MoveToEntity has priority if specified.</td>
+	</tr>
+	<tr>
+		<td>MoveToEntity</td>
+		<td>EntityRef</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td></td>
+		<td>Entity towards which this AI is moving.  Will only be honored if DoMoveTo is true.  It's better to use MoveToEntity than MoveToPoint when tracking a moving entity because C++ code will update the actor's direction more often than the Lua script runs.</td>
+	</tr>
+	<tr>
+		<td>RangedAttackRadius</td>
+		<td>Float32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>1500</td>
+		<td></td>
+		<td>Max radius at which the AI can engage in ranged combat</td>
+	</tr>
+	<tr>
+		<td>MeleeAttackRadius</td>
+		<td>Float32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>300</td>
+		<td></td>
+		<td>Max radius at which the AI can engage in melee combat</td>
+	</tr>
+	<tr>
+		<td>IsExecuting</td>
+		<td>Boolean</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>False</td>
+		<td></td>
+		<td>True if an AI is currently executing on this actor.  This is just a safety interlock, it should not be possible to get two AIs on the same actor.</td>
+	</tr>
+	<tr>
+		<td>CurrentWaypoint</td>
+		<td>EntityRef</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td></td>
+		<td>When the actor is in Patrolling mode, this is the waypoint to which it is navigating.  When the actor actually reaches the waypoint, it will ask the waypoint what its next waypoint should be.</td>
+	</tr>
+	<tr>
+		<td>SleepTime</td>
+		<td>UInt32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>250</td>
+		<td></td>
+		<td>Time to sleep at bottom of AI loop, in milliseconds.  Decrease this to improve AI responsiveness, increase to improve performance.</td>
+	</tr>
+	<tr>
+		<td>CombatDisabled</td>
+		<td>Boolean</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>False</td>
+		<td></td>
+		<td>TRUE if this actor is prohibited from entering combat.  Used during the spawn process to avoid having the actor exit the spawn area prematurely.</td>
+	</tr>
+	<tr>
+		<td>WalkSpeed</td>
+		<td>Float32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>400</td>
+		<td></td>
+		<td>The value to use as the target speed when the AI is patrolling</td>
+	</tr>
+	<tr>
+		<td>RunSpeed</td>
+		<td>Float32</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>1000</td>
+		<td></td>
+		<td>The value to use as the target speed when chasing an enemy.</td>
+	</tr>
+</tbody>
+</table>
+<h4>Behaviors</h4>
+<table>
+<thead>
+<tr><th>Name</th> <th>Target Type</th> <th>Source Model</th> <th>Traits</th> <th>Description</th></tr>
+</thead>
+<tbody>
+	<tr>
+		<td>AIStatePatrolling</td>
+		<td>Lua</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td>Patrolling state.  AI moves to its CurrentWaypoint.  When it arrives, it asks the waypoint where to go next.  This allows you to set up networks of waypoints, possibly with randomization.</td>
+	</tr>
+	<tr>
+		<td>AIStateMoveToCombat</td>
+		<td>Lua</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td>AI has noticed an enemy but is outside of combat range.  AI moves directly towards enemy.</td>
+	</tr>
+	<tr>
+		<td>AIStateRangedAttack</td>
+		<td>Lua</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td>AI is within ranged attack radius of an enemy.  This is a &quot;dummy&quot; step in the base AI since the base AI has no ranged attack.</td>
+	</tr>
+	<tr>
+		<td>AIStateMeleeAttack</td>
+		<td>Lua</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td></td>
+		<td>AI is within melee attack range of an enemy and should begin attacking.</td>
+	</tr>
+	<tr>
+		<td>OnCreate</td>
+		<td>Abstract</td>
+		<td><a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></td>
+		<td>Extends</td>
+		<td>Behavior invoked when the Entity Manager adds the entity instance. Created entities do not render until they enter the world.</td>
+	</tr>
+	<tr>
+		<td>OnAssetsLoaded</td>
+		<td>Abstract</td>
+		<td><a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></td>
+		<td>Extends</td>
+		<td>Behavior invoked when the required assets have been loaded.</td>
+	</tr>
+	<tr>
+		<td>OnEntitySetFinished</td>
+		<td>Lua</td>
+		<td><a href="MangledMetal__AISimple.htm">AISimple</a></td>
+		<td>Extends</td>
+		<td>Behavior invoked when all entities in a world file have completed their OnCreate lifecycle event.</td>
+	</tr>
+	<tr>
+		<td>OnDestroy</td>
+		<td>Abstract</td>
+		<td><a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></td>
+		<td>ReverseExtends</td>
+		<td>Behavior invoked when the scheduler removes the entity instance from the simulation.</td>
+	</tr>
+	<tr>
+		<td>OnEnterWorld</td>
+		<td>Abstract</td>
+		<td><a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></td>
+		<td>Extends</td>
+		<td>Behavior invoked when an entity is told to enter the world. By default entities automatically enter the world once OnCreate finishes.</td>
+	</tr>
+	<tr>
+		<td>OnExitWorld</td>
+		<td>Abstract</td>
+		<td><a href="../../Reference/QuickRef_Models/StandardModelLibrary__BaseEntity.htm">BaseEntity</a></td>
+		<td>Extends</td>
+		<td>Behavior invoked when an entity is told to exit the world. Once out of the world the entity is still valid but will no longer render.</td>
+	</tr>
+</tbody>
+</table>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

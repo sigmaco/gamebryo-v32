@@ -1,0 +1,518 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Hello World: Creating main.cpp and Adding Services</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+
+<!--(Begin Links)===============================================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Hello World: Creating main.cpp and Adding Services</h1>
+
+<p>After you set up your C++ project, you need to set up your main application, add a service
+manager, and add services to drive your application.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="hello_world_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="hello_world_tutorial_new_emt_project.htm">Creating a New Toolbench Game
+    Solution</a></li>
+
+    <li><a href="hello_world_tutorial_models.htm">Creating New Models</a></li>
+
+    <li><a href="hello_world_tutorial_world.htm">Populating Your World</a></li>
+
+    <li><a href="hello_world_tutorial_project.htm">Setting Up Your C++ Project</a></li>
+
+    <li><b>Creating main.cpp and Adding Services&nbsp;&nbsp;&lt;-- You are here</b></li>
+
+    <li><a href="hello_world_tutorial_loading.htm">Loading Your World and Starting the
+    Application</a></li>
+
+    <li><a href="hello_world_tutorial_more_services.htm">Adding More Game Framework
+    Services</a></li>
+</ol>
+
+<h2>Source Code</h2>
+
+<p>If you want to skip ahead to loading and running your application, you can find the full source
+for the completed tutorial at <a href="hello_world_tutorial_code_samples.htm#ALL">Hello World Code
+Samples.</a> Note that you will still need to perform the <a href="#Adding">Adding the Demo System
+Service ID data driven enum file</a> step below.</p>
+
+<h2>Code Highlights</h2>
+
+<p>This section presents some code highlights to point out important concepts you'll need to create
+a basic Game Framework-based application. Several pieces of code are not discussed explicitly in
+this section but are still necessary for the application to run. For this reason, it is recommended
+that you start from the sample code at <a href="hello_world_tutorial_code_samples.htm#ALL">Hello World Code
+Samples.</a> rather than constructing your code from the snippets discussed in this section.</p>
+
+<h3>Creating the HelloWorld Solution</h3>
+
+<p>Open up the project file that you created or copied and click File &gt; Save All. Name the
+solution <span class="NDLSystemFont">HelloWorld</span> and click OK.</p><a name="Adding" id=
+"Adding"></a>
+
+<h3>Adding the Demo System Service ID Data Driven Enum File</h3>
+
+<p>HelloWorld uses a data driven enumeration (DDE) file (<span class="NDLSystemFont">.enum</span>)
+to manage IDs that are needed at compile time. We need to add the <span class=
+"NDLSystemFont">.enum</span> file to our project and add some custom build rules so that this file
+generates an appropriate header file.</p>
+
+<p>First, add the following file to your project under the <span class="NDLSystemFont">Data</span>
+folder, using the "Add Existing Item" option:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont"><em>%EMERGENT_PATH%</em>/Media/Enums/egfDemoSystemServiceIDs.enum</span></li>
+</ul>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                When you add this file to your visual studio project, VS may ask you if you want to
+                associate a custom build rule for files of type <em>.enum</em>. Individual enum
+                files may depend on other enum files which, in turn, means each needs specific
+                custom build rule parameters. Although letting VS associate a custom build rule is
+                convenient, it may result in incorrectly generated .h files. We recommend you add
+                custom build rules on a per-file basis using the file properties dialog.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Attach the following custom build rule to this file to generate the header file by
+right-clicking the file in the Solution Explorer and defining the Custom Build Step.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Build Step Field</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Command Line</td>
+
+            <td>"$(EMERGENT_PATH)\Source\Tools\DDEHeaderGen\bin\DDEHeaderGenRelease.exe"
+            output="$(ProjectDir)egfDemoSystemServiceIDs.h"
+            base#="$(EMERGENT_PATH)\Media\Enums\efdSystemServiceIDs.enum"
+            base#="$(EMERGENT_PATH)\Media\Enums\egfSystemServiceIDs.enum"
+            base#="$(EMERGENT_PATH)\Media\Enums\ecrSystemServiceIDs.enum"
+            enum="$(EMERGENT_PATH)\Media\Enums\egfDemoSystemServiceIDs.enum"</td>
+        </tr>
+
+        <tr>
+            <td>Description</td>
+
+            <td>Generating enumeration header for
+            $(EMERGENT_PATH)/Media/Enums/egfDemoSystemServiceIDs.enum</td>
+        </tr>
+
+        <tr>
+            <td>Outputs</td>
+
+            <td>$(ProjectDir)egfDemoSystemServiceIDs.h</td>
+        </tr>
+
+        <tr>
+            <td>Additional Dependencies</td>
+
+            <td>$(EMERGENT_PATH)/Media/Enums/efdSystemServiceIDs.enum;
+            $(EMERGENT_PATH)/Media/Enums/egfSystemServiceIDs.enum;
+            $(EMERGENT_PATH)/Media/Enums/ecrSystemServiceIDs.enum</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Right-click the <span class="NDLSystemFont">egfDemoSystemServiceIDs.enum</span> file and select
+compile. Verify that the build step generated the <span class=
+"NDLSystemFont">egfDemoSystemServiceIDs.h</span> file in your tutorial source directory. Add this
+generated file to your project under the <span class="NDLSystemFont">Generated</span> folder.</p>
+
+<h3>Setting Up HelloWorld.cpp and Main.cpp</h3>
+
+<p>We're not yet in the heart of your application. We need to add some code to <span class=
+"NDLSystemFont">HelloWorld.cpp</span> to start the service manager, initialize some services, and
+start the main application loop. These steps are all done in <span class=
+"NDLSystemFont">HelloWorld.cpp</span> and <span class="NDLSystemFont">Main.cpp</span> simply calls
+the 'Go' method of the hello world service.</p>
+
+<h3>HelloWorld.h</h3>
+
+<p>The hello world service is responsible for waiting for required services, initializing the
+renderer and creating the camera. Later, we'll add support for movement by adding in the Input
+Service.</p>
+
+<p><span class="NDLSystemFont">HelloWorld.h</span> contains the class declaration for this service.
+Here are some of the highlights for this file.</p>
+
+<p>Create the new header file under the <span class="NDLSystemFont">Interface</span> folder and
+call it <span class="NDLSystemFont">HelloWorld.h</span>.</p>
+
+<p>We need to include the appropriate header files.</p>
+<pre>
+#include &lt;efd/ServiceManager.h&gt;
+#include &lt;egf/EntityChangeMessage.h&gt;
+#include "egfDemoSystemServiceIDs.h"
+</pre>
+
+<p>We publicly inherit from ISystemService.</p>
+<pre>
+class HelloWorld : public efd::ISystemService
+</pre>
+
+<p>We declare our unique class ID and indicate our parent is IBase.</p>
+<pre>
+EE_DECLARE_CLASS1 (HelloWorldService, efd::kCLASSID_HelloWorldService, IBase);
+</pre>
+
+<p>We add the reference counting implementation.</p>
+<pre>
+EE_DECLARE_CONCRETE_REFCOUNT;
+</pre>
+
+<p>This class will need to override several virtual functions as well, 
+follow the full code for this version of the file in <a href=
+"hello_world_tutorial_code_samples.htm#HelloService_H_1">Hello World Code Samples, HelloWorld.h
+version 1</a> to get the rest of the class interface.</p>
+
+<h3>HelloWorld.cpp</h3>
+
+<p><span class="NDLSystemFont">HelloWorld.cpp</span> contains the definition for the methods of
+this service.</p>
+
+<p>Create the new source file under the <span class="NDLSystemFont">Source</span> folder and call
+it <span class="NDLSystemFont">HelloWorld.cpp</span>.</p>
+
+<p>We'll be creating most of the services using the service allocators so we need to include the
+headers.</p>
+<pre>
+#include &lt;efd/ServiceAllocator.h&gt;
+#include &lt;egf/ServiceAllocator.h&gt;
+#include &lt;ecr/ServiceAllocator.h&gt;
+</pre>
+
+<p>We'll also be creating other appropriate services so we need to include the headers for them as
+well.</p>
+<pre>
+#if defined(EE_PLATFORM_WIN32)
+#include &lt;efd/Win32/Win32PlatformService.h&gt;
+#elif defined(EE_PLATFORM_PS3)
+#include &lt;efd/PS3/PS3PlatformService.h&gt;
+#endif
+
+#include &lt;egmAnimation/AnimationService.h&gt;
+
+// Our main application service:
+#include "HelloWorld.h"
+
+// Other various headers
+#include &lt;efd/SystemUniqueIndex.h&gt;
+#include &lt;efd/FileDestination.h&gt;
+#include &lt;efd/ConfigManager.h&gt;
+#include &lt;egf/EntityLoaderService.h&gt;
+#include &lt;egf/FlatModelManager.h&gt;
+#include &lt;egf/EntityManager.h&gt;
+#include &lt;efd/AssetFactoryManager.h&gt;
+#include &lt;egf/StandardModelLibraryFlatModelIDs.h&gt;
+#include &lt;ecr/CameraService.h&gt;
+</pre>
+
+<p>We use the <span class="NDLSystemFont">EE_IMPLEMENT_CONCRETE_CLASS_INFO</span> macro to define
+default implementations of methods we declared above in the header.</p>
+<pre>
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(HelloWorld);
+</pre>
+
+<p>The HelloWorld constructor is responsible for creating the service manager.</p>
+<pre>
+HelloWorld::HelloWorld()
+{
+    // The ServiceManager is the heart of any Foundation based application.  It owns all
+    // of the System Services that compose your application and runs the main loop.
+    m_spServiceManager = EE_NEW ServiceManager();
+}
+</pre>
+
+<p>The HelloWorld destructor is responsible for releasing the reference to the service manager.</p>
+<pre>
+HelloWorld::~HelloWorld()
+{
+    m_spServiceManager = NULL;
+}
+</pre>
+
+<p><span class="NDLSystemFont">HelloWorld::SetupServices</span> is responsible for creating all of
+the services that we need for the application.</p>
+
+<p>We start by allocating the common game services needed by most applications using the service
+allocators.</p>
+<pre>
+    // Foundation services - messaging, logging, asset service, application configuration
+    EE_VERIFY(efd::CreateFoundationServices(m_spServiceManager, argcInit, argvInit));
+
+    // Game Framework services - entities, behaviors, rapid iteration
+    EE_VERIFY(egf::CreateGameServices(m_spServiceManager));
+
+    // Core Runtime services - rendering, lights, cameras, scenes
+    EE_VERIFY(ecr::CreateRuntimeServices(
+        m_spServiceManager,
+        ecr::rsaf_NO_PICK_SERVICE));
+</pre>
+
+<p>We create the animation service so we can animate actors (animating scene objects) in the
+application.</p>
+<pre>
+// The AnimationService handles all actors, which are animating scene objects.
+// A note on priority, we use a higher priority than the scene graph service so the actors
+// get updated before their associated scene graph nodes.
+egmAnimation::AnimationServicePtr spAnimationService = EE_NEW egmAnimation::AnimationService();
+m_spServiceManager-&gt;RegisterSystemService(spAnimationService);
+</pre>
+
+<p>We need to initialize the logging.</p>
+<pre>
+InitLoggingDestinations();
+</pre>
+
+<p>And we need to initialize our Hello World Service and register it with the Service Manager.</p>
+<pre>
+// Our HelloWorld application object is also a service that controls some game-specific logic
+m_spServiceManager-&gt;RegisterSystemService(this);
+</pre>
+
+<p>We need to create the platform service specific to each platform.</p>
+<pre>
+#if defined(EE_PLATFORM_WIN32)
+    // On windows you can use the Win32PlatformService to implement a simple default windows
+    // message pump.  It will create a main window and pump messages for it.
+    Win32PlatformServicePtr spWin32 = EE_NEW Win32PlatformService(instance, previous, commandLine);
+
+    ...
+
+    m_spServiceManager-&gt;RegisterSystemService(spWin32);
+#elif defined(EE_PLATFORM_PS3)
+    // This service is used to perform any PS3 specific behavior that may be required such
+    // as running PS3 specific initialization code.
+    const int callbackSlot = 0;
+    PS3PlatformServicePtr spPS3 = EE_NEW PS3PlatformService(callbackSlot);
+
+    m_spServiceManager-&gt;RegisterSystemService(spPS3);
+#endif
+</pre>
+
+<p>In the <span class="NDLSystemFont">HelloWorld::OnPreInit</span> call, we register dependencies
+for the services we depend on to initialize. This ensures they initialize before we do.</p>
+<pre>
+efd::SyncResult HelloWorld::OnPreInit(efd::IDependencyRegistrar* pDependencyRegistrar)
+{
+    // The service manager pointer gets set by the ServiceManager itself as soon as we are
+    // registered with it. The value will be cleared when we are removed from the manager so
+    // we can pretty much always rely on the value being set while we are running.
+    EE_ASSERT(m_pServiceManager);
+
+    // We load a block during OnInit so depend on the EntityLoaderService. This dependency causes
+    // the EntityLoaderService to be initialed before this service and shutdown after this service
+    // so we can always rely on that service being available during our OnInit, OnTick and
+    // OnShutdown methods.
+    pDependencyRegistrar-&gt;AddDependency&lt;EntityLoaderService&gt;();
+
+    // For managing subscriptions without bypassing leaked subscription detection it is recommended
+    // (but not strictly required) that services using subscriptions depend on the MessageService.
+    pDependencyRegistrar-&gt;AddDependency&lt;MessageService&gt;();
+</pre>
+
+<p>Also, in the <span class="NDLSystemFont">HelloWorld::OnPreInit</span> call, we add control how
+the RenderService will create the initial render surface. Here we are just setting the background
+color, but if we wanted to could provide a custom surface creation function to create the render
+context and active surface in any way we desired.</p>
+<pre>
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    if (pRenderService)
+    {
+        pRenderService-&gt;SetDefaultSurfaceBackgroundColor(efd::ColorA(0.0f, 0.0f, 0.15f, 1.0f));
+    }
+</pre>
+
+<p>In the <span class="NDLSystemFont">HelloWorld::OnInit</span> we get a reference to the 
+IConfigManager to see if an initial world was specified. If so, we make a request to the <span
+class="NDLSystemFont">EntityLoaderService</span> to load it. We know it is safe to call methods on
+the EntityLoaderService because we registered a dependency on it so we know that service has
+completed its initialization already.</p>
+
+<pre>
+    efd::IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;efd::IConfigManager&gt;();
+    efd::utf8string world_file = pConfig-&gt;FindValue("Game.InitialWorld");
+    if (world_file.empty())
+    {
+        EE_LOG(efd::kApp, efd::ILogger::kERR0, ("No block file specified, set Game.InitialWorld."));
+    }
+    else
+    {
+        EntityLoaderService* els = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;();
+        EE_ASSERT(els);
+        els-&gt;RequestEntitySetLoad(world_file);
+    }
+</pre>
+
+<p>In <span class="NDLSystemFont">HelloWorldService::HandleCameraDiscoverMessage</span>, we set our
+camera entity to be the active camera for the default render surface.</p>
+<pre>
+void HelloWorld::HandleCameraDiscoverMessage(
+    const egf::EntityChangeMessage* pMessage,
+    efd::Category targetCategory)
+{
+    Entity* pEntity = pMessage-&gt;GetEntity();
+    EE_ASSERT(pEntity);
+
+    // Ignore entities that do not contain a camera entity.
+    if (!pEntity-&gt;GetModel()-&gt;ContainsModel(kFlatModelID_StandardModelLibrary_Camera))
+        return;
+
+    RenderService* pRenderService = m_pServiceManager-&gt;GetSystemServiceAs&lt;RenderService&gt;();
+    EE_ASSERT(pRenderService);
+    CameraService* pCameraService = m_pServiceManager-&gt;GetSystemServiceAs&lt;CameraService&gt;();
+    EE_ASSERT(pCameraService);
+
+    pCameraService-&gt;CreateCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetRenderTargetGroup());
+
+    pCameraService-&gt;SetActiveCamera(pEntity-&gt;GetEntityID(),
+        pRenderService-&gt;GetActiveRenderSurface()-&gt;GetWindowRef());
+}
+</pre>
+
+<p>The <span class="NDLSystemFont">HelloWorld::Go</span> method sets up necessary system services
+and calls <span class="NDLSystemFont">ServiceManager::Run</span>.</p>
+<pre>
+efd::SInt32 HelloWorld::Go(
+    efd::InstanceRef instance,
+    efd::InstanceRef previous,
+    CmdLineType commandLine,
+    int argcInit,
+    char** argvInit)
+{
+    if (SetupServices(instance, previous, commandLine, argcInit, argvInit))
+    {
+        m_spServiceManager-&gt;Run();
+
+        // We need to release the service manager so that it will release all the services that it
+        // holds references to (which includes HelloWorld itself) or else we'll have a circular
+        // reference which will prevent proper shutdown from occurring.
+        m_spServiceManager = NULL;
+        return 0;
+    }
+    return 1;
+}
+</pre>
+
+<p>Finally, all system services must implement <span class="NDLSystemFont">GetDisplayName</span>.</p>
+
+<pre>
+const char* HelloWorld::GetDisplayName() const
+{
+    return "HelloWorld";
+}
+</pre>
+
+<p>You can find the full code for this version of the file in <a href=
+"hello_world_tutorial_code_samples.htm#HelloWorld_CPP_1">Hello World Code Samples, HelloWorld.cpp,
+version 1</a>.</p>
+
+<h3>Main.cpp</h3>
+
+<p>Main is the entry point to the application, and responsible for creating an instance of the
+HelloWorld class and call the 'Go' method.</p>
+
+<p>Create the new source file under the <span class="NDLSystemFont">Source</span> folder and call
+it <span class="NDLSystemFont">Main.cpp</span>.</p>
+
+<p><span class="NDLSystemFont">Main.cpp</span> contains the following:</p>
+
+<p>All LightSpeed applications need to tell the memory manager which allocator to use. For this
+example, we'll use the default allocator.</p>
+<pre>
+// Make use of the default memory allocator implementation.  For instructions
+// on how to use a custom allocator, see the notes in &lt;efd/MemoryDefines.h&gt;.
+#include &lt;efd/DefaultInitializeMemoryManager.h&gt;
+EE_USE_DEFAULT_ALLOCATOR;
+</pre>
+
+<p>And, we simply need to create an instance of our HelloWorld class and call 'Go'.</p>
+<pre>
+efd::SmartPointer&lt;HelloWorld&gt; spApp = EE_NEW HelloWorld();
+
+// Start our app
+return spApp-&gt;Go(hI, hPI, cmdline, __argc, __argv);
+</pre>
+
+<p>You can find the full code for this version of the file in <a href=
+"hello_world_tutorial_code_samples.htm#Main_cpp_1">Hello World Code Samples, Main.cpp version
+1</a>.</p>
+
+<h2>Moving on...</h2>
+
+<p>Now that we've set up main and initialized some services, we'll next wrap things up by loading
+your world file and launching the application. See <a href=
+"hello_world_tutorial_loading.htm">Loading Your World and Starting the Application</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/Build/build_prereqs_pc.htm">Windows build requirements</a></li>
+
+    <li><a href=
+    "../../GetStart/PC/Building_Gamebryo_for_Win32__source_licensees_only_.htm">Building Gamebryo
+    for Win32</a></li>
+
+    <li><a href="../../GetStart/Architecture/architecture_framework_overview.htm">Game Framework
+    overview</a></li>
+
+    <li><a href="../../Tools/DataDrivenEnum/DataDrivenEnum_intro.htm">Introduction to Data Driven
+    Enumerations</a></li>
+
+    <li><a href="../../Reference/Introduction_to_the_Reference_Section.htm">Programmer's
+    Reference</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_intro.htm">System Service Quick
+    Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

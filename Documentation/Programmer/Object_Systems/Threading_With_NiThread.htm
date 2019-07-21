@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Threading With NiThread</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Threading With NiThread</h1>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ provides a cross-platform interface for threading applications. While 
+ future releases will provide enhanced interfaces for handling processor 
+ affinity, thread control, and other threading features, the current version 
+ of <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ provides excellent functionality for coding higher-level threading tasks. 
+ Developers who are using <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ should read this document for an introduction to the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ interfaces and should also read the <a href="../../Programmer/General_Topics/Overview_!Programming_with_Threads.htm">Programming 
+ with Threads section</a> which details some issues with threaded development.</p>
+
+<h2>NiThreadProcedure</h2>
+
+<p>At the core of any threading model you have a procedure 
+ that is executed in its own execution context. With <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span>, 
+ this procedure is wrapped within the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ object. Developers using <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ should create a subclass of <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ that overrides the method <span class="NDLSystemFont">ThreadProcedure</span>. 
+ <span class="NDLSystemFont">ThreadProcedure</span> should perform all the 
+ work for the thread, and the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ subclass should have references to all the data that it needs for execution. 
+ As an example, let's look at the subclass <span class="NDLSystemFont">BackgroundLoadProcedure</span> 
+ from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>:</p>
+
+<pre>
+class BackgroundLoadProcedure : public NiThreadProcedure
+{
+    public:
+        BackgroundLoadProcedure(NiStream* pkStream)
+        {
+            m_pkStream = pkStream;
+        }
+        virtual unsigned int ThreadProcedure(NiThread* pkThread);
+  NiStream* m_pkStream;
+};
+</pre>
+
+<p>This small subclass overrides the <span class="NDLSystemFont">ThreadProcedure</span> 
+ method and stores a reference to all the resources it needs. In this case, 
+ the pointer to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ is the only necessary resource. Looking at the overridden method shows 
+ the following code:</p>
+
+<pre>
+unsigned int NiStream::BackgroundLoadProcedure::ThreadProcedure(NiThread* pkThread)
+{
+    m_pkStream-&gt;BackgroundLoad();
+    return 0;
+}
+</pre> 
+
+<p>In this case, once the thread is started, it calls <span 
+ class="NDLSystemFont">BackgroundLoad</span> on the stream which will set 
+ a semaphore for synchronization and proceed to load the NIF file. Since 
+ the call to <span class="NDLSystemFont">BackgroundLoad</span> is made in 
+ the newly created thread, the background load has its own execution context 
+ separate from the creation context of the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ object.</p>
+
+<h2>Creating an NiThread Object</h2>
+
+<p>Once you have an <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ object that performs a valid amount of work, you need to create an <span 
+ class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ object that uses that procedure. The code from <span class="NDLSystemFont">NiStream</span> 
+ that does this is below:</p>
+
+<pre>
+m_pkThread = NiThread::Create(m_pkBGLoadProc);
+assert(m_pkThread);
+m_pkThread-&gt;SetPriority(NiThread::BELOW_NORMAL);
+m_pkThread-&gt;Resume();
+</pre> 
+
+<p>Note several important things in this code snippet. 
+ First, the stream holds onto a reference to the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span>. 
+ The <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ object does not assume ownership of the <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThreadProcedure.htm">NiThreadProcedure</a></span> 
+ as it may be shared across threads, so the stream will be responsible 
+ for deleting it. The calling context here also sets the priority to BELOW_NORMAL. 
+ This ensures that the newly created thread will not preempt the calling 
+ thread. Since all <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiThread.htm">NiThread</a></span> 
+ objects are created in the SUSPENDED state, we also call <span class="NDLSystemFont">Resume</span> 
+ here to start the newly created thread.</p>
+
+<h2>Thread Synchronization</h2>
+
+<p>Several types of thread synchronization primitives exist 
+ in Gamebryo. Applications have access to <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span>, 
+ <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiFastCriticalSection.htm">NiFastCriticalSection</a></span>, 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiSemaphore.htm">NiSemaphore</a></span> 
+ for thread synchronization. A brief description of each follows.</p>
+
+<h3>NiCriticalSection</h3>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span> 
+ objects function much like a semaphore with a count of 1 and allow only 
+ one thread to access a section of code at a given moment. Unlike semaphores 
+ with counts of 1, <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span> 
+ objects do safely allow multiple locking meaning that a single thread 
+ can lock the section multiple times provided it also unlocks that critical 
+ section the same number of times when releasing. <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span> 
+ objects use operating system level structures and are ideal for preventing 
+ multiple access into large blocks of code.</p>
+
+<h3>NiFastCriticalSection</h3>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiFastCricitalSection</a></span> 
+ functions much like <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span> 
+ using the same locking and unlocking interfaces. As the name implies, 
+ it is designed to perform faster than <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span> 
+ although the degree of this improvement depends on the platform. <span 
+ class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiFastCriticalSection</a></span> 
+ does not support multiple locking. Applications that use this class should 
+ make sure they do not lock multiple times. Additionally, <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiFastCriticalSection</a></span> 
+ is intended for short term locking operations that will be completed quickly 
+ (e.g. less than 50-100 microseconds.) While <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiFastCriticalSection</a></span> 
+ may function correctly for longer segments of code on some platforms, 
+ it functions by disabling interrupts on other platforms and disabling 
+ interrupts for long periods of time can cause undesired system performance. 
+ Because of its focus on high performance, <span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiCriticalSection.htm">NiFastCriticalSection</a></span> 
+ does not support the <span class="NDLSystemFont">GetOwningThreadID</span> 
+ or <span class="NDLSystemFont">GetLockingCount</span> interfaces.</p>
+
+<h3>NiSemaphore</h3>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiSystem/NiSemaphore.htm">NiSemaphore</a></span> 
+ provides a simple semaphore class for use in synchronization. It can be 
+ created with any, non-negative count meaning it can be either signaled 
+ or non-signaled at creation.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

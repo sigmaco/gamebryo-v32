@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Message limitations</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Message limitations</h1>
+
+<ul>
+<li>Message targets must derive from IBase. They must also be allocated with EE_NEW into a SmartPointer. The Message Service holds a SmartPointer to the IBase 
+    of the target that is passed into Subscribe. Upon subscription, the RefCount on the object must not 
+    already be zero (0) (there is an EE_ASSERT near the top of subscribe to help prevent this). This means that MessageService::Subscribe should not be called from the constructor of the object that is subscribing. In the constructor, the RefCount of the object is still zero (0) until the initial assignment to a SmartPointer.  Any class that can be stored in a SmartPointer should not pass a pointer to itself to any function from its constructor. Any function called 
+    might unintentionally increment and then decrement the RefCount of the SmartPointer from one (1) to zero (0), causing the object being constructed to be deleted.</li>
+
+<li>A message target will receive all messages for types that it is capable of handling and that are sent on a specific category. If 
+    too many messages or otherwise undesired messages are being delivered, then you should use categories to distinguish which messages go where.</li>
+
+<li>Subscription may be delayed until the next tick. This is because when current subscription data structures are being iterated, a subscription cannot be immediately handled and is therefore delayed.  The subscription data structures are being iterated any time a message handler is called (either by MessageService::OnTick or MessageService::SendImmediate). Therefore, any call to MessageService::Subscribe from within a message handler method will not
+immediately result in a Subscription. This means that a call to MessageService::Subscribe that is followed immediately by a call to MessageService::SendImmediate from within a message handler may not behave as desired. The message that is sent with MessageService::SendImmediate will be delivered to any subscribers that were subscribed before the handler was called, but not to the handler that was subscribed 
+    just before the SendImmediate.  A call to MessageService::Subscribe followed immediately by a call to MessageService::Send or MessageService::SendLocal within a message handler will work as expected, 
+    since those send calls always process their messages on the next OnTick. Outside of a message handler, a call to MessageService::Subscribe followed immediately by a call to MessageService::SendImmediate will deliver the message as expected as well.</li>
+
+<li>Many targets can subscribe to the same Message type and Category. Messages will be delivered to each 
+    target, however within one tick, the order in which the handlers on those 
+    targets are called is not guaranteed. It may differ based on platform and change at runtime after
+    a call to MessageService::Subscribe or MessageService::Unsubscribe.</li>
+
+<li>Message targets must have RTTI information configured properly as MessageService relies on
+    being able to EE_DYNAMIC_CAST the IBase* passed to MessageService::Subscribe and 
+    MessageService::Unsubscribe (there are EE_ASSERT macros that try to enforce this). See
+    <a href="../Foundation/foundation_rtti.htm">Foundation RTTI</a> for details on configuring and using 
+    RTTI. There are cases that the asserts will not catch that can prevent messages from being delivered.
+    If you are not receiving messages and you otherwise think you should be, double check that RTTI is 
+    configured correctly for your message target class.</li>
+    
+<li>Each unique message ClassID must have an EE_HANDLER* macro line for each class that wishes to handle it.
+    See <a href="message_troubleshoot.htm#RegisterTroubleshoot">Troubleshooting messages</a> for details.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<UL>
+<li><a href="message_overview.htm">Messages overview</a></li>
+<li><a href="message_features.htm">Message features</a></li>
+<li><a href="message_how_work.htm">How messages work</a></li>
+<li><a href="message_troubleshoot.htm">Troubleshooting messages</a></li>
+<li><a href="message_how_relates_efr.htm">How messages relate to the Emergent Game Framework</a></li>
+<li><a href="message_reqs.htm">Requirements for working with messages</a></li>
+<li><a href="message_best_practice.htm">Best practices for working with messages</a></li>
+<li><a href="message_using.htm">Using messages</a></li>
+</UL>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

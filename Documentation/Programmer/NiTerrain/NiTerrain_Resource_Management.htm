@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTerrain Resource Management</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> 
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiTerrain Resource Management</h1>
+  <h2>
+    Introduction
+  </h2>
+  <p>
+    The terrain engine routes the allocation of most of its key resources through a
+    single <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainResourceManager.htm">NiTerrainResourceManager</a></span> object. Each NiTerrain object owns a single resource
+    manager object derived from NiTerrainResourceManager. This class provides the following
+    resource allocation services to the terrain class:</p>
+  <ul>
+    <li>Allocation of Textures </li>
+    <li>Allocation of Streams </li>
+    <li>Allocation of common size buffers </li>
+  </ul>
+  <p>
+    The default resource manager is implemented in <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainStandardResourceManager.htm">NiTerrainStandardResourceManager</a></span>.
+    This class provides a simple implementation that generates the required resources
+    when requested, releases them and tracks them. It does not support pooling of GPU
+    resources, though it does support pooling of the standard size buffers the terrain
+    object allocates during streaming.</p>
+  <h2>
+    Configuring a Custom Resource Manager
+  </h2>
+  <p>
+    In some applications it may prove useful to take control of the allocation of the
+    terrain's resources, or track them in a specific way. In this case, a developer
+    may design their own resource manager to interact with the terrain engine. One possible
+    customization of the system may implement GPU resource pooling to improve the performance
+    of large scale paging terrains.</p>
+  <p>
+    Custom resource managers are expected to implement the interface provided by 
+    <span class="NDLSystemFont">NiTerrainResourceManager</span>. Developers can use 
+    <span class="NDLSystemFont">NiTerrainStandardResourceManager</span> (recommended) 
+    as a reference implementation or even derive from the standard resource manager directly, as the
+    standard resource manager allocates the correct types and configuration of resources
+    for the correct queries.</p>
+  <p>
+    Some key guidelines to remember when implementing a resource manager:</p>
+  <ul>
+    <li>The resource manager operates in a multi-threaded environment. </li>
+    <li>Each instance of a resource manager is exclusive to a particular terrain object.</li>
+    <li>Resource managers should be assigned to terrain objects before the terrain allocates
+      any resources. Generally this means before a 'load' function is called. </li>
+  </ul>
+  <p>
+    Custom resource managers may be specified using the following interface documented in the class reference:</p>
+<pre>NiTerrain* pkTerrain = GetTerrain();
+pkTerrain-&gt;SetResourceManager(EE_NEW </span>NiTerrainStandardResourceManager();</pre>
+
+  <h2>
+    Configuring a Resource Listener
+  </h2>
+  <p>One useful feature of the terrain resource manager system is the ability to provide a listener object to the resource manager to allow an external object to hook into allocation events and potentially provide logging of resource allocations, reporting and/or trigger events within the application.</p>
+  
+  <p>Events that are trackable on the resource manager include:</p>
+
+  <ul>
+    <li>Allocate/Release events for all resource types (textures, streams, buffers)</li>
+    <li>Creation/Destruction events for the underlying objects (when they are removed
+      from the pools). </li>
+  </ul>
+  <p>
+    In order to set the terrain system to use a specific resource listener object, code
+    similar to the following may be used:</p>
+    
+  <pre>NiTerrain* pkTerrain = GetTerrain();
+NiTerrainStreamingPerformanceListener* pkListener = EE_NEW NiTerrainStreamingPerformanceListener("TerrainPerformanceData.csv");
+pkTerrain-&gt;GetResourceManager()-&gt;SetListener(pkListener);</pre>
+
+  <p>
+    When developing a resource listener, it is important to recognize that resource
+    allocation occurs in a multithreaded environment. Developers should be aware of
+    the caveats in multithreaded environments and take necessary precautions in the
+    development of their listener object to avoid corruption of their application. Developers
+    should also take notice that the listener object implements the 
+    <span class="NDLSystemFont">NiPointer</span> interface
+    virtually, and as a result, the IncRefCount and DecRefCount must be implemented
+    manually, or explicitly referred to a <span class="NDLSystemFont">NiRefObject</span> implementation.</p>
+  <p>
+    Please refer to <span class="NDLSystemFont">
+    <a href="../../Reference/NiTerrain/NiTerrainResourceManager.htm">
+    NiTerrainResourceManager</a></span> class reference documentation for further information on the
+    listener interface.</p>
+</body>
+</html>

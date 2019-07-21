@@ -1,0 +1,333 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>XML Mesh Profile Advanced Topics</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>XML Mesh Profile Advanced Topics</h1>
+
+<h2>Semantic Name and Index</h2>
+
+<p>A semantic name is the name given by the Mesh profile 
+ author to the data stream element. The name is important for many different 
+ reasons. It serves as a way to provide a descriptive name for what the 
+ data is. It also is used to reference the data stream element by all parts 
+ of the tool pipeline and runtime code. There are two types of semantic 
+ names; the first is the common semantics, this is the commonly known data 
+ stream elements that are defined in the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCommonSemantics.htm">NiCommonSemantics</a></span> 
+ object; the other type is the custom or arbitrary semantic name, this 
+ is a name that is not important to the inner workings of Gamebryo but 
+ would need to be known perhaps to a custom mesh modifier or some other 
+ custom feature that needs to know about certain piece of data that is 
+ referenced by the semantic name.</p>
+
+<p>The semantic index is also used for referencing the 
+ specific data stream element. By default the index is &quot;0&quot; unless 
+ specified. The &quot;range&quot; attribute is a helper feature that allows 
+ a mesh profile author to specify multiple data stream elements with the 
+ same semantic name but different indices. A good example of this is the 
+ &quot;<span class="NDLSystemFont">TEXCOORD</span>&quot; data stream element. 
+ We support up to 8 texture coordinate sets so instead of authoring 8 copies 
+ of the &quot;<span class="NDLSystemFont">TEXCOORD</span>&quot; data stream 
+ element, the &quot;range&quot; attribute is used as a helper decreasing 
+ the copy and paste code to a minimum.</p>
+
+<p>Using the &quot;name&quot; attribute typically dictates 
+ that a custom or arbitrary semantic name is desired. However, if the name 
+ matches identically with a common semantic name, it is assumed that the 
+ common semantic is desired. To guarantee the use of a common semantic, 
+ it is recommended that the &quot;type&quot; attribute is used. This helps 
+ the author explicitly state that they wish to use the common semantic. 
+ It is possible to use both the &quot;name&quot; and the &quot;type&quot;, 
+ in which case, the semantic name is taking from the &quot;type&quot; attribute 
+ and the &quot;name&quot; attribute is ignored. The &quot;name&quot; attribute 
+ is used when referencing the element within the internal scope of the 
+ XML. If no &quot;name&quot; is giving but a &quot;type&quot; is given, 
+ then the element is referenced using the common semantic name.</p>
+
+<h2>Mesh Profile Finalize Streams</h2>
+
+<p>Finalize streams are linked to single element data-streams 
+ on a mesh. By default, the Gamebryo exporters exports each semantic element 
+ in its own data-stream. Finalize streams allow the mesh profile author 
+ to have some control over the final layout of the data streams used by 
+ the renderer. The 
+ profile author can manipulate elements by converting them form one format 
+ to another, or by merging and swizzling components, renaming semantics, 
+ and even by specify how different semantic elements become interleaved 
+ together. </p>
+
+<h2>Swizzling and Merging</h2>
+
+<p>Swizzling is the process by which the components in 
+ a stream have their order rearranged. Merging, in contrast, is the process 
+ of combining components from different streams in order to from a new 
+ stream of select components. Together, these operations form a powerful 
+ tool that can be used under many different instances. For example, swizzling 
+ and merging may be useful in ambient occlusion. Ambient occlusion can 
+ be stored in only a single component of a color channel. In the DCC tool, 
+ two color channels can be created - one for the diffuse and the other 
+ for the ambient occlusion. The DCC tool creates these as two separate 
+ 4 component float streams. The two streams can be merged together by taking 
+ the &quot;r&quot; component of the ambient occlusion stream and merging 
+ it with the &quot;<span class="NDLSystemFont">r</span>&quot;, &quot;<span 
+ class="NDLSystemFont">g</span>&quot;, and &quot;<span class="NDLSystemFont">b</span>&quot; 
+ (dropping the &quot;alpha&quot; component) of the diffuse color stream. 
+ As long as the vertex shader is aware of this, the lighting calculation 
+ can be handled appropriately. This process halves the amount of memory 
+ required. </p>
+
+<h2>Clamping and Remapping</h2>
+
+<p>Clamping is process which defines and enforces the range 
+ of values contained by select components. If the component contains values 
+ greater than the maximum allowed, then those values are clamped to that 
+ maximum value. Conversely, if the component contains value which are less 
+ than the minimum allowed, then those values are clamped to that minimum 
+ value. This is important for many reasons. Many times you need to do certain 
+ calculations that only work on positive numbers so you may clamp the values 
+ at 0. Perhaps you need to make sure the values are between 0.0 and 1.0 
+ to have a certain calculation perform correctly.</p>
+
+<p>Remapping is the process of defining a linear remapping 
+ of one range to another for select components. The following is an example: 
+ Suppose that the components values currently consist of values between 
+ 0.0 to 1.0. Then assume that it is desired to have the component to ultimately 
+ be represented as a byte. This 
+ can be accomplished by setting the source range to be 0.0 and 1.0, and 
+ the destination range to be from 0 and 255. In fact, this could be done 
+ automatically when assigning the &quot;convertype&quot; to be &quot;<span 
+ class="NDLSystemFont">NORMALIZED</span>&quot; for the data stream. To get 
+ more information on this please see the format converting section below. 
+ </p>
+
+<p>It is useful to note that the clamping will always occur 
+ before a remap takes place. This is important because the results may 
+ not be what you want if you can not guarantee the source value ranges. 
+ Perhaps you were taking the above example of going between 0 and 1 to 
+ 0 and 255. If your source value was outside of 0 and 1 your remapped value 
+ might not be what you are expecting. In this case you may wish to clamp 
+ your source values to 0 and 1 to guarantee the source data.</p>
+
+<p>If a clamp or a remap is done on the &quot;<span class="NDLSystemFont">POSITION</span>&quot; 
+ data stream element, then the meshes bounds will be automatically recomputed. 
+ This ensures that the mesh bound will match the actual mesh data.</p>
+
+<a name=Converting></a><h2>Converting</h2>
+
+<p>Converting is the process of transforming a data-stream 
+ element from one format to another format. For example, consider the default 
+ <span class="NDLSystemFont">COLOR</span> channel that starts off in a 4 
+ component float format. Suppose that it is decided to change the format 
+ to that of an unsigned normalized byte format in order to save memory. 
+ This can be accomplished by specifying the &quot;<span class="NDLSystemFont">convertformat</span>&quot; 
+ as &quot;<span class="NDLSystemFont">UINT8</span>&quot; and the &quot;<span 
+ class="NDLSystemFont">converttype</span>&quot; as &quot;<span class="NDLSystemFont">NORMALIZED</span>&quot;. 
+ The convert type is the processing that takes place during the conversion. 
+ The options for this are &quot;<span class="NDLSystemFont">NORMALIZED</span>&quot; 
+ which takes the input range and alters the data to fit in the new range 
+ dictated by the data type. Not only that, but it attempts to match the 
+ resulting format to one that is normalized (ex. <span class="NDLSystemFont">F_NORMUINT8_4</span>). 
+ Most of the time there is no need to use the remapping process described 
+ in the previous section when a <span class="NDLSystemFont">converttype </span>of 
+ <span class="NDLSystemFont">NORMALIZED </span>is used. It should also be 
+ noted that the converting process will be performed after clamping/remapping 
+ and swizzling and merging. The next option is a &quot;<span class="NDLSystemFont">TYPECLAMP</span>&quot; 
+ which simply clamps the data to fit within the new data type boundaries. 
+ The next convert type is &quot;<span class="NDLSystemFont">BLINDCAST</span>&quot; 
+ which simply casts the data to the new type and ignores possible wrapping 
+ issues. Finally, there is the &quot;<span class="NDLSystemFont">SMARTCAST</span>&quot; 
+ which is intended to convert data types to a lower bit representations, 
+ but only does so if the data values are such that there will be no lost 
+ of information. For example, going from a 32 bit unsigned integer to a 
+ 16 bit unsigned integer would only occur if all data values in the data-stream 
+ were representable by 16-bits.</p>
+
+<h2>Interleaving</h2>
+
+<p>Interleaving is the process of constructing a single 
+ data-stream from many single element data-streams. This is very important 
+ for per-vertex data on meshes because all the types of data (position, 
+ normal, UVs) are needed for a single vertex before it can be processed. 
+ If all of this data were in separate data-streams, the likelihood that 
+ a cache miss would occur when fetching would be much higher than if all 
+ of the data for that single vertex were adjacent in a single data stream.</p>
+
+<p>In general, it is best for performance to have all per-vertex 
+ data interleaved into a single stream. However, there are some situations 
+ where it is better to have separate data-streams for some elements. How 
+ best to interleave data is closely related to access flags, which are 
+ discussed in more detail below.</p>
+
+<h2>Access Flags</h2>
+
+<p>Access flags determine if the CPU or GPU can read or 
+ write data associated with a mesh. Access flags determine how the mesh 
+ data is stored into memory, which could lead to data being stored in multiple 
+ locations. Access flags have a rendering performance impact as well.</p>
+
+<p>If the access flags include CPU read or any CPU write 
+ flag except <span class="NDLSystemFont">CPU_WRITE_STATIC</span> then the 
+ stream must be stored in system memory. If any GPU flags are set, then 
+ the stream must be stored is video memory. If the stream is needed in 
+ both places, then two copies of the stream may exist. For this reason 
+ it is important to only set access flags that are needed. For example, 
+ if a particular element is not needed for rendering it might be better 
+ to split it up into a separate stream that does not have the <span class="NDLSystemFont">GPU_READ</span> 
+ flag set. This will decrease the amount of video ram that the mesh uses 
+ and increase rendering performance.</p>
+
+<p>When data streams must be written to by the CPU and 
+ used for rendering, then either <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> 
+ or <span class="NDLSystemFont">CPU_WRITE_MUTABLE</span> should be used. 
+ There is a performance tradeoff between these two choices, so one should 
+ determine how the data is expected to be used before making a selection.</p>
+
+<p>Volatile data streams do not get stored in video memory 
+ between frames. Instead, when the frame is rendered, whatever memory is 
+ available is used. This causes the actual rendering performance to decrease 
+ but gives a speed increase when updating the data coming from the CPU. 
+ Mutable data streams do not have as much rendering overhead, but stay 
+ in the same place in video memory from frame to frame which causes the 
+ cost of updating the contents of the stream to increase. In general, a 
+ data stream should be volatile when the contents of the stream are expected 
+ to be changed per-frame (such as a mesh with morphing), and it should 
+ be mutable if the stream will be updated less frequently.</p>
+
+<h2>Strict Flags</h2>
+
+<p>The strict flags allow the mesh profile author more 
+ control on how the profile gets adjusted by the mesh modifiers. The default 
+ is set to &quot;<span class="NDLSystemFont">NOT_STRICT</span>&quot;. Mesh 
+ modifiers have requirements that may not be compatible with the assigned 
+ mesh profile. The mesh modifier adjusts the profile to allow the modifier 
+ to work. The strict flags give the mesh profile author control of this 
+ by not allowing the mesh modifier to adjust the format or adjust the interleaving. 
+ Use &quot;<span class="NDLSystemFont">STRICT_FORMAT</span>&quot; if you 
+ need to guarantee that the format can not be adjusted. In the event that 
+ a mesh modifier needs to modify the format, then the merge process will 
+ fail and the modifier will ultimately be removed. Use &quot;<span class="NDLSystemFont">STRICT_INTERLEAVE</span>&quot; 
+ to ensure that the streams are interleaved or not interleaved the way 
+ the profile dictates. As before, if the requirements of a mesh modifier 
+ are not compatible with the profiles strict interleave specification, 
+ then the modifier will ultimately be removed.</p>
+
+<h2>Arbitrary Per-vertex Data</h2>
+
+<p>When an element of mesh data is added to a mesh, it 
+ is associated with a semantic and an index. The element's semantic is 
+ a string that identifies the element. Using a mesh profile, any string 
+ can be provided as the semantic for a data stream, which allows to arbitrary 
+ add custom per-vertex data to a mesh rather than having to use what is 
+ created by the exporters.</p>
+
+<p>The data that is stored in these elements is not created 
+ by the mesh profile, but can be created either from a tool plug-in or 
+ by renaming and merging data that comes from elements created by the exporters. 
+ Following is an example of a mesh profile element that takes the red channel 
+ of the vertex colors from the exporter and renames it:</p>
+
+<pre>
+&lt;FinalizeStream name="OcclusionStream" access="CPU_READ"&gt;
+    &lt;Element name="Occlusion"&gt;
+        &lt;Component value="COLOR[0].r" /&gt;
+    &lt;/FinalizeStream&gt;
+&lt;/FinalizeStream&gt;
+</pre> 
+
+<p>When this profile is assigned to a mesh that contains 
+ a vertex color element, a data-stream by the name 'Occlusion' will be 
+ created. This data-stream would only be accessible to the CPU and would 
+ not be stored in video memory (because of the <span class="NDLSystemFont">CPU_READ</span> 
+ attribute). Such an element could be used to determine a visibility value 
+ (indicating how well an object can be seen) for the purposes of AI. In 
+ this case, you could pick against the stage geometry at the object's position 
+ and use the pick results to figure out how obscured an object should be 
+ at that part of the stage. Using the mesh profile system, this information 
+ can either be painted directly on the mesh by an artist, or procedurally 
+ generated on export using a custom tool plug-in.</p>
+
+<h2>Using Arbitrary Per-vertex Data With Materials</h2>
+
+<p>Another use for per-vertex data is as an input to a 
+ custom shader. This might allow for many kinds of interesting effects. 
+ An example of using arbitrary per-vertex data might be blending the influence 
+ of one or more textures using a blend value that is set per-vertex.</p>
+
+<p>In order to make custom per-vertex data available to 
+ a custom shader or material, some extra work must be done. The way this 
+ is done is through the <a href="../../Reference/NiMain/NiSemanticAdapterTable.htm"><span 
+ class="NDLSystemFont">NiSemanticAdapterTable</span></a>. The application 
+ needs to generate the mapping between the custom or arbitrary semantic 
+ name to the common renderable semantic name.</p>
+
+<h2>Mesh Profiles and Mesh Modifiers</h2>
+
+<p>When creating mesh profiles it is important to 
+ recognize that the resulting mesh may have its data arranged differently 
+ than you have specified in your profile. This happens in order to make 
+ the mesh compatible with any Mesh Modifiers that have been applied.</p>
+
+<p>The mesh modifiers such as skinning or morphing 
+ have certain requirements for the data streams. Example would be the presence 
+ of bind positions for a skinned object. If this stream does not exist, 
+ then the skinning modifier can not work and is detached from the mesh. 
+ These requirements are better explained in the <a href="../../Programmer/NiMesh/Standard_Gamebryo_Mesh_Modifier_Requirements.htm">mesh 
+ modifier requirements</a> section.</p>
+
+<p>The most important item for a mesh profile author to 
+ consider is whether they wish to support the standard mesh modifiers morphing 
+ and skinning. To 
+ support the skinning modifier the profile must have a <span class="NDLSystemFont">POSITION_BP</span>, 
+ <span class="NDLSystemFont">BONES</span>, and <span class="NDLSystemFont">BLENDWEIGHTS</span>. 
+ Optionally you would need <span class="NDLSystemFont">NORMAL_BP</span>, 
+ <span class="NDLSystemFont">TANGENT_BP</span>, and <span class="NDLSystemFont">BINORMAL_BP</span> 
+ if the corresponding non bind pose element exists. Morphing requires &quot;<span 
+ class="NDLSystemFont">MORPH_??</span>&quot; elements. This could be &quot;<span 
+ class="NDLSystemFont">MORPH_POSITIONS</span>&quot; or &quot;<span class="NDLSystemFont">MORPH_COLORS</span>&quot; 
+ or any custom semantic you wish to morph. The only other element is the 
+ &quot;<span class="NDLSystemFont">MORPHWEIGHTS</span>&quot; semantic. If 
+ any of the these requirements are not met the morph mesh modifier is removed 
+ from the mesh object. Follow the links below to get more information on 
+ skinning and morphing requirements.</p>
+
+<ul>
+	
+	<li><a href="../../Programmer/NiMesh/Standard_Gamebryo_Mesh_Modifier_Requirements.htm">Summary 
+ of all Gamebryo standard mesh modifier requirements</a></li>
+	
+	<li><a href="../../Reference/NiMesh/NiSkinningMeshModifier.htm"><span 
+ class="NDLSystemFont">NiSkiningMeshModifier</span></a></li>
+	
+	<li><a href="../../Reference/NiMesh/NiMorphMeshModifier.htm"><span 
+ class="NDLSystemFont">NiMorphMeshModifier</span></a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPhysXScene Conversion</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiPhysXScene Conversion</h1>
+
+<p>The <a HREF="../../Reference/NiPhysX/NiPhysXScene.htm"><span 
+ class="NDLSystemFont">NiPhysXScene</span></a> class was re-factored for 
+ Gamebryo 2.3 to enforce the concept of a master controller for a PhysX 
+ scene (the <span class="NDLSystemFont">NiPhysXScene</span> object) and a 
+ container for physical objects, <a HREF="../../Reference/NiPhysX/NiPhysXProp.htm"><span 
+ class="NDLSystemFont">NiPhysXProp</span></a> objects, such as a crate, a 
+ rag-doll, or a physical machine. Here we use the word &quot;prop&quot; 
+ in the sense of &quot;stage prop&quot; or &quot;movie prop&quot;. See 
+ the <a HREF="../../Programmer/Introduction_to_GamebryoPhysX_Programming.htm">Gamebryo-PhysX 
+ Programmers Guide</a> and the <a HREF="../../Reference/Introduction_to_Gamebryo_PhysX.htm">Reference 
+ Documentation</a> for information on using these new classes.</p>
+
+<p>The timing mechanism was also changed so that Gamebryo 
+ completely overrides any application calls to <span class="NDLSystemFont">NxScene::setTiming</span>. 
+ If your application was using this function, please see the <a HREF="../../Reference/NiPhysX/NiPhysXScene.htm#simulation_functions">NiPhysXScene 
+ reference documentation</a> related to time management and modify your 
+ code to use Gamebryo functions.</p>
+
+<h2>Refactoring from Master/Slave to Scene/Prop</h2>
+
+<p>In previous versions of Gamebryo, all PhysX content 
+ was managed through <span class="NDLSystemFont">NiPhysXScene</span> objects 
+ that could be slaved to each other to merge them into one PhysX scene. 
+ The new system introduces a one-to-one correspondence between <span class="NDLSystemFont">NiPhysXScene</span> 
+ objects and <span class="NDLSystemFont">NxScene</span> objects. All of the 
+ functionality associated with a scene - updating, simulation, debug rendering 
+ - has been retained in the <span class="NDLSystemFont">NiPhysXScene</span> 
+ class. Any functionality related to streaming or cloning actors, or groups 
+ of actors, has been moved to the new <span class="NDLSystemFont">NiPhysXProp</span> 
+ class. Think of a prop as a self-contained PhysX object. A scene is made 
+ up of multiple props that interact with each other, while a prop is non-divisible 
+ as far as Gamebryo is concerned. Physical particle systems and fluids 
+ are now attached to props rather than a scene. See the <a HREF="../../Reference/NiPhysXParticle/Introduction_to_NiPhysXParticle_Class_Reference.htm">NiPhysXParticle</a> 
+ and <a HREF="../../Reference/NiPhysXFluid/Introduction_to_NiPhysXFluid_Class_Reference.htm">NiPhysXFluid</a> 
+ reference for more details.</p>
+
+<p>Updating of Gamebryo-PhysX sources and destinations 
+ is now done through a single call on the <span class="NDLSystemFont">NiPhysXScene</span> 
+ object, which causes all the props to be updated (providing the sources 
+ and destinations are active). Functions have also been added to the <span 
+ class="NDLSystemFont">NiPhysXScene</span> class to update a single source 
+ or destination.</p>
+
+<p>The art tools now stream <span class="NDLSystemFont">NiPhysXProp</span> 
+ objects out of Max and Maya. Applications that load a NIF file should 
+ now look for these objects among the top-level objects in the NIF. The 
+ <span class="NDLSystemFont">NiPhysXScene</span> object should be created 
+ by the application (it is not streamed) and the loaded props added to 
+ it. See the <a HREF="../../Learn/Tutorials/Introduction_to_the_Gamebryo_PhysX_Tutorial.htm">PhysX 
+ Tutorials</a> for a simple example. All the samples have also been converted.</p>
+
+<h2>Loading Old NIF Files</h2>
+
+<p>Gamebryo NIF files with PhysX content now contain <span 
+ class="NDLSystemFont">NiPhysXProp</span> objects at the top-level. Older 
+ NIF files contain <span class="NDLSystemFont">NiPhysXScene</span> objects 
+ at the top level, and these must be converted to the new arrangement as 
+ part of the loading process. This process is done automatically when a 
+ NIF older than version 20.3.0.0 is loaded, but applications should note 
+ the following:</p>
+
+<ul>
+	
+	<li>After loading an older 
+ NIF file, there will be a <span class="NDLSystemFont">NiPhysXScene</span> 
+ object at the top level, as with older versions of Gamebryo. This <span 
+ class="NDLSystemFont">NiPhysXScene</span> object will have <span class="NDLSystemFont">NiPhysXProp</span> 
+ objects pre-attached.</li>
+	
+	<li>If the old NIF files 
+ contained fluid content, then the top-level <span class="NDLSystemFont">NiPhysXScene</span> 
+ object will have a snapshot of type <span class="NDLSystemFont">NiPhysXFluidSceneDesc</span>. 
+ Applications must call the <span class="NDLSystemFont">NiPhysXFluidSceneDesc::ConvertToProp</span> 
+ function to create a <span class="NDLSystemFont">NiPhysXProp</span> object 
+ before attempting to use the <span class="NDLSystemFont">NiPhysXScene</span> 
+ object.</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

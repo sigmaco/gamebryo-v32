@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Singlethreaded PhysX Updates</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Singlethreaded PhysX Updates</h1>
+
+<p>
+The typical synchronous single-threaded update loop orders the
+various update functions as follows:</p>
+
+<pre>
+DoPhysXInput(t)
+UpdateSources(t)
+Simulate(t)
+DoOtherWork
+FetchResults(t, true)
+UpdateDestinations(t)
+Update(t)
+Render()
+</pre>
+
+<p>
+Input is provided to PhysX before the simulation step is started,
+because it must happen outside the
+<span class="NDLSystemFont">simulate/fetchResults</span> block.
+Sources are updated before starting simulation because they are
+a form of input to the simulation. While waiting for the
+simulation to finish, applications can, and should, try to do
+non-PhysX work while the simulation step is computed in another
+thread (PhysX does the thread management). Destinations are
+updated after we fetch the results and before the scene
+graph is updated. Finally we render.
+</p>
+
+<p>
+The typical asynchronous single-threaded update reorders the
+simulation calls to have them run in parallel with rendering:
+</p>
+
+<pre>
+FetchResults(t, true)
+UpdateDestinations(t)
+Update(t)
+DoPhysXInput(t)
+UpdateSources(t)
+Simulate(t)
+DoOtherWork
+Render()
+</pre>
+
+<p>
+Note that input must now be done after the simulation results
+have been fetched. If you were to unroll the synchronous and
+asynchronous loops you would see that the unrolled versions
+are almost identical, with the rendering step re-ordered but the
+other steps in the same order.
+</p>
+
+<p>
+See the
+<a href="../../Learn/Demos/PhysX_Timing_Demo_Overview.htm">PhysX Timing Demo</a>
+for more variants on update loop structures.
+</p>
+
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

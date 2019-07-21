@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Using Frames</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Using Frames</h1>
+
+<p>The ultimate output of the process of rendering objects 
+ in Gamebryo is a frame&mdash;an image residing in video memory that will be 
+ displayed on the monitor. A series of such frames, generated and displayed 
+ in succession, creates the moving display that is the essence of a 3D 
+ application.</p>
+
+<p>The Gamebryo Core Runtime rendering engine is designed around the concept of having an application repeatedly generate and then display a frame. This design can be expressed with the following pseudocode:</p>
+
+<pre>
+for each rendered frame
+{
+    CreateFrame
+    DisplayFrame
+}
+</pre>
+
+<h2>Creating a Frame</h2>
+
+<p>Before an application can begin creating a frame, it 
+ must call <span class="NDLSystemFont">NiRenderer::BeginFrame</span> to open 
+ the frame for rendering. It can then make all the rendering calls necessary 
+ to fill in the frame. When it is done, the application must call <span 
+ class="NDLSystemFont">NiRenderer::EndFrame</span> to close the frame. Once 
+ this is done, the frame is complete, and is ready to be displayed.</p>
+
+<p>Many functions, such as those that set specific values on the renderer or actually perform rendering, can only be legally called while a frame is active (in other words, between a <span class="NDLSystemFont">BeginFrame</span> 
+ and an <span class="NDLSystemFont">EndFrame</span> call). </p>
+
+<h2>Displaying a Frame</h2>
+
+<p>When the frame is complete, an application can have it displayed on the monitor by calling <span class="NDLSystemFont">NiRenderer::DisplayFrame</span>. Unlike most rendering functions, the <span class="NDLSystemFont">DisplayFrame</span> function cannot be called between <span class="NDLSystemFont">BeginFrame</span> and <span class="NDLSystemFont">EndFrame</span>, but instead can only be 
+ called after <span class="NDLSystemFont">EndFrame</span> has returned. </p>
+
+<h2>Advanced Discussion</h2>
+
+<p>Although the <span class="NDLSystemFont">BeginFrame</span> 
+ and <span class="NDLSystemFont">EndFrame</span> functions are meant to contain 
+ the rendering code that creates a single frame, that does not mean that 
+ an application can only render to a single rendering target while creating 
+ that frame. It is perfectly legal to render to any number of render targets 
+ during the construction of a single frame. The use of render targets during 
+ frame construction is discussed in greater depth here.</p>
+
+<p>It is also important to note that a single frame is not necessarily limited to a single displayable buffer. On platforms that allow for more than one displayable buffer, such as when drawing to multiple windows on a PC, the code that renders to all displayable buffers should be treated as the construction of a single frame. In this situation, <span class="NDLSystemFont">DisplayFrame</span> will display all displayable buffers 
+ that have been drawn to during the creation of the frame.</p>
+
+<h3>BeginFrame</h3>
+
+<p><span class="NDLSystemFont">BeginFrame</span> is responsible 
+ for ensuring that the renderer is able to begin receiving rendering commands. 
+ If for any reason it fails, <span class="NDLSystemFont">BeginFrame</span> 
+ will return false, signalling to the application that the renderer cannot 
+ perform any drawing. If this happens, then an application should skip 
+ the rendering process, including the subsequent calls to <span class="NDLSystemFont">EndFrame</span> and <span class="NDLSystemFont">DisplayFrame</span>, and attempt to begin 
+ rendering again later. The reasons for a failed <span class="NDLSystemFont">BeginFrame</span> call will depend on the specific renderer. Refer to your renderer's documentation for more details.</p>
+
+<p>After an application successfully calls <span class="NDLSystemFont">BeginFrame</span>, it must make a corresponding call to <span class="NDLSystemFont">EndFrame</span> once the rendering is complete. The application cannot nest one set of <span class="NDLSystemFont">BeginFrame</span>/<span class="NDLSystemFont">EndFrame</span> calls within another set, nor can it call <span class="NDLSystemFont">DisplayFrame</span> until the frame has been closed by <span class="NDLSystemFont">EndFrame</span>.</p>
+
+<h3>EndFrame</h3>
+
+<p><span class="NDLSystemFont">EndFrame</span> signals to the renderer that the application is done making rendering calls. The renderer can then ensure that the rendering calls get executed so resulting frame will be ready for display. If for any reason this operation fails, then <span class="NDLSystemFont">EndFrame</span> will return <span class="NDLSystemFont">false</span>, indicating that the frame cannot be displayed. If this happens, then the application must skip the subsequent call to <span class="NDLSystemFont">DisplayFrame</span>, and begin a new frame later. The reasons for a failed <span class="NDLSystemFont">EndFrame</span> 
+ call will depend on the specific renderer. Refer to your renderer's documentation for more details.</p>
+
+<p>Even though <span class="NDLSystemFont">EndFrame</span> 
+ may return successfully, the frame may not actually be ready to display 
+ immediately. It can often be beneficial for an application to perform 
+ some additional processing between the <span class="NDLSystemFont">EndFrame</span> 
+ and the subsequent <span class="NDLSystemFont">DisplayFrame</span> call.</p>
+
+<p>An application informs the renderer that it is done 
+ with all rendering for that frame using <span class="NDLSystemFont">EndFrame</span>. 
+ At this point, the application must call <span class="NDLSystemFont">DisplayFrame</span> 
+ before it can begin another frame. It cannot call <span class="NDLSystemFont">BeginFrame</span> 
+ again to start another frame until it has called <span class="NDLSystemFont">DisplayFrame</span>. 
+ It is also not legal for an application to call <span class="NDLSystemFont">EndFrame</span> 
+ without a corresponding <span class="NDLSystemFont">BeginFrame</span> call.</p>
+
+<h3>DisplayFrame</h3>
+
+<p><span class="NDLSystemFont">DisplayFrame</span> causes 
+ the renderer to display the finished frame to the display device. If for 
+ any reason it fails, <span class="NDLSystemFont">DisplayFrame</span> will 
+ return false, signalling to the application that the renderer cannot display 
+ the frame. If this happens, then an application can begin rendering a 
+ subsequent frame later. The reasons for a failed <span class="NDLSystemFont">DisplayFrame</span> 
+ call will depend on the specific renderer. Refer to your renderer's documentation for more details.</p>
+
+<p>Gamebryo does not require that <span class="NDLSystemFont">DisplayFrame</span> either signal the display of the frame and return immediately or wait until the frame has been successfully displayed before returning. This behavior will also depend on the specific renderer.</p>
+
+<p>Once an application has called <span class="NDLSystemFont">DisplayFrame</span>, it may not call <span class="NDLSystemFont">DisplayFrame</span> again until another frame has been created using <span class="NDLSystemFont">BeginFrame</span> 
+ and <span class="NDLSystemFont">EndFrame</span>. </p>
+
+<h3>Offscreen Frames</h3>
+
+<p>There are situations where applications will need to perform some rendering operations, but will not want to display the results of those operations. This may happen when, for example, an application has a rendered texture that needs to be filled in, but will not be updated. For these situations, the functions <span class="NDLSystemFont">BeginOffScreenFrame</span> 
+ and <span class="NDLSystemFont">EndOffScreenFrame</span> have been provided. 
+ <span class="NDLSystemFont">BeginOffScreenFrame</span> and <span class="NDLSystemFont">EndOffScreenFrame</span> are directly analogous to <span class="NDLSystemFont">BeginFrame</span> and <span class="NDLSystemFont">EndFrame</span>, except that after the former 
+ functions have been called, the renderer does not have a frame ready to 
+ present, and it is not legal to call <span class="NDLSystemFont">DisplayFrame</span>. 
+ </p>
+
+<p><span class="NDLSystemFont">BeginOffScreenFrame</span> 
+ and <span class="NDLSystemFont">EndOffScreenFrame</span> are meant to be 
+ used by an application only in situations where a buffer needs to be rendered 
+ to outside of the normal frame-rendering code. It is not expected that 
+ these functions are called frequently, because they can result in reduced performance. Applications that expect to fill in a rendered texture every frame should include that code in the standard <span class="NDLSystemFont">BeginFrame</span>/<span 
+ class="NDLSystemFont">EndFrame</span> code for best results. </p>
+
+<h3>Renderer Frame Status</h3>
+
+<p>The legality of making certain renderer calls at specific 
+ times relative to the <span class="NDLSystemFont">BeginFrame</span> / <span 
+ class="NDLSystemFont">BeginOffScreenFrame</span> / <span class="NDLSystemFont">EndFrame</span> 
+ / <span class="NDLSystemFont">EndOffScreenFrame</span> / <span class="NDLSystemFont">DisplayFrame</span> 
+ calls is enforced by having the renderer keep track of the current frame 
+ state using a set of <a href="../../Reference/NiMain/NiRenderer.htm#FrameState_Enumerations">enumerations</a>. Applications can check the frame state using the <span class="NDLSystemFont">NiRenderer::GetFrameState</span> function.</p>
+
+<p>When the renderer is first created, the frame state 
+ is initialized to <span class="NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span>. 
+ From this point, there are two valid call cycles regarding frame state:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">NiRenderer::BeginFrame</span>, 
+ resulting in <span class="NDLSystemFont">FRAMESTATE_INSIDE_FRAME</span></li>
+	
+	<li><span class="NDLSystemFont">NiRenderer::EndFrame</span>, 
+ resulting in <span class="NDLSystemFont">FRAMESTATE_WAITING_FOR_DISPLAY</span></li>
+	
+	<li><span class="NDLSystemFont">NiRenderer::DisplayFrame</span>, 
+ resulting in <span class="NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span></li>
+</ul>
+
+<p>or:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">NiRenderer::BeginOffScreenFrame</span>, 
+ resulting in <span class="NDLSystemFont">FRAMESTATE_INSIDE_OFFSCREEN_FRAME</span></li>
+	
+	<li><span class="NDLSystemFont">NiRenderer::EndOffScreenFrame</span>, 
+ resulting in <span class="NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span></li>
+</ul>
+
+<p><a name=Inside_Frame_Calls></a>There are several calls which 
+ are valid only while inside a frame. Call <span class="NDLSystemFont">NiRenderer::GetInsideFrameState</span> 
+ if you need to verify this condition. The following calls are valid only 
+ while inside a frame:</p>
+
+<ul>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::BeginUsingRenderTargetGroup</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::BeginUsingDefaultRenderTargetGroup</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::EndUsingRenderTargetGroup</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::ClearBuffer</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::SetCameraData</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderer::SetScreenSpaceCameraData</span></li>
+	
+	<li><span 
+ class="NDLSystemFont">NiRenderObject::RenderImmediate</span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

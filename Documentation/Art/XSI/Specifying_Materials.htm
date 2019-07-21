@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Specifying materials in the XSI Plug-in</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Specifying materials in the XSI Plug-in</h1>
+
+<p>Gamebryo's default material implementation for renderable objects is
+called the Gamebryo Standard Material. There are two ways to specify
+how the standard material for an object is configured. You can use the
+special GamebryoMaterial shader node that is supplied by the exporter (the
+preferred technique). Alternately, you can use basic XSI shader nodes to create a render tree that the exporter understands. Using the GamebryoMaterial
+node allows you to control virtually every Gamebryo Standard Material property,
+whereas only certain aspects of Gamebryo Standard Material can be
+driven through the use of a network of basic XSI shader nodes. Both techniques are described below.</p>
+
+<h2>Supported texture map types</h2>
+
+<p>The Gamebryo runtime supports the following texture formats. Any of these
+formats can be used to define clips in XSI that can be used as texture
+inputs to either the GamebryoMaterial shader node or other XSI shader
+nodes.</p>
+
+<ul>
+	<li>BMP</li>
+	<li>DDS</li>
+	<li>HDR</li>
+	<li>PNG</li>
+	<li>SGI</li>
+	<li>TGA</li>
+	<li>OpenEXR</li>
+</ul>
+
+<h2>Using the GamebryoMaterial shader node</h2>
+
+<p>The exporter implements a real-time shader node that allows you to specify
+all of the configurable inputs to Gamebryo Standard Material. You plug
+the <span class="NDLSystemFont">GamebryoMaterial</span> shader node
+into the RealTime input of the Material node in your material definition. You can easily do this by using the supplied Gamebryo Material toolbar. Clicking the <span class="NDLGUILabel">Apply Gamebryo Material</span> button assigns a <span class="NDLSystemFont">GamebryoMaterial</span> node to the RealTime input of the material definition of the selected object.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/GamebryoMaterialToolbar.jpg" alt="GamebryoMaterialToolbar.jpg" width="200" height="67">
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>After you apply a <span class="NDLSystemFont">GamebryoMaterial</span> node to your material definition, a default "noIcon_pic" texture input is assigned to the base map texture input slot of the <span class="NDLSystemFont">GamebryoMaterial</span> node as shown below:</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/InitialGamebryoMaterialState.jpg" alt="InitialGamebryoMaterialState.jpg" width="607" height="400">
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Double-clicking the GamebryoMaterial shader node enables you to configure its properties and texture input slots. The user-interface is separated into an upper and lower section described below.</p>
+
+<p>The upper section lets you specify Ambient, Diffuse, Specular and Emittance colors as well as Alpha and Shininess values. The Preview Texture drop-down indicates which texture map specified in the lower section is currently shown in the real-time preview. This per-map preview mechanism allows you to debug the UV coordinates of each texture input to the Gamebryo Standard Material easily.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/GamebryoMaterialUIUpperSection.jpg" alt="GamebryoMaterialUIUpperSection.jpg" width="333" height="381">
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>The lower section of the GamebryoMaterial user interface allows you to configure texture inputs for each of the supported Gamebryo Standard Material texture input slots. Initially, all maps for a new GamebryoMatrial node are disabled and their property pages are collapsed. When a map is enabled, its texture preview and texture space parameters are shown in the expanded user interface. The screenshot below shows the options that are available for normal mapping when the normal map texture input slot is enabled. A normal map clip has been selected and the clip is previewed in the GamebryoMaterial configuration panel.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/NormalMapExample.jpg" alt="NormalMapExample.jpg" width="409" height="444">
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>Texture spaces must be defined before a map can be seen. This allows each map to have its own texture space which are then used to generate UVs.
+Click on the property page's <span class="NDLGULabel">New</span> texture space button and select an option from the drop-down.</p>
+
+
+<h2>Create a render tree to specify standard material properties</h2>
+
+<p>You can use standard XSI shader nodes in a render tree to drive some of
+the configurable options of the Gamebryo Standard Material. If you plug
+a Phong shader node into the Surface, Shadow, and Photon ports of a
+material (the default initial material setup), the following Phong
+shader node properties are used by the exporter to setup properties of Gamebryo Standard Material:</p>
+
+<ul>
+	<li>Ambient color</li>
+	<li>Diffuse color</li>
+	<li>Specular color</li>
+	<li>Incandescence is converted into&nbsp;Gamebryo emittance</li>
+	<li>Transparency is converted into an Alpha value by averaging the RGB values</li>
+</ul>
+
+
+<div class="NDLFigureContainer">
+    <img src="./images/PhongMaterial.jpg" alt="PhongMaterial.jpg" width="334" height="424">
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Texture inputs</h2>
+
+<p>Note that textures must have an explicit UV mapping. XSI permits implicit UV
+mapping, which is unsupported. If a texture has no UV mapping, the
+export will not complete successfully. Common mappings for XSI textures
+are: the source texture image becomes the source texture, the UV
+space is used as the texture UV in Gamebryo, the advanced repeat is
+used to scale the UV coordinates, the filter flag controls Gamebryo
+texture filtering (bilinear is typically used). The follow lists the
+supported texture mappings for standard XSI shader tree nodes:</p>
+
+<ul>
+	<li>The Gamebryo base map is taken from texture connected to the surface diffuse color of the material</li>
+	<li>The Gamebryo bump map is taken from the normal connector of the material if there is an environment map</li>
+	<li>The Gamebryo environment is map taken from the material environment connector</li>
+	<li>The Gamebryo gloss map is taken from the surface reflectivity connector in the material</li>
+	<li>The Gamebryo glow map is taken from the surface incandescence connector in the material. The intensity must be 0 or 1.</li>
+</ul>
+
+<div class="NDLFigureContainer">
+    <img src="./images/6_Material_Base_Normal_Glow.jpg" alt="6_Material_Base_Normal_Glow.jpg" width="875" height="586">
+    <p class="NDLFigureCaption">Example of shader tree that will be converted to base map, glow map and normal map</p>
+</div>
+
+<div class="NDLFigureContainer">
+    <img src="./images/6_Material_Bump_Env.jpg" alt="6_Material_Bump_Env.jpg"  width="875" height="586">
+    <p class="NDLFigureCaption">Example of shader tree that will be converted to bump map with an environment map</p>
+</div>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+</html>

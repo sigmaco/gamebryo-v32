@@ -1,0 +1,2327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiRenderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiRenderer</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiObject.htm"><span>NiObject</span></a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiRenderer.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is the abstract base class for all renderers. It
+defines the interface that is used to render all objects in
+Gamebryo. Notice that this class contains many public member
+functions that are not designed for application use and thus are
+not documented here. Please refer to the manual for specific
+renderers for notes on how the functions below operate on each
+renderer.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>This class is an abstract base class that cannot be created
+directly.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static NiRenderer*
+GetRenderer()</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the
+<span class="NDLSystemFont">NiRenderer</span>, if one has been
+created. It is not valid for more than one <span class=
+"NDLSystemFont">NiRenderer</span> object to be used at any given
+time in a Gamebryo application.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">static const char*
+GetLastErrorString()</p>
+
+<p class="NDLRefMemberDescription">Holds the last error reported
+by a renderer during renderer creation (successfully created
+renderers do not modify this string at any time--it is not
+designed for "steady-state" error reporting). Not all renderers
+support this string. See the "Notes" section for each individual
+renderer type to determine the level of support for this feature.
+If any (supporting) renderer's <span class=
+"NDLSystemFont">Create</span> function returns <span class=
+"NDLSystemFont">NULL</span> , then this function will return a
+descriptive string detailing the error.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">static void
+ClearLastErrorString()</p>
+
+<p class="NDLRefMemberDescription">Allows the application to
+clear an error string that has already been read and dealt with.
+A common use of this function is found during renderer creation -
+an application finds that the desired renderer has failed
+creation, at which point it checks the error string and returns
+it to the user (or parses it itself). The application then clears
+the error string with this function and creates the next
+renderer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">void SetCallbackObject(<a href=
+"NiRenderer.htm#Callback_Objects">CallbackObject</a>*
+pkCallbackObject)</p>
+
+<p class="NDLRefMemberDescription">This function sets the <span class=
+"NDLSystemFont">CallbackObject</span> instance to use for notification of
+errors, warnings, and messages. The pointer passed in may be <span class=
+"NDLSystemFont">NULL</span> to clear the callback object. Note that NiRenderer
+does not take ownership of the pointer and will not delete the memory it
+references.  See the <a href="NiRenderer.htm#Callback_Objects">notes</a> below
+for the class reference of <span class="NDLSystemFont">CallbackObject</span>,
+along with more information about how it should be used.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRenderer.htm#Callback_Objects">CallbackObject</a>*
+GetCallbackObject() const</p>
+
+<p class="NDLRefMemberDescription">This function returns the
+<span class="NDLSystemFont">CallbackObject</span> instance that
+is currently being used for notification of of errors, warnings, and messages.
+If no <span class="NDLSystemFont">CallbackObject</span> instance has
+been set, it returns <span class="NDLSystemFont">NULL</span> in release and
+shipping builds, and the default message callback object in debug builds.</p>
+
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefHead2">Frame Management Functions</p>
+
+<p class="NDLRefMemberFunction">bool BeginFrame()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">BeginFrame</span> is used to signal to the
+renderer that it will receive a series of rendering calls. There
+must be exactly one call to <span class=
+"NDLSystemFont">BeginFrame</span>, <span class=
+"NDLSystemFont">EndFrame</span>, and <span class=
+"NDLSystemFont">DisplayFrame</span> per rendered frame.
+<span class="NDLSystemFont">BeginFrame</span> will fail if the
+frame state, as reported by <span class=
+"NDLSystemFont">GetFrameState</span>, is not <span class=
+"NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span>. Additionally, a
+successful call to <span class="NDLSystemFont">BeginFrame</span>
+will set the frame state to <span class=
+"NDLSystemFont">FRAMESTATE_INSIDE_FRAME</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetFrameID()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the current frame ID,
+which is defined as the number of times <span class=
+"NDLSystemFont">DisplayFrame</span> has been called
+successfully.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool EndFrame()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">EndFrame</span> is used to signal to the renderer
+that the rendering is complete for a frame. <span class=
+"NDLSystemFont">EndFrame</span> can only be called when the
+current frame state, as reported by <span class=
+"NDLSystemFont">GetFrameState</span>, is <span class=
+"NDLSystemFont">FRAMESTATE_INSIDE_FRAME</span>. If this is not
+the case, then <span class="NDLSystemFont">EndFrame</span> will
+fail and return <span class="NDLSystemFont">false</span> without
+affecting the renderer at all. If <span class=
+"NDLSystemFont">EndFrame</span> succeeds, then it will set the
+current frame state to <span class=
+"NDLSystemFont">FRAMESTATE_WAITING_FOR_DISPLAY</span>. Note that
+many renderer functions are only legal to call between a call to
+<span class="NDLSystemFont">BeginFrame</span> and the following
+call to <span class="NDLSystemFont">EndFrame</span>. <span class=
+"NDLSystemFont">BeginFrame</span>, <span class=
+"NDLSystemFont">EndFrame</span>, and <span class=
+"NDLSystemFont">DisplayFrame</span> must be called exactly once
+per rendered frame. Refer to the <a href=
+"../../Programmer/General_Topics/Rendering_a_Frame.htm">rendering
+documentation</a> for more details.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool DisplayFrame()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">DisplayFrame</span> is used to cause to the
+renderer to display the frame that was filled in by the renderer
+calls made between the most recent <span class=
+"NDLSystemFont">BeginFrame</span>/<span class=
+"NDLSystemFont">EndFrame</span> calls. <span class=
+"NDLSystemFont">DisplayFrame</span> can only be called when the
+current frame state, as reported by <span class=
+"NDLSystemFont">GetFrameState</span>, is <span class=
+"NDLSystemFont">FRAMESTATE_WAITING_FOR_DISPLAY</span>. If this is
+not the case, then <span class=
+"NDLSystemFont">DisplayFrame</span> will fail and return
+<span class="NDLSystemFont">false</span> without affecting the
+renderer at all. If <span class=
+"NDLSystemFont">DisplayFrame</span> succeeds, then it will set
+the current frame state to <span class=
+"NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span>, and it will
+increment the current frame ID. <span class=
+"NDLSystemFont">BeginFrame</span>, <span class=
+"NDLSystemFont">EndFrame</span>, and <span class=
+"NDLSystemFont">DisplayFrame</span> must be called exactly once
+per rendered frame. Refer to the <a href=
+"../../Programmer/General_Topics/Rendering_a_Frame.htm">rendering
+documentation</a> for more details.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool BeginOffScreenFrame()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">BeginOffScreenFrame</span> is used to signal to
+the renderer that it will receive a series of rendering calls,
+but that the result of those calls will not be directly
+displayed. <span class="NDLSystemFont">BeginOffScreenFrame</span>
+can only be called when the current frame state, as reported by
+<span class="NDLSystemFont">GetFrameState</span>, is <span class=
+"NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span>. If this is not
+the case, then <span class=
+"NDLSystemFont">BeginOffScreenFrame</span> will fail and return
+<span class="NDLSystemFont">false</span> without affecting the
+renderer at all. If <span class=
+"NDLSystemFont">BeginOffScreenFrame</span> succeeds, then it will
+set the current frame state to <span class=
+"NDLSystemFont">FRAMESTATE_INSIDE_OFFSCREEN_FRAME</span>.
+<span class="NDLSystemFont">BeginOffScreenFrame</span> and
+<span class="NDLSystemFont">EndOffScreenFrame</span> allow an
+application to make rendering calls that are normally only legal
+between <span class="NDLSystemFont">BeginFrame</span> and
+<span class="NDLSystemFont">EndFrame</span> calls, while not
+obligating the application to display a frame when the rendering
+calls are complete. This allows an application to perform
+rendering work that does not need to be repeated each frame, such
+as filling static rendered textures during initialization. It is
+not expected that <span class=
+"NDLSystemFont">BeginOffScreenFrame</span> and <span class=
+"NDLSystemFont">EndOffScreenFrame</span> will be called often.
+Refer to the <a href=
+"../../Programmer/General_Topics/Rendering_a_Frame.htm">rendering
+documentation</a> for more details.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool EndOffScreenFrame()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">EndOffScreenFrame</span> is used to signal to the
+renderer that rendering is complete, but that the result of those
+rendering calls will not be directly displayed. <span class=
+"NDLSystemFont">EndOffScreenFrame</span> can only be called when
+the current frame state, as reported by <span class=
+"NDLSystemFont">GetFrameState</span>, is <span class=
+"NDLSystemFont">FRAMESTATE_INSIDE_OFFSCREEN_FRAME</span>. If this
+is not the case, then <span class=
+"NDLSystemFont">EndOffScreenFrame</span> will fail and return
+<span class="NDLSystemFont">false</span> without affecting the
+renderer at all. If <span class=
+"NDLSystemFont">EndOffScreenFrame</span> succeeds, then it will
+set the current frame state to <span class=
+"NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span>. <span class=
+"NDLSystemFont">BeginOffScreenFrame</span> and <span class=
+"NDLSystemFont">EndOffScreenFrame</span> allow an application to
+make rendering calls that are normally only legal between
+<span class="NDLSystemFont">BeginFrame</span> and <span class=
+"NDLSystemFont">EndFrame</span> calls, while not obligating the
+application to display a frame when the rendering calls are
+complete. This allows an application to perform rendering work
+that does not need to be repeated each frame, such as filling
+static rendered textures during initialization. It is not
+expected that <span class=
+"NDLSystemFont">BeginOffScreenFrame</span> and <span class=
+"NDLSystemFont">EndOffScreenFrame</span> will be called often.
+Refer to the <a href=
+"../../Programmer/General_Topics/Rendering_a_Frame.htm">rendering
+documentation</a> for more details.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">EFrameState GetFrameState()
+const</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">GetFrameState</span> reports the current state of
+the renderer with regards to calls to <span class=
+"NDLSystemFont">BeginFrame</span>, <span class=
+"NDLSystemFont">EndFrame</span>, <span class=
+"NDLSystemFont">BeginOffscreenFrame</span>, <span class=
+"NDLSystemFont">EndOffscreenFrame</span>, and <span class=
+"NDLSystemFont">DisplayFrame</span>. The meanings of the various
+<span class="NDLSystemFont">EFrameState</span> enumeration are
+described <a href=
+"NiRenderer.htm#FrameState_Enumerations">below</a>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool GetInsideFrameState()
+const</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">GetInsideFrameState</span> returns true if the
+renderer is currently prepared to accept rendering calls for a
+frame. Several renderer calls may only be made while inside a
+frame, see <a href=
+"../../Programmer/General_Topics/Using_Frames.htm#Inside_Frame_Calls">
+Using Frames</a>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="Render_Target_Access_Management" id="Render_Target_Access_Management"></a><p class="NDLRefHead2">Render Target Access and Management
+Functions</p>
+
+<p class="NDLRefMemberFunction">bool
+BeginUsingRenderTargetGroup(<a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>* pkTarget,
+unsigned int uiClearMode)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> sets
+<span class="NDLSystemFont">pkTarget</span> as the active
+rendering target for the renderer, and clears <span class=
+"NDLSystemFont">pkTarget</span>'s buffers using the flags passed
+into the <span class="NDLSystemFont">uiClearMode</span>
+parameter. The <span class="NDLSystemFont">uiClearMode</span>
+parameter is an OR-ed combination of the ClearFlags, which are
+discussed <a href=
+"NiRenderer.htm#Render_Target_Clear_Flags">below</a>. Any
+rendering calls that occur between this call and a call to
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span> to
+will be applied to the <span class="NDLSystemFont"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+referenced by <span class="NDLSystemFont">pkTarget</span>. This
+function can be used for rendering to a texture, or to additional
+back buffers. Several Gamebryo samples use this function to
+render to different render targets, including <a href=
+"../../Learn/Tutorials/Tutorial_9__Rendered_Textures.htm">Tutorial
+9: Rendered Textures</a>. Note that many renderer functions are
+only legal to call between a call to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+the following <span class=
+"NDLSystemFont">EndUsingRenderTargetGroup</span> call.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool
+BeginUsingDefaultRenderTargetGroup(unsigned int uiClearMode)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span> sets
+the active render target group for the renderer to be the default
+render target group, and clears that render target's buffers
+using the flags passed into the <span class=
+"NDLSystemFont">uiClearMode</span> parameter, discussed <a href=
+"NiRenderer.htm#Render_Target_Clear_Flags">below</a>. Any
+rendering calls that occur between this call and a call to
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span> to
+will be applied to the default render target group. Note that
+many renderer functions are only legal to call between a call to
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span> (or
+<span class="NDLSystemFont">BeginUsingRenderTargetGroup</span> )
+and the following <span class=
+"NDLSystemFont">EndUsingRenderTargetGroup</span> call.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool IsRenderTargetGroupActive()
+const</p>
+
+<p class="NDLRefMemberDescription">This function indicates
+whether the renderer is currently between a call to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup)</span> and
+the following <span class=
+"NDLSystemFont">EndUsingRenderTargetGroup</span> call.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">bool
+EndUsingRenderTargetGroup()</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">EndUsingDefaultRenderTargetGroup</span> signals
+to the renderer that the application is done rendering to the
+current render target group. This allows the renderer a chance to
+finish filling in the render target before it is used as a
+texture or displayed to the screen. Note that many renderer
+functions are only legal to call between a call to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span> ) and
+the following <span class=
+"NDLSystemFont">EndUsingRenderTargetGroup</span> call.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+ValidateRenderTargetGroup(<a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>* pkTarget) =
+0</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">ValidateRenderTargetGroup</span> will determine
+whether or not the renderer can use <span class=
+"NDLSystemFont">pkTarget</span> as a render target group.
+Possible reasons for failure could be that the number of buffers
+used exceeds the maximum allowed by the renderer, or the pixel
+formats of the individual buffers do not match the requirements
+for the renderer.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+IsDepthBufferCompatible(<a href="Ni2DBuffer.htm">Ni2DBuffer</a>*
+pkBuffer, <a href=
+"NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a>* pkDSBuffer)
+= 0</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">IsDepthBufferCompatible</span> indicates whether
+or not the renderer is capable of using <span class=
+"NDLSystemFont">pkDSBuffer</span> as the depth stencil buffer
+when rendering to <span class="NDLSystemFont">pkBuffer</span>. It
+does this by checking the sizes of the two buffers, as well as
+their pixel formats, for compatibility.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a>*
+CreateCompatibleDepthStencilBuffer(<a href=
+"Ni2DBuffer.htm">Ni2DBuffer</a>* pkBuffer) const</p>
+
+<p class="NDLRefMemberDescription">Creates a depth stencil buffer
+that is compatible with the passed in buffer.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>*
+GetDefaultRenderTargetGroup() const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns the default render
+target group, which is the one that is created during renderer
+initialization.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual const <a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a>*
+GetCurrentRenderTargetGroup() const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns the currently selected
+render target group. If the renderer is not currently between a
+call to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>,
+then the function returns NULL otherwise, the currently active
+render target group is returned.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiDepthStencilBuffer.htm">NiDepthStencilBuffer</a>*
+GetDefaultDepthStencilBuffer() const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns the default depth
+stencil buffer, which is the one that is created during renderer
+initialization.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"Ni2DBuffer.htm">Ni2DBuffer</a>* GetDefaultBackBuffer() const =
+0</p>
+
+<p class="NDLRefMemberDescription">Returns the default back
+buffer, which is the one that is created during renderer
+initialization.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefHead2">Render Target Clearing Functions</p>
+
+<p class="NDLRefMemberFunction">void ClearBuffer(const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;* pkR,
+unsigned int uiMode)</p>
+
+<p class="NDLRefMemberDescription">Clears the backbuffer, depth
+buffer and/or stencil buffer for the currently set render target
+group. If the <span class="NDLSystemFont">pR</span> parameter is
+<span class="NDLSystemFont">NULL</span>, the entire contents of
+the buffers are cleared. Otherwise, the rectangle specifies (in
+normalized <span class="NDLSystemFont">[0.0,1.0]</span>
+coordinates) the sub rectangle of the buffers to be cleared. The
+<span class="NDLSystemFont">uiMode</span> parameter is an OR-ed
+combination of the <span class="NDLSystemFont">ClearFlags</span>,
+which are discussed <a href=
+"NiRenderer.htm#Render_Target_Clear_Flags">below</a>. Normally,
+it is more efficient to use the clearing functionality of the
+<span class="NDLSystemFont">BeginUsingRenderTargetGroup</span>
+function, though <span class="NDLSystemFont">ClearBuffer</span>
+can be used for clearing a sub-rect or performing additional
+clearing operations. Note that if <span class=
+"NDLSystemFont">CLEAR_BACKBUFFER</span> is used, then all back
+buffers in the render target group will be cleared - it is not
+possible to directly clear only one back buffer of a set in a
+render target group. <span class=
+"NDLSystemFont">ClearBuffer</span> is only legal to call between
+calls to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual void SetDepthClear(const
+float fZClear) = 0</p>
+
+<p class="NDLRefMemberFunction">virtual float GetDepthClear()
+const = 0</p>
+
+<p class="NDLRefMemberDescription">Gets and sets the value to
+which the depth buffer will be cleared when <span class=
+"NDLSystemFont">CLEAR_ZBUFFER</span> is provided to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> or
+<span class="NDLSystemFont">ClearBuffer</span>.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetBackgroundColor(const <a href="NiColor.htm">NiColor</a>&amp;
+kColor) = 0</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetBackgroundColor(const <a href="NiColorA.htm">NiColorA</a>&amp;
+kColor) = 0</p>
+
+<p class="NDLRefMemberFunction">virtual void
+GetBackgroundColor(<a href="NiColorA.htm">NiColorA</a>&amp;
+kColor) const = 0</p>
+
+<p class="NDLRefMemberDescription">Gets and sets the background
+color used when <span class=
+"NDLSystemFont">CLEAR_BACKBUFFER</span> is provided to
+<span class="NDLSystemFont">BeginUsingRenderTargetGroup</span> or
+<span class="NDLSystemFont">ClearBuffer</span>. The values
+returned by <span class="NDLSystemFont">GetBackgroundColor</span>
+are not guaranteed to be exactly equal to the values passed to
+the most recent invocation of <span class=
+"NDLSystemFont">SetBackgroundColor</span>, since the renderer
+might store the background color in a device-dependent format
+with lower resolution than is contained in the floating point
+members of <span class="NDLSystemFont">NiColor</span> and
+<span class="NDLSystemFont">NiColorA</span>.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetStencilClear(unsigned int uiClear) = 0</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+GetStencilClear() const = 0</p>
+
+<p class="NDLRefMemberDescription">Gets and sets the value to
+which the stencil buffer will be cleared by calls to <span class=
+"NDLSystemFont">ClearBuffer(NiRenderer::CLEAR_STENCIL</span> ).
+Note that if the stencil buffer has fewer than 32 bits or
+precision, the least significant N bits will be used, where N is
+the number of bits of precision in the stencil buffer.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefHead2">Camera Setup Functions</p>
+
+<p class="NDLRefMemberFunction">void SetCameraData(const <a href=
+"NiCamera.htm">NiCamera</a>* pkCamera)</p>
+
+<p class="NDLRefMemberDescription">Sets up the viewport and
+viewing transforms in the renderer for the objects that are about
+to be rendered based on the camera settings described by the
+provided <span class="NDLSystemFont"><a href=
+"NiCamera.htm">NiCamera</a></span> object. <span class=
+"NDLSystemFont">SetCameraData</span> is only legal to call
+between calls to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void SetCameraData(const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldLoc, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldDir, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldUp, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldRight, const <a href=
+"NiFrustum.htm">NiFrustum</a>&amp; kFrustum, const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; kPort)</p>
+
+<p class="NDLRefMemberDescription">Sets up the viewport and
+viewing transforms in the renderer for the objects that are about
+to be rendered. <span class="NDLSystemFont">kWorldLoc</span> is
+the camera location. <span class=
+"NDLSystemFont">kWorldDir</span>, <span class=
+"NDLSystemFont">kWorldUp</span>, and <span class=
+"NDLSystemFont">kWorldRight</span> define the camera's
+orientation. <span class="NDLSystemFont">kFrustum</span> defines
+the projection. <span class="NDLSystemFont">kPort</span> defines
+the view port on the rendering surface. <span class=
+"NDLSystemFont">SetCameraData</span> is only legal to call
+between calls to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void
+SetScreenSpaceCameraData(const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;* pkPort = NULL)</p>
+
+<p class="NDLRefMemberDescription">Sets up the renderer to use
+camera settings consistent with a normalized, screen
+space-relative view. The Gamebryo screen space view parameters
+are discussed in greater detail <a href=
+"../../Programmer/General_Topics/Screen_Space_Rendering.htm">here</a>.
+<span class="NDLSystemFont">SetScreenSpaceCameraData</span> is
+only legal to call between calls to <span class=
+"NDLSystemFont">BeginUsingRenderTargetGroup</span> (or
+<span class=
+"NDLSystemFont">BeginUsingDefaultRenderTargetGroup</span>) and
+<span class="NDLSystemFont">EndUsingRenderTargetGroup</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void GetCameraData(<a href=
+"NiCamera.htm">NiCamera</a>&amp; kCamera)</p>
+
+<p class="NDLRefMemberDescription">Populates the supplied
+<span class="NDLSystemFont">NiCamera</span> object with the most
+recent values set by <span class=
+"NDLSystemFont">SetCameraData</span>. This function can be used
+to retrieve the most recent camera data that has been set on the
+renderer.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void GetCameraData(<a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldLoc, <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldDir, <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldUp, <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kWorldRight, <a href=
+"NiFrustum.htm">NiFrustum</a>&amp; kFrustum, <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; kPort)</p>
+
+<p class="NDLRefMemberDescription">Populates the supplied
+parameters with the most recent values set by <span class=
+"NDLSystemFont">SetCameraData</span>. This function can be used
+to retrieve the most recent camera data that has been set on the
+renderer.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool GetLeftRightSwap()
+const = 0</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+SetLeftRightSwap(bool bSwap) = 0</p>
+
+<p class="NDLRefMemberDescription">Get and set the left-right
+swap mode. Left-right swap, when enabled, will flip the scene
+left-to-right as it is rendered into the port. This technique is
+useful for rear-view mirror effects, and is also needed when
+rendering <span class="NDLSystemFont"><a href=
+"NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span> faces, as
+their coordinate systems are left-handed. Left-right swapping is
+enabled on platforms that can support it by calling <span class=
+"NDLSystemFont">SetLeftRightSwap</span> with an argument of
+<span class="NDLSystemFont">true</span>. <span class=
+"NDLSystemFont">GetLeftRightSwap</span> returns the current swap
+state, and the set function returns true if the desired swap mode
+can be supported. See the documentation for the desired renderer
+to determine if the renderer can support this feature.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="Swap_Chain_Access_Management" id="Swap_Chain_Access_Management"></a><p class="NDLRefHead2">Swap Chain Access and Management
+Functions</p>
+
+<p class="NDLRefMemberFunction">bool CreateWindowRenderTargetGroup(NiWindowRef kWnd)</p>
+
+<p class="NDLRefMemberDescription">Creates a new swap chain for the 
+window reference <span class="NDLSystemFont">kWnd</span>, and returns
+whether or not the creation was successful.</p>
+
+<p class="NDLRefMemberFunction">bool RecreateWindowRenderTargetGroup(NiWindowRef kWnd)</p>
+
+<p class="NDLRefMemberDescription">Recreates the swap chain for the 
+window reference <span class="NDLSystemFont">kWnd</span>, and returns
+whether or not the recreation was successful.</p>
+
+<p class="NDLRefMemberFunction">void ReleaseWindowRenderTargetGroup(NiWindowRef kWnd)</p>
+
+<p class="NDLRefMemberDescription">Releases the renderer's swap chain for the 
+window reference <span class="NDLSystemFont">kWnd</span>.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiRenderTargetGroup.htm">NiRenderTargetGroup</a>* GetWindowRenderTargetGroup(
+        NiWindowRef kWnd) const</p>
+
+<p class="NDLRefMemberDescription">Returns the a pointer to an 
+<span class="NDLSystemFont">NiRenderTargetGroup</span> 
+representing the renderer's swap chain for the 
+window reference <span class="NDLSystemFont">kWnd</span>.</p>
+        
+<a name="Locking_Functions" id="Locking_Functions"></a><p class="NDLRefHead2">Renderer Locking Functions</p>
+
+<p class="NDLRefMemberFunction">void LockRenderer()</p>
+
+<p class="NDLRefMemberFunction">void UnlockRenderer()</p>
+
+<p class="NDLRefMemberDescription">These functions lock and
+unlock an <span class="NDLSystemFont">NiCriticalSection</span>
+object that the <span class="NDLSystemFont">NiRenderer</span>
+keeps to ensure that multiple threads do not access
+non-thread-safe sections of the renderer concurrently. Most
+critical renderer functions will contain their own <span class=
+"NDLSystemFont">LockRenderer</span> and <span class=
+"NDLSystemFont">UnlockRenderer</span> calls internally, but it
+may be useful for an application to explicitly lock and unlock
+the renderer around a series of such calls to minimize the amount
+of time spent waiting for the lock. Refer to the specific
+renderer documentation for a more detailed discussion of the best
+uses of <span class="NDLSystemFont">LockRenderer</span> and
+<span class="NDLSystemFont">UnlockRenderer</span> for that
+renderer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">unsigned int LockCount()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the lock count for the
+<span class="NDLSystemFont">NiCriticalSection</span> object that
+the <span class="NDLSystemFont">NiRenderer</span> keeps.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<a name="Capability_Query_Functions" id="Capability_Query_Functions"></a><p class="NDLRefHead2">Capability Query Functions</p>
+
+<p class="NDLRefMemberFunction">virtual const char*
+GetDriverInfo() const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns a text string
+describing the renderer (type, hardware/software, etc). Not all
+renderers support this feature, so the application should check
+for the <span class="NDLSystemFont">NULL</span> pointer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int GetFlags()
+const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns the capabilities flag
+vector for the renderer. The capability flags are described in
+the Notes section under <a href=
+"NiRenderer.htm#Renderer_Capability_Flags">Renderer Capability
+Flags</a>.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"../../Reference/NiSystem/NiSystemDesc.htm">NiSystemDesc</a>::RendererID
+GetRendererID() const = 0</p>
+
+<p class="NDLRefMemberDescription">Returns the id of the derived
+renderer type.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual const <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>*
+FindClosestPixelFormat(<a href=
+"NiTexture__FormatPrefs.htm">NiTexture::FormatPrefs</a>&amp;
+kFmtPrefs) const = 0</p>
+
+<p class="NDLRefMemberDescription">Performs a "closest match"
+operation between the incoming format preferences and the target
+renderer's supported texture formats to return a const pointer to
+an <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span> object that best
+matches the preferences.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual const <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>*
+FindClosestDepthStencilFormat(const <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>*
+pkFrontBufferFormat) const</p>
+
+<p class="NDLRefMemberDescription">Performs a "closest match"
+operation between the incoming front buffer <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span> and the target
+renderer's supported depth stencil buffer formats to return a
+const <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span> pointer to an object
+that best fits the front buffer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual const <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>*
+FindClosestDepthStencilFormat(const <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span>*
+pkFrontBufferFormat, unsigned int uiDepthBPP, unsigned int
+uiStencilBPP) const = 0</p>
+
+<p class="NDLRefMemberDescription">Performs a "closest match"
+operation between the incoming front buffer <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span> a preferred bit
+depth for the depth buffer and stencil buffer, and the target
+renderer's supported depth stencil buffer formats to return a
+const <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormat</a></span> pointer to an object
+that best fits the front buffer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+GetMaxBuffersPerRenderTargetGroup() const = 0</p>
+
+<p class="NDLRefMemberDescription">This method returns the
+maximum number of buffers that can be simultaneously rendered to
+in a single pass. An example might be outputting the position,
+normals, and color into separate buffers during a single
+rendering pass. Note that the depth/stencil buffer does not count
+in this total.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+GetIndependentBufferBitDepths() const = 0</p>
+
+<p class="NDLRefMemberDescription">This method returns whether or
+not the renderer requires that all of the buffers in an
+<span class="NDLSystemFont"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span> have the
+same bit depth in their pixel formats. Note that this method does
+not necessarily apply to the bit depth of the depth/stencil
+buffer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<a name="Sorting" id="Sorting"></a><p class="NDLRefHead2">Sorting/Accumulator-related Functions</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiAccumulator.htm">NiAccumulator</a>* GetSorter()</p>
+
+<p class="NDLRefMemberFunction">void SetSorter(<a href=
+"NiAccumulator.htm">NiAccumulator</a>* pkAccum)</p>
+
+<p class="NDLRefMemberDescription">These functions set and get
+the accumulator that is to be attached to the renderer. This is a
+convenience function, as the renderer makes absolutely no direct
+use of this object. Accumulators can and are often used manually
+by an application during frame rendering. The <a href=
+"../../Programmer/General_Topics/Drawing_Utility_Functions.htm">drawing
+utility functions</a> <span class=
+"NDLSystemFont">NiDrawScene</span>, <span class=
+"NDLSystemFont">NiDrawVisibleArray</span> and <span class=
+"NDLSystemFont">NiDrawVisibleArrayAppend</span> (which are used
+by default in <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/Introduction_to_NiApplication.htm">
+NiApplication</a></span>) all use the accumulator that is
+attached to the renderer to sort and draw the objects. These
+three utility functions all draw directly if no accumulator is
+attached to the renderer.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="Texture_related_Functions" id="Texture_related_Functions"></a><p class="NDLRefHead2">Texture-related Functions</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int
+GetMipmapSkipLevel() const = 0</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+SetMipmapSkipLevel(unsigned int uiSkip) = 0</p>
+
+<p class="NDLRefMemberDescription">Gets and sets the current
+mipmap skip level. This value tells the renderer how many of the
+largest mipmap levels to skip when loading a texture to VRAM.
+Each skipped level causes textures to require one-fourth the VRAM
+of a texture loaded with the next lower <span class=
+"NDLSystemFont">SkipLevel</span> value. This capability is a
+quick and easy way to lower the VRAM requirements of an
+application, though it can result in a possible loss in image
+quality. <span class="NDLSystemFont">SetMipmapSkipLevel</span>
+returns <span class="NDLSystemFont">false</span> if the renderer
+does not support changing the skip level.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="Geometry_Precaching_Functions" id="Geometry_Precaching_Functions"></a><p class="NDLRefHead2">Precaching Functions</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PrecacheTexture(<a href="NiTexture.htm">NiTexture</a>* pkTexture)
+= 0</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">PrecacheTexture</span> causes the renderer to
+create renderer-specific data for <span class=
+"NDLSystemFont">pkTexture</span> to ensure that the texture is
+ready to be used immediately. The function returns whether or not
+the precache operation was successful.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PrecacheMesh(<a href="NiRenderObject.htm">NiRenderObject</a>*
+pkMesh, bool bReleaseSystemMemory = true)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">PrecacheMesh</span> causes the renderer to create
+renderer-specific data for <span class=
+"NDLSystemFont">pkMesh</span> to ensure that the mesh is ready to
+be used immediately. The function returns whether or not the
+precache operation was successful. If <span class=
+"NDLSystemFont">bReleaseSystemMemory</span> is true, then the
+renderer may attempt to release any system-memory copies of the
+geometry data that are no longer needed.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PrecacheShader(<a href="NiRenderObject.htm">NiRenderObject</a>*
+pkMesh)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">PrecacheShader</span> causes the renderer to
+force the generation of a shader for the material applied to
+<span class="NDLSystemFont">pkMesh</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PerformPrecache()</p>
+
+<p class="NDLRefMemberDescription">Depending on the specific
+renderer's implementation of the <span class=
+"NDLSystemFont">PrecacheTexture</span> and <span class=
+"NDLSystemFont">PrecacheMesh</span> functions, the functions may
+not do their work immediately. Instead, the renderer may store
+the object and cache it later. The <span class=
+"NDLSystemFont">PerformPrecache</span> function allows an
+application to control exactly when that caching operation will
+take place. If <span class="NDLSystemFont">PerformPrecache</span>
+is not called, the renderer will call it automatically during
+<span class="NDLSystemFont">BeginFrame</span>. The function
+returns whether or not the precache operation was successful.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual NiShaderDeclaration*
+CreateShaderDeclaration(unsigned int uiEntriesPerStream, unsigned
+int uiNumStreams) = 0</p>
+
+<p class="NDLRefMemberDescription">Creates an <span class=
+"NDLSystemFont"><a href=
+"NiShaderDeclaration.htm">NiShaderDeclaration</a></span> object
+for use with this renderer with the appropriate number of streams
+and entries.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefHead2">Cached Renderer Data Purging Functions</p>
+
+<p class="NDLRefMemberFunction">virtual void
+PurgeMaterial(<a href=
+"NiMaterialProperty.htm">NiMaterialProperty</a>* pkMaterial) =
+0</p>
+
+<p class="NDLRefMemberDescription">Purges the renderer-specific
+material data associated with <span class=
+"NDLSystemFont">pkMaterial</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual void PurgeEffect(<a href=
+"NiDynamicEffect.htm">NiDynamicEffect</a>* pLight) = 0</p>
+
+<p class="NDLRefMemberDescription">Purges the renderer-specific
+light data associated with <span class=
+"NDLSystemFont">pLight</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PurgeTexture(<a href="NiTexture.htm">NiTexture</a>* pkTexture) =
+0</p>
+
+<p class="NDLRefMemberDescription">Purges the renderer-specific
+texture data associated with <span class=
+"NDLSystemFont">pkTexture</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+PurgeAllTextures(bool bPurgeLocked) = 0</p>
+
+<p class="NDLRefMemberDescription">Purges all the
+renderer-specific texture data that the renderer has created. The
+<span class="NDLSystemFont">bPurgeLocked</span> parameter is
+unused and ignored. Calling this function while an application is
+running may cause textures to no longer display correctly.
+Rendered texture surfaces must be rebound after calling this
+function and non-external textures will not be reloaded.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void
+PurgeAllRendererData(<a href="NiAVObject.htm">NiAVObject</a>*
+pkScene)</p>
+
+<p class="NDLRefMemberDescription">Purges all the
+renderer-specific data in the scene graph subtree <span class=
+"NDLSystemFont">pkScene</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefHead2">Screen Shot Functions</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiPixelData.htm">NiPixelData</a>* TakeScreenShot(<br>
+const <a href="NiRect.htm">NiRect</a>&lt;unsigned int&gt;*
+pkScreenRect,<br>
+const <a href="NiRenderTargetGroup.htm">NiRenderTargetGroup</a>*
+pkTarget = NULL) = 0</p>
+
+<p class="NDLRefMemberDescription">This function returns a pixel
+data object filled with the contents of framebuffer from the last
+frame rendered to the <span class="NDLSystemFont"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+<span class="NDLSystemFont">pkTarget</span>. If <span class=
+"NDLSystemFont">pkTarget</span> is <span class=
+"NDLSystemFont">NULL</span>, then the default render target will
+be used. <span class="NDLSystemFont">pkScreenRect</span> can be
+used to specify a sub region (in pixels) of the framebuffer to
+sample. If <span class="NDLSystemFont">NULL</span>, the
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> that is returned is the
+size of the on-screen framebuffer. No format conversion is done
+on the <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> its format will match
+the framebuffer's. This function may not be supported on some
+renderers.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool SaveScreenShot(const
+char* pcFilename, EScreenshotFormat eFormat);</p>
+
+<p class="NDLRefMemberDescription">Saves a screenshot of the
+current backbuffer to the filename specified. If the path portion
+of the filename specified for the screenshot does not exist, it
+will be created. Returns true if the screenshot was written
+successfully. The meanings of the various <span class=
+"NDLSystemFont">EScreenshotFormat</span> enumeration are
+described <a href=
+"NiRenderer.htm#Screenshot_Enumerations">below</a>. Note: The DX9
+and Xbox 360 renderers support <span class=
+"NDLSystemFont">NiRenderer::FORMAT_PNG</span> and <span class=
+"NDLSystemFont">NiRenderer::FORMAT_JPEG</span>, while the PS3
+renderer supports <span class=
+"NDLSystemFont">NiRenderer::FORMAT_TARGA</span>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefHead2">Ni2DBuffer Copy Functions</p>
+
+<a name="NiRenderer_FastCopy" id="NiRenderer_FastCopy"></a><p class="NDLRefMemberFunction">virtual bool FastCopy (const
+<a href="Ni2DBuffer.htm">Ni2DBuffer</a>* pkSrc, <a href=
+"Ni2DBuffer.htm">Ni2DBuffer</a>* pkDest, const <a href=
+"NiRect.htm">NiRect</a>&lt;unsigned int&gt;* pkSrcRect = NULL,
+unsigned int uiDestX = 0, unsigned int uiDestY = 0) = 0</p>
+
+<p class="NDLRefMemberDescription">Copy an arbitrary region from
+one 2D buffer to the specified coordinates of a different 2D
+buffer. Note that the <span class="NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormats</a></span> of both <a href=
+"Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffer</span></a> must match for this method.
+This is the fastest path possible for copying pixel data. Also
+note that a <span class="NDLSystemFont">NULL</span> value for the
+<a href="NiRect.htm"><span class=
+"NDLSystemFont">NiRect</span></a> will use the dimensions of the
+<a href="Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffer</span></a>.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual bool Copy(const <a href=
+"Ni2DBuffer.htm">Ni2DBuffer</a>* pkSrc, <a href=
+"Ni2DBuffer.htm">Ni2DBuffer</a>* pkDest, const <a href=
+"NiRect.htm">NiRect</a>&lt;unsigned int&gt;* pkSrcRect, const
+<a href="NiRect.htm">NiRect</a>&lt;unsigned int&gt;* pkDestRect,
+<a href=
+"Ni2DBuffer.htm#CopyFilterPreference">Ni2DBuffer::CopyFilterPreference</a>
+ePref) = 0</p>
+
+<p class="NDLRefMemberDescription">Copy an arbitrary region from
+one <a href="Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffer</span></a> to another arbitrary region
+in a different <a href="Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffer</span></a>. Note that the <span class=
+"NDLSystemFont"><a href=
+"NiPixelFormat.htm">NiPixelFormats</a></span> of both <a href=
+"Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffers</span></a> may differ for this
+method. Also note that a <span class="NDLSystemFont">NULL</span>
+value for either <a href="NiRect.htm"><span class=
+"NDLSystemFont">NiRect</span></a> will use the dimensions of the
+<a href="Ni2DBuffer.htm"><span class=
+"NDLSystemFont">Ni2DBuffer</span></a>. This path can be slower
+than the <span class="NDLSystemFont">FastCopy</span> method.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="Global_Fog_Settings_Functions" id="Global_Fog_Settings_Functions"></a><p class="NDLRefHead2">Global Fog Settings Functions</p>
+
+<p class="NDLRefMemberFunction">virtual float
+GetMaxFogValue()</p>
+
+<p class="NDLRefMemberFunction">virtual void SetMaxFogValue(float
+fFogVal)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set
+the maximum fog density. The maximum fog density is the fog value
+attained by fogged object lying at the far plane. By default,
+this value is <span class="NDLSystemFont">1.0</span> (100%).
+Setting the value to (for example) <span class=
+"NDLSystemFont">0.5</span> (50%) will result in fogged objects at
+the far plane being rendered as half fog color, and half object
+color. Not all renderers support this feature. If a renderer
+cannot support this feature, then <span class=
+"NDLSystemFont">GetMaxFogValue</span> will always return
+<span class="NDLSystemFont">1.0</span> , even if <span class=
+"NDLSystemFont">SetMaxFogValue</span> has been called with a
+value other than <span class="NDLSystemFont">1.0</span> .
+Although most applications using fog will want objects to attain
+100% fog at the far plane (to avoid clipping artifacts), some
+applications can use lower fog percentages to better effect than
+full fogging (for example, when using an image-base
+backdrop).</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<a name="NiMaterialFunctions" id="NiMaterialFunctions"></a><p class="NDLRefHead2">NiMaterial Functions</p>
+
+<p class="NDLRefMemberFunction">void SetDefaultMaterial(<a href=
+"NiMaterial.htm">NiMaterial</a>* pkMaterial)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiMaterial.htm">NiMaterial</a>* GetDefaultMaterial() const</p>
+
+<p class="NDLRefMemberDescription">Get and set the material that
+will be used when no material is active on a rendered object.
+Note that this material will be added to the geometry object the
+first time it is rendered or precached.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+ApplyDefaultMaterial(<a href=
+"NiRenderObject.htm">NiRenderObject</a>* pkGeometry)</p>
+
+<p class="NDLRefMemberDescription">Applies the default material
+to the <span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span> object. This
+method is used during streaming in conjunction with the flag
+value <span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a>::GetStreamingAppliesDefaultMaterial</span>.
+The method is declared virtual since some platform renderers
+perform additional logic to attach special materials to certain
+types of geometry such as particles.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UseLegacyPipelineAsDefaultMaterial()</p>
+
+<p class="NDLRefMemberDescription">It is possible for an
+application to use the rendering pipeline for previous releases
+of Gamebryo. Calling this method will force the default material
+to be the pre-2.2 pipeline.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberDescription">Note: On PS3 this method is
+not supported and will emit a warning message in debug
+builds.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiMaterial.htm">NiMaterial</a>* GetInitialDefaultMaterial()
+const</p>
+
+<p class="NDLRefMemberDescription">This method will get the first
+default material assigned by the renderer.</p>
+
+<p class="NDLRefMemberDescription">This function does not operate
+under <a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href=
+"NiShader.htm">NiShader</a>* GetErrorShader() const</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetErrorShader(<a href="NiShader.htm">NiShader</a>*
+pkErrorShader)</p>
+
+<p class="NDLRefMemberDescription">Get and set the <a href=
+"../../Programmer/NiMaterial/Renderer_Interaction_With_Materials.htm#ErrorShader">
+error shader</a>, which will be used when a material cannot
+provide a shader for an object.</p>
+
+<p class="NDLRefMemberDescription">This function operates under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetMaxAnisotropy()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the current maximum
+level of anisotropic filtering (maximum number of taps).</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetMaxAnisotropy(unsigned short usMaxAnisValue)</p>
+
+<p class="NDLRefMemberDescription">This function sets the global
+maximum anisotropy, clamping it to valid values for the current
+platform.</p>
+
+<a name="Shader_Program_Macro_Functions" id="Shader_Program_Macro_Functions"></a><p class="NDLRefHead2">Shader Program Macro Functions</p>
+
+<p class="NDLRefMemberFunction">void DeleteAllMacros()</p>
+
+<p class="NDLRefMemberDescription">Remove all macro definitions
+and free associated memory.</p>
+
+<p class="NDLRefMemberFunction">bool AddGlobalMacro(const
+NiFixedString&amp; kMacroName, const NiFixedString&amp;
+kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Define the specified macro for
+all file types. If a macro with the same name is already defined,
+its value will be overwritten. Returns true if the macro was
+defined successfully.</p>
+
+<p class="NDLRefMemberFunction">bool AddMacro(const char*
+pcFileType, const NiFixedString&amp; kMacroName, const
+NiFixedString&amp; kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Define the specified macro for
+the specified file type. If a macro with the same name is already
+defined, its value will be overwritten. Returns true if the macro
+was defined successfully.</p>
+
+<p class="NDLRefMemberFunction">bool RemoveGlobalMacro(const
+NiFixedString&amp; kMacroName)</p>
+
+<p class="NDLRefMemberDescription">Removes the macro with the
+specified name. Returns true if macro was removed successfully or
+false if it does not exist.</p>
+
+<p class="NDLRefMemberFunction">bool RemoveMacro(const char*
+pcFileType, const NiFixedString&amp; kMacroName)</p>
+
+<p class="NDLRefMemberDescription">Removes the macro with the
+specified name and file type. Returns true if macro was removed
+successfully or false if it does not exist.</p>
+
+<p class="NDLRefMemberFunction">NiUInt32
+GetGlobalMacroCount()</p>
+
+<p class="NDLRefMemberDescription">Returns the number of global
+macro definitions.</p>
+
+<p class="NDLRefMemberFunction">NiUInt32 GetMacroCount(const
+char* pcFileType)</p>
+
+<p class="NDLRefMemberDescription">Returns the number of macros
+defined for the specified file type.</p>
+
+<p class="NDLRefMemberFunction">bool IsGlobalMacro(const
+NiFixedString&amp; kMacroName)</p>
+
+<p class="NDLRefMemberDescription">Returns true if a global macro
+with the specified name is defined.</p>
+
+<p class="NDLRefMemberFunction">bool IsMacro(const char*
+pcFileType, const NiFixedString&amp; kMacroName)</p>
+
+<p class="NDLRefMemberDescription">Returns true if a macro with
+the specified name is defined for the specified file type.</p>
+
+<p class="NDLRefMemberFunction">bool GetGlobalMacroValue(const
+NiFixedString&amp; kMacroName, NiFixedString&amp;
+kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Searches for global macro with
+name kMacroName and stores its value in kMacroValue. Returns
+false if macro does not exist.</p>
+
+<p class="NDLRefMemberFunction">bool GetMacroValue(const char*
+pcFileType, const NiFixedString&amp; kMacroName,
+NiFixedString&amp; kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Searches for macro with name
+kMacroName and specified file type, and stores its value in
+kMacroValue. Returns false if macro does not exist.</p>
+
+<p class="NDLRefMemberFunction">typedef NiTMapIterator
+NiMacrosIterator;</p>
+
+<p class="NDLRefMemberFunction">NiMacrosIterator
+GetFirstGlobalMacro()</p>
+
+<p class="NDLRefMemberDescription">Returns an iterator object for
+the first global macro or NULL if no global macros are
+defined.</p>
+
+<p class="NDLRefMemberFunction">NiMacrosIterator
+GetFirstMacro(const char* pcFileType)</p>
+
+<p class="NDLRefMemberDescription">Returns an iterator object for
+the first macro matching the specified file type or NULL if no
+such macros are defined.</p>
+
+<p class="NDLRefMemberFunction">bool
+GetNextGlobalMacro(NiMacrosIterator&amp; kPos, NiFixedString&amp;
+kMacroName, NiFixedString&amp; kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Set macro name and value to
+the global macro associated with the iterator kPos,
+postincrementing the iterator to the next global macro.</p>
+
+<p class="NDLRefMemberFunction">bool GetNextMacro(const char*
+pcFileType, NiMacrosIterator&amp; kPos, NiFixedString&amp;
+kMacroName, NiFixedString&amp; kMacroValue)</p>
+
+<p class="NDLRefMemberDescription">Set macro name and value to
+the macro associated with the iterator kPos and specified
+filetype, postincrementing the iterator to the next macro defined
+for the file type.</p>
+
+<a name="Shader_Program_Creation_Flag_Functions" id="Shader_Program_Creation_Flag_Functions"></a><p class="NDLRefHead2">Shader Program Creation Flag Functions</p>
+
+<p class="NDLRefMemberFunction">NiUInt32
+GetGlobalShaderCreationFlags()</p>
+
+<p class="NDLRefMemberDescription">Return the global shader
+creation flags.</p>
+
+<p class="NDLRefMemberFunction">NiUInt32
+GetShaderCreationFlags(const char* pcFileType)</p>
+
+<p class="NDLRefMemberDescription">Return the shader creation
+flags for the specified file type. Returns 0 if flags for
+specified file type were not defined.</p>
+
+<p class="NDLRefMemberFunction">NiUInt32
+GetAllShaderCreationFlags( const char* pcFileType, NiUInt32
+uiUserFlags = 0)</p>
+
+<p class="NDLRefMemberDescription">Returns all flags, logically
+OR'ed - &lt;global flags&gt; | &lt;flags for pcFileType&gt; |
+&lt;uiUserFlags&gt;.</p>
+
+<p class="NDLRefMemberFunction">void
+SetGlobalShaderCreationFlags(NiUInt32 uiFlags)</p>
+
+<p class="NDLRefMemberDescription">Set the global shader creation
+flags.</p>
+
+<p class="NDLRefMemberFunction">void SetShaderCreationFlags(const
+char* pcFileType, NiUInt32 uiFlags)</p>
+
+<p class="NDLRefMemberDescription">Set the shader creation flags
+for the specified file type.</p>
+
+<p class="NDLRefHead2">Profiling Marker Support</p>
+
+<p class="NDLRefMemberFunction">void PushProfileMarker(const
+char* pcName)</p>
+
+<p class="NDLRefMemberDescription">Pushes a named profile marker
+on the marker stack.</p>
+
+<p class="NDLRefMemberDescription">Note: This method has no
+effect on renderers which do not support profile markers, or in
+shipping builds.</p>
+
+<p class="NDLRefMemberFunction">void PopProfileMarker()</p>
+
+<p class="NDLRefMemberDescription">Pops the most recent profile
+marker off of the stack. There must be a balanced number of
+marker pushes and pops between two DisplayFrame calls.</p>
+
+<p class="NDLRefMemberDescription">Note: This method has no
+effect on renderers which do not support profile markers, or in
+shipping builds.</p>
+
+<p class="NDLRefMemberFunction">void PushProfileMarkerVA(const
+char* pcFormat, ...)</p>
+
+<p class="NDLRefMemberDescription">Pushes a formatted string on
+the marker stack.</p>
+
+<p class="NDLRefMemberDescription">Note: This method has no
+effect on renderers which do not support profile markers, or in
+shipping builds.</p>
+
+<a name="SafeZone" id="SafeZone"></a><p class="NDLRefHead2">Safe Zone Rendering Functions</p>
+
+<p class="NDLRefMemberFunction">void SetSafeZone(const <a href=
+"NiRect.htm">NiRect</a>&lt;float&gt;&amp; kRect)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiRect.htm">NiRect</a>&lt;float&gt; GetSafeZone()</p>
+
+<p class="NDLRefMemberDescription">These functions are used to
+initialize and return the safe zone coordinates in Normalized
+Device Coordinates (NDC) (i.e. the range [0..1] along both
+axes).</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void ForceInSafeZone(unsigned
+int&amp; uiX, unsigned int&amp; uiY)</p>
+
+<p class="NDLRefMemberFunction">void
+ForceInSafeZoneNDC(float&amp; fX, float&amp; fY)</p>
+
+<p class="NDLRefMemberDescription">These functions only change
+the input values if they are outside the safe zone of the screen.Otherwise, they return the same value which was input.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void ConvertFromPixelsToNDC(const
+unsigned int uiInX, const unsigned int uiInY, float&amp; fOutX,
+float&amp; fOutY)</p>
+
+<p class="NDLRefMemberFunction">void ConvertFromNDCToPixels(const
+float fInX, const float fInY, unsigned int&amp; uiOutX, unsigned
+int&amp; uiOutY)</p>
+
+<p class="NDLRefMemberDescription">These functions do not enforce
+safe zone, but simply translate between the two frames.</p>
+
+<p class="NDLRefMemberDescription">These functions operate under
+<a href=
+"../../Programmer/General_Topics/Threading_and_Renderers.htm#Restricted_Thread_Behavior">
+restricted thread behavior</a>, and may only be legal to call
+from a specific thread. Refer to the documentation for the
+specific renderer for more discussion.</p>
+
+<p class="NDLRefMemberFunction">void GetOnScreenCoord(const float
+fXOffset, const float fYOffset, const unsigned int uiWidth, const
+unsigned int uiHeight, unsigned int&amp; uiOutX, unsigned
+int&amp; uiOutY, const <a href="#DisplayCorner">DisplayCorner</a>
+eCorner, const bool bForceSafeZone = true)</p>
+
+<p class="NDLRefMemberDescription">This function calculates the
+screen coordinates, in pixels, of an offset from a given corner
+of the screen. That new screen coordinates can then be clamped by
+a SafeZone.</p>
+
+<p class="NDLRefMemberDescription">The output screen coordinates
+are passed back by reference to the caller in the uiOutX and
+uiOutY parameters.</p>
+
+<p class="NDLRefMemberDescription">The uiWidth and uiHeight input
+values are the height and width of the screen in pixels.</p>
+
+<p class="NDLRefMemberDescription">The fXOffset and fYOffset
+magnitudes are in Normalized Device Coordinates (NDC) but the
+direction of the offsets may be inverted depending on the display
+corner specified.</p>
+
+<p class="NDLRefMemberDescription">The positive direction of
+offsets is determined by the <a href=
+"#DisplayCorner">DisplayCorner</a>. The positive direction is
+always towards the center of the screen. Therefore using screen
+coordinates such that the x axis points right and the y axis
+points down; the table below defines the direction of positive
+fXOffset and fYOffset for each corner.</p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Display Corner</th>
+
+                <th>Offset Direction</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class=
+                "NDLSystemFont">CORNER_TOP_LEFT</span></td>
+
+                <td>fXOffset's positive direction is right and
+                the fYOffset's positive direction is down.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">CORNER_TOP_RIGHT</span></td>
+
+                <td>fXOffset's positive direction is left and the
+                fYOffset's positive direction is down.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">CORNER_BOTTOM_LEFT</span></td>
+
+                <td>fXOffset's positive direction is right and
+                the fYOffset's positive direction is up.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">CORNER_BOTTOM_RIGHT</span></td>
+
+                <td>fXOffset's positive direction is left and the
+                fYOffset's positive direction is up.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberDescription">If bFourceSafeZone is true
+then the result is clamped to the current SafeZone.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Renderer_Capability_Flags" id="Renderer_Capability_Flags"></a><p class="NDLRefHead2">Renderer Capability Flags</p>
+
+<p><span class="NDLSystemFont">NiRenderer::GetFlags</span> will
+return some combination of the following renderer capability
+flags OR-ed together.</p>
+
+<p>Note that all capability flags are declared at the scope of
+<span class="NDLSystemFont">NiRenderer</span>, and must be
+qualified accordingly. Note that some renderers may return
+renderer-specific capability flags. See the documentation for
+each renderer for listings of these flags.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Capability Flag</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_PALETTIZED</span></td>
+
+            <td>If set, the renderer supports palettized textures
+            (possibly in addition to RGB (A) textures).</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_HARDWARESKINNING</span></td>
+
+            <td>If set, the renderer is capable of skinning
+            vertices using at least four bones per vertex in
+            hardware.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_NONPOW2_CONDITIONAL_TEXT</span></td>
+
+            <td>If set, the renderer can conditionally ignore the
+            power of 2 limitation for textures. The specific
+            conditions may be renderer-dependent, and are
+            described in each renderer's documentation. This flag
+            is mutually exclusive with the <span class=
+            "NDLSystemFont">CAPS_NONPOW2_TEXT</span> flag.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_NONPOW2_TEXT</span></td>
+
+            <td>If set, the renderer fully supports textures
+            whose dimensions are not powers of 2. This flag is
+            mutually exclusive with the <span class=
+            "NDLSystemFont">CAPS_NONPOW2_CONDITIONAL_TEXT</span>
+            flag.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_AA_RENDERED_TEXTURES</span></td>
+
+            <td>If set, the renderer supports antialiasing of
+            rendered textures when requested through <span class=
+            "NDLSystemFont"><a href=
+            "NiRenderedTexture.htm">NiRenderedTexture</a></span>
+            and <span class="NDLSystemFont"><a href=
+            "Ni2DBuffer.htm">Ni2DBuffer</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_HARDWAREINSTANCING</span></td>
+
+            <td>If set, the renderer supports hardware
+            instancing.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CAPS_ANISO_FILTERING</span></td>
+
+            <td>If set, the renderer supports anisotropic
+            filtering.</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="Render_Target_Clear_Flags" id="Render_Target_Clear_Flags"></a><p class="NDLRefHead2">Render Target Clear Flags</p>
+
+<p><span class="NDLSystemFont">NiRenderer::ClearBuffer</span>,
+<span class=
+"NDLSystemFont">NiRenderer::BeginUsingRenderTargetGroup</span>,
+and <span class=
+"NDLSystemFont">NiRenderer::BeginUsingDefaultRenderTargetGroup</span>
+take the following flags to indicate which buffers of an
+<span class="NDLSystemFont"><a href=
+"NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span> to
+clear.</p>
+
+<p>If an application requests that a buffer be cleared that
+doesn't exist in the current render target group, then that
+buffer will be ignored.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Capability Flag</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLEAR_BACKBUFFER</span></td>
+
+            <td>All the color buffers in the <span class=
+            "NDLSystemFont"><a href=
+            "NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+            will be cleared to the color set by the function
+            <span class=
+            "NDLSystemFont">SetBackgroundColor</span>. It is not
+            possible to clear only a subset of the color buffers
+            in an <span class="NDLSystemFont"><a href=
+            "NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLEAR_STENCIL</span></td>
+
+            <td>The stencil buffer will be cleared to the value
+            set by <span class=
+            "NDLSystemFont">SetStencilClear</span>. Clearing the
+            stencil buffer without the depth buffer can cause a
+            performance hit.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLEAR_ZBUFFER</span></td>
+
+            <td>The depth buffer will be cleared to the value set
+            by <span class="NDLSystemFont">SetDepthClear</span>.
+            Clearing the depth buffer without the stencil buffer
+            can cause a performance hit.</td>
+        </tr>
+
+        <tr>
+            <td><span class="NDLSystemFont">CLEAR_ALL</span></td>
+
+            <td>All buffers in the <span class=
+            "NDLSystemFont"><a href=
+            "NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>
+            will be cleared.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CLEAR_NONE</span></td>
+
+            <td>No buffers will be cleared.</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="DisplayCorner" id="DisplayCorner"></a><p class="NDLRefHead2">DisplayCorner Enumerations</p>
+
+<p>These enumerations serve to simplify <a href="#SafeZone">Safe
+Zone</a> coordinate specification.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th><span>Enumeration</span></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CORNER_TOP_LEFT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CORNER_TOP_RIGHT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CORNER_BOTTOM_LEFT</span></td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">CORNER_BOTTOM_RIGHT</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="Screenshot_Enumerations" id="Screenshot_Enumerations"></a><p class="NDLRefHead2">EScreenshotFormat Enumerations</p>
+
+<p>The following enumerations choose an image format for the
+files written out using <span class=
+"NDLSystemFont">SaveScreenShot</span>.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th><span>Enumeration</span></th>
+
+            <th><span>Meaning</span></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FORMAT_TARGA</span></td>
+
+            <td>Uncompressed TARGA image format (.tga)</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FORMAT_PNG</span></td>
+
+            <td>Portable Network Graphic format (.png)</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FORMAT_JPEG</span></td>
+
+            <td>JPEG image format (.jpg)</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="RenderingPhase_Enumerations" id="RenderingPhase_Enumerations"></a><p class="NDLRefHead2">RenderingPhase Enumerations</p>
+
+<p>The following enumerations specify which phase of rendering
+that a shader is currently in. Other classes like the shader
+constant map make use of these phases to selectively perform
+work.</p>
+
+<p>The enumeration values are powers of 2 so that a phase mask
+can indicate that the shader is in multiple phases (for example,
+<span class="SystemFont">PHASE_PER_SHADER|PHASE_PER_MESH</span>
+indicates that a new shader has started drawing its first mesh. 
+On the next mesh with the same shader, <span class=
+"NDLSystemFont">PHASE_PER_SHADER</span> would not be set).</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th><span>Enumeration</span></th>
+
+            <th><span>Meaning</span></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PHASE_PER_SHADER</span></td>
+
+            <td>New shader</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PHASE_PER_LIGHTSTATE</span></td>
+
+            <td>New light state</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">PHASE_PER_MESH</span></td>
+
+            <td>New mesh</td>
+        </tr>
+    </tbody>
+</table>
+
+<a name="FrameState_Enumerations" id="FrameState_Enumerations"></a><p class="NDLRefHead2">EFrameState Enumerations</p>
+
+<p>The following enumerations, reported by the function
+<span class="NDLSystemFont">GetFrameState</span>, describe the
+current state of the renderer with regards to rendering or
+displaying a frame.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th><span>Enumeration</span></th>
+
+            <th><span>Meaning</span></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FRAMESTATE_OUTSIDE_FRAME</span></td>
+
+            <td>The renderer is not currently drawing a frame,
+            nor does it have one ready to display.<br>
+            <br>
+            It is legal to call <span class=
+            "NDLSystemFont">BeginFrame</span> or <span class=
+            "NDLSystemFont">BeginOffScreenFrame</span>.<br>
+            <br>
+            It is illegal to call <span class=
+            "NDLSystemFont">EndFrame</span>, <span class=
+            "NDLSystemFont">DisplayFrame</span>, <span class=
+            "NDLSystemFont">EndOffScreenFrame</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FRAMESTATE_INSIDE_FRAME</span></td>
+
+            <td>The renderer is currently drawing a frame.<br>
+            <br>
+            It is legal to call <span class=
+            "NDLSystemFont">EndFrame</span>.<br>
+            <br>
+            It is illegal to call <span class=
+            "NDLSystemFont">BeginFrame</span>, <span class=
+            "NDLSystemFont">DisplayFrame</span>, <span class=
+            "NDLSystemFont">BeginOffScreenFrame</span>, or
+            <span class=
+            "NDLSystemFont">EndOffScreenFrame</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FRAMESTATE_INSIDE_OFFSCREEN_FRAME</span></td>
+
+            <td>The renderer is currently drawing an offscreen
+            frame.<br>
+            <br>
+            It is legal to call <span class=
+            "NDLSystemFont">EndOffScreenFrame</span>.<br>
+            <br>
+            It is illegal to call <span class=
+            "NDLSystemFont">BeginFrame</span>, <span class=
+            "NDLSystemFont">EndFrame</span>, <span class=
+            "NDLSystemFont">DisplayFrame</span>, or <span class=
+            "NDLSystemFont">BeginOffScreenFrame</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FRAMESTATE_WAITING_FOR_DISPLAY</span></td>
+
+            <td>The renderer is not currently drawing a frame,
+            but it does have one ready to display.<br>
+            <br>
+            It is legal to call <span class=
+            "NDLSystemFont">DisplayFrame</span>.<br>
+            <br>
+            It is illegal to call <span class=
+            "NDLSystemFont">BeginFrame</span>, <span class=
+            "NDLSystemFont">EndFrame</span>, <span class=
+            "NDLSystemFont">BeginOffScreenFrame</span>, or
+            <span class=
+            "NDLSystemFont">EndOffScreenFrame</span>.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">FRAMESTATE_INTERNAL_FRAME</span></td>
+
+            <td>The renderer is currently drawing an internal
+            frame.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">Profiling Marker Macros</p>
+
+<p>These macros encapsulate the profiling marker API on the
+renderer, making it easier to use throughout the engine.</p>
+
+<p class="NDLRefMemberFunction">
+EE_PUSH_GPU_MARKER(pcMarkerName)</p>
+
+<p class="NDLRefMemberDescription">Pushes a named marker on the
+profiling stack. See <span class=
+"NDLSystemFont">NiRenderer::PushProfileMarker()</span> for more
+information.</p>
+
+<p class="NDLRefMemberFunction">EE_PUSH_GPU_MARKER_VA(pcFormat,
+...)</p>
+
+<p class="NDLRefMemberDescription">Pushes a formatted marker
+string on the profiling stack. See <span class=
+"NDLSystemFont">NiRenderer::PushProfileMarkerVA</span> for more
+information.</p>
+
+<p class="NDLRefMemberFunction">EE_POP_GPU_MARKER()</p>
+
+<p class="NDLRefMemberDescription">Pops a marker from the
+profiling stack. See <span class=
+"NDLSystemFont">NiRenderer::PopProfileMarker()</span> for more
+information.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                The macros will compile out to nothing in a
+                Shipping build unless the preprocessor
+                GAMEBRYO_PROFILE is defined.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<a name="Callback_Objects" id="Callback_Objects"></a>
+<p class="NDLRefHead2">Callback Objects</p>
+
+<p>It is possible to register to receive callbacks whenever an error, warning,
+or message is generated by a renderer.  This is accomplished  via a
+user-supplied instance of the
+<span class="NDLSystemFont">NiRenderer::CallbackObject</span>
+class, whose definition appears below.</p>
+<pre>
+    // Message/Warning/Error callback object class - default implementations
+    // simply output text to the debug console in debug builds.
+    class NIMAIN_ENTRY CallbackObject : public NiMemObject
+    {
+    public:
+        // Virtual destructor defined in case derived classes need virtual
+        // destruction.
+        virtual ~CallbackObject() {};
+        // Called when an informational message is emitted.
+        virtual void Message(const char* pcText);
+        // Called when a warning message is emitted.
+        virtual void Warning(const char* pcText);
+        // Called when an error message is emitted.
+        virtual void Error(const char* pcText);
+    };
+</pre>
+
+<p>An application that wishes to process callbacks must derive a class from
+<span class="NDLSystemFont">CallbackObject</span> and override the virtual
+functions. There can be only one<span class="NDLSystemFont">CallbackObject
+</span> instance for each <span class="NDLSystemFont">NiRenderer</span>, so
+callbacks for all event types must be handled in the same <span class=
+"NDLSystemFont">CallbackObject</span>-derived class.</p>
+
+<p>The default implementation of the <span class="NDLSystemFont">Message</span>,
+<span class="NDLSystemFont">Warning</span>, and <span class="NDLSystemFont">
+Error</span> functions call the <span class="NDLSystemFont">NiOutputDebugString
+</span> macro which outputs the text to the debug console in debug builds.  If
+you want this to continue to occur, you can call the base implementation from
+your overridden function.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

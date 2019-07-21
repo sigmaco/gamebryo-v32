@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>About loading assets</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>About Loading Assets</h1>
+
+<p>To load assets into your application, you must have already instanced an Asset Locator Service
+and a Configuration Manager.</p>
+
+<h2>Asset Web Path</h2>
+
+<p>The Asset Locator Service is responsible for loading assets into the game. To do this, it needs
+to know where your assets are locate before it can process any load request. To specify your asset
+web path, you will need to add an AssetWeb section in your config file and specify the Path.</p>
+<pre>
+[AssetWeb] 
+Path=MyApplication\Media\assets
+</pre>
+
+<p>By default, your application's configuration file is named <span class=
+"NDLSystemFont">config.ini</span> and is located in the directory where your application is
+executing.</p>
+
+<h2>Loading World Files</h2>
+
+<p>When you launch your application, you will usually want to load a world file that contains your
+level. The world file will contain the entities that you or your game designer created and placed
+in the level using Toolbench. To load the world file, in a data driven approach, you need to add a
+custom section in your config file (we will call it 'Game'). In this section, you specify the world
+that you want to load.</p>
+<pre>
+[Game] 
+InitialWorld=urn:emergent-world:MyWorld
+</pre>
+
+<p>To load the world file specified in the config file, you will need to read the value using the
+Configuration Manager and then make a RequestEntitySetLoad call to the Entity Loader Service. This
+usually happens in your game service's OnInit().</p>
+<pre>
+IConfigManager* pConfig = m_pServiceManager-&gt;GetSystemServiceAs&lt;IConfigManager&gt;(); 
+utf8string world_file = pConfig-&gt;FindValue("Game.InitialWorld"); 
+if (!world_file.empty())
+{
+    EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+    
+    // Note: we pass kCAT_INVALID here if we don't want to be informed when the load completes.
+    pELS-&gt;RequestEntitySetLoad(world_file, kCAT_INVALID); 
+}
+</pre>
+
+<p>You're not restricted to loading only files specified in the configuration file. You can pass
+any emergent world URN or logical Asset ID to RequestEntitySetLoad. For example, to load a 'Level8'
+world:</p>
+<pre>
+utf8string worldURN("urn:emergent-world:Level8");
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+
+// Note: we pass kCAT_INVALID here if we don't want to be informed when the load completes.
+pELS-&gt;RequestEntitySetLoad(worldURN, kCAT_INVALID); 
+</pre>
+
+<h3>Loading Multiple World Files</h3>
+<p>You are not restricted to loading a single world file at a time. The EntityLoaderService can
+load as many world files as requested. Some things to be aware of.</p>
+
+<ul>
+<li>You cannot specify an origin at runtime when loading a world. This means if you load multiple
+world files that have overlapping entities, those entities will overlap in game. To avoid either ensure
+the world files you load do not overlap, or set up your world files such that this overlap is expected. For
+example, creating several layers representing an entire level.</li>
+<li>World file loads happen asynchronously, so there is no guaranteed load order when requesting 
+multiple worlds. If you need to control the order in which worlds are loaded, you'll need to
+program that into your application logic.</li>
+<li>There is currently no support for sharing entities between worlds. For example, if you have
+two world files that contain a 'player' entity and you load both worlds, both entities are instantiated,
+which may have unexpected side effects at runtime.</li>
+<li>All entities in the world file will be loaded and displayed on screen. If you have entities you do
+not want displayed when the world is loaded, set the 'Renderable.IsVisible' flag to 'False' for 
+these entities. These entities will be created when the world file is loaded but will remain invisible
+until you set this flag to 'True'.</li>
+</ul>
+
+<h2>Detecting when a world load completes</h2>
+
+<p>You can detect when a world load has completed loading by creating a message handler for
+egf::EntityLoadResult messages, subscribing to a category, and passing this category to
+RequestEntitySetLoad. The system will send an egf::EntityLoadResult message to the handler once the
+world is completely loaded and ready for use.</p>
+
+<p>First define a handler method.</p>
+<pre>
+EE_HANDLER(MyClass, HandleWorldLoadedMessage, egf::EntityLoadResult);
+</pre>
+
+<p>When making the RequestEntitySetLoad call, provide a category. You should have already
+subscribed to this category prior to making this call.</p>
+<pre>
+utf8string worldURN("urn:emergent-world:Level8");
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+
+// Note: we pass m_myCategory here so we'll be informed when the load completes.
+pELS-&gt;RequestEntitySetLoad(worldURN, m_myCategory); 
+</pre>
+
+<p>In your handler, perform any actions you need to take after the world has loaded.</p>
+<pre>
+void MyClass::HandleWorldLoadedMessage(
+    const egf::EntityLoadResult* pWorldMessage,
+    efd::Category targetChannel)
+{
+    if (pWorldMessage-&gt;m_result == egf::EntityLoadResult::elr_EntityCreationCompleted)
+    {
+        // Perform actions waiting on the world to load. For example, stop showing the loading screen
+        // and start the game.
+    }
+}
+</pre>
+
+<h2>Unloading world files</h2>
+
+<p>To unload a world, use the egf::EntityLoaderService::RequestEntitySetUnload method. You can pass
+either a world URN or a world logical Asset ID. As with world loading, you can receive a callback
+when the world is completely unloaded by passing a callback category.</p>
+<pre>
+EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+utf8string worldURN("urn:emergent-world:Level8");
+
+// Note: we pass m_myCategory here so we'll be informed when the unload is finished.
+pELS-&gt;RequestEntitySetUnload(worldURN, m_myCategory); 
+</pre>
+
+<p>In your handler, look for egf::EntityLoadResult::elr_EntityDestructionCompleted.</p>
+<pre>
+    if (pWorldMessage-&gt;m_result == egf::EntityLoadResult::elr_EntityDestructionCompleted)
+    {
+        // Perform actions waiting on the world to unload. For example, bring up a transitional
+        // cut scene as you prepare to load your next level.
+    }
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="game_init_overview.htm">Game initialization overview</a></li>
+    <li><a href="game_init_best_practice.htm">Best practices for working with game
+        initialization</a></li>
+    <li><a href="game_init_configuration.htm">Configuring an Application</a></li>
+    <li><a href="game_init_debugging.htm">Debugging game initialization</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_asset_locator_svc.htm">Asset Locator
+        Service</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_config_mgr.htm">Configuration
+        Manager</a></li>
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_entity_loader_svc.htm">Entity Loader
+        Service</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

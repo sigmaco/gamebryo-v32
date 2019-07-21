@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Texture Pixel Interpolation and Filtering</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Texture Pixel Interpolation and Filtering</h1>
+
+<p>The second step in the computation of the color contribution of a texture map (once the exact texture coordinate is established) is to determine what method is used to pull a color from the texture map&mdash;otherwise known as "filtering". Gamebryo applications (and NIF files) can set the filtering mode used for a given texture. Gamebryo supplies six possible filter modes, but one can think of these as being broken down into two independent categories; there are two methods of filtering across a given mipmap level, and there are three methods of filtering between mipmap levels.</p>
+
+<p>The following are the two filtering methods within a mipmap level:</p>
+
+<ul>
+	
+	<li>Nearest neighbor&mdash;picks the color of the closest texture pixel (texel) and uses it. </li>
+	
+	<li>Bilinear interpolation&mdash;linearly interpolates between the four texels that enclose the texture coordinate. </li>
+</ul>
+
+<p>All current hardware supports both of the above filtering methods, but there is generally only one reason to select nearest neighbor over bilinear interpolation; to achieve a blocky effect. Bilinear interpolation causes a texture to look blurry, which may not be the desire of the artist for a given texture. </p>
+
+<p>There are three methods of selecting the correct mipmap level upon which to interpolate. Note that they are presented in order of increasing rendering cost and quality.</p>
+
+<ul>
+	
+	<li>None&mdash;The simplest is to avoid mipmapping altogether and use the fully detailed version of the texture for interpolation. This is equivalent to turning off mipmapping. 
+ </li>
+	
+	<li>Nearest&mdash;The next level is the simplest form of mipmapping, in which the mipmap level that is the closest to fitting the level of detail of the pixel.</li>
+	
+	<li>Linear&mdash;The final mipmapping selection system selects two mipmap levels that enclose the desired level of detail. One of these levels is too detailed, and the other level is not detailed enough. The system linearly interpolates between the two levels. 
+ </li>
+</ul>
+
+<p>Put together, this 3x2 set of options leaves six possible 
+ modes, plus one variation:</p>
+
+<table>
+	<thead>
+  	<tr>
+			<th>Filter Mode Name</th>
+			<th>Filter Computation</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+    	<td>FILTER_NEAREST</td>
+			<td>Uses "nearest neighbor" with no mipmapping</td>
+		</tr>
+    <tr>
+			<td>FILTER_BILERP</td>
+			<td>Uses "bilinear interpolation" with no mipmapping</td>
+		</tr>
+		<tr>
+			<td>FILTER_NEAREST_MIPNEAREST</td>
+			<td>Uses "nearest level mipmapping", then uses "nearest neighbor" on the result</td>
+		</tr>
+		<tr>
+    	<td>FILTER_BILERP_MIPNEAREST</td>
+			<td>Uses "nearest level mipmapping", then uses "bilinear interpolation" on the result</td>
+		</tr>
+    <tr>
+			<td>FILTER_NEAREST_MIPLERP</td>
+			<td>Uses "nearest neighbor" on each of the two nearest mipmap levels and then performs "linear mipmap interpolation" between the results</td>
+		</tr>
+		<tr>
+			<td>FILTERP_TRILERP</td>
+			<td>Commonly called trilinear filtering. Uses "bilinear interpolation" on each of the two nearest mipmap levels, then performs "linear mipmap interpolation" between the results
+</td>
+		</tr>
+	</tbody>	
+</table>
+
+<p>Gamebryo applications may set the texture filtering-mode of a given Map by calling <span class="NDLSystemFont">NiTexturingProperty::Map::SetFilterMode</span> upon it. Note that the default filtering-mode is <span class="NDLSystemFont">FILTER_NEAREST</span>.</p>
+
+<p>For anisotropic filtering, the maximum number of taps can be picked, and will be clamped to whatever the hardware supported  maximum is. This may be as low as 1 on hardware that does not support anisotropic filtering, causing it to behave like regular trilinear filtering.</p>
+
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">Anisotropic filtering is the most expensive kind of filtering and should only be used where it provides a useful benefit (for example, surfaces that are viewed at very shallow angles with high-frequency detail like roads. For more information about filtering, see <a href="../../Art/Max/General_Texturing_Considerations.htm">General Texturing Considerations</a>.
+              </div>
+          </td>
+      </tr>
+  </table>
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

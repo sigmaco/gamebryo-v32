@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Preparing to Add Physics to an Animated Character</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Preparing to Add Physics to an Animated Character</h1>
+
+<p>The Gamebryo tool chain is the place to begin setting 
+ up a character that is to be both animated and physically controlled. 
+ The <a href="../../Tools/animation_tool/Introduction_to_PhysX_in_Animation_Tool.htm">Animation 
+ Tool documentation</a> section describes in detail the step to perform. 
+ A character (or any animated object) that has been rigged for physics 
+ is loaded similar to any other character, typically using the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiAnimation/NiActorManager.htm">NiActorManager</a></span> 
+ class. Some additional set up is then performed.</p>
+
+<p>The first step is to load the KFM file with the animation 
+ data and the NIF file with the PhysX data. Care must be taken to explicitly 
+ load the NIF so that the <span class="NDLSystemFont">NiActorManager</span> 
+ does not discard the PhysX data:</p>
+
+<pre>
+// Create the Actor Manager. Tell it not to load the NIF file
+m_spAM = NiActorManager::Create(ConvertMediaFilename("rag_arm.kfm"), false, false);
+ 
+// Load the NIF file with the PhysX content in it
+NiStream* pkStream = NiNew NiStream();
+pkStream-&gt;Load("character.nif");
+ 
+// Look for the PhysX content.
+for (unsigned int ui = 0; ui &lt; pkStream-&gt;GetObjectCount(); ui++)
+{
+    if (NiIsKindOf(NiPhysXProp, pkStream-&gt;GetObjectAt(ui)))
+    {
+        // We have found the PhysX content in the NIF.
+        m_spProp = (NiPhysXProp*)pkStream-&gt;GetObjectAt(ui);
+    }
+}
+ 
+// Instantiate physics content
+m_spPhysicsScene-&gt;AddProp(m_spProp);
+    
+// Set up the actor manager with the loaded file.
+m_spAM-&gt;ReloadNIFFile(pkStream, false);
+ 
+// Load all the sequences
+m_spAM-&gt;LoadAllSequenceData(pkStream);
+ 
+// Done loading
+NiDelete pkStream;
+ 
+// Update the actor manager.
+m_spAM-&gt;Update(0.0f);
+</pre>
+
+<p>At this stage the actor manager is loaded, as is all 
+ the animation content, the scene graph and the physics content. Next we 
+ create the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXSequenceManager.htm">NiPhysXSequenceManager</a></span> 
+ and set it up for use with the loaded data:</p>
+
+<p><span class="NDLSystemFont">m_spSeqMgr = NiNew NiPhysXSequenceManager;</span></p>
+
+<p><span class="NDLSystemFont">m_spSeqMgr-&gt;SetManager(m_spAM-&gt;GetControllerManager(), m_spProp);</span></p>
+
+<p>The <span class="NDLSystemFont">NiPhysXSequenceManager</span> 
+ object is passed the controller manager that is handling the animation 
+ sequences, and the PhysX prop object that holds all the physics information, 
+ particularly the sources and destinations that connect PhysX and Gamebryo. 
+ The implementation assumes that there is one <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXTransformDest.htm">NiPhysXTransformDest</a></span> 
+ object for each animated scene graph object that you wish physics to control. 
+ A <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXDynamicSrc.htm">NiPhysXDynamicSrc</a></span> 
+ object is created to correspond to every <span class="NDLSystemFont">NiPhysXTransformDest</span> 
+ object. This provides kinematic control when a scene graph object is animated. 
+ All of the <span class="NDLSystemFont">NiPhysXTransformDest</span> objects 
+ that have animated targets are removed. A callback is also set for every 
+ sequence controlled by the controller manager, with the <span class="NDLSystemFont">NiPhysXSequenceManager</span> 
+ object as the receiver of the callback. This allows the object to track 
+ activation and deactivation of sequences.</p>
+
+<p>The final set up step is to specify which sequences 
+ are physics controlled:</p>
+
+<p><span class="NDLSystemFont">m_spSeqMgr-&gt;MakeSequencePhysical(m_spAM-&gt;GetSequenceData(m_uiSeqID));</span></p>
+
+<p>This line of code sets one sequence (the one with ID<span 
+ class="NDLSystemFont"> m_uiSeqID</span> in the actor manager) to be physical. 
+ The <span class="NDLSystemFont">MakeSequencePhysical</span> function adds 
+ a set of <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXPoseBufferDest.htm">NiPhysXPoseBufferDest</a></span> 
+ objects targeted at each transform evaluator in the given sequence that 
+ controls a scene graph node that PhysX also controls. The <span class="NDLSystemFont">NiPhysXPoseBufferDest</span> 
+ objects write their physics derived values directly to the pose buffer 
+ of the active animation. The corresponding evaluator channels are temporarily 
+ disabled in the active sequence so these physics values are not overwritten.</p>
+
+<p>A physics controlled sequence can be reverted back to 
+ a standard animation sequence through the use of <span class="NDLSystemFont">NiPhysXSequenceManager::RevertPhysicalSequence</span>.</p>
+
+<p>The process of setting up sequences with the <span class="NDLSystemFont">NiPhysXSequenceManager</span> 
+ object is not thread-safe, so it should only be done with the same thread 
+ as is controlling the actor manager object, or some form of locking must 
+ be used. Specifically, problems will occur if sequences are activated 
+ or deactivated by another thread while the above code is executing.</p>
+
+<p>The <a href="Runtime_Management_of_Physics_and_Animation_Blending.htm">next 
+ page</a> describes the run-time behavior of the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysX/NiPhysXSequenceManager.htm">NiPhysXSequenceManager</a></span> 
+ class.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

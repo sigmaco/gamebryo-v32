@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating Custom Built-in API Functions</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating Custom Built-in API Functions</h1>
+
+<p>Creating a custom built-in API function requires the following steps:</p>
+
+<ul>
+    <li>Creating the interface file</li>
+
+    <li>Implementing the Function</li>
+
+    <li>Running SWIG</li>
+
+    <li>Compiling the generated wrapper</li>
+
+    <li>Adding the Module to the Lua Scheduler</li>
+
+    <li>Calling the API from Script</li>
+</ul>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Before creating a built-in API, you should identify the functions that you want to
+                wrap. Look for good candidates in your C/C++ header files.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h3>Creating the Interface File</h3>
+
+<p>First, you need to create an interface file with a <span class="NDLSystemFont">.i</span> file
+extension. The <span class="NDLSystemFont">.i</span> file describes the scripting language
+interface to your program. All appropriate declarations should be included into the interface.
+Another way of tackling this issue is by using SWIG's %include directive to process entire C/C++
+source or header files. Make sure the interface file syntax is ANSI C/C++. Here is an example of a
+C++ function that will load a block file from script.</p>
+
+<p>Create and add the interface file MyCustomBuiltin.i for it:</p>
+<pre>
+/* File : MyCustomBuiltin.i */
+
+%module LoadWorld
+%{
+#include &lt;efd/efdLibType.h&gt;
+#include &lt;egf/EntityTypes.h&gt;
+#include "LoadWorld.h"
+%}
+
+// Need a definition of EE_FORCEINLINE for SmartPointer
+%define EE_FORCEINLINE inline
+%enddef
+
+%import "efd/efdLibType.h"          // for EE_UTILITIES_ENTRY macro definition
+%import "egf/egfLibType.h"          // for EE_EGFLIBTYPE_H macro definition
+
+%include "egf/EntityTypes.h"
+%include "efd/UniversalTypes.h"
+%include "efd/Win32/UniversalTypes_Win32.h"
+%include "egfLua/bapiLuaTypeMaps.i"
+
+#define LUA_SCRIPTING
+%{
+#include &lt;egfLua/bapiLua.h&gt;
+#include &lt;egfLua/EntityLua.h&gt;
+%}
+
+// Now we include the real meat
+%include "LoadWorld.h"
+</pre>
+
+<p>Create a custom built step for the MyCustomBuiltin.i, specify a file name in the Outputs
+parameter and the following in the Command Line parameter:</p>
+<pre>
+echo F | xcopy &lt;path&gt;\LoadWorld.h %EMERGENT_PATH%\sdk\Win32\Include\LoadWorld.h 
+%EMERGENT_PATH%\Source\3rdParty\SWIG\swig.exe -c++ -lua -DEE_EXTERNAL_RUNTIME=egfLua\SWIGLuaRuntime.h -DWIN32 -I"%EMERGENT_PATH%\sdk\Win32\Include" -o LoadWorld_LuaWrap.cpp &lt;path&gt;\MyCustomBuiltin.i
+</pre>
+
+<h3>Implementing the Function</h3>
+
+<p>Create and add LoadWorld.h and LoadWorld.cpp files to you project:</p>
+
+<h4>LoadWorld.h</h4>
+<pre>
+namespace LoadWorld
+{
+    void Load(const char* file);
+}
+</pre>
+
+<h4>LoadWorld.cpp</h4>
+<pre>
+#include &lt;egf/ScriptContext.h&gt;
+#include "LoadWorld.h"
+#include &lt;egf/EntityLoaderService.h&gt;
+
+using namespace LoadWorld;
+
+void LoadWorld::Load(const char* file)
+{
+    egf::EntityLoaderService* pELS = egf::g_bapiContext.GetSystemServiceAs&lt;egf::EntityLoaderService&gt;();
+    pELS-&gt;RequestEntitySetLoad( (efd::utf8string)file );
+}
+</pre>
+
+<h3>Running SWIG</h3>
+
+<p>Right Click the MyCustomBuiltin.i file and Compile. Once it compiles successfully, a
+LoadWorld_LuaWrap.cpp file is generated. Add this file to you project.</p>
+
+<h3>Adding the Module to the Lua Scheduler</h3>
+
+<p>Add the following to your application pre main:</p>
+<pre>
+// This include is only necessary when static Lua game packs are being linked in.
+extern "C" int luaopen_LoadWorld(lua_State *L);
+</pre>
+
+<p>Add the following to your application in main:</p>
+<pre>
+EE_VERIFY( SchedulerLua::AddStaticBuiltinInitFunction(luaopen_LoadWorld) );
+</pre>
+
+<h3>Calling the API from Script</h3>
+
+<p>You can call the API from script by using this code:</p>
+<pre>
+LoadWorld.Load("urn:emergent-world:myBlockFile")
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="builtin_custom_deleting.htm">Deleting custom built-in API functions</a></li>
+
+    <li><a href="builtin_custom_dynamic_load.htm">Dynamically loading custom built-in API functioons</a></li>
+
+    <li><a href="builtin_custom_static_load.htm">Statically loading custom built-in API functions</a></li>
+
+    <li><a href="builtin_scripting.htm">Scripting built-in API functions</a></li>
+
+    <li><a href="builtin_custom_adding.htm">Adding custom built-in API functions to the scripting
+    system</a></li>
+
+    <li><a href="http://www.swig.org/" target="_blank">SWIG</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

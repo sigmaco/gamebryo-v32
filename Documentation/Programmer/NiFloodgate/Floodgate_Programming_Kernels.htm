@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate: Programming Kernels</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate: Programming Kernels</h1>
+
+<p>A Kernel defines operations to perform on Streams of 
+ incoming data. Kernels can be written in a cross-platform manner or leverage 
+ platform-specific functionality. Examples of Kernels include skinning, 
+ morphing, simulating and rendering particles, artificial intelligence, 
+ entity processing, and so on. Basically, operations that can be defined 
+ in terms of streams of data and operations to perform on those streams 
+ are candidates for Floodgate.</p>
+
+<p>The PS3 implementation of Floodgate builds Kernels as 
+ SPURS jobs. On the PC and Xbox 360 Kernels are executed on the <a href="../../Reference/NiFloodgate/NiStreamProcessor.htm"><span 
+ class="NDLSystemFont">NiStreamProcessor</span></a> object's background thread.</p>
+
+<p>The macro <span class="NDLSystemFont">NiSPDeclareKernel</span> 
+ is first used to declare the <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPKernel.htm">NiSPKernel</a></span> 
+ in the header file.</p>
+
+<p>Inside the CPP file, the <span class="NDLSystemFont">NiSPBeginKernelImpl</span> 
+ macro is used to provide the <span class="NDLSystemFont">NiSPKernel</span> 
+ subclass's implementation. The implementation uses the templated methods 
+ <span class="NDLSystemFont">GetInput()</span> and <span class="NDLSystemFont">GetOutput()</span> 
+ from the <a href="../../Reference/NiFloodgate/NiSPWorkload.htm"><span 
+ class="NDLSystemFont">NiSPWorkload</span></a> class to access the <a href="../../Reference/NiFloodgate/NiSPStream.htm"><span 
+ class="NDLSystemFont">NiSPStream</span></a> objects. Every task, when called 
+ within a workflow, has the <span class="NDLSystemFont">kWorkload</span> 
+ variable defined. The order of the <span class="NDLSystemFont">NiSPStream</span> 
+ objects provided to the Kernel is identical to the order in which the 
+ <span class="NDLSystemFont">NiSPStream</span> objects were originally added 
+ to the <span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPTask.htm">NiSPTask</a></span>. 
+ Next, the Kernel determines how many elements to process by calling the 
+ <span class="NDLSystemFont">GetBlockCount()</span> method. The resulting 
+ value is computed and then assigned to the next location in the output 
+ stream. The <span class="NDLSystemFont">KernelDebugOutput</span> method 
+ is used to display debugging information to the console during Kernel 
+ execution.</p>
+
+<h2>Sum2Kernel Source Code</h2>
+
+<p>First, we implement the Kernel that will be used by 
+ our first Task. We shall refer to this Kernel as the Sum2Kernel, since 
+ its purpose is to sum the two input streams and write the result to the 
+ output stream.</p>
+
+<pre>// Sum2Kernel.h
+#ifndef SUM2KERNEL_H
+#define SUM2KERNEL_H
+
+#include &lt;NiSPKernelMacros.h&gt;
+
+// Declare Sum2Kernel which outputs the sum of the input streams
+NiSPDeclareKernel(Sum2Kernel)
+
+#endif
+</pre>
+<pre>
+//Sum2Kernel.cpp
+#include "Sum2Kernel.h"
+//--------------------------------------------------------------------------- 
+
+NiSPBeginKernelImpl(Sum2Kernel)
+{
+    KernelDebugOutput("Sum2Kernel: Enter\n");
+    // Get Streams
+    NiUInt32 *puiStreamInput1 = kWorkload.GetInput&lt;NiUInt32&gt;(0);
+    NiUInt32 *puiStreamInput2 = kWorkload.GetInput&lt;NiUInt32&gt;(1);
+    NiUInt32 *puiOutput = kWorkload.GetOutput&lt;NiUInt32&gt;(0);
+    
+    // Process data
+    NiUInt32 uiBlockCount = kWorkload.GetBlockCount();
+    for (NiUInt32 uiIndex = 0; uiIndex &lt; uiBlockCount; uiIndex++)
+    {
+        // out = in0 + in1
+        puiOutput[uiIndex]  = puiStreamInput1[uiIndex] + puiStreamInput2[uiIndex];
+    }
+
+    KernelDebugOutput("Sum2Kernel: Exit\n"); 
+}
+
+NiSPEndKernelImpl(Sum2Kernel)
+//---------------------------------------------------------------------------
+</pre>
+
+<h2>ScaleKernel Source Code</h2>
+
+<p>Next, we see how ScaleKernel is created. ScaleKernel 
+ scales the values of an input stream by the value contained in a fixed 
+ stream and writes the result to its output stream.</p>
+
+<pre>
+// ScaleKernel.h
+#ifndef SCALEKERNEL_H
+#define SCALEKERNEL_H
+#include &lt;NiSPKernelMacros.h&gt;
+// Declare ScaleKernel which scales its input stream by the fixed input
+
+NiSPDeclareKernel(ScaleKernel)
+
+#endif
+</pre>
+
+<pre>
+//ScaleKernel.cpp
+#include "ScaleKernel.h"
+//---------------------------------------------------------------------------
+NiSPBeginKernelImpl(ScaleKernel)
+{
+    KernelDebugOutput("ScaleKernel: Enter\n");
+    // Get Streams
+    NiUInt32 *puiScaleFactor = kWorkload.GetInput&lt;NiUInt32&gt;(0);
+    NiUInt32 *puiStreamInput = kWorkload.GetInput&lt;NiUInt32&gt;(1);
+    NiUInt32 *puiOutput = kWorkload.GetOutput&lt;NiUInt32&gt;(0);
+
+    // Process data
+    NiUInt32 uiBlockCount = kWorkload.GetBlockCount();
+    for (NiUInt32 uiIndex = 0; uiIndex &lt; uiBlockCount; uiIndex++)
+    {
+        // out = scale * in1
+        pkOutput[uiIndex]  = *puiScaleFactor * puiStreamInput[uiIndex];
+    }
+
+    KernelDebugOutput("ScaleKernel:  Exit\n"); 
+}
+
+NiSPEndKernelImpl(ScaleKernel)
+//---------------------------------------------------------------------------
+</pre>
+
+<h2>The NiNopKernel</h2>
+
+<p><span class="NDLSystemFont">NiFloodgate</span> contains 
+ one additional Kernel that programmers need to be aware of called <span 
+ class="NDLSystemFont">NiNopKernel</span>. This Kernel does not perform any 
+ application logic. Instead, this Kernel is used indicate when a Workflow 
+ has completed and synchronization should be performed. Therefore, all 
+ Workflows must have what is referred to as a Signal Task added to the 
+ workflow. In general there is no need to manually add this kernel. Internally, 
+ Floodgate will add this Kernel automatically if it hasn't already been 
+ added programmatically. In some cases a programmer may want to add the 
+ signal task manually to control synchronization explicitly. In these cases 
+ the programmer can configure the signal kernel with additional information. 
+ See the API reference for more information on signalling options. When 
+ adding the signal task to the workflow manually, you simply specify the 
+ <span class="NDLSystemFont">NiNopKernel</span>.</p>
+
+<h2>NiFloodgate Kernel Source File Locations</h2>
+
+<p>In Gamebryo, Kernel source files are placed inside a 
+ nested folder named Kernels for each project that requires them. Inside 
+ the Kernels directory, an additional folder is created for each Kernel 
+ that project requires. For example, the <span class="NDLSystemFont">NiMesh</span> 
+ library uses several kernels for mesh modifiers. These kernels are located 
+ in CoreRuntime/EngineLibs/NiMesh/Kernels/.... It is recommended that Kernels be kept 
+ in their own sub-directories.</p>
+
+<p>Note: The PS3 makefiles will automatically 
+ look for kernels to build in the Kernels directory.</p>
+
+<h2>NiFloodgate PS3 Programming Kernels</h2>
+<p>For PS3-specific information, please see <a href="../../ee_goto.htm#Programmer/NiFloodgate/Floodgate_Programming_Kernels_PS3.htm">Floodgate Programming Kernels - PS3</a></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

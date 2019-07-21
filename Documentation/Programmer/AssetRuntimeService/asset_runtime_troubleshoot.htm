@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+ <title>Troubleshooting the Asset Infrastructure</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Troubleshooting the Asset Infrastructure</h1>
+
+<h2>Locating Assets</h2>
+
+<p>One common class of problems that you will likely troubleshoot
+occurs when your game is unable to locate the assets that it
+needs. This can manifest itself as either not finding
+<span class="NDLGUILabel">any assets</span> or as not being able
+to find some of the assets.</p>
+
+<p>The more common case is not being able to find any of the
+assets due to configuration problems with the Asset Runtime
+Service. When this occurs, it will be evident when your game
+fails to load whichever Block file you have specified for it.
+When the game fails to locate the block, none of the entities it
+contains get instanced and no behaviors are run. You will then be
+faced with the sad reality of a blank screen.</p>
+
+<h3>Blank Screen</h3>
+
+<p>If you encounter such a blank screen, you can confirm this
+issue by searching the game log file for asset lookup failures.
+Search the log for entries with <span class="NDLGUILabel">"found
+no assets that matched URI"</span>. If you encounter such a log
+entry with the Asset Id of your initial block file, then it is
+not being found.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tbody>
+        <tr align="left">
+            <td class="NDLNoteContainerTD">
+                <p class="NDLHeadingNoteContainer">Note</p>
+
+                <div class="NDLNote">
+                    Make sure you turn your log level high enough
+                    for the game to log the information you are
+                    looking for. You can do that by setting the
+                    following in your config file:
+
+                    <p>[Log.Filters]<br>
+                    0 = UptoErr3 | UptoLvl2</p>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The two most likely causes of not finding any assets in the
+game are a wrong path specified for the asset's <em>&lt;Asset Web
+Root Directory&gt;</em>, or pointing to a proper directory which
+does not contain the necessary metadata.</p>
+
+<ul>
+    <li>You can double check this by looking in the game's log
+    for the statement <span class=
+    "NDLGUILabel">"AssetConfigService::OnInit"</span>, since this
+    is the method call that configures the correct path. If the
+    path does not match where your assets are stored, then you
+    have found the problem.</li>
+
+<li>If the path looks ok, then your next step should be to
+browse the path and ensure that it contains a sub-directory at the top
+level called <span class="NDLGUILabel">asset-web-metadata</span>. Inside this directory should
+be a couple dozen (or more) files with <span class="NDLSystemFont">.nt</span> extensions that were
+produced by the Asset Controller either during your build, or when you
+launched Toolbench and opened your game solution. For additional
+information, see <a
+ href="asset_runtime_reqs.htm">Requirements for Working with the Asset Infrastructure</a>.</li>
+</ul>
+
+<h3>Missing Assets</h3>
+
+<p>You may run into a problem where an asset that you have
+recently added cannot be linked to from Toolbench when you select
+the asset in the file picker. Again, this problem is indicated by
+a Framework log message containing <span class=
+"NDLGUILabel">"found no assets that matched URI"</span>. This
+would result in Toolbench displaying a property value of "Invalid
+Asset" where your asset's name should appear. If this happens, it
+probably means that the asset metadata has gotten out-of-sync
+with the asset files you recently added. To correct this, you
+should exit Toolbench, delete all of the files from <span class=
+"NDLGUILabel">&lt;ContentRootDirectory&gt;/asset-web-metadata/</span>
+and then restart Toolbench.</p>
+
+<p>Another common issue is that an apparently random subset of
+the assets needed by your game are not being found. This can
+point to a number of different possible problems that you will
+need to investigate.</p>
+
+<ul>
+    <li>The asset URI is wrong. The asset exists, but the Id that
+    you are trying to use is not correct. This could be a
+    typographical error.</li>
+
+    <li>The asset does not have the expected metadata/tagging.
+    You may have the correct URI, but the metadata does not
+    reflect this information for the particular asset(s).</li>
+
+    <li>The asset URI has become obsolete. Perhaps the URI would
+    have found an asset in the past, but you have restructured
+    your assets in such a way that it is no longer valid.</li>
+</ul>
+
+<p>These issues are not always easy to diagnose. A good starting
+point is to try the URI that is failing, and similar ones that you
+think might be correct, using the Asset Controller. For more
+information on how to do this, consult <a
+ href="asset_runtime_cli_ref.htm">Asset Infrastructure Command Line Reference</a>.</p>
+<h2>Loading Wrong Assets</h2>
+<p>Another common issue you might confront is that your game is not
+loading the correct assets, based on how you have configured things or
+based on the particular platform under test (for multi-platform games).
+ This could be a result of problems with your <span class="NDLGUILabel">tagging policy</span>, or
+problems with adhering to the policy when the asset files were
+organized. To troubleshoot these issues, verify that you are
+following all of the procedures discussed in <a
+ href="asset_runtime_platform_support.htm">Supporting Multiple Platforms</a>.</p>
+<h2>Network Connectivity</h2>
+
+<p>Network connectivity can be an issue any time you are using
+Toolbench to edit your content or attempting to perform rapid
+iteration work flows. For the system to function, network
+communications are required between the Asset Controller,
+Toolbench, and the game. If all parties are communicating, then
+you should see a green icon in the task try for the Asset
+Controller. Furthermore, inspecting the tool tip for the Asset
+Controller should display the expected <span class=
+"NDLGUILabel">number of connections</span>. If this is not
+working, then one of the components is not configured correctly
+for the connection. To troubleshoot these issues, verify that you
+are following all of the procedures discussed in <a href=
+"asset_runtime_config.htm">Configuring the Asset Runtime
+Service.</a></p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+ <li><a href="asset_runtime_features.htm">Asset Infrastructure Features</a></li>
+ <li><a href="asset_runtime_how_work.htm">How the Asset Locating Services Work</a></li>
+ <li><a href="asset_runtime_limitations.htm">Asset Runtime Service
+limitations</a></li>
+ <li><a href="asset_runtime_how_relates_efr.htm">How the Asset Infrastructure Relates to the Emergent Game Framework</a></li>
+ <li><a href="asset_runtime_reqs.htm">Requirements for Working with the Asset Infrastructure</a></li>
+ <li><a href="asset_runtime_best_practice.htm">Best Practices for Working with the Asset Infrastructure</a></li>
+ <li><a href="asset_runtime_using.htm">Asset Tagging System Overview</a></li>
+ <li><a href="asset_runtime_cli_ref.htm">Asset Infrastructure Command Line Reference</a></li>
+ <li><a href="asset_runtime_reference.htm">Asset Infrastructure Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

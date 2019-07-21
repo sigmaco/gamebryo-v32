@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Block Loading Options</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Block Loading Options</h1>
+
+<p>There are many options to control the loading of block files. All of the available options can
+be controlled using a <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__BlockLoadParameters.htm">egf::BlockLoadParameters</a></span> instance.
+The reference documentation discusses each of these options in detail. Here each option is breifly
+discussed.</p>
+
+<h2>Available block loading options</h2>
+
+<h3>AutoEnterWorld</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetAutoEnterWorld</span></p>
+<p>This setting controls whether each entity created as part of loading the block will automaticly
+be placed into the world. See <a href="../Entities/entity_world_state.htm">Entity World State</a>
+for more on the world state concept. It is recommended that blocks be loaded out-of-world and then
+manually moved into the world when the application is ready, however the default setting is to
+automatically enter the world for legacy compatiblity. This default can be changed, however, by
+calling <span class="NDLSystemFont">egf::BlockLoadParameters::SetDefaultAutoEnterWorld</span>.</p>
+
+<h3>Callback</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetMessageCallback</span> or 
+<span class="NDLSystemFont">egf::BlockLoadParameters::SetBehaviorCallback</span></p>
+<p>The callback setting determins who, if anyone, is notified of block loading progress. You can
+either a message-style callback or a behavior-style callback but not both. These callbacks were
+demonstrated in <a href="block_loading.htm">Loading Blocks</a>.</p>
+
+<h3>Active Callbacks</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetActiveCallbacks</span></p>
+<p>This setting controls which specific result values will generate a callback. This setting has no
+effect unless a callback was also specified. Use this to reduce unwanted callbacks in order to
+maximize performance. This is especially helpful when using behavior based callbacks as these are
+fairly expensive to invoke.</p>
+
+<h3>Block Rotation</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetBlockRotation</span></p>
+<p>Rotates all entities that mix-in the <span class="NDLSystemFont">Positionable</span> standard model. The rotation is
+performed about the origin which means both the <span class="NDLSystemFont">Position</span> and
+<span class="NDLSystemFont">Rotation</span> property are affected by the rotation. If both a
+rotation and an offset are provided the rotation is always applied first.</p>
+
+<h3>Block Offset</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetBlockOffset</span></p>
+<p>Translates all entities that mix-in the <span class="NDLSystemFont">Positionable</span> standard
+model. The <span class="NDLSystemFont">Position</span> property simply has the given offset added
+to it for every entity. If both a rotation and an offset are provided the rotation is always
+applied first.</p>
+
+<h3>Load Threshold Override</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetBlockOffset</span></p>
+<p>This option limits the number of entities from the block that will be parsed or created each
+frame. When loading a block in the background during gameplay you may wish to lower this setting to
+reduce the CPU impact of block loading. Conversely, when loading a critical block you may wish to
+raise this setting so that the block loads more quickly regardless of frame hitches. When this
+option is not specified, the default settings specified in the Entity Loader Service are used. That
+default can also be changed by calling <span class="NDLSystemFont">
+egf::EntityLoaderService::SetMaxEntityLoadThrottle</span>.</p>
+
+<h3>Unload Threshold Override</h3>
+<p><span class="NDLSystemFont">egf::BlockLoadParameters::SetUnloadThresholdOverride</span></p>
+<p>This option limits the number of entities from the block that will be destroyed each frame when
+unloading the block. This setting might be adjusted for similar reasons as the Load Threshold. When
+this option is not specified, the default settings specified in the Entity Loader Service are used.
+That default can also be changed by calling <span class="NDLSystemFont">
+egf::EntityLoaderService::SetMaxEntityUnloadThrottle</span>.</p>
+
+<h2>Setting block loading options from script</h2>
+
+<p>All of the block loading options can be specified when loading blocks from script. This is done
+by passing a ParameterList containing specifically named parameters of specific types to the
+BehaviorAPI.LoadBlockFile built-in API. All parameters have default values so you should only set
+those options that you require. See the following example:</p>
+<pre>
+function SomeBehavior(self, params)
+    local blockLoadParams = ParameterList.ParameterList()
+
+    -- If loading multiple instances of the block, pass in an instance ID for the block:
+    blockLoadParams:PutUInt32("Instance", 1)
+
+    -- Avoid entering the world until I get the callback just to demonstate how that might work
+    blockLoadParams:PutBool("AutoEnter", false)
+
+    blockLoadParams:PutString("Callback", "CallbackBehaviorName")
+    blockLoadParams:PutUInt32("Context", 12) -- a number that is simply passed to the callback
+
+    -- Although the BlockLoadCallback are not bound into Lua they could be to simplify usage.
+    -- Otherwise you must pass the equivalent numerical values. The following value is "all errors
+    -- plus blc_EntityCreationCompleted":
+    blockLoadParams:PutString("ActiveCallbacks", 0xFF000008)
+
+    -- Rotation is three euler angles in degrees. You could pass a Point3 proxy or simply a table
+    -- with three numerical values
+    blockLoadParams:PutPoint3("Rotation", {90, 0, 0})
+
+    -- The offset can also be either a Point3 or a simple table
+    blockLoadParams:PutPoint3("Offset", self.InitialBlockOffset)
+
+    -- A small number means the block will load very slowly:
+    blockLoadParams:PutUInt32("LoadThreashold", 2)
+
+    -- A large number means the block will unload very quickly:
+    blockLoadParams:PutUInt32("UnloadThreashold", 1000)
+
+    BehaviorAPI.LoadBlockFile("urn:emergent-world:MyBlock", blockLoadParams)
+end
+
+function CallbackBehaviorName(self, params)
+    local blockName = params:Get("BlockAsset")          -- The URN of the unloaded block
+    local blockInstance = params:Get("BlockInstance")   -- The block instance of the unloaded block
+    local result = params:Get("Result")                 -- An egf::EntityLoadResult::Result value
+    local context = params:Get("Context")               -- The 12 passed in above
+
+    -- do additional work here
+
+    -- Because we loaded the block out-of-world, we should now move the block into the world so the
+    -- entities will become visible:
+    BehaviorAPI.EntitySetEnterWorld(blockName, blockInstance)
+end
+</pre>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="block_about.htm">About block files</a></li>
+    <li><a href="block_loading.htm">Loading Blocks</a></li>
+    <li><a href="block_options.htm">Block Loading Options</a></li>
+    <li><a href="block_unloading.htm">Managing Loaded Blocks</a></li>
+    <li><a href="block_load_sequence.htm">Block Loading Sequence</a></li>
+    <li><a href="block_best_practice.htm">Block Best Practices</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

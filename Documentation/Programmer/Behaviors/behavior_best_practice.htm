@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Best practices for working with behaviors</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Best practices for working with behaviors</h1>
+
+<p>The simulated game world is object oriented. We recommended following the principle of
+    separating interface from implementation. An interface can be created by defining a set of
+    abstract Behaviors which can be thought of as pure virtual methods in C++. You must set the
+    abstract trait for the Behavior in the interface Model. Any Entity that derives from such an
+    interface Model is declaring it is able to perform the given behavioral actions. The
+    implementations can then be separated under child (elemental) models to give a more specific
+    behavior. Following this approach disentangles the various implementations of a behavior from
+    one another making it easier to mix them together creatively. It provides a much richer approach
+    than creating a strict hierarchy or taxonomy of entities. It also frees the designer to think
+    about game concepts without having to consider how the implementation code should be structured.
+    </p>
+
+<h2>Process-oriented vs. Event-oriented</h2>
+
+<p>There are two ways to implement Behaviors&mdash;as process-oriented or event-oriented logic.</p>
+
+<ul>
+    <li>We recommend using the process paradigm in which your behavior will sequentially run
+    through a set of instructions that consume game time. For example: walk over to the door, open
+    it, hit the enemy, and so on. A process-oriented behavior replaces the use of state machines. A
+    linear sequence of many actions can be implemented in a single Behavior. A branching sequence
+    of events can be handled with branching logic in the Behavior code. Of course, as the code gets
+    larger and more complex, it should be split into multiple functions using good coding
+    standards. The process-oriented approach allows an implementer to more quickly see the flow of
+    control as compared to a state machine.</li>
+
+    <li>Another useful approach which could be considered a combination of the other two is to
+    spawn a new Behavior when entering a new game state and exiting the current Behavior. In this
+    case, the Behaviors would be named after the state or activity the entity is performing. For
+    example: doPatrol (which would loop through all patrol points), doPursue (which would set a
+    target and repeatedly adjust trajectory). Each of these states can still consume time, but is
+    shorter lived that implementing the entire logic of the entity in a single branching
+    Behavior.</li>
+
+    <li>The event paradigm consists entirely of immediate behaviors which complete in a single
+    tick. All C++ behaviors must use the one tick event paradigm, since coroutines or threads would
+    consume too many resources. Event oriented immediate Behaviors are somewhat faster, but cannot
+    make the entity sleep or wait. Instead, the implementation would schedule a "wakeup" event to
+    continue execution of the entity after a period of waiting. In this case, the Behaviors would
+    be named after a single action in the decomposed sequence. For example: moveTowardGoal,
+    beginPursuit, selectNewPatrolPoint.</li>
+</ul>
+
+<h2>Coding Behaviors</h2>
+
+<ul>
+    <li><b>Naming Conventions</b>: The name of the behavior should be descriptive of the action
+    being requested and performed. There are two common types of behaviors: active (imperative)
+    ones which are invoked by the entity itself or by a behavior running on another entity. These
+    active behaviors should start with the verb "Do" like: DoOpen. The other is passive where the
+    behaviors get run as a reaction to something like creation or destruction of an entity. For
+    example OnCreate and OnCollide. AI-related Behaviors should be named after the action being
+    requested to occur, not just the name of the active AI state occurring when the Behavior is
+    executing. For example, use DoPatrol, or DoAttack, instead of IsAttacking (which would be a
+    much better name for a Property).</li>
+
+    <li><b>Behavior Parameters</b>: Parameters passed to behaviors can be optionally named. It is
+    highly recommended that all parameteres passed to an 'Extends' or 'Reverse Extends' behavior be
+    named and accessed by their name. This allows multiple behavior implementations to be mixed
+    together and each continue to work independently. In general named parameters should be used
+    anyway to allow overrides to extend the parameter list without worrying about the parameter
+    ordering. This also protects against changes to the parameter order and makes it easy to search
+    for all behaviors that use a given parameter.</li>
+
+    <li><b>Call Behaviors</b>: In addition to using Behaviors as events, is common and recommended
+    to call other behaviors from a behavior much like a nested procedure call. This makes the code
+    reusable and easier to read. One benefit of this approach is that these calls can occur across
+    language boundaries. A more efficient alternative that sacrifices some of the object oriented
+    abilities of a regular Behavior is to encapsulate the called code in a regular function. For
+    example a non-behavior Lua function in the Lua file for a model.</li>
+
+    <li><b>Call Built-ins</b>: Built-ins are implemented in C++ and are used to expose system
+    capabilities to a Behavior. They are clearly the most efficient way to implement logic, but do
+    not support rapid iteration. They are most commonly referred to in groups as a Behavior API,
+    and can be thought of as a library or as an importable script "module".</li>
+
+    <li><b>Importing Modules</b>: This allows access to built-ins, behaviors or helper functions
+    from other modules.</li>
+
+    <li><b>Coding Standards</b>: Code in a behavior should comply with a studio coding standard to
+    facilitate readability. Script is code and can be significantly complex and deserves
+    documentation, useful variable names, and so on.</li>
+
+    <li><b>Main Loop</b>: Although it can be done, no behavior should loop forever even if it is
+    sleeping and switching between different Entities. It is more efficient to let entities become
+    idle and have no outstanding behaviors between high level independent actions like an combat
+    engagement. However, there are situations where very long running behaviors can be convenient
+    like a continuous connected sequence of actions.</li>
+
+    <li><b>Storing Values</b>: It is crucial to differentiate between local variables and entity
+    properties. Local variables will be scoped to the behavior only. If another behavior is going
+    to use that variable, the user needs to store the value in a property. On the other hand if the
+    value is going to be used once by another behavior, the value can be passed along as a
+    parameter to a Behavior by storing it into the ParameterList.</li>
+
+    <li><b>Not Used as Accessors</b>: Behaviors should not be used as getters and setters. Use the
+    get and set Property API instead. Behaviors should be viewed as actions (where a set of
+    commands occur) rather than a regular method.</li>
+
+    <li><b>AI Actions:</b> It is common for games to use a naming convention to publish which
+    behaviors are available for the AI system to invoke. Some will compute the string name of the
+    behavior to be invoked, or use the string to query other entities for whether they provide a
+    desired capability. We recommend implementing these sorts of systems using abstract models
+    (interfaces). For example, if you want an AI to manipulate doors, you might want a doOpen
+    behavior. We suggest this be declared in an "Openable" model. That allows Openable to be
+    extended (perhaps with doLock, doUnlock), and it is trivial to mix the capability into other
+    objects like cupboards, safes, or cars.</li>
+
+    <li><b>Polymorphic Behavior:</b> We recommend using model inheritance to implement
+    polymorphism. By judicious mixing, various behavior implementations can be selected while
+    leaving the interface to an entity the same. This approach should replace two common and less
+    desirable approaches. One is to embed the string name of a desired behavior into a string
+    Property, then use that string to invoke a configuration-time selected behavior. The second is
+    to write code to inspect the model type of a target entity to determine what actions to
+    perform. Instead, in both these cases, a behavior can be declared and associated with one or
+    the other entity that provides the same functionality. Since it is declared in the structure of
+    the Model and not in data or script code, it is easier to understand and follow the logic. The
+    benefit of doing this is that by changing the mix-in hierarchy, new behavior will emerge
+    without changing any code, or editing Property values.</li>
+
+    <li><b>Plugin Behaviors:</b> You can define a behavior on an entity that is supposed to run on
+    a different kind of entity (for example, the player character). This technique allows the
+    addition of new entity types and ways to interact with it but without updating every entity it
+    is supposed to interact with. For example a designer could add a chair to their game in an
+    expansion pack or late in development that provides the ability for the player to sit. The
+    sitting logic, say in doSit, timing, animations and tuning values would be associated with the
+    chair entity. The game would be coded to run doSit on the player character entity using
+    properties stored on the chair. You would directly invoke an immediate behavior on the chair
+    using CallBehavior which will run on the caller. The call would need to pass the caller's
+    entityID since doSit would want to affect the player character, and "self" would be the chair
+    in this case. A good policy would be to extract the player's EntityID from the stream and
+    consistently store it in a variable called otherID.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="behavior_overview.htm">Behaviors overview</a></li>
+
+    <li><a href="behavior_features.htm">Behavior features</a></li>
+
+    <li><a href="behavior_how_work.htm">How behaviors work</a></li>
+
+    <li><a href="behavior_limitations.htm">Behavior limitations</a></li>
+    <!-- <li><a href="behavior_how_relates_efr.htm">How behaviors relate to the Emergent Game Framework</a></li> -->
+
+    <li><a href="behavior_reqs.htm">Requirements for working with behaviors</a></li>
+
+    <li><a href="behavior_using.htm">Using behaviors</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

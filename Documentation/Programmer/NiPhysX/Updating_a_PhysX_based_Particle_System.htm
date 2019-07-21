@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Updating a PhysX-based Particle System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Updating a PhysX-based Particle System </h1>
+
+<p>There are four steps to updating a <span class="NDLSystemFont"><a 
+ href="../../Reference/NiPhysXParticle/NiPhysXPSParticleSystem.htm">NiPhysXPSParticleSystem</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiPhysXParticle/NiPhysXPSMeshParticleSystem.htm">NiPhysXPSMeshParticleSystem</a></span> 
+ object. The following cycle must be followed, but note that you can open 
+ the loop at any point. For example, if processing physics asynchronously, 
+ then the frame is split between <span class="NDLSystemFont">Simulate</span> 
+ and <span class="NDLSystemFont">FetchResults</span>. If simulation is synchronous 
+ and an application is culling geometry, then the loop is probably best 
+ split after <span class="NDLSystemFont">Update</span> on the particle system. 
+ </p>
+
+<ul>
+	
+	<li>Call <span class="NDLSystemFont">Update</span> 
+ on the particle system (or the scene graph in which it resides). This 
+ updates the particle counts and runs through all the particle controllers 
+ and simulation steps. The particle update actually begins the parallel 
+ update of particles using Floodgate, which will complete when an appropriate 
+ synchronization point is reached: when the particle system is culled and 
+ determined visible, or when simulation is started. To maximize performance 
+ it is advisable to perform as much other computation as possible between 
+ the particle system update and simulation starting. Internally, when the 
+ simulation has been completed each particle holds a target velocity change 
+ for the current step.</li>
+	
+	<li>Call <span class="NDLSystemFont">Simulate</span> 
+ on the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ with which the particle system is associated. This begins the simulation 
+ step which forces any scene graph particle system update currently executing 
+ in parallel to complete. Note that you can use any timing scheme you like. 
+ The physics simulation and the particle system use independent timing 
+ mechanisms. </li>
+	
+	<li>Call <span class="NDLSystemFont">FetchResults</span> 
+ on the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ with which the particle system is associated. This finishes the simulation.</li>
+	
+	<li>Call <span class="NDLSystemFont">UpdateDestinations</span> 
+ on the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXScene.htm">NiPhysXScene</a></span> 
+ with which the particle system is associated. This caches some transformation 
+ state and informs the scene graph particle system that it is ready for 
+ another update.</li>
+</ul>
+
+<p>As stated above, this loop need not correspond to a 
+ single frame - rendering could happen at any point in the cycle. </p>
+
+<p class="NDLRefHead2">Simulation Timing </p>
+
+<p>Particle positions are not interpolated between physics 
+ time steps under any circumstances (it is too expensive to maintain dual 
+ particle state for interpolation). It is hence important to step the physics 
+ at a rate that is high enough to ensure smooth-looking particle motion. 
+ </p>
+
+<p>If the <span class="NDLSystemFont">NiPhysXScene</span> 
+ object is using fixed-step timing for updating the physics, then there 
+ are situations in which multiple calls to <span class="NDLSystemFont">Update</span> 
+ occur for each <em>effective</em> call to <span class="NDLSystemFont">Simulate</span> 
+ and <span class="NDLSystemFont">FetchResults</span>. This happens when the 
+ frame rate is higher than the physics update frequency. It should not 
+ cause problems, but if you notice particle locations staying the same 
+ over calls to <span class="NDLSystemFont">Simulate</span> and <span class="NDLSystemFont">FetchResults</span>, 
+ it may just be that the simulation was already ahead of the current frame 
+ and hence didn't step. You might wish to use variable timing on the PhysX 
+ scene in such circumstances (when the frame rate is high).</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

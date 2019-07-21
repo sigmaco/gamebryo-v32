@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>The NiSky Object</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+  <h1>
+    The NiSky Object
+  </h1>
+  <p>
+    The <span class="NDLSystemFont">NiSky</span> class is a base class used to represent a geometry object that has the
+    <span class="NDLSystemFont">NiSkyMaterial</span> shader applied to it. Subclasses of 
+    <span class="NDLSystemFont">NiSky</span> must implement their own
+    geometry and one such implementation is the <span class="NDLSystemFont">NiSkyDome</span> object that procedurally generates
+    a sky dome.
+  </p>
+  <p>
+    The main function of the <span class="NDLSystemFont">NiSky</span> class is to create a straight forward method of configuring
+    the various blend stages to be applied in the <span class="NDLSystemFont">NiSkyMaterial</span>. This interface has
+    been developed over the basic interface provided by <span class="NDLSystemFont">NiSkyMaterial</span> and allows the
+    required code to be much simpler.
+  </p>
+  <p>
+    The following sections will describe how to configure the Sky material through the
+    <span class="NDLSystemFont">NiSky</span> interface, and provide some example screenshots of what is possible with this
+    interface.
+  </p>
+  <h2>
+    Blend stage configuration
+  </h2>
+  <p>
+    The <span class="NDLSystemFont">NiSkyMaterial</span> pipeline applied to a 
+    <span class="NDLSystemFont">NiSky</span> object are configured through the
+    set of functions available through the <span class="NDLSystemFont">NiSky</span> instance. The finer details on the
+    operation of these functions can be found in the class reference of 
+    <span class="NDLSystemFont">NiSky</span>.
+  </p>
+  <p>
+    The first of functions is used to configure the atmospheric scattering calculation
+    on the shader.
+  </p>
+<pre>
+void SetAtmosphericCalcMode(AtmosphericCalcMode::Value eCalcMode);
+</pre>
+  <p>
+    This function simply sets the mode of Atmospheric calculation to use in the shader.
+    The 3 possible settings of this have been described in the 
+    <span class="NDLSystemFont">NiSkyMaterial</span> documentation
+    (None, Vertex mode, and Pixel mode). This function directly configures the 
+    <span class="NDLSystemFont">NiSkyMaterial</span>
+    on the <span class="NDLSystemFont">NiSky</span> object to use the selected mode.
+  </p>
+  <p>
+    Configuration of the rest of the shader occurs through the following two functions
+    and their <span class="NDLSystemFont">NiSkyBlendStage</span> parameters.
+  </p>
+<pre>
+void InsertBlendStage(NiUInt32 uiStage, NiSkyBlendStage* pkStage);
+void SetBlendStage(NiUInt32 uiStage, NiSkyBlendStage* pkStage);
+</pre>
+  <p>
+    These functions control the set of blend stages that are applied in the SkyMaterial.
+    Each blend stage is represented by a <span class="NDLSystemFont">NiSkyBlendStage</span> object for simple configuration.
+    The base blend stage object supports the configuration of the blend method, and
+    modifier settings, whilst the configuration of the different color generation modes
+    is controlled by instantiating subclasses of <span class="NDLSystemFont">NiSkyBlendStage</span>. The following set
+    of subclasses are available for convenience:
+  </p>
+  <ul>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiEnvironment/NiSkyFogBlendStage.htm">NiSkyFogBlendStage</a></span> </li>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiEnvironment/NiSkyGradientBlendStage.htm">NiSkyGradientBlendStage</a></span> </li>
+    <li><span class="NDLSystemFont">
+      <a href="../../Reference/NiEnvironment/NiSkySkyboxBlendStage.htm">NiSkySkyboxBlendStage</a></span> </li>
+  </ul>
+  <p>
+    Each class supports the configuration of the relevant parameters to its color generation
+    mode. For details on the configuration of these objects consult their individual
+    class references. &nbsp;The following snip of code demonstrates the basic use of
+    the blend stage configuration utilities to generate a standard sky shader effect.
+  </p>
+<pre>
+NiSkyDome* pkSky = pkEnvironment-&gt;CreateSkyDome(); 
+
+// Create blend stages
+// EXAMPLE: Overlay a gradient on the sky. Blending from red at the 
+// horizon, to orange at the zenith (directly above the camera)
+NiSkyGradientBlendStage* pkGradStage = NiNew NiSkyGradientBlendStage();
+pkGradStage-&gt;SetHorizonColor(NiColorA(1.0f, 0.0f, 0.0f, 1.0f));
+pkGradStage-&gt;SetZenithColor(NiColorA(1.0f, 0.5f, 0.0f, 1.0f));
+pkGradStage-&gt;SetBlendConstant(0.5f);
+pkGradStage-&gt;SetBlendMethod(NiSkyMaterial::BlendMethod::INTERPOLATE);
+pkSky-&gt;InsertBlendStage(0, pkGradStage);
+
+// EXAMPLE: Setting a mountain skybox infront of the sky, it is blended 
+// with the sky based upon the alpha channel within the texture.
+NiSourceCubeMap* pkMountainMap = NiSourceCubeMap::Create(
+    ConvertMediaFilename("Textures\\MountainCube.dds"), 
+    NiRenderer::GetRenderer());
+NiSkySkyboxBlendStage* pkMntBlendStage = NiNew NiSkySkyboxBlendStage();
+pkMntBlendStage-&gt;SetTexture(pkMountainMap);
+pkMntBlendStage-&gt;SetModifierSource(NiSkyMaterial::ModifierSource::ALPHA);
+pkMntBlendStage-&gt;SetBlendMethod(NiSkyMaterial::BlendMethod::INTERPOLATE);
+pkSky-&gt;InsertBlendStage(1, pkMntBlendStage);
+
+// EXAMPLE: Blend the fog color with the sky from the horizon up, this
+// removes any hard lines with the renderer background and the bottom 
+// of the sky whilst maintaining the illusion of depth that fog 
+// presents. 
+NiSkyFogBlendStage* pkFogStage = NiNew NiSkyFogBlendStage();
+pkFogStage-&gt;SetBlendBiasExponent(3.0f);
+pkFogStage-&gt;SetBlendHorizonBias(1.0f);
+pkSky-&gt;SetBlendStage(4, pkFogStage);
+</pre>
+  <h2>
+    Examples of Sky Configurations
+  </h2>
+  <p>
+    The sky shader is quite versatile and is capable of creating a large number of effects.
+    The following set of screenshots shows some of the ways the shader can be used and
+    is accompanied by the relevant configuration information to achieve each effect.<br>
+  </p>
+  <div class="FigureContainer">
+    <img alt="Vertex mode atmospheric shader, Fog blended" src="images/Sky1.jpg" />
+    <p class="FigureCaption">
+      Sky 1 - Vertex mode atmospheric shader, Fog blended</p>
+  </div>
+  <p>
+    <b>Sky 1: <i>Configuration Details</i></b>
+  </p>
+  <ul>
+    <li>Atmosphere values: </li>
+    <ul>
+      <li>All defaults </li>
+    </ul>
+    <li>Atmospheric Calculation Mode: Vertex </li>
+    <li>Blend stage configuration: </li>
+    <ul>
+      <li>Blend Stage 4 - Fog Blend stage </li>
+      <ul>
+        <li>Modifier Source: Horizon Bias (BiasExponent = 3.0f, HorizonBias = 1.0f) </li>
+      </ul>
+    </ul>
+  </ul>
+  <div class="FigureContainer">
+    <img alt="Vertex mode atmospheric shader, Gradient and Fog blended" src="images/Sky2.jpg" />
+    <p class="FigureCaption">
+      Sky 2 - Vertex mode atmospheric shader, Gradient and Fog blended</p>
+  </div>
+  <p>
+    <b>Sky 2: <i>Configuration Details</i></b>
+  </p>
+  <ul>
+    <li>Atmosphere values: </li>
+    <ul>
+      <li>Defaults </li>
+      <li>Sun Size = 10.0f </li>
+    </ul>
+    <li>Atmospheric Calculation Mode: Vertex </li>
+    <li>Blend stage configuration: </li>
+    <ul>
+      <li>Blend Stage 1 - Gradient Blend Stage </li>
+      <ul>
+        <li>Zenith Color = NiColorA(1.0f, 0.5f, 0.0f, 1.0f) </li>
+        <li>Horizon Color = NiColorA(1.0f, 0.0f, 0.0f, 1.0f) </li>
+        <li>Blend Method: Interpolate </li>
+      </ul>
+    </ul>
+  </ul>
+  <ul>
+    <ul>
+      <ul>
+        <li>Modifier Source: Horizon Bias (BiasExponent = 3.0f, HorizonBias = 0.5f) </li>
+      </ul>
+    </ul>
+  </ul>
+  <ul>
+    <ul>
+      <li>Blend Stage 4 - Fog Blend stage </li>
+      <ul>
+        <li>Blend Method: Interpolate </li>
+        <li>Modifier Source: Horizon Bias (BiasExponent = 3.0f, HorizonBias = 1.0f) </li>
+      </ul>
+    </ul>
+  </ul>
+  <div class="FigureContainer">
+    <img alt="Vertex mode atmospheric shader, Alien Sunset" src="images/Sky3.jpg" />
+    <p class="FigureCaption">
+      Sky 3 - Vertex mode atmospheric shader, Alien Sunset</p>
+  </div>
+  <p>
+    <b>Sky 3: <i>Configuration Details</i></b>
+  </p>
+  <ul>
+    <li>Atmosphere values: </li>
+    <ul>
+      <li>Defaults </li>
+      <li>Sun Size = 10.0f </li>
+      <li>Rayleigh Scattering = 0.0096f </li>
+      <li>Sun Intensity = 12.6f </li>
+      <li>Phase Constant = -0.995f </li>
+      <li>Red Wavelength = 0.575f </li>
+      <li>Green Wavelength = 0.651f </li>
+      <li>Blue Wavelength = 0.515f </li>
+    </ul>
+    <li>Atmospheric Calculation Mode: Vertex </li>
+    <li>Blend stage configuration: </li>
+    <ul>
+      <li>Blend Stage 4 - Fog Blend stage </li>
+      <ul>
+        <li>Blend Method: Interpolate </li>
+        <li>Modifier Source: Horizon Bias (BiasExponent = 3.0f, HorizonBias = 1.0f) </li>
+      </ul>
+    </ul>
+  </ul>
+  Related Topics
+  <ul>
+  <li><span class="NDLSystemFont"><a href="../../Reference/NiEnvironment/NiSky.htm">NiSky</a></span></li>
+  <li><span class="NDLSystemFont">
+    <a href="../../Reference/NiEnvironment/NiSkyMaterial.htm">NiSkyMaterial</a></span></li>
+  </ul>
+</body>
+</html>

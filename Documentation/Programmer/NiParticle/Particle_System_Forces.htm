@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Particle System Forces</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Particle System Forces</h1>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSimulatorForcesStep.htm">NiPSSimulatorForcesStep</a></span> 
+ simulator step is responsible for applying forces to particles in a system. 
+ It holds a set of <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSForce.htm">NiPSForce</a></span> 
+ objects, each of which represents an individual force that should be applied 
+ to all particles. Forces are applied in the order in which they appear 
+ in this set.</p>
+
+<p>A particle force modifies the velocity of a particle 
+ based on certain parameters. The <span class="NDLSystemFont">NiPSForce</span> 
+ object holds data members representing the force parameters and updates 
+ them each frame. It also provides a block of data to the simulator step 
+ that holds all the information necessary to apply the force. The data 
+ blocks from all the forces are combined into a large buffer by the step 
+ and are sent to its <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ kernel. Upon execution, the kernel iterates through the data blocks in 
+ the buffer, passing each one to a helper function defined in <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSForceHelpers.htm">NiPSForceHelpers</a></span>, 
+ which actually does the work of applying the force.</p>
+
+<p>The code relating to a particular particle force resides 
+ in several locations. First, a structure containing the necessary data 
+ for the force is defined in the <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSForceDefinitions.htm">NiPSForceDefinitions</a></span> 
+ class. This is defined separately from the <span class="NDLSystemFont">NiPSForce</span> 
+ class because it must be included and used by the Floodgate kernel, which 
+ may have different compiler requirements depending on the platform. An 
+ enumerated type is also defined in <span class="NDLSystemFont">NiPSForceDefinitions</span> 
+ corresponding to the force. The <span class="NDLSystemFont">NiPSForce</span> 
+ object holds an instance of its data structure as a member variable and 
+ provides accessors for changing the force parameters. The <span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSSimulatorForcesKernel.htm">NiPSSimulatorForcesKernel</a></span> 
+ Floodgate kernel must know about the force in order to properly parse 
+ its data block from the larger buffer, and a corresponding helper function 
+ must exist in <span class="NDLSystemFont">NiPSForceHelpers</span> to actually 
+ perform the work of applying the force. Adding a new type of force to 
+ the system requires making changes in all of these locations if that force 
+ is to be executed as part of the <span class="NDLSystemFont">NiPSSimulatorForcesStep</span> 
+ simulator step. Alternatively, a new simulator step could be created that 
+ implements the new force separately.</p>
+
+<p>The forces included with Gamebryo are listed here, along 
+ with a brief description:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>
+                Force
+            </th>
+            <th>
+                Description
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSAirFieldForce.htm">NiPSAirFieldForce</a></span></td>
+<td>
+Simulates the effects of air movements like wind, fans, 
+ or wake.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSBombForce.htm">NiPSBombForce</a></span></td>
+<td>
+Applies an explosive force to particles.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSDragFieldForce.htm">NiPSDragFieldForce</a></span></td>
+<td>
+Exerts a drag force over a specified field. Most closely 
+ matches the drag force in Maya.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSDragForce.htm">NiPSDragForce</a></span></td>
+<td>
+Exerts a drag force on particles. Most closely matches 
+ the drag force in 3ds max.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSGravityFieldForce.htm">NiPSGravityFieldForce</a></span></td>
+<td>
+Exerts a directional gravity force over a field with specified 
+ magnitude, position, and direction.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSGravityForce.htm">NiPSGravityForce</a></span></td>
+<td>
+Applies a gravity force for particles with a specified 
+ strength, position, and direction.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSRadialFieldForce.htm">NiPSRadialFieldForce</a></span></td>
+<td>
+Exerts a point gravity force over a field with specified 
+ magnitude and direction.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSTurbulenceFieldForce.htm">NiPSTurbulenceFieldForce</a></span></td>
+<td>
+Exerts a turbulent force over a specified field.</td></tr>
+
+<tr>
+<td>
+<span class="NDLSystemFont"><a href="../../Reference/NiParticle/NiPSVortexFieldForce.htm">NiPSVortexFieldForce</a></span></td>
+<td>
+Exerts a rotational force around the directional axis 
+ of a vortex.</td></tr>
+
+    </tbody>
+</table>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

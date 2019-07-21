@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>SoftParticles Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>SoftParticles Demo Code Overview</h1>
+
+<p>This section details the functionality of significant 
+ member functions in the four classes that form the application: <span 
+ class="NDLSystemFont">SoftParticles</span> (the demo itself), <span class="NDLSystemFont">MRT_ColorDepthMaterial</span> 
+ (the material for the scene), <span class="NDLSystemFOnt">SoftParticlesMaterial</span> 
+ (the material for the soft particles), and <span class="NDLSystemFont">SoftParticlesManager</span> 
+ (the class that handles the deferred rendering of the particle systems).</p>
+
+<h2>SoftParticles::CreateScene</h2>
+
+<p>This function loads the scene. It adds any particle 
+ systems found within the scene file into the <span class="NDLSystemFont">SoftParticlesManager</span> 
+ object for handling. It uses the first camera it can find it the scene 
+ file and, if one is not provided, it creates a default one. It initializes 
+ the <span class="NDLSystemFont">SoftParticlesManager</span> object. Finally, 
+ it also sets the default material for the scene to be and <span class="NDLSystemFont">MRT_ColorDepthMaterial</span> 
+ object so that by default the scene has its depth rendered into an additional 
+ buffer.</p>
+
+<h2>SoftParticles::CreateFrame</h2>
+
+<p><span class="NDLSystemFont">The CreateFrame</span> function 
+ performs the bulk of the application-specific work for the soft particles. 
+ This function creates an additional render target that contains a single 
+ floating point value per pixel to store the camera-space depth in. It 
+ then creates a new render target group that contains the default render 
+ target group's contents and this additional buffer.</p>
+
+<p>Additional information about the Xbox 360 version of the code can be found <a href="../../ee_goto.htm#Learn/Demos/SoftParticles_Demo_Code_Xbox360.htm">here</a></p>
+
+<h2>SoftParticlesManager::Initialize</h2>
+
+<p>This function sets up the initial camera, culler, and 
+ material that will be applied to particle systems that are added. This 
+ class needs to be initialized before particle systems can be added.</p>
+
+<h2>SoftParticlesManager::RecursiveFindAndAddSoftParticles</h2>
+
+<p>This function recursively finds all soft particles within 
+ a given scene graph and adds them to the manager for processing.</p>
+
+<h2>SoftParticlesManager::AddParticles</h2>
+
+<p>Once the manager has been initialized, then particle 
+ systems can be added to this manager. This is done in the main application 
+ via <span class="NDLSystemFont">SoftParticlesManager::RecursiveFindAndAddSoftParticles</span>, 
+ which is described above. Adding a particle system sets the particle system 
+ in the scene graph to be app culled (so it doesn't draw, but is still 
+ updated appropriately).</p>
+
+<h2>SoftParticlesManager::InitializeScene</h2>
+
+<p>Once all the particle systems have been added, this 
+ function should be called. It creates the geometry that particle systems 
+ will be packed into. This manager does all the quad generation for the 
+ particle systems itself and this function sets up all the initial geometry 
+ to make that happen. Because the number and size of the geometry is dependent 
+ upon the particle systems that have been added, it is separate from the 
+ <span class="NDLSystemFont">AddParticles</span> function and should be called 
+ only once.</p>
+
+<h2>SoftParticlesManager::Update</h2>
+
+<p>This function set the particle depth.</p>
+
+<h3>MRT_ColorBlackMaterial class</h3>
+
+<p>This is the material used to clear the screen with. 
+ This would be unneeded in applications that render to the entire screen 
+ or use destination alpha to store depth instead of an additional render 
+ target. On certain platforms (PS3), it is an error to not have a color 
+ output for each buffer in a render target group. On all platforms, it 
+ is impossible to clear one buffer of a render target group to one color 
+ and another buffer to a different one. The render target group for the 
+ non-particles part of the scene has both the default backbuffer and a 
+ buffer to store the scene depth. The default backbuffer needs to be cleared 
+ to the renderer's clear color, but the texture for depth needs to be cleared 
+ to zero. Zero is a special case for the depth texture to detect unwritten 
+ pixels. This material is designed to solve these problems.</p>
+
+<p>This material overrides the <span class="NDLSystemFont">NiStandardMaterial::HandlePostLightTextureApplication</span> 
+ function. This is the last function that is called in a pixel shader. 
+ The class itself takes a render target group in its constructor and for 
+ each extra buffer, it creates an output constant of black, adds an additional 
+ color output, and ties the constant to that output.</p>
+
+<h3>MRT_ColorDepthMaterial class</h3>
+
+<p>This is the material that is used to render the scene 
+ before the particles are rendered. This material extends both the vertex 
+ and pixel shader of <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiStandardMaterial.htm">NiStandardMaterial</a></span> 
+ . The vertex shader is overridden to pass the view position of each vertex 
+ to the pixel shader as a texture coordinate. The view position resource 
+ is cached during the shader creation process and added at the end of the 
+ vertex shader generation pipeline in <span class="NDLSystemFont">HandleCalculateFog</span>, 
+ so that it can be added as the final texture coordinate. The pixel shader 
+ takes that view position passed as a texture coordinate and writes out 
+ the z-value as an additional color output. This is done in the <span class="NDLSystemFont">HandlePostLightTextureApplication</span> 
+ function like the above <span class="NDLSystemFont">MRT_ColorBlackMaterial</span>. 
+ </p>
+
+<h3>SoftParticlesMaterial class</h3>
+
+<p>This material uses the depth values cleared in <span 
+ class="NDLSystemFont">MRT_ColorBlackMaterial</span> and written in <span 
+ class="NDLSystemFont">MRT_ColorDepthMaterial</span> to generate alpha values 
+ for particles. In the vertex shader, it generates screen coordinates to 
+ look up into the depth texture. It passes this information through a texture 
+ coordinate like the above material in <span class="NDLSystemFont">HandleCalculateFog</span>. 
+ It also packs the current view position's z-value into the texture coordinate 
+ as well. In the pixel shader, the screen coordinates are used to look 
+ up in the depth texture and are compared against the view position depth 
+ to generate an alpha value. This is done in the <span class="NDLSystemFont">HandlePreLightTextureApplication</span> 
+ function to modulate the accumulated opacity.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

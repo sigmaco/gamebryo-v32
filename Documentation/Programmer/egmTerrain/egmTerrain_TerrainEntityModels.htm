@@ -1,0 +1,232 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Terrain Entity Models</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Fresnel" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+  <h1>
+    Terrain Entity Models
+  </h1>
+  <p>
+    The Game Framework integration for terrain adds some new entity models to the standard
+    model library that may be mixed into further entities or used directly within a
+    scene. The models provided by this integration are the following:
+  </p>
+  <ul>
+    <li>Terrain - Insert a terrain asset into a scene </li>
+    <li>PhysXTerrain - Insert a terrain asset into a scene that supports PhysX simulation.
+    </li>
+  </ul>
+  <p>
+    These models are described in further detail below.
+  </p>
+  <h2>
+    Terrain
+  </h2>
+  <p>
+    This model is used to insert a terrain asset into an entity scene. Generally this
+    entity is configured using the terrain editing tools provided within Toolbench.
+    The table below outlines the properties that are available on this entity and their
+    use.
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td>
+          <b>Mixins </b>
+        </td>
+        <td>
+          Renderable, Shadowable, Lightable, Preloadable
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color: #cfe2f3">
+          <b>Properties </b>
+        </td>
+        <td style="background-color: #cfe2f3">
+          <b>Description </b>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Terrain Asset
+        </td>
+        <td>
+          This property defines the 'root.terrain' asset to load in association with this
+          entity. Terrain sectors for this terrain will reside within the same directory as
+          this asset.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Terrain Shadow LOD
+        </td>
+        <td>
+          This property specifies the terrain level-of-detail that will be used when rendering
+          terrain to a shadow map.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Terrain Initial Sectors
+        </td>
+        <td>
+          <i>(Hidden - for internal use only) </i><br />
+          This property contains a list of SectorID numbers indicating which sectors should be 
+          loaded when initially loading the scene.
+          <i></i>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>
+    Lifecycle
+  </h3>
+  <p>
+    The lifecycle of a Terrain entity is similar to other entities that load assets,
+    and in general, follows this process:
+  </p>
+  <h4>
+    Creation:
+  </h4>
+  <ol>
+    <li>Entity is loaded/created. </li>
+    <li>Entity asset preload request is sent out. </li>
+    <ol>
+      <li>Terrain assets are resolved and loaded. </li>
+    </ol>
+    <li>Entity is added to the scene. </li>
+    <ol>
+      <li>If the terrain was not preloaded, then attempt to load it now. </li>
+      <li>Register the NiTerrain object with the SceneGraph service. </li>
+    </ol>
+  </ol>
+  <h4>
+    Destruction:
+  </h4>
+  <ol>
+    <li>Entity is removed from the scene. </li>
+    <ol>
+      <li>Removed the NiTerrain object from the SceneGraph service. </li>
+    </ol>
+  </ol>
+  <h4>
+    Rapid Iteration:
+  </h4>
+  <ul>
+    <li>Entity property is changed. </li>
+  </ul>
+  <ol>
+    <ol>
+      <li>Properties are updated on the <span class="NDLSystemFont">NiTerrain</span> object. </li>
+    </ol>
+  </ol>
+  <ul>
+    <li>Terrain 'root.terrain' file is changed. </li>
+    <ol>
+      <li>Unload the current assets completely. </li>
+      <li>Initialize the load of the new assets on disk. </li>
+    </ol>
+  </ul>
+  <ul>
+    <li>Terrain 'sector_X_X.dof' file is changed. </li>
+    <ol>
+      <li>Unload the corresponding sector if it is loaded. </li>
+      <li>Load the sector again. </li>
+    </ol>
+  </ul>
+  <ul>
+    <li>Terrain 'materialpackage.tmpkg' file is changed. </li>
+    <ol>
+      <li>Reload the package data again. </li>
+      <li>Reload each surface's textures. </li>
+      <li>Assign the package back to the terrain objects that reference it. </li>
+    </ol>
+  </ul>
+  <h2>
+    PhysX Terrain
+  </h2>
+  <p>
+    This model provides an extension to the Terrain model presented above, and allows
+    a user to insert a terrain into the scene that is prepared for PhysX simulation
+    on the target. It is worth noting however, that the application must register the
+    PhysXTerrainService in order to take advantage of the PhysX features of this terrain
+    model. The table below outlines the properties that are available on this entity
+    and their use.
+  </p>
+  <table>
+    <tbody>
+      <tr>
+        <td>
+          <b>Mixins </b>
+        </td>
+        <td>
+          Terrain
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color: #cfe2f3">
+          <b>Property </b>
+        </td>
+        <td style="background-color: #cfe2f3">
+          <b>Description </b>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          SceneName
+        </td>
+        <td>
+          This property identifies the name of the PhysXScene that this terrain object should
+          be placed in.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          PhysXTerrainMaterialBaseIndex
+        </td>
+        <td>
+          This property identifies the terrain's first material index. This is used to avoid terrain 
+          NxMaterials overriding already existing NxMaterials. Users must make sure that no other physx
+          object uses a material that might be used with the terrain. The terrain creates NxMaterials 
+          sequentially for all the Materials that are applied to it starting from the base index. 
+          By default the base index is set to 20 and should not be set to 0.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>
+    Lifecycle
+  </h3>
+  <p>
+    The lifecycle of a PhysXTerrain entity follows the same path as a standard Terrain
+    entity, with the minor addition that part of the initialization of the terrain object
+    involves applying a PhysX custom data policy to the <span class="NDLSystemFont">NiTerrain</span> object.
+  </p>
+</body>
+</html>

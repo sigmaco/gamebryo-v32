@@ -1,0 +1,507 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creation of a DX9Renderer</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creation of a DX9Renderer</h1>
+
+<p>The <span class="NDLSystemFont">NiDX9Renderer</span> allows
+for simple creation of fullscreen and windowed renderers without
+the need to select a specific Direct3D device. The application
+need only specify the window (in windowed mode) or the desired
+screen size and depth (in fullscreen mode). The Direct3D renderer
+will automatically select an appropriate hardware device for the
+settings. To create a renderer using the basic creation system,
+use the version of <span class=
+"NDLSystemFont">NiDX9Renderer::Create</span> shown below.
+Although the full set of parameters may appear daunting, most are
+defaulted to reasonable values. As a result, we present two
+example versions of the same function; one with the default
+parameters omitted (for clarity), and one with them added to show
+the options available to advanced applications.</p>
+
+<h2>Simple DX9 Renderer Creation</h2>
+
+<p class="NDLRefMemberFunction">static NiDX9Renderer*
+Create(unsigned int uiWidth, unsigned int uiHeight, unsigned int
+uiUseFlags, NiWindowRef kWndDevice, NiWindowRef kWndFocus)</p>
+
+<p>The version of the creation function above omits the defaulted
+arguments. The only required arguments are as follows:</p>
+
+<h3>Height and Width</h3>
+
+<p>When a windowed renderer is created, these parameters are
+ignored and may be set to zero. When a fullscreen renderer is
+created, these values must be set to the desired screen mode
+width and height (which must match a supported screen mode for
+the given device).</p>
+
+<h3>Renderer Flags</h3>
+
+<p>The renderer flags are an OR'ed flag vector of zero or more of
+the following options:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">USE_FULLSCREEN</span>:
+    Specifies that the renderer is to be fullscreen. Without this
+    flag, the renderer will be created as windowed.</li>
+
+    <li><span class="NDLSystemFont">USE_STENCIL</span>: Requests
+    that a stencil buffer be allocated and attached to the
+    device. If this request is successful, then the <span class=
+    "NDLSystemFont">CAPS_STENCIL</span> flag will be set in the
+    return value of <span class=
+    "NDLSystemFont">NiRenderer::GetFlags</span>.</li>
+
+    <li><span class="NDLSystemFont">USE_16BITBUFFERS</span>:
+    Specifies that the application prefers the rendering buffers
+    to be 16-bits deep. Without this flag, the renderer attempts
+    to create 32-bit rendering buffers.</li>
+
+    <li><span class=
+    "NDLSystemFont">USE_MANUALDEPTHSTENCIL</span>: Specifies that
+    the application wishes to create and attach its own
+    depth/stencil buffer. For advanced applications only.</li>
+
+    <li><span class="NDLSystemFont">USE_MULTITHREADED</span>:
+    Specifies that the application will be multithreaded, so the
+    Direct3D device must allow for that when it is created.
+    Setting this flag can degrade performance.</li>
+
+    <li><span class="NDLSystemFont">USE_FPU_PRESERVE</span>:
+    Specifies that the Direct3D device should be created with a
+    flag that allows the application to use full double precision
+    floating point math. Setting this flag can degrade
+    performance.</li>
+</ul>
+
+<h3>Device Window and Focus Window</h3>
+
+<p>Since multiple simultaneous renderers are not supported, these
+two window parameters may use the same window. In windowed mode,
+this window should be the window to which the device will render
+and clip. In fullscreen mode, the window should be the
+application's top-level window.</p>
+
+<h3>Other Assumptions Under Simple DX9 Renderer Creation</h3>
+
+<p>Using this version of the creation function has the following
+assumptions:</p>
+
+<ul>
+    <li>The renderer will use the primary display adapter on the
+    machine.</li>
+
+    <li>The renderer will attempt to use the most powerful device
+    available (falling automatically to any hardware device a
+    reference device will not be created).</li>
+
+    <li>Default framebuffer and depth/stencil formats will be
+    selected (influenced by the renderer creation flags).</li>
+
+    <li>The renderer will lock buffer swaps to the refresh rate
+    of the monitor.</li>
+
+    <li>The renderer will not use full-scene anti-aliasing or a
+    lockable backbuffer mode.</li>
+
+    <li>The renderer will have a single backbuffer.</li>
+
+    <li>The renderer will use the adapter's default refresh rate
+    in fullscreen modes.</li>
+</ul>
+
+<h2>Advanced DX9 Renderer Creation</h2>
+
+<p class="NDLRefMemberFunction">static NiDX9Renderer*
+Create(unsigned int uiWidth, unsigned int uiHeight, unsigned int
+uiUseFlags, NiWindowRef kWndDevice, NiWindowRef kWndFocus,
+unsigned int uiAdapter = D3DADAPTER_DEFAULT, DeviceDesc eDesc =
+DEVDESC_PURE, FrameBufferFormat eFBFormat = FBFMT_UNKNOWN,
+DepthStencilFormat eDSFormat = DSFMT_UNKNOWN,
+PresentationInterval ePresentationInterval =
+PRESENT_INTERVAL_ONE, SwapEffect eSwapEffect =
+SWAPEFFECT_DEFAULT, unsigned int uiFBMode = FBMODE_DEFAULT,
+unsigned int uiBackBufferCount = 1, unsigned int uiRefreshRate =
+REFRESHRATE_DEFAULT)</p>
+
+<p>The version of the creation function above lists all of the
+defaulted arguments. The non-defaulted parameters have the same
+meaning as above in the simple creation case, but the other
+assumptions listed above may be overridden. The possible values
+for these defaulted parameters are described in the sections
+below:</p>
+
+<h3>DX9 Adapter ID</h3>
+
+<p>The adapter ID identifies which display card should be used to
+create the renderer. The vast majority of all end-user machines
+will contain a single adapter.</p>
+
+<p>The possible values are 0 through the value returned
+<span class="NDLSystemFont">IDirect3D9::GetAdapterCount</span>.
+The value <span class="NDLSystemFont">D3DADAPTER_DEFAULT</span>,
+which equals 0 and is the default value, is always the primary
+adapter.</p>
+
+<h3>DX9 Device Descriptor</h3>
+
+<p>Specifies the exact type of rendering device that the
+application wishes to use. If the desired device cannot be found,
+the next (less powerful) type of device will be tried until an
+available device is found. Unless specified as the desired
+device, the renderer will never automatically fall back to the
+reference device.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">DEVDESC_PURE</span>:
+    Specifies a hardware device capable of hardware vertex
+    processing, vertex and pixel shading, and generally high
+    performance. A very powerful device.</li>
+
+    <li><span class="NDLSystemFont">DEVDESC_HAL_HWVERTEX</span>:
+    A device that can process vertices entirely in hardware (may
+    or may not include HW skinning).</li>
+
+    <li><span class=
+    "NDLSystemFont">DEVDESC_HAL_MIXEDVERTEX</span>: A device that
+    can process vertices in hardware or software.</li>
+
+    <li><span class="NDLSystemFont">DEVDESC_HAL_SWVERTEX</span>:
+    A device that can process vertices in software only, but
+    still rasterizes in hardware.</li>
+
+    <li><span class="NDLSystemFont">DEVDESC_REF</span>: A
+    low-performance, high-quality render that works entirely in
+    software. Used as a reference to check display hardware
+    against expected behavior. This device tends to render at
+    framerates under 1fps, and is used for reference only.</li>
+
+    <li><span class="NDLSystemFont">DEVDESC_REF_HWVERTEX</span>:
+    In order to use nVidia's NvPerfHUD utility, the D3D device
+    needs to be created with a special REF device. This option
+    allows the application to request this REF device (which is
+    not actually a REF device) and still benefit from hardware
+    vertex processing.</li>
+
+    <li><span class=
+    "NDLSystemFont">DEVDESC_REF_MIXEDVERTEX</span>: In order to
+    use nVidia's NvPerfHUD utility, the D3D device needs to be
+    created with a special REF device. This option allows the
+    application to request this REF device (which is not actually
+    a REF device) and still benefit from selectable hardware and
+    software vertex processing.</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">DEVDESC_PURE</span>.</p>
+
+<h3>DX9 Frame Buffer Format</h3>
+
+<p>This parameter allows the application to specify an exact
+framebuffer format note that the given format must either be
+checked (by the application) to ensure that it matches a device
+format, or must be <span class=
+"NDLSystemFont">FBFMT_UNKNOWN</span>, which indicates to the
+renderer that it should determine the best available format.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">FBFMT_UNKNOWN</span>:
+    Specifies that the renderer should determine the framebuffer
+    format internally</li>
+
+    <li><span class="NDLSystemFont">FBFMT_R8G8B8</span>: A 24-bit
+    RGB format</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A8R8G8B8</span>: A
+    32-bit RGB format with 8 bits of destination alpha</li>
+
+    <li><span class="NDLSystemFont">FBFMT_X8R8G8B8</span>: A
+    32-bit RGB format</li>
+
+    <li><span class="NDLSystemFont">FBFMT_R5G6B5</span>: A 16-bit
+    RGB format with an unequal number of bits per component</li>
+
+    <li><span class="NDLSystemFont">FBFMT_X1R5G5B5</span>: A
+    16-bit RGB format with an equal number of bits per
+    component</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A1R5G5B5</span>: A
+    16-bit RGB format with 1 bit of destination alpha</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A4R4G4B4</span>: A
+    16-bit RGB format with 4 bits of destination alpha</li>
+
+    <li><span class="NDLSystemFont">FBFMT_R3G3B2</span>: An 8-bit
+    RGB format (not supported by 3D rendering hardware)</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A8</span>: An 8-bit
+    alpha-only format</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A8R3G3B2</span>: A
+    16-bit RGB format with 8 bits of destination alpha</li>
+
+    <li><span class="NDLSystemFont">FBFMT_X4R4G4B4</span>: A
+    16-bit RGB format</li>
+
+    <li><span class="NDLSystemFont">FBFMT_R16F</span>: A
+    one-channel 16-bit floating point format.</li>
+
+    <li><span class="NDLSystemFont">FBFMT_G16R16F</span>: A
+    two-channel 16-bit floating point format.</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A16B16G16R16F</span>: A
+    four-channel 16-bit floating point format.</li>
+
+    <li><span class="NDLSystemFont">FBFMT_R32F</span>: A
+    one-channel 32-bit floating point format.</li>
+
+    <li><span class="NDLSystemFont">FBFMT_G32R32F</span>: A
+    two-channel 32-bit floating point format.</li>
+
+    <li><span class="NDLSystemFont">FBFMT_A32B32G32R32F</span>: A
+    four-channel 32-bit floating point format.</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">FBFMT_UNKNOWN</span>.</p>
+
+<h3>DX9 Depth Stencil Buffer Format</h3>
+
+<p>This parameter allows the application to specify an exact
+depth/stencil format note that the given format must either be
+checked (by the application) to ensure that it matches a device
+format, or must be <span class=
+"NDLSystemFont">DSFMT_UNKNOWN</span>, which indicates to the
+renderer that it should determine the best available format.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">DSFMT_UNKNOWN</span>:
+    Specifies that the renderer should determine the
+    depth/stencil format internally</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D16_LOCKABLE</span>:
+    Specifies a 16-bit depth-only format that can be locked and
+    read by the application</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D32</span>: Specifies a
+    32-bit depth-only format</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D15S1</span>: Specifies
+    a 16-bit depth format with 1 bit of stencil buffer</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D24S8</span>: Specifies
+    a 32-bit depth format with 8 bits of stencil buffer</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D16</span>: Specifies a
+    16-bit depth-only format</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D24X8</span>: Specifies
+    a 24-bit depth-only format</li>
+
+    <li><span class="NDLSystemFont">DSFMT_D24X4S4</span>:
+    Specifies a 32-bit depth format with 4 bits of stencil
+    buffer</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">DSFMT_UNKNOWN</span>.</p>
+
+<h3>DX9 Presentation Interval</h3>
+
+<p>The presentation interval allows applications to "skip"
+monitor refresh intervals, to allow an application that cannot
+hold its frame rate to the refresh at all times to trade peak
+frame rate for smoothness. Not all devices can support all
+intervals. If an unsupported non-default interval is specified,
+the renderer will fall back to <span class=
+"NDLSystemFont">PRESENT_INTERVAL_ONE</span>.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont">PRESENT_INTERVAL_IMMEDIATE</span>: Do not
+    wait for vertical retrace when swapping buffers this will
+    allow for theoretically unbounded framerates, but can lead to
+    visual "tearing" in the rendered image.</li>
+
+    <li><span class="NDLSystemFont">PRESENT_INTERVAL_ONE</span>:
+    Swap only once per monitor refresh cycle (vertical
+    retrace)</li>
+
+    <li><span class="NDLSystemFont">PRESENT_INTERVAL_TWO</span>:
+    Swap only on even monitor refresh cycles</li>
+
+    <li><span class=
+    "NDLSystemFont">PRESENT_INTERVAL_THREE</span>: Swap only once
+    per three monitor refresh cycles</li>
+
+    <li><span class="NDLSystemFont">PRESENT_INTERVAL_FOUR</span>:
+    Swap only once per four monitor refresh cycles</li>
+</ul>
+
+<p>The default value for the renderer is <span class=
+"NDLSystemFont">PRESENT_INTERVAL_ONE</span>, although the
+<span class="NDLSystemFont">NiApplication</span> library uses the
+value <span class=
+"NDLSystemFont">PRESENT_INTERVAL_IMMEDIATE</span>.</p>
+
+<h3>DX9 Swap Effect</h3>
+
+<p>These values allow very advanced applications to control how
+the application presents the rendered backbuffer to the user. If
+an invalid mode is specified, then the renderer will fall back to
+<span class="NDLSystemFont">SWAPEFFECT_DEFAULT</span>.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">SWAPEFFECT_DEFAULT</span>:
+    Uses the most appropriate mode for most cases.</li>
+
+    <li><span class="NDLSystemFont">SWAPEFFECT_DISCARD</span>:
+    Uses the fastest and most appropriate swapping method
+    possible and assumes that the backbuffer will be garbage
+    after the operation. This mode is the only valid mode (other
+    than <span class="NDLSystemFont">SWAPEFFECT_DEFAULT</span>)
+    when using multisampled antialiasing.</li>
+
+    <li><span class="NDLSystemFont">SWAPEFFECT_FLIP</span>: Flips
+    between two or more fullscreen buffers</li>
+
+    <li><span class="NDLSystemFont">SWAPEFFECT_COPY</span>:
+    Copies the backbuffer to the frontbuffer immediately</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">SWAPEFFECT_DEFAULT</span>.</p>
+
+<h3>DX9 Framebuffer Mode</h3>
+
+<p>The framebuffer mode allows the application to specify any
+desired special behavior for the framebuffer, including an
+application-readable framebuffer, or automatic full-scene
+antialiasing. If an invalid mode is specified, the renderer will
+fall back to <span class=
+"NDLSystemFont">FBMODE_DEFAULT</span>.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">FBMODE_DEFAULT</span>:
+    Specifies a non-lockable, single sample per pixel
+    framebuffer</li>
+
+    <li><span class="NDLSystemFont">FBMODE_LOCKABLE</span>:
+    Specifies a backbuffer that can be locked and read by the
+    application. A lockable backbuffer can lower performance of
+    the app, even if the buffer is never actually locked.</li>
+
+    <li><span class="NDLSystemFont">FBMODE_MULTISAMPLES_2</span>
+    - <span class="NDLSystemFont">16</span>: These modes specify
+    a backbuffer that is capable of antialiasing by rendering the
+    given number of samples per pixel. This is all that an
+    application needs to do to enable full-scene antialiasing the
+    renderer will automatically enable the required renderstates
+    if the framebuffer is a valid multisampling mode. These
+    enumerations can be OR-ed with a 2-byte value that describes
+    the desired quality level to use with this multisample
+    count.</li>
+
+    <li><span class=
+    "NDLSystemFont">FBMODE_MULTISAMPLES_NONMASKABLE</span>:
+    Specifies a backbuffer that is capable of antialiasing using
+    nonmaskable multisampling. This is a simpler multisampling
+    scheme that may be supported on hardware for which other
+    forms are not supported. Nonmaskable multisampling exposes a
+    number of different quality levels. This enumeration can be
+    OR-ed with a 2-byte value that describes the desired quality
+    level to use with nonmaskable multisampling.</li>
+
+    <li><span class="NDLSystemFont">FB_MODE_QUALITY_MASK</span>:
+    The mask that is used to extract the multisample quality
+    level from this parameter, when <span class=
+    "NDLSystemFont">FB_MODE_MULTISAMPLES_*</span> is used.</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">FBMODE_DEFAULT</span>.</p>
+
+<h3>DX9 Back Buffer Count</h3>
+
+<p>Specifies the desired number of rendering backbuffers. Adding
+more backbuffers on supported hardware can lead to higher
+framerates, but will increase rendering latency. If an
+unsupported number of backbuffers is specified, the renderer will
+fall back to a single backbuffer. Note that each additional
+backbuffer will require additional VRAM.</p>
+
+<p>The possible values are 1, 2 or 3. The default value is 1.</p>
+
+<h3>DX9 Monitor Refresh Rate</h3>
+
+<p>Allows fullscreen renderers to specify the exact refresh rate
+to be used by the hardware. The value is specified in cycles per
+second, along with two possible mnemonic values described below.
+If an unsupported refresh rate is specified, then the renderer
+will fall back to <span class=
+"NDLSystemFont">REFRESHRATE_DEFAULT</span>.</p>
+
+<p>The possible values are:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">REFRESHRATE_DEFAULT</span>:
+    Uses the adapter default refresh rate for the given screen
+    mode</li>
+
+    <li><span class="NDLSystemFont">REFRESHRATE_UNLIMITED</span>:
+    Refreshes at the rate that the hardware can render the
+    frame.</li>
+
+    <li>Any positive integer supported by the device and mode,
+    representing the refresh rate in frames per second</li>
+</ul>
+
+<p>The default value is <span class=
+"NDLSystemFont">REFRESHRATE_DEFAULT</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

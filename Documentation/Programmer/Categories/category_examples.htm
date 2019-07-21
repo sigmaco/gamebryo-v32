@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Category usage examples</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Category usage examples</h1>
+
+<p>Categories are a powerful and flexible mechanism that you can use to manage which 
+    targets (system services, entities or other objects) receive specific messages. 
+    You can use them to group entity state updates by any number of criteria. And you can
+use them to invoke a Behavior on multiple Entities with a single
+request. Category usage examples include the following:</p>
+
+<ul>
+    <li><b>Category per cell in a fixed Grid</b>: Create a
+    category for each cell in a virtual world (for example, 100m
+    on a side). Entities subscribe to the new cell Category and
+    unsubscribe from the old one as they cross a boundary.<ul>
+            <li>Computation: cellNum(Pos) = trunc(Pos.x/cellSize) + trunc(Pos.y/cellSize) * 
+                maxColumns. </li>
+            <li>Producer: send messages and entity state updates to category 
+                cellNum(producerPos). Periodically recompute the category as the producer moves.</li>
+            <li>Consumer: subscribe to receive from categories in the ranges trunc(x - 
+                radius/2):trunc(x+radius/2) + trunc(y - radius/2)*maxColumns:trunc(y + 
+                radius/2)*maxColumns. In a doubly nested loop, this would be a square region. A 
+                more sophisticated but similar computation would be needed for a circular region 
+                or 3d regions. Periodically recompute the categories as the consumer moves. 
+                Increase the radius used in this calculation to take into account how much 
+                producers and consumers can move between the periodic recomputations. Using a 
+                cellSize and radius of the same value is a good rule of thumb resulting in about 
+                4 cells in a consumer&#39;s subscription set.</li>
+        </ul>
+    </li>
+
+    <li><b>Category per cell in a dynamic Grid</b>: Start with
+    the grid from the previous example. As the density of
+    entities increases, subdivide the cell, construct a new
+    category and assign it to the new cell. When adjacent cells
+    fall below some predetermined density, merge them and destroy
+    one of the categories. You will have to manually transmit
+    split and merge changes to the producers and consumers in the
+    cell prior to performing the split/merge. This is a simple
+    but effective technique for load-balancing your world and can
+    be extended to an arbitrary level of sophistication if
+    needed.<ul>
+            <li>Computation: use a quad tree to store the geometry of each cell and a unique 
+                integer to represent the cell number (e.g. a GUID). As each split or merge 
+                occurs, incrementally update the quad tree. It is probably not worth the effort 
+                to reuse cell numbers of deleted cells.</li>
+            <li>Producer: from the producer&#39;s position query the quad tree for the cell and 
+                associated cell number. Send update messages to that cell number.</li>
+            <li>Consumer: from the consumer&#39;s position and radius of interest, query the quad 
+                tree for the overlapping cells and associated cell numbers. Consume categories 
+                with values equal to those grid cell numbers.</li>
+        </ul>
+    </li>
+
+    <li><b>Communications frequency layers</b>: One category for
+    each of N entity state update frequencies. A consumer can
+    subscribe to low frequency categories and can see
+    highly-latent data, but from much farther away. Lower
+    frequency categories can be associated with much larger
+    cells. The higher the rate at which a Category is sent, the
+    more overhead will be generated, so a client would subscribe
+    to fewer high data rate Categories corresponding to nearby
+    producers.<ul>
+            <li>Computation: use the grid cell computation described above, but using three 
+                radius values, small, medium and large. For example, 20m, 200m, 2000m.</li>
+            <li>Producer: produce data into three categories. Using a regular update rate, a 
+                medium update rate and a slow update rate. For example, 1/2 second, 5 second, 60 
+                second updates. Recompute production category at about the same rate.</li>
+            <li>Consumer: subscribe to three sets of categories using the corresponding grid 
+                cell computation, and a small, medium and large radius (for example, 20m, 200m, 
+                2000m). Recompute consumption at about the same rate as the producer, and widen 
+                radius of interest according to that lower recomputation rate. Note that there 
+                will only be about 3 x 4 categories subscribed by each consumer, but all 
+                entities out to 2km will be visible. Also note that the reduction in update rate 
+                and low average density over a large area, you should expect to see a 
+                surprisingly small number of updates arriving. Due to the long distances 
+                associated with slower updates, you should also expect to see little angular 
+                error for each entity.</li>
+        </ul>
+    </li>
+
+    <li><b>Category layer per consumer bandwidth</b>: Make each
+    Category correspond to a common consumer bandwidth value
+    (fibre, DSL, cable, 56K modem). Have producers factor in
+    entity density when deciding what update rate per entity to
+    use for the target bandwidth layer. Higher data rate clients
+    would receive more frequent and possibly larger updates. Low
+    data rate clients would receive messages appropriate for
+    their bandwidth. A producer would not need to be aware which
+    consumers are subscribed to categories in which layers, it
+    just does the send and the consumer decides which frequency
+    of data it needs.<ul>
+            <li>Computation: Use the same category computation as the communication frequency 
+                layers entry above.</li>
+            <li>Producer: use the same production rules as above.</li>
+            <li>Consumer: based on ISP bandwidth availability or momentary bandwidth 
+                availability or congestion, switch from one &quot;frequency&quot; to another, or reduce 
+                the radius of interest when computing the consumer category set. The result will 
+                be less frequent and less accurate state updates, or updates from only nearer 
+                entities.</li>
+        </ul>
+    </li>
+
+    <li><b>Category per consumer</b>: A geometric interest
+    management module could keep individual producers up to date
+    with lists of the consumers that they must send to or
+    consider sending to. Then the producer would send to each
+    consumer in turn. While this may not appear very efficient,
+    there may be cases where a careful geometric query could
+    reduce bandwidth usage enough that the extra number of send
+    requests could be justified.<ul>
+            <li>Computation: compute a category based on the player&#39;s ID. A server side interest 
+                management module would keep track of the player-specific categories and the 
+                positions of entities. The module would send player-specific categories to 
+                producers that are near the player&#39;s location. The rate of recomputation must be 
+                factored into the nearness computation. Interest can be centrally computed 
+                relatively efficiently given certain data structures. However, it can become a 
+                compute and communication bottleneck and is a single point of failure. These 
+                consequences can be somewhat mitigated by performing a rough computation 
+                centrally and a more detailed recomputation at each producer.</li>
+            <li>Producer: send to the list of player-specific categories until further notice.</li>
+            <li>Consumer: subscribe one time only to the player-specific category it is 
+                assigned.</li>
+        </ul>
+    </li>
+
+    <li><b>Category per "layer"</b>: Partition types of data by
+    function on different "layers" where each layer is
+    represented by a Category. For example, visible, radar,
+    audible. One-on-one combat data (hit points, for example),
+    separate from "external" appearance data. Data only seen when
+    in a party (such as party-chat), guild, or raid group. Data
+    needed by AIs (for example, position and aggro-level, but
+    nothing else). Clients interested in a specific layer would
+    subscribe to the corresponding Category and receive the
+    relevant data while not receiving or processing data it could
+    not use.<ul>
+            <li>Computation: Each layer would have a different constant ID. This ID would be 
+                combined with one of the other categorization policies, likely as high order 
+                bits. Each layer could use a different policy.</li>
+            <li>Producer: each layer would correspond to a replication group to filter down to 
+                needed entity properties.</li>
+            <li>Consumer: A client or other consumer would choose the layers they need given the 
+                current mode of operation. For example, if the radar module mounted and engaged 
+                that categorization policy would be executed.</li>
+        </ul>
+    </li>
+
+    <li><b>Category per dungeon instance</b>: Each instance would
+    have a disjoint set of Categories. While geometrically at the
+    same location, you don't want data from two instances
+    mingling. This way, several sets of players could be
+    apparently in the same geometric location in the world, but
+    could receive different messages and experience the game
+    separately or with a limited number of their friends.<ul>
+            <li>Computation: each dungeon instance would be assigned a unique ID. That ID would 
+                be composed with the category that results from one of the other categorization 
+                policies, likely as high order bits.</li>
+            <li>Producer: each producer would be aware of the dungeon instance it inhabits, and 
+                would compose its ID into the categories produced to.</li>
+            <li>Consumer: each consumer would be aware of the dungeon instance it inhabits, and 
+                would compose its ID into the categories produced to. Note that &quot;teleporting&quot; 
+                between instances to join one&#39;s friends is as simple as updating the dungeon 
+                instance ID being used by the consumer.</li>
+        </ul>
+    </li>
+
+    <li><b>Category per visibility set</b>: Use graphical
+    intervisibility "sets" to curtail the expense of
+    line-of-sight checking. Each large room would get its own
+    category. While complex, this is data that could be
+    precomputed by preprocessing the environment.<ul>
+            <li>Computation: Compute Quake-like potential visibility sets (PVS), chunky BSP 
+                trees, or use rendering portal data and assign a unique ID to each volume. These 
+                geometric data structures are easy to query for a location point or effective 
+                &quot;sphere&quot; of interest.</li>
+            <li>Producer: use the ID of the volume in which the producer&#39;s center of gravity 
+                exists.</li>
+            <li>Consumer: use IDs of volumes that overlap the current location or a sphere of 
+                interest around the entity. Certain precomputations are very good at filtering 
+                out areas that are impossibly to see (for example behind portals), or those that 
+                are visible (for example through a door or window).</li>
+        </ul>
+    </li>
+
+    <li><b>Category for wide area effects</b>: Use a different
+    Category for wide-area effects (everyone is subscribed to
+    this category): nuclear explosion, gigantic dragon towering
+    over the horizon, general chat channel. Everyone in a large
+    region would subscribe to such categories which would have
+    extremely low volume, but such large scale effects are
+    important to subscribe to at a distance. The issue is more
+    about ensuring the game design has the desired effect. If too
+    much data is transmitted you might consider whether the
+    design requires too much and needs to be abstracted
+    more.<ul>
+            <li>Computation: use a single global category, or a category per major zone.</li>
+            <li>Producer: the large entity would produce to the well-known category at a rate 
+                that makes sense for the consumers. Given only a few such entities, a decent 
+                update rate should not swamp clients.</li>
+            <li>Consumer: as well as nearby entities, the consumer would subscribe to the 
+                large-entity category so it could be affected by nuclear blasts or could see 
+                large entities.</li>
+        </ul>
+    </li>
+
+    <li><b>Global Category</b>: Use a shared/global category
+    (everyone is subscribed) for "world simulation" data:
+    day/night/eclipse, earthquakes, weather changes, plague
+    breaks out, the New Year's Day event begins, server
+    maintenance will begin in 10 minutes, and so on. These
+    Categories would be low traffic, but everyone would subscribe
+    to them.<ul>
+            <li>See wide area effects above.</li>
+        </ul>
+    </li>
+
+    <li><b>Internet radio.</b> A Category can be assigned to a
+    given streaming audio feed, and used as a shorthand for
+    subscribers. In this example, there would be no requirement
+    to use the message system.<ul>
+            <li>This is really a non-use of categories, but instead a publication of an entity 
+                property describing the audio feed. The categorization and publication of that 
+                &quot;ambient audio entity&quot; would use one of the other&nbsp; policies.</li>
+        </ul>
+    </li>
+
+    <li><b>Chat channel</b>. A Category can be assigned to a chat
+    channel for a party, clan or area in-game. The chat could be
+    routed through the message system using the category
+    explicitly, or the category could be used as an ID that
+    corresponds to a third party notion of a chat channel.<ul>
+            <li>Computation: use the clan ID, or compute a unique ID for each party.</li>
+            <li>Producer: if routed through the server, when a player sends a chat message on a 
+                given chat channel, the message would be sent to the computed category. This 
+                would allow the messages to be sent between players using the shortest route.</li>
+            <li>Consumer: a client would subscribe to the categories for each chat channel they 
+                have not blocked.</li>
+        </ul>
+    </li>
+
+    <li><b>A group of one.</b> It is quite common to create and
+    use a Category that is private and listened to only by a
+    single object. This approach reuses the powerful many to many
+    mechanism to realize point to point or multipoint to point communication.<ul>
+            <li>Computation: allocate a GUID for each consumer. Distribute those GUIDs using 
+                something similar to a name resolution service.</li>
+        </ul>
+    </li>
+
+    <li><b>IR Sensor.</b> Using model mix-in, an entity that
+    mixes in an IR producer (like an engine) could automatically
+    publish positions into the IR Categories. A missile could mix
+    in an IR sensor that subscribes to the IR categories. In this
+    way the missile only receives position updates for entities
+    that it can sense. If the missile is later edited to mix in
+    radio emissions, it would automatically also pick up entities
+    that transmit that.<ul>
+            <li>Computation: use one of the other categorization policies, probably based on 
+                position. Allocate a new layer specifically for infrared emmisions.</li>
+            <li>Producer: the IR emitter model is mixed into any heat producing entity, and 
+                computes the IR layer category given the position of the current entity.</li>
+            <li>Consumer: the IR sensor model is mixed into any heat detecting entity, and 
+                computes the set of IR layer categories given the sensor radius and current 
+                position.</li>
+        </ul>
+    </li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="category_overview.htm">Categories
+    overview</a></li>
+
+    <li><a href="category_how_work.htm">How categories
+    work</a></li><!-- <li><a href="category_how_relates_efr.htm">How categories relate to the Emergent Game Framework</a></li> -->
+
+    <li><a href="category_best_practice.htm">Best practices for
+    working with categories</a></li>
+
+    <li><a href="category_performance.htm">Tuning category
+    performance</a></li>
+
+    <li><a href="category_creating.htm">Creating
+    categories</a></li>
+
+    <li><a href=
+    "../../Reference/efd/efd__Category.htm">efd::Category</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

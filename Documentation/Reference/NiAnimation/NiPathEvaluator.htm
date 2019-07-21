@@ -1,0 +1,434 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPathEvaluator</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiPathEvaluator</p>
+
+<p class="NDLRefParentage">: public <a HREF="NiKeyBasedEvaluator.htm">NiKeyBasedEvaluator</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiPathEvaluator.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>An <span class="NDLSystemFont">NiPathEvaluator</span> 
+ may be used to make an object follow a predefined spline path. The path 
+ evaluator is distinct from an <span class="NDLSystemFont"><a 
+ HREF="NiTransformEvaluator.htm">NiTransformEvaluator</a></span> with a 
+ set of position keys because the path evaluator can extract additional 
+ information from the curve allowing it to provide &quot;following&quot; 
+ and &quot;banking&quot; functionality. Following makes the major axis 
+ of the controlled object always parallel the current path tangent. Banking 
+ rolls the controlled object about its major axis, relative to curvature 
+ of the path. &quot;Banking&quot; is only possible if the evaluator is 
+ also set to use &quot;following&quot;.</p>
+
+<p><span class="NDLSystemFont">NiPathEvaluator</span> 
+ has many options to augment this basic behavior. The direction and amount 
+ of roll about the curve (bank direction) can be specified via the <span 
+ class="NDLSystemFont">SetBankDir</span> and <span class="NDLSystemFont">SetMaxBankAngle</span> functions. 
+ <span class="NDLSystemFont">SetAllowFlip</span> can 
+ be used to change whether or not the evaluator can &quot;flip&quot; as 
+ it moves across control points. Finally, <span class="NDLSystemFont">SetConstVelocity</span> can be used to reparameterize the path curve by arc length rather 
+ than by time.</p>
+
+<p>A path evaluator requires two distinct sets of keys 
+ to control its animation. One set, referred to as the percentage keys, 
+ is used to parameterize distance along the spline path. These keys provide 
+ a correlation between time and percentage about the curve and can be any 
+ of the <span class="NDLSystemFont"><a HREF="NiFloatKey.htm">NiFloatKey</a></span>-derived 
+ animation keys. The second set of keys defines the spline that makes up 
+ the path for the evaluator and can be any of the <span class="NDLSystemFont"><a 
+ HREF="NiPosKey.htm">NiPosKey</a></span>-derived animation keys. 
+ The time for a path key represents a ratio of where the control point 
+ is on the spline; thus, this set of keys must start at 0.0 and end at 
+ 1.0. In combination, these two sets of keys support all the path evaluator's 
+ functionality. The path evaluator uses the input time to interpolate a 
+ percentage value from the percentage keys. It then uses this percentage 
+ to determine a position along the spline defined by the path keys.</p>
+
+<p>Evaluators are primarily intended for sequence-based 
+ animation. Refer to the <a href="Animation_Sequences.htm">Animation 
+ Sequences</a> section in the Introduction to Animation for more details.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiPathEvaluator()</p>
+
+<p class="NDLRefMemberDescription">This constructor creates an <span class="NDLSystemFont">NiPathEvaluator</span> 
+ containing an invalid path.</p>
+
+<p class="NDLRefMemberFunction">NiPathEvaluator(<a HREF="NiPosData.htm">NiPosData</a>* 
+ pkPathData, <a HREF="NiFloatData.htm">NiFloatData</a>* pkPctData)</p>
+
+<p class="NDLRefMemberDescription">The constructor creates a new <span class="NDLSystemFont">NiPathEvaluator</span> using 
+ the path and percent key data.</p>
+
+<p class="NDLRefHead1">Virtual Function Overrides</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned short GetKeyChannelCount() 
+ const</p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyChannelCount">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned int GetKeyCount(unsigned 
+ short usChannel) const</p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyCount">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href="NiAnimationKey.htm#KeyType_Enumerations">NiAnimationKey::KeyType</a> 
+ GetKeyType(unsigned short usChannel) const</p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyType">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual <a href="NiAnimationKey.htm#KeyContent_Enumerations">NiAnimationKey::KeyContent</a> 
+ GetKeyContent(unsigned short usChannel) <span style="margin-left: 0px;">const</span></p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyContent">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual <span class="NDLSystemFont"><a href="NiAnimationKey.htm">NiAnimationKey</a></span>* 
+ GetKeyArray(unsigned short usChannel) const</p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyArray">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefMemberFunction">virtual unsigned char GetKeyStride(unsigned 
+ short usChannel) const</p>
+
+<p class="NDLRefMemberDescription">Overridden from <span class="NDLSystemFont"><a 
+ HREF="NiKeyBasedEvaluator.htm#GetKeyStride">NiKeyBasedEvaluator</a></span>. 
+ <span class="NDLSystemFont">NiPathEvaluator</span> supports two key channels: 
+ <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PATH</a></span> 
+ and <span class="NDLSystemFont"><a href="NiPathEvaluator.htm#KeyChannel">PERCENTAGE</a></span>.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiPosData.htm">NiPosData</a>* GetPathData() 
+ const</p>
+
+<p class="NDLRefMemberFunction">void SetPathData(<a HREF="NiPosData.htm">NiPosData</a>*&nbsp;pkPathData)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the shared 
+ key data for the spline path.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiFloatData.htm">NiFloatData</a>* 
+ GetPctData() const</p>
+
+<p class="NDLRefMemberFunction">void SetPctData(<a HREF="NiFloatData.htm">NiFloatData</a>*&nbsp;pkPctData)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the shared 
+ percentage key data.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiPosKey.htm">NiPosKey</a>* GetPathKeys(unsigned 
+ int&amp; uiNumKeys, <a HREF="NiAnimationKey.htm#KeyType_Enumerations">NiPosKey::KeyType</a>&amp; 
+ eType, unsigned char&amp; ucSize) const</p>
+
+<p class="NDLRefMemberFunction">void ReplacePathKeys(<a HREF="NiPosKey.htm">NiPosKey</a>* 
+ pkPathKeys, unsigned int uiNumKeys, <a HREF="NiAnimationKey.htm#KeyType_Enumerations">NiPosKey::KeyType</a> 
+ ePathType)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the raw spline 
+ path keys. Note that <span class="NDLSystemFont">ReplacePathKeys</span> 
+ does not copy the keys&mdash;it uses them directly and deletes any existing 
+ keys. The time for a given path keyframe, <span class="NDLSystemFont">n</span>, 
+ should be <span class="NDLSystemFont">n/(uiNumKeys - 1)</span>. 
+ This convention is used to allow a mapping from the percent keys to the 
+ path keys.</p>
+
+<p class="NDLRefMemberFunction"><a HREF="NiFloatKey.htm">NiFloatKey</a>* 
+ GetPctKeys(unsigned int&amp; uiNumKeys, <a HREF="NiAnimationKey.htm#KeyType_Enumerations">NiFloatKey::KeyType</a>&amp; 
+ eType, unsigned char&amp; ucSize) const</p>
+
+<p class="NDLRefMemberFunction">void ReplacePctKeys(<a HREF="NiFloatKey.htm">NiFloatKey</a>* 
+ pkPctKeys, unsigned int uiNumKeys, <a HREF="NiAnimationKey.htm#KeyType_Enumerations">NiFloatKey::KeyType</a> 
+ eType)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the raw percent 
+ keys. Note that <span class="NDLSystemFont">ReplacePctKeys</span> 
+ does not copy the keys&mdash;it uses them directly and deletes any existing 
+ keys.</p>
+
+<p class="NDLRefMemberFunction">bool GetAllowFlip() const</p>
+
+<p class="NDLRefMemberFunction">void SetAllowFlip(bool bAllowFlip)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the object's 
+ <span class="NDLSystemFont">AllowFlip</span> parameter. 
+ The Boolean setting of <span class="NDLSystemFont">bAllowFlip</span> determines 
+ if the evaluator should use a constant vector (implemented using the z-axis) 
+ in calculating the evaluator's coordinate frame &quot;up&quot; vector 
+ for any point on the path. With <span class="NDLSystemFont">bAllowFlip</span> 
+ true, the evaluator does not use a constant vector and calculates the 
+ coordinate frame using only derivative information from the control points. 
+ In this case, the evaluator can &quot;flip&quot; as it crosses control 
+ points when curvature changes.</p>
+
+<p class="NDLRefMemberDescription">The flip is the result of the calculation 
+ of a Frenet coordinate reference frame for the evaluator. This coordinate 
+ frame calculation is represented at any point along the path by using 
+ the tangent vector as the coordinate frame's direction vector, the normal 
+ vector as the up vector, and the binormal vector as the frame's right 
+ vector. Changes in the derivative information as the path evaluator moves 
+ across control points, resulting from changes in curvature, cause sudden 
+ changes in the normal and binormal vectors, and therefore result in the 
+ behavior referred to as flipping. When <span class="NDLSystemFont">bAllowFlip</span> 
+ is not set, the use of the constant vector for calculating the up direction 
+ will prevent the flip from happening.</p>
+
+<p class="NDLRefMemberFunction">bool GetBank() const</p>
+
+<p class="NDLRefMemberFunction">void SetBank(bool bBank)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the evaluator's 
+ bank parameter. <span class="NDLSystemFont">Bank</span> 
+ is either on or off. With banking on, the evaluator is free to roll up 
+ to <span class="NDLSystemFont">MaxBankAngle</span> radians 
+ about its <span class="NDLSystemFont">FollowAxis</span> 
+ (the specified major axis) in the direction defined by the <span class="NDLSystemFont">BankDir</span> 
+ parameter.</p>
+
+<p class="NDLRefMemberFunction"><a href="NiPathEvaluator.htm#BankDir">BankDir</a> 
+ GetBankDir() const</p>
+
+<p class="NDLRefMemberFunction">void SetBankDir(<a href="NiPathEvaluator.htm#BankDir">BankDir</a> 
+ eDir)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the bank direction 
+ for the evaluator. They use the class-scoped enumerated type <span class="NDLSystemFont">BankDir</span>. If <span class="NDLSystemFont">BankDir</span> is <span class="NDLSystemFont">POSITIVE</span>, the evaluator will 
+ roll into the curve like an automobile banking into a tight turn; if it 
+ is <span class="NDLSystemFont">NEGATIVE</span>, it will 
+ roll the opposite direction, or out of the curve.</p>
+
+<p class="NDLRefMemberFunction">bool GetConstVelocity() const</p>
+
+<p class="NDLRefMemberFunction">void SetConstVelocity(bool bConstVelocity)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the constant 
+ velocity parameter. The <span class="NDLSystemFont">ConstVelocity</span> 
+ parameter specifies if the curve represented by the path key data should 
+ be parameterized by arc length (<span class="NDLSystemFont">ConstVelocity</span> 
+ on), or by time (<span class="NDLSystemFont">ConstVelocity</span> 
+ off&mdash;the default). When the path is parameterized by time, the value 
+ interpolated from the percentage keys is used directly with the path keys, 
+ whose indices are used as the time parameters (discussed earlier), to 
+ find a position. If the path is parameterized by arc length, the value 
+ interpolated from the percentage keys is used to find a distance along 
+ the curve that corresponds to that value.</p>
+
+<p class="NDLRefMemberDescription">Examples clarify the distinction between 
+ the two conditions. With <span class="NDLSystemFont">ConstVelocity</span> 
+ on, when a value of 75% is found from the percentage keys the path evaluator 
+ will be set a distance along the path that is 75% of its total length. 
+ With <span class="NDLSystemFont">ConstVelocity</span> off, 
+ a percentage value of 75% will place the Evaluator at a position that 
+ represents 75% of the time it takes to traverse the entire path (where 
+ the first and last keys represent 0% and 100% of the total traversal time, 
+ respectively). From this example, it is hopefully obvious why <span class="NDLSystemFont">ConstVelocity</span> 
+ is somewhat of a misnomer. Only if the percentage keys are defined with 
+ a linear time-vs.-percentage scale will <span class="NDLSystemFont">ConstVelocity</span> 
+ cause the evaluator to appear to actually move at a constant velocity.</p>
+
+<p class="NDLRefMemberFunction">bool GetFollow() const</p>
+
+<p class="NDLRefMemberFunction">void SetFollow(bool&nbsp;bFollow)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the <span 
+ class="NDLSystemFont">Follow</span> parameter. <span 
+ class="NDLSystemFont">Follow</span> determines if the 
+ major axis of the controlled object should parallel the curve's tangent.</p>
+
+<p class="NDLRefMemberFunction">float GetMaxBankAngle() const</p>
+
+<p class="NDLRefMemberFunction">void SetMaxBankAngle(float&nbsp;fAngle)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the maximum 
+ banking angle.</p>
+
+<p class="NDLRefMemberFunction">float GetSmoothing() const</p>
+
+<p class="NDLRefMemberFunction">void SetSmoothing(float&nbsp;fSmooth)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the <span 
+ class="NDLSystemFont">Smoothing</span> parameter. The 
+ <span class="NDLSystemFont">Smoothing</span> parameter 
+ is used when <span class="NDLSystemFont">AllowFlip</span> 
+ is set and the Frenet frame is computed for the evaluator's coordinate 
+ reference frame. <span class="NDLSystemFont">Smoothing</span> 
+ represents a threshold value that determines if a time value for interpolation 
+ represents a position that is close to a path control point. If the position 
+ is within the <span class="NDLSystemFont">Smoothing</span> 
+ value on either side of the control point, two normals are calculated 
+ rather than one, and their weighted combination is calculated to produce 
+ a single normal. The purpose of this is to give a result that will smooth 
+ any discontinuities in the second derivative that might cause jumping 
+ or jerking as an evaluator passes over the control point.</p>
+
+<p class="NDLRefMemberFunction">short GetFollowAxis() const</p>
+
+<p class="NDLRefMemberFunction">void SetFollowAxis(short&nbsp;sAxis)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the follow 
+ axis of the object. The value should be 0, 1, or 2 to represent the X, 
+ Y, or Z-axis, respectively.</p>
+
+<p class="NDLRefMemberFunction">bool GetFlip() const</p>
+
+<p class="NDLRefMemberFunction">void SetFlip(bool&nbsp;bFlip)</p>
+
+<p class="NDLRefMemberDescription">These functions get and set the Flip flag. 
+ Setting this flag to true will flip the follow direction of the path evaluator. 
+ This allows the -X, -Y and -Z-axes to be used for following. These methods 
+ have nothing to do with the <span class="NDLSystemFont">*AllowFlip</span> 
+ routines.</p>
+
+<p class="NDLRefMemberFunction">bool GetCurveTypeOpen() const</p>
+
+<p class="NDLRefMemberDescription">This function returns whether the curve 
+ is open or closed. The <span class="NDLSystemFont">CurveTypeOpen</span> 
+ parameter designates if the curve defined by the path keys is open or 
+ closed. It cannot be set by the application, but rather is determined 
+ automatically by the path evaluator if the first and last keys are duplicates. 
+ Knowledge of a curve being open or closed is used in the Frenet frame 
+ calculations (<span class="NDLSystemFont">AllowFlip</span> 
+ on) when the time represents a position that is within the <span class="NDLSystemFont">Smoothing</span> 
+ distance of the first or last control points. A closed curve allows coordinate 
+ frame calculations to span beginning and ending keys, while an open curve 
+ does not.</p>
+
+<p class="NDLRefMemberFunction">float GetTotalPathLength() const</p>
+
+<p class="NDLRefMemberDescription">This function calculates the total length 
+ of the path based on the path data.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name=KeyChannel></a><p class="NDLRefHead2">KeyChannel</p>
+
+<p>The <span class="NDLSystemFont">KeyChannel</span> enumeration 
+ is outlined as follows. These enumerations are useful for querying generic 
+ animation information in this class' implementation of <a href="NiKeyBasedEvaluator.htm"><span 
+ class="NDLSystemFont">NiKeyBasedEvaluator</span></a> methods.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Value</th>
+			<th>Meaning</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td><span class="NDLSystemFont">PATH</span></td>
+       	<td>This value specifies the path spline animation key channel.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">PERCENTAGE</span></td>
+       	<td>This value specifies a mapping between time and location on the spline animation key channel.</td>
+		</tr>
+	</tbody>	
+</table>
+
+<p class="NDLRefHead2">EvalChannel</p>
+
+<p>The <span class="NDLSystemFont">EvalChannel</span> enumeration 
+ is outlined as follows. These enumerations are useful for querying information 
+ about a specific animation channel in an <span class="NDLSystemFont">NiPathEvaluator</span> 
+ using methods inherited from <span class="NDLSystemFont"><a HREF="NiEvaluator.htm">NiEvaluator</a></span>.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Value</th>
+			<th>Meaning</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td><span class="NDLSystemFont">POSITION</span></td>
+       	<td>This value specifies the position animation channel.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ROTATION</span></td>
+       	<td>This value specifies the rotation animation channel.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">SCALE</span></td>
+       	<td>This value specifies the scale animation channel.</td>
+		</tr>
+	</tbody>	
+</table>
+
+<a name=BankDir></a><p class="NDLRefHead2">BankDir</p>
+
+<p>The <span class="NDLSystemFont">BankDir</span> enumeration 
+ is used to specify the direction of banking.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Enum</th>
+			<th>Value</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>						
+       	<td><span class="NDLSystemFont">NEGATIVE</span></td>
+       	<td>-1</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">POSITIVE</span></td>
+       	<td>1</td>
+		</tr>
+	</tbody>	
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

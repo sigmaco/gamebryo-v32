@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Managing loaded blocks</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Managing Loaded Blocks</h1>
+
+<h2>Managing blocks</h2>
+<p>When calling any of the block management methods mentioned below it is critical that you use the
+exact same AssetID that was used to load the block. The AssetID used can be either a query-style
+URN such as "<span class="NDLSystemFont">urn:emergent-world:block_name</span>" or a logical ID such
+as "<span class="NDLSystemFont">urn:llid:5A054244-08CD-4f6f-ABDC-26BCD9750CC0</span>" so long as
+the same AssetID was used when loading the block.</p>
+
+
+<h2>Unloading block files</h2>
+<p>To unload a block, use the <span class="NDLSystemFont">
+egf::EntityLoaderService::RequestEntitySetUnload</span> method. As with block loading, you can
+specify a callback to be invoked when the block is completely unloaded by passing a callback
+category. Keep in mind that the callbacks used when the block was originally loaded will also be
+notified of the block unload so you should only specify an unload callback when that callback is
+different than those used when loading the block.</p>
+<pre>
+egf::EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+egf::BlockIdentification worldURN("urn:emergent-world:Level8");
+
+// Note: we pass m_myCategory here so we'll be informed when the unload is finished. Here we are
+// assuming we previously subscribed to the callback category.
+pELS-&gt;RequestEntitySetUnload(worldURN, m_myCategory);
+</pre>
+
+<p>If we were managing multiple instances of the same block then the only difference would be that
+we would also specify the block instance when constructing the block identification:</p>
+<pre>
+egf::BlockIdentification worldURN("urn:emergent-world:Level8", instanceNumber);
+</pre>
+
+<p>In either case your handler should look for the <span class="NDLSystemFont">
+egf::EntityLoadResult::elr_EntityDestructionCompleted</span> result to determine when unloading of
+the block is completely finished.</p>
+<pre>
+void MyClass::HandleEntityLoadResult(
+    const egf::EntityLoadResult* pWorldMessage,
+    efd::Category targetChannel)
+{
+    if (pWorldMessage-&gt;m_result == egf::EntityLoadResult::elr_EntityDestructionCompleted)
+    {
+        // The block has completely finished unloading.
+        // Perform actions waiting on the world to unload. For example, bring up a transitional
+        // cut scene as you prepare to load your next level.
+    }
+}
+</pre>
+
+<p>Unloading a block from script supports most of the same options. The biggest difference is that
+the options are specified using a ParameterList with specifically named parameters and that only
+behavior style callbacks are supported.</p>
+<pre>
+function BehaviorToUnloadBlock(self, params)
+    -- Here we assume the calling entity has two properties called "LoadedBlockName" and
+    -- "LoadedBlockInstance" with the name and instance number of the block to unload.
+
+    local unloadParams = ParameterList.ParameterList()
+    unloadParams:PutUInt32("Instance", self.LoadedBlockInstance)
+    unloadParams:PutString("Callback", "CallbackBehaviorName")
+    unloadParams:PutUInt32("Context", 12)
+
+    BehaviorAPI.UnloadBlockFile(self.LoadedBlockName, unloadParams)
+end
+
+function CallbackBehaviorName(self, params)
+    local blockName = params:Get("BlockAsset")          -- The URN of the unloaded block
+    local blockInstance = params:Get("BlockInstance")   -- The block instance of the unloaded block
+    local result = params:Get("Result")                 -- An egf::EntityLoadResult::Result value
+    local context = params:Get("Context")               -- The 12 passed in above
+
+end
+</pre>
+
+<h2>Moving sets of entities into or out of the world</h2>
+<p>Perhaps the most important operation that can be performed on a loaded block is to move all the
+entities in the block into or out of the world. By loading a block without using the "auto-enter
+world" feature you can wait until all the entities are fully created before any of the entities
+become visible to the player. You could also remove sets of entities from the world when they are
+far from the player to reduce rendering time or simplify physics computations; if the player moves
+back towards that area these entities can be quick added back to the world while retaining all of
+thier previous state. To move an entire set of entities in or out of the world, use the <span
+class="NDLSystemFont">egf::EntityLoaderService::RequestEntitySetEnterWorld</span> and <span
+class="NDLSystemFont">egf::EntityLoaderService::RequestEntitySetExitWorld</span> methods.</p>
+<pre>
+egf::EntityLoaderService* pELS = m_pServiceManager-&gt;GetSystemServiceAs&lt;EntityLoaderService&gt;(); 
+
+egf::BlockIdentification farAwayBlock("urn:emergent-world:Level7", myInstance);
+pELS-&gt;RequestEntitySetExitWorld(farAwayBlock);
+
+egf::BlockIdentification nearByBlock("urn:emergent-world:Level9", myInstance);
+pELS-&gt;RequestEntitySetEnterWorld(nearByBlock);
+</pre>
+<p>Moving blocks in and out of the world from script is just as easy:</p>
+<pre>
+function BehaviorToToggleBlocks(self, params)
+    local myInstance = params:GetUInt32("DesiredBlockInstance")
+
+    BehaviorAPI.EntitySetExitWorld("urn:emergent-world:Level7", myInstance)
+    BehaviorAPI.EntitySetEnterWorld("urn:emergent-world:Level9", myInstance)
+end
+</pre>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="block_about.htm">About block files</a></li>
+    <li><a href="block_loading.htm">Loading Blocks</a></li>
+    <li><a href="block_options.htm">Block Loading Options</a></li>
+    <li><a href="block_unloading.htm">Managing Loaded Blocks</a></li>
+    <li><a href="block_load_sequence.htm">Block Loading Sequence</a></li>
+    <li><a href="block_best_practice.htm">Block Best Practices</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

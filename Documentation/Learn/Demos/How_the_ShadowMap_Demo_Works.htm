@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How the ShadowMap Demo Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How the ShadowMap Demo Works</h1>
+
+<p>The following sections describe how the <span class=
+"NDLSystemFont">ShadowMap</span> sample uses the <a href=
+"../../Programmer/Shadowing_System/Introduction_to_the_Shadowing_System.htm">
+shadowing system</a> to create shadow effects. The methods and
+code are detailed function-by-function in the <a href=
+"ShadowMap_Demo_Code_Overview.htm">ShadowMap Demo Code
+Overview</a>.</p>
+
+<h2>Overview</h2>
+
+<p>The sample loads Scene.NIF. This NIF file contains a ruins
+scene with a single shadow casting light. The sample next loads
+Flashlight.NIF and attaches an <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span>
+object to the flashlight's light source. The shadows for the
+scene are rendered completely by the shadowing system, requiring
+very little application code. The shadows for the two shadow
+casting lights are updated dynamically by the shadowing system.
+Each <span class="NDLSystemFont">NiShadowGenerator</span> object
+in the scene the shadowing system provides a set of <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderClick.htm">NiRenderClick</a></span>
+objects needed to render the shadow maps for the scene. These
+render click objects are then passed off to the <a href=
+"../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">
+frame render system</a> and executed. For PSSM (Parallel Split
+Shadow Mapping) usage, a <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMShadowClickGenerator.htm">NiPSSMShadowClickGenerator</a>
+object</span> is created and registered with the shadowing
+system. The NiPSSMShadowClickGenerator is activated to enable
+PSSM. A <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a>
+object is activated to disable PSSM.</span> The PSSM settings are
+manipulated thru a <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a>
+object pointer obtained from the shadowing system.</span></p>
+
+<h2>Shadow Techniques</h2>
+
+<p>Pressing the '<span class="NDLSystemFont">Change Shadow
+Technique'</span> button will change the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowTechnique.htm">NiShadowTechnique</a></span>
+used by all the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span>
+objects in the scene. Each shadow technique has unique advantages
+and disadvantages. Cycling through the shadow techniques allows
+users to quickly identify the differences between the available
+shadow techniques.</p>
+
+<h2>Shadow Map Size</h2>
+
+<p>Pressing the '<span class="NDLSystemFont">Change Shadow Map
+Size'</span> button will cycle the resolution of the shadow maps
+used by the active shadow generators between 256x256, 512x512,
+1024x1024 and 2048x2048. Switching shadow map resolution helps to
+display the advantages and disadvantages of the different shadow
+techniques.</p>
+
+<h2>Display Shadow Map</h2>
+
+<p>Pressing the 'Display <span class="NDLSystemFont">Shadow
+Map'</span> button will display the current shadow map. If PSSM
+is enabled then the atlas of the shadow map slices is displayed
+as they are arranged in memory.</p>
+
+<h2>Render Backfaces</h2>
+
+<p>By default, when renderable objects are rendered to a shadow
+map, they are rendered using the back facing triangles instead of
+the front facing triangles. If front facing triangles are used
+when rendering to a shadow map, then when the final scene is
+being rendered, and a non-shadowed geometry object is comparing
+its depth with the depth stored in the shadow map, these depth
+values should be the same. Due to precision issues, however, the
+depth values are not always the same, and incorrect shadows may
+result. This shadowing artifact is sometimes referred to as
+"shadow acne".</p>
+
+<p>Rendering with back faces helps eliminate the precision issues
+in the shadow map. Toggling the "<span class=
+"NDLSystemFont">Render Backfaces</span>" check box in the
+<span class="NDLSystemFont">ShadowMap</span> sample will show the
+difference between rendering shadow maps with back faces and
+front faces, especially for the <span class=
+"NDLSystemFont">NiStandardShadowTechnique</span> technique.
+Without rendering backfaces, the <span class=
+"NDLSystemFont">NiStandardShadowTechnique</span> technique
+exhibits many striping or "shadow acne" artifacts.</p>
+
+<h2>Render Lighting Only</h2>
+
+<p>Toggling the '<span class="NDLSystemFont">Render Lighting
+Only'</span> check box turns on a lighting only view. The
+lighting only view renders geometry only using the lights,
+shadows, normal maps, and dark maps applied to the geometry.
+Using this view makes it easier to see how the lights and shadows
+in the scene affect the final fully rendered scene.</p>
+
+<h2>Render Shadows</h2>
+
+<p>Toggling the '<span class="NDLSystemFont">Render
+Shadows'</span> check box turns on and off the shadowing in the
+scene. Using this view, makes it easier to see how shadows in the
+scene affect the final fully rendered scene.</p>
+
+<h2>VSM Blur</h2>
+
+<p>The <a href=
+"../../Reference/NiMain/NiVSMShadowTechnique.htm"><span class=
+"NDLSystemFont">NiVSMShadowTechnique</span></a> provides a
+variance shadow mapping implementation. After a shadow map is
+rendered using this technique a Gaussian blur is applied to the
+shadow map to help soften the resulting shadows. The larger the
+blur kernel the more time it takes to perform the blur but the
+softer the resulting shadows become. Adjusting the '<span class=
+"NDLSystemFont">VSM Blur</span>' slide bar adjusts the size of
+the blur kernel used when performing the Gaussian blur.</p>
+
+<h2>PSSM</h2>
+
+<p>Toggling the 'Enable PSSM' check box in the 'PSSM Options'
+pane enables PSSM (Parallel Split Shadow Mapping). PSSM uses
+multiple shadow maps generated from partitioning the scene into
+multiple volumes and rendering depth information using a light
+perspective transformation into a shadow map per volume. Gamebryo
+uses an atlas to hold the maps of the slices in a single surface.
+Objects in a given volume are then lit using depth information
+from the shadow map associated with the volume. PSSM incorporates
+three settings that are exposed in this demo as the 'Suppress
+Shimmering,' 'Scene Dependent Culling,' and 'Border Testing' check
+boxes. They are controlled using a
+pointer to a <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPSSMConfiguration.htm">NiPSSMConfiguration</a>
+object and</span> should always be used in applications that use
+PSSM.</p>
+
+<h2>Suppress Shimmering</h2>
+
+<p>Toggling the 'Suppress Shimmering' check box in the 'PSSM
+Options' pane suppresses artifacts in PSSM shadows that are
+caused by eye movement and shadow map recalculation. Unchecking
+this check box and moving thru the scene will generate a
+shimmering artifact in the shadows.</p>
+
+<h2>Scene Dependent Culling</h2>
+
+<p>Toggling the 'Scene Dependent Culling' check box in the 'PSSM
+Options' pane allows PSSM shadow click generator to perform a per-frame analysis of
+    the scene. The scene analysis allows the PSSM algorithm to tighten the view
+    frustum for each volume around just the items that will cast visible shadows.
+    While the analysis increases CPU load, it can result in higher quality shadows
+    depending on the scene.</p>
+    <h2>Border Testing</h2>
+
+<p>Toggling the 'Border Testing' check box in the 'PSSM Options'
+pane enables testing of the sample address before sampling a
+shadow map to prevent out of bound references in the atlas. Since
+the maps are all stored in a single atlas it is important to
+correctly detect references that could incorrectly increment thru
+a border into another map in the atlas. </p>
+
+<h2>PSSM Slice Count</h2>
+
+<p>The 'PSSM Slice Count' slider in the 'PSSM Options' pane sets
+the number of volume slices used in the PSSM shadowing. Depending
+on shadow technique, shadow map size, scene complexity and other
+parameters the optimal number of slices can vary.</p>
+
+<h2> Slice Spacing</h2>
+
+<p>The 'Slice Spacing' slider in the 'PSSM Options' pane
+interpolates the spacing of the PSSM slices in the scene between
+an linear and logarithmic progression.  This option provides one
+way to vary the spacing between slices in this scene. In derived
+game engines it may be optimal to provide custom series of
+spacings on a per scene basis.</p>
+
+<h2>Slice Transitions</h2>
+
+<p>Toggling the 'Slice Transitions' check box in the 'PSSM
+Options' pane enables the use of noise to smooth the transition
+artifacts of shadowing when moving from one slice to another. The
+'Transition Granularity' and 'Transition Length' sliders control
+the input parameters for this smoothing algorithm. This option
+has no effect when PSSM is not enabled. </p>
+
+<h2>Transition Granularity</h2>
+
+<p>The 'Transition Granularity' slider in the 'PSSM Options' pane
+controls the granularity of noise used to smooth the slice
+transitions.</p>
+
+<h2>Transition Length</h2>
+
+<p>The 'Transition Length' slider in the 'PSSM Options' pane
+controls the size of the slice boundary zone used to smooth slice
+transitions.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

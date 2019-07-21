@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin
+  xmlns="http://www.emergent.net/schemas/plugin-base-schema.xsd"  
+  name="Script Debugger UI" 
+  id="Emergent.Toolbench.ScriptDebugger.UI"
+  version="1.1.0.0"
+  provider="Emergent Game Technologies"
+  class="Emergent.Toolbench.ScriptDebugger.UI.Plugin">
+
+  <!--Settings-->
+  <!-- ======================================================================================== -->
+  <extension point="Emergent.Toolbench.Settings.SettingsSet">
+    <settings>
+      <setting scope="PerUserPerContent"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               id="Emergent.Toolbench.ScriptDebugger.UI.UserBreakpoints"
+               path="Script Debugger"
+               property-type="String"
+               visible="false">
+        <value></value>
+        <display-name>User Breakpoints</display-name>
+        <description>Script Debugger user breakpoints.</description>
+      </setting>
+      <setting scope="PerUserPerContent"
+               content-type="Emergent.Toolbench.GameSolution.GameSolutionDocument"
+               id="Emergent.Toolbench.ScriptDebugger.UI.UserWatches"
+               path="Script Debugger"
+               property-type="String"
+               visible="false">
+        <value></value>
+        <display-name>User Watches</display-name>
+        <description>Script Debugger user watch statements.</description>
+      </setting>
+      <setting scope="PerUser"
+               id="Emergent.Toolbench.ScriptDebugger.UI.AutoDebugOnConnect"
+               path="Script Debugger"
+               property-type="Boolean"
+               visible="true">
+        <value>false</value>
+        <display-name>Auto Debug on Game Connect</display-name>
+        <description>Starts debugging automatically whenever a game connects in Toolbench.</description>
+      </setting>
+      <setting scope="PerUser"
+            id="Emergent.Toolbench.ScriptDebugger.UI.VariableHexadecimalDisplay"
+            path="Script Debugger"
+            property-type="Boolean"
+            visible="false">
+        <value>false</value>
+        <display-name>Variable Hexadecimal Display</display-name>
+        <description>Toggles the hexadecimal display of local and watch values in the Script Debugger.</description>
+      </setting>
+    </settings>
+  </extension>
+
+  <!-- Implements BreakpointView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.BreakpointViewHost"
+          name="Breakpoints"
+          class="Emergent.Toolbench.ScriptDebugger.UI.BreakpointViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\breakpoints.png"/>
+  </extension>
+
+  <!-- Implements CallStackView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.CallStackViewHost"
+          name="Call Stack"
+          class="Emergent.Toolbench.ScriptDebugger.UI.CallStackViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\call_stack.png"/>
+  </extension>
+
+  <!-- Implements ImmediateView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.ImmediateViewHost"
+          name="Immediate"
+          class="Emergent.Toolbench.ScriptDebugger.UI.ImmediateViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\immediate.png"/>
+  </extension>
+
+  <!-- Implements LocalsView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.LocalsViewHost"
+          name="Locals"
+          class="Emergent.Toolbench.ScriptDebugger.UI.LocalsViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\locals.png"/>
+  </extension>
+
+  <!-- Implements EntityView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.EntityViewHost"
+          name="Auto Entity"
+          class="Emergent.Toolbench.ScriptDebugger.UI.EntityViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\entityProperties.png"/>
+  </extension>
+
+  <!-- Implements WatchEntityView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.WatchEntityViewHost"
+          name="Watch Entity"
+          class="Emergent.Toolbench.ScriptDebugger.UI.WatchEntityViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\watchEntityProperties.png"/>
+  </extension>
+
+  <!-- Implements WatchesView view -->
+  <extension point="Emergent.Toolbench.Workbench.View">
+    <view id="Emergent.Toolbench.ScriptDebugger.UI.WatchesViewHost"
+          name="Watches"
+          class="Emergent.Toolbench.ScriptDebugger.UI.WatchesViewHost"
+          default-dock="DockBottom"
+          default-visible="true"
+          icon="Images\watches.png"/>
+  </extension>
+
+  <!-- Map debugging views to the ScriptDebugging state of CodeEditor -->
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.CodeEditor.Perspective">
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.BreakpointViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.CallStackViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.ImmediateViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.LocalsViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.EntityViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.WatchEntityViewHost" states="ScriptDebugging"/>
+      <view id="Emergent.Toolbench.ScriptDebugger.UI.WatchesViewHost" states="ScriptDebugging"/>
+    </mapping>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Workbench.ActionSet">
+
+    <!-- Global Actions - Always available -->
+    <actionset label="Script Debugger Offline Actions - Global"
+               visible="true"
+               id="Emergent.Toolbench.ScriptDebugger.UI.GlobalOfflineActionSet">
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.ToggleScriptDebugging"
+                action="Emergent.Toolbench.ScriptDebugger.UI.ToggleScriptDebugging"
+                path="Debug"
+                priority="25" />
+      <action label="Toggle Script &amp;Debugging"
+              tooltip="Starts or stops a remote script debugging session"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.ToggleScriptDebuggingAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.ToggleScriptDebugging"
+              shortcut="Control, D"/>
+    </actionset>
+
+    <!-- Global Actions - Available only when debugging is on -->
+    <actionset label="Script Debugger Online Actions - Global"
+               visible="true"
+               id="Emergent.Toolbench.ScriptDebugger.UI.GlobalOnlineActionSet">
+
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.Pause"
+                action="Emergent.Toolbench.ScriptDebugger.UI.Pause"
+                path="Debug"
+                priority="520" />
+
+      <action label="&amp;Break"
+              tooltip="Freezes script execution at the next instruction"
+              small-icon="Images/pause.png"
+              large-icon="Images/pause_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.PauseAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.Pause"
+              shortcut="Control, Alt, Cancel">
+      </action>
+    </actionset>
+
+
+    <!-- Script Editor Actions - Always available when a script is the active document -->
+    <actionset label="Script Debugger Offline Actions - Script Editor Perspective"
+               visible="true"
+               id="Emergent.Toolbench.ScriptDebugger.UI.OfflineActionSet">
+
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.BuiltinOverviewDoc"
+                action="Emergent.Toolbench.ScriptDebugger.UI.BuiltinOverviewDoc"
+                path="Debug"
+                priority="200" />
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.ToggleBreakpoint"
+                action="Emergent.Toolbench.ScriptDebugger.UI.ToggleBreakpoint"
+                path="Debug"
+                priority="300" />
+
+      <action label="Built-in &amp;API Reference"
+              tooltip="Opens reference documentation for the built-in API"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.BuiltinOverviewDocAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.BuiltinOverviewDoc"/>
+      <action label="Toggle Break&amp;point"
+              tooltip="Toggles a breakpoint at the current line"
+              small-icon="Images/toggle_breakpoint.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.ToggleBreakpointAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.ToggleBreakpoint"
+              shortcut="F9"/>
+
+    </actionset>
+
+    <!-- Script Editor Actions - Available only when debugging is on -->
+    <actionset label="Script Debugger Online Actions - Script Editor Perspective"
+               visible="true"
+               id="Emergent.Toolbench.ScriptDebugger.UI.OnlineActionSet">
+
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.Continue"
+                action="Emergent.Toolbench.ScriptDebugger.UI.Continue"
+                path="Debug"
+                priority="510" />
+
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.StepInto"
+                action="Emergent.Toolbench.ScriptDebugger.UI.StepInto"
+                path="Debug"
+                priority="530" />
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.StepOver"
+                action="Emergent.Toolbench.ScriptDebugger.UI.StepOver"
+                path="Debug"
+                priority="540" />
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.StepOut"
+                action="Emergent.Toolbench.ScriptDebugger.UI.StepOut"
+                path="Debug"
+                priority="550" />
+      <menuitem id="Emergent.Toolbench.ScriptDebugger.UI.RunToCursor"
+                action="Emergent.Toolbench.ScriptDebugger.UI.RunToCursor"
+                path="Debug"
+                priority="560" />
+
+      <toolbar id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar"
+               visible="true"
+               name="Debug"/>
+
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.ToggleBreakpoint"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.ToggleBreakpoint"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.Continue"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.Continue"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.Pause"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.Pause"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.StepInto"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.StepInto"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.StepOver"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.StepOver"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.StepOut"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.StepOut"/>
+      </toolbaritem>
+      <toolbaritem id="Emergent.Toolbench.ScriptDebugger.UI.Toolbar.RunToCursor"
+                   path="Debug"
+                   item-type="Button">
+        <button action="Emergent.Toolbench.ScriptDebugger.UI.RunToCursor"/>
+      </toolbaritem>
+
+      <action label="&amp;Continue"
+              tooltip="Resumes script execution from a break"
+              small-icon="Images/continue.png"
+              large-icon="Images/continue_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.ContinueAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.Continue"
+              shortcut="F5">
+      </action>
+      <action label="Step &amp;Into"
+              tooltip="Debugs into any scripted function at the current point of execution"
+              small-icon="Images/step_into.png"
+              large-icon="Images/step_into_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.StepIntoAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.StepInto"
+              shortcut="F11">
+      </action>
+      <action label="Step &amp;Over"
+              tooltip="Executes the current line of script without tracing into the call stack"
+              small-icon="Images/step_over.png"
+              large-icon="Images/step_over_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.StepOverAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.StepOver"
+              shortcut="F10">
+      </action>
+      <action label="Step Ou&amp;t"
+              tooltip="Executes script until returning from the current call stack level"
+              small-icon="Images/step_out.png"
+              large-icon="Images/step_out_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.StepOutAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.StepOut"
+              shortcut="Shift, F11">
+      </action>
+      <action label="&amp;Run To Cursor"
+              tooltip="Executes script until reaching the line with the cursor"
+              small-icon="Images/run_to_cursor.png"
+              large-icon="Images/run_to_cursor_Large.png"
+              handler="Emergent.Toolbench.ScriptDebugger.UI.RunToCursorAction"
+              id="Emergent.Toolbench.ScriptDebugger.UI.RunToCursor"
+              shortcut="Control, F10">
+      </action>
+
+    </actionset>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.Workbench.GlobalPerspective">
+      <actionset id="Emergent.Toolbench.ScriptDebugger.UI.GlobalOfflineActionSet"/>
+      <actionset id="Emergent.Toolbench.ScriptDebugger.UI.GlobalOnlineActionSet" states="ScriptDebugging"/>
+    </mapping>
+  </extension>
+
+  <extension point="Emergent.Toolbench.Workbench.PerspectiveMapping">
+    <mapping perspectiveId="Emergent.Toolbench.CodeEditor.Perspective">
+      <actionset id="Emergent.Toolbench.ScriptDebugger.UI.OfflineActionSet"/>
+      <actionset id="Emergent.Toolbench.ScriptDebugger.UI.OnlineActionSet" states="ScriptDebugging"/>
+    </mapping>
+  </extension>
+
+  <extension point="Emergent.Toolbench.OutputView.OutputChannel">
+    <channel name="Game"
+             visible="true"
+             steal-focus="false"
+             tooltip="Displays messages received from the connected game instance"
+             class="Emergent.Toolbench.CodeEditor.GotoCodeOutputChannel"/>
+  </extension>
+
+  <requires>
+      <import plugin="Emergent.Toolbench.CodeEditor"/>
+      <import plugin="Emergent.Toolbench.ScriptDebugger.Messaging"/>
+      <import plugin="Emergent.Toolbench.GameSolution"/>
+  </requires>
+
+    <runtime>Emergent.Toolbench.ScriptDebugger.UI.dll</runtime>
+
+</plugin>

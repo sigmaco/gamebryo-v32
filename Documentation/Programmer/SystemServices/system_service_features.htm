@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>System service features</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>System service features</h1>
+
+<p>The following provides a brief overview of features that are common to all system services.</p>
+
+<h4>ISystemService base class (<a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a>)</h4>
+
+<p><span class="NDLSystemFont">efd::ISystemService</span> is the base class that is common to all
+system services. This base class provides a set of virtual methods that each system service can
+override. Because default implementations for all of the On* methods are provided, subclasses only
+need to implement the functions that are necessary for the service to operate. These functions
+include the following:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">GetDisplayName</span>&mdash;useful to distinguish system
+        services in log messages.</li>
+
+    <li><span class="NDLSystemFont">OnServiceRegistered</span>&mdash;called when the service is
+        registered with the Service Manager to allow for the registration of service aliases.
+        Services that derive from other services should implement this method.</li>
+
+    <li><span class="NDLSystemFont">OnPreInit</span>&mdash;called once during startup to register
+        dependencies and perform intialization work that doesn't depend on other services.</li>
+
+    <li><span class="NDLSystemFont">OnInit</span>&mdash;called prior to starting tick cycles for
+        perform any required initialization. We be called each frame until it returns <span
+        class="NDLSystemFont">AsyncResult_Complete</span>.</li>
+
+    <li><span class="NDLSystemFont">OnTick</span>&mdash;called once per cycle until application
+        shutdown or <span class="NDLSystemFont">AsyncResult_Complete</span> is returned.</li>
+
+    <li><span class="NDLSystemFont">OnShutdown</span>&mdash;called to clean up resources during
+        shutdown.</li>
+</ul>
+
+<h4>Service Manager (<a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a>)</h4>
+
+<p>Each system service is registered with one and only one Service Manager instance. The Service
+Manager is responsible for the lifetime of each system service. It calls the OnPreInit, OnInit,
+OnTick and OnShutdown message on each system service in the appropriate order as determined by
+dependencies and priority.</p>
+
+<h4>Service dependencies</h4>
+
+<p>System services can express dependencies on other system services that control the order in
+which the services are initialized and shutdown. Dependencies are registered when the <span
+class="NDLSystemFont">OnPreInit</span> method is called on your service. The <span
+class="NDLSystemFont">OnPreInit</span> method itself is called in whatever order the services were
+added to the Service Manager. Each service is completely initialized before any service that depends
+on it will receive it's first <span class="NDLSystemFont">OnInit</span> call. Further, a service
+will not receive any <span class="NDLSystemFont">OnShutdown</span> calls until every service that
+depends on it has completed <span class="NDLSystemFont">OnShutdown</span>. In other words, by
+expressing a dependency you are guarenteed that the service you depend on will be available for the
+duration of your service. As soon as each service completes it's <span class="NDLSystemFont">OnInit
+</span> phase that service will start receiving <span class="NDLSystemFont">OnTick</span> calls on
+the next frame. For further details on how to express system service dependencies, see the <a
+href="../../Reference/efd/efd__IDependencyRegistrar.htm">efd::IDependencyRegistrar</a> interface
+which is passed into the <span class="NDLSystemFont">OnPreInit</span> method. To view the
+dependencies of existing LightSpeed services, see the <a href=
+"../../Reference/QuickRef_Services/images/SystemServiceDependencies.png">Service dependency
+diagram</a>.</p>
+
+<h4>Service priorities</h4>
+
+<p>Every system service has a priority which controls the order in which <span class=
+"NDLSystemFont">OnTick</span> is called every frame. Services with a higher priority are ticked
+before services with a lower priority. If two services have the same priority then the order in
+which they are ticked relative to each other is undefined and may vary. All services have a default
+priority that is implemented by the <span class="NDLSystemFont">efd::ISystemService</span>
+interface; services can set their default priority during their constructors by setting the <span
+class="NDLSystemFont">m_defaultPriority</span> variable. Optionally, when you register a system
+service with the Service Manager, you can override the default priority of the service. For details
+on the default priorities used by LightSpeed services, see <a href=
+"../../Reference/QuickRef_Services/svc_qckref_intro.htm">System Services Quick Reference</a>.</p>
+
+<h4>Service aliases</h4>
+
+<p>All system services are uniquely identified within the Service Manager by an <span
+class="NDLSystemFont">efd::SSID</span> (System Service IDentifier). The SSID is simply an <span
+class="NDLSystemFont">efd::ClassID</span> that has a slightly restricted range of valid values. When
+a service derives from an existing service and extends it's functionality it can be useful to refer
+to the service by either the base class SSID or the derived class SSID. To support this, services
+can register aliases during a special callback that is made when the service is registered. For
+further details on registering aliases, see the <a href=
+"../../Reference/efd/efd__IAliasRegistrar.htm">efd::IAliasRegistrar</a> interface which is provided
+to the <span class="NDLSystemFont">ISystemService::OnServiceRegistered</span> calback made during
+<span class="NDLSystemFont">ServiceManager::RegisterSystemService</span>.</p>
+
+<h4>Access to other system services</h4>
+
+<p>All classes that derive from the <span class="NDLSystemFont">ISystemService</span> base class
+contain a pointer to its controlling Service Manager. The <span class="NDLSystemFont">
+m_pServiceManager</span> member variable is assigned when the system service is registered with the
+Service Manager. You can use this pointer to gain direct access to other system services by using
+the <span class="NDLSystemFont">GetSystemService</span> or <span class="NDLSystemFont">
+GetSystemServiceAs</span> functions.</p>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="system_service_overview.htm">System services overview</a></li>
+    <li><a href="system_service_how_work.htm">How system services work</a></li>
+    <li><a href="system_service_priority_and_dependency.htm">Understanding System Service Priorities
+        and Dependencies</a></li>
+    <li><a href="system_service_limitations.htm">System service limitations</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the Emergent Game
+        Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_best_practice.htm">Best practices for working with system
+        services</a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

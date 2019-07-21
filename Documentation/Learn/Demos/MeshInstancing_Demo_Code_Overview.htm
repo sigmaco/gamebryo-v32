@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>MeshInstancing Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>MeshInstancing Demo Code Overview</h1>
+
+<p>The following sections detail the application code that
+creates that makes use of Gamebryo's hardware instancing support.
+Each important member function is described:</p>
+
+<h2>Constructor</h2>
+
+<p>The constructor is similar to most other <span class=
+"NDLSystemFont">NiApplication</span>-based demos. Each component
+gets initialized to a sensible default.</p>
+
+<h2>CreateScene</h2>
+
+<p>The first thing that <span class=
+"NDLSystemFont">CreateScene()</span> does is ensure that the
+current hardware is capable of instancing support. If not the
+sample will run, but hardware instancing will be disabled so no
+performance benefit will be achieved. After checking for hardware
+support <span class="NDLSystemFont">CreateScene</span> will load
+the <span class="NDLSystemFont">recursive_gearing.nif</span> file
+which contains five separate non-instanced gear meshes. Then each
+gear mesh is adjusted to support hardware instancing via
+<span class=
+"NDLSystemFont">NiInstancingUtilities::EnableMeshInstancing().</span>
+Finally CreateFullGearSystem() is used to populate the scene
+graph with <span class="NDLSystemFont">NiMeshHWInstance</span>
+objects. The <span class="NDLSystemFont">NiMeshHWInstance</span>
+class is used to represent an instance of a mesh in the scene
+graph.</p>
+
+<h2>UpdateFrame</h2>
+
+<p><span class="NDLSystemFont">UpdateFrame</span> calls
+<span class="NDLSystemFont">NiSample::Update()</span> then, if
+the Animation check box is checked, it manually updates the
+recursive gear scene graph via <span class=
+"NDLSystemFont">RecursiveUpdateGearSystem()</span>.</p>
+
+<h2>Terminate</h2>
+
+<p><span class="NDLSystemFont">Terminate</span> releases the
+<span class="NDLSystemFont">MeshInstancing</span>'s smart
+pointers. All the other smart pointers will be released during
+<span class="NDLSystemFont">NiApplication</span>'s <span class=
+"NDLSystemFont">Terminate</span> call.</p>
+
+<h2>SetHardwareInstancing</h2>
+
+<p><span class="NDLSystemFont">SetHardwareInstancing()</span> is
+called when the user changes the state of the '<span class=
+"NDLSystemFont">Hardware Instancing</span>' check box. When
+hardware instancing is being disabled this method will recurse
+through the scene graph and replace every <span class=
+"NDLSystemFont">NiMeshHWInstance</span> object in the scene graph
+with a clone of gear mesh the <span class=
+"NDLSystemFont">NiMeshHWInstance</span> object referenced. This
+process effectively turns of hardware instancing of the gear
+meshes. Similarly if hardware instancing is being enabled, this
+method recurse through the scene graph and replace every
+<span class="NDLSystemFont">NiMesh</span> clone with a
+<span class="NDLSystemFont">NiMeshHWInstance</span> object.</p>
+
+<h2>CreateAllGearSystems</h2>
+
+<p>The method uses <span class=
+"NDLSystemFont">CreateNewGearSystem()</span> and <span class=
+"NDLSystemFont">RecursiveGearAdd()</span> to fully populate the
+scene graph will all the all the gear systems.</p>
+
+<h2>CreateNewGearSystem</h2>
+
+<p>Creates a single gear system. This method does not fully
+populate the gear system it only creates the five gears needed to
+complete a system. This method is used in conjunction with
+<span class="NDLSystemFont">RecursiveGearAdd()</span> to create a
+fully populated gear system.</p>
+
+<h2>RecursiveGearAdd</h2>
+
+<p>This method adds a new gear to the 'tail' of a gear system.
+When adding new gears to a gear system a pattern must be followed
+in order to ensure that each gear has a full set of children
+before moving on to the next gear. This method follows that
+pattern effectively creating a complete tree / scene graph as it
+adds new gears.</p>
+
+<h2>RecursiveGearRemove</h2>
+
+<p>This method removes the 'tail' gear from a gear system. Just
+as <span class="NDLSystemFont">RecursiveGearAdd()</span> has to
+follow a pattern when adding new gears to a system, so does
+<span class="NDLSystemFont">RecursiveGearRemove()</span>. The
+leaf nodes of the scene graph are removed which 'prunes' the
+scene graph of the smallest gears first.</p>
+
+<h2>RecursiveUpdateGearSystem</h2>
+
+<p>This method manually performs the animation of a gear system.
+It recurses down the tree rotating each node as it works its way
+down the scene graph.</p>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

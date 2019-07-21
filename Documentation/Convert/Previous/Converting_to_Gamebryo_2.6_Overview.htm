@@ -1,0 +1,608 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Converting to Gamebryo 2.6 Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Converting to Gamebryo 2.6 Overview</h1>
+
+<p>This document describes the changes to interfaces that existed
+in Gamebryo 2.5. It is intended to help users of Gamebryo 2.5
+convert to Gamebryo 2.6. This document does not describe all the
+new features in Gamebryo 2.6. For that, see the <a href=
+"../../RelNotes/Release_Notes_Introduction.htm">Release
+Notes</a>.</p>
+
+<p>The following topics should be reviewed for successful
+conversion to Gamebryo 2.6:</p>
+
+<p><a href="#Changes_to_NiAllocator">Changes to
+NiAllocator</a></p>
+
+<p><a href="#Changes_to_NiAnimation">Changes to
+NiAnimation</a></p>
+
+<p><a href="#NiPrimitiveType">NiPrimitiveType</a></p>
+
+<p><a href="#Changes_to_NiDataStream__LockType_flags">Changes to
+NiDataStream::LockType flags</a></p>
+
+<p><a href="#Changes_to_the_NiEntity_Library">Changes to the
+NiEntity Library</a></p>
+
+<p><a href="#Changes_to_the_Scene_Designer_API">Changes to the
+Scene Designer API</a></p>
+
+<p><a href=
+"Converting_to_Gamebryo_2.6_Overview.htm#Changes_to_the_NiTerrain_Library">
+Changes to the NiTerrain Library</a></p>
+
+<p><a href="#Changes_to_the_Wii_Renderer">Changes to the Wii
+Renderer</a></p>
+
+<p><a href="#New_Renderer_Selection_Dialog_in_NiApplication">New
+Renderer Selection Dialog in NiApplication</a></p>
+
+<a name="Changes_to_NiAllocator" id="Changes_to_NiAllocator"></a><h2>Changes to NiAllocator</h2>
+
+<p>The <a href=
+"../../Reference/NiSystem/NiAllocator.htm"><span class=
+"NDLSystemFont">NiAllocator</span></a> interface has been changed
+to support memory hints. The primary effect of these changes on a
+custom allocator are:</p>
+
+<ul>
+    <li>Significant additional information passed in the form of
+    an <a href=
+    "../../Reference/NiSystem/NiMemHint.htm"><span class=
+    "NDLSystemFont">NiMemHint</span></a> object <span class=
+    "NDLSystemFont">kHint</span>.</li>
+
+    <li>The information conveyed by the argument <span class=
+    "NDLSystemFont">bProvideAccurateSizeOnDeallocate</span> is
+    now obtained by calling <span class=
+    "NDLSystemFont">kHint.CompilerProvidesSizeOnDeallocate()</span>.</li>
+</ul>
+
+<p>The hint information comes from an argument to the extended
+<a href="../../Reference/NiSystem/NiMemoryDefines.htm">allocation
+functions</a> (<span class="NDLSystemFont">NiNew2</span>,
+<span class="NDLSystemFont">NiMalloc2</span>, etc...). If the
+standard functions are used, a default hint containing no
+information is passed in. The hint object potentially includes
+information such as desired memory arenas and the expected
+lifetime or usage of the allocated memory. This information can
+be used to make better choices when allocating or for getting an
+accurate picture of the allocated memory.</p>
+
+<p>For more information on the new method signatures, see the
+<a href="../../Reference/NiSystem/NiAllocator.htm"><span class=
+"NDLSystemFont">NiAllocator</span></a> documentation. For more
+information on memory hints, see the <span class=
+"NDLSystemFont">NiMemHint</span> <a href=
+"../../Reference/NiSystem/NiMemHint.htm">reference</a>.</p>
+
+<a name="Changes_to_NiAnimation" id="Changes_to_NiAnimation"></a><h2>Changes to NiAnimation</h2>
+
+<p>Sequence-based animation in the <a href=
+"../../Reference/NiAnimation/Introduction_to_Animation.htm">NiAnimation</a>
+library has been refactored. These changes are documented on a
+<a href="NiAnimation_Conversion.htm">separate
+page</a>.</p>
+
+<a name="NiPrimitiveType" id="NiPrimitiveType"></a><h2>NiPrimitiveType</h2>
+
+<p>The enumeration <span class=
+"NDLSystemFont">NiMesh::PrimitiveType</span> has been replaced
+with the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiPrimitiveType.htm">NiPrimitiveType::Type</a></span>
+enumeration in the <a href=
+"../../Reference/NiMain/Hyperlinked_Hierarchy_of_Classes.htm">NiMain</a>
+library.</p>
+
+<a name="Changes_to_NiDataStream__LockType_flags" id="Changes_to_NiDataStream__LockType_flags"></a><h2>Changes to NiDataStream::LockType flags</h2>
+
+<p>The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiDataStream.htm#class_ni_data_stream_1bc4b62a87d68da7491b406f7f4889da2">
+NiDataStream::LockType</a></span> flags and how they are
+interpreted has been changed. The behavior of the
+platform-specific classes derived from <span class=
+"NDLSystemFont">NiDataStream</span> has been changed so that when
+the stream is locked with the <span class=
+"NDLSystemFont">LOCK_TOOL_READ</span> or <span class=
+"NDLSystemFont">LOCK_TOOL_WRITE</span> flags, the lock will
+always succeed, although the operation may be very un-optimal and
+may take a significant amount of time. Runtime applications are
+discouraged from attempting to use the <span class=
+"NDLSystemFont">LOCK_TOOL_READ</span> or <span class=
+"NDLSystemFont">LOCK_TOOL_WRITE</span> flags unless they are
+willing to pay the performance penalty for the successful
+lock.</p>
+
+<p>A related change is that when <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiToolDataStream.htm">NiToolDataStream</a></span>
+objects are locked for read or write, the lock will always
+succeed, even if the data stream does not contain the appropriate
+access flags.</p>
+
+<a name="Changes_to_NiDataStream__LockRead_and_LockWrite" id="Changes_to_NiDataStream__LockRead_and_LockWrite"></a><h2>Changes to NiDataStream::LockRead and LockWrite</h2>
+
+<p>As a result of the change in behavior of the <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiDataStream.htm#class_ni_data_stream_1bc4b62a87d68da7491b406f7f4889da2">
+NiDataStream::LockType</a></span> flags, the functions
+<span class="NDLSystemFont">NiDataStream::LockRead</span> and
+<span class="NDLSystemFont">NiDataStream::LockWrite</span> have
+been changed to only pass in the <span class=
+"NDLSystemFont">LOCK_READ</span> and <span class=
+"NDLSystemFont">LOCK_WRITE</span> flags, respectively, to the
+locking functions. <span class=
+"NDLSystemFont">NiDataStream::UnlockRead</span> and <span class=
+"NDLSystemFont">NiDataStream::UnlockWrite</span> have been
+similarly changed. Since the <span class=
+"NDLSystemFont">LOCK_TOOL_READ</span> or <span class=
+"NDLSystemFont">LOCK_TOOL_WRITE</span> flags are no longer
+provided by those functions, the functions may well fail when
+operating on platform-specific classes derived from <span class=
+"NDLSystemFont">NiDataStream</span>.</p>
+
+<a name="Changes_to_the_NiEntity_Library" id="Changes_to_the_NiEntity_Library"></a><h2>Changes to the NiEntity Library</h2>
+
+<p>To support layers and prefabs at runtime, several changes were
+made to classes in the NiEntity 
+library. The most significant changes are to the entity streaming
+classes, which were modified to support loading of externally
+referenced layer and palette files. The pertinent changes to this
+library are documented below.</p>
+
+<h3>NiEntityPropertyInterface</h3>
+
+<p>Two member variables have been added to this interface: a
+unique ID and a source filename. The constructor for <span class=
+"NDLSystemFont">NiEntityPropertyInterface</span> automatically
+generates a new unique ID to guarantee that no two entities or
+components have the same ID. For more information, see NiEntityPropertyInterface.</p>
+
+<h3>NiUniqueID</h3>
+
+<p>A static <span class="NDLSystemFont">Generate</span> function
+was added to <span class="NDLSystemFont">NiUniqueID</span> that
+provides UUID generation on Win32. On PS3, Xbox 360, and Wii, a
+random (but not universally unique) value is generated. As such,
+saving out scenes is now prohibited on those platforms, since any
+entities converted or created on those platforms will not have
+unique IDs.</p>
+
+<p>Functions were also added to support converting unique IDs to
+and from strings, and some helper functions were added to support
+storing <span class="NDLSystemFont">NiUniqueID</span> pointers in
+<a href="../../Reference/NiMain/NiTMap.htm"><span class=
+"NDLSystemFont">NiTMap</span></a> structures. For more
+information, see NiUniqueID.</p>
+
+<h3>NiEntityInterface</h3>
+
+<p>The <span class=
+"NDLSystemFont">NiEntityInterface::GetMasterEntity</span>
+function has been made const. Any derived entity classes will
+need to be updated in order to properly compile.</p>
+
+<p>A member variable, prefab root, has been added to this
+interface to support the concept of prefabs. The prefab root
+pointer is null if the entity is not part of a prefab. If the
+entity is part of a prefab then the prefab root will point to its
+owning prefab root. The prefab root will have an instance of an
+<span class=
+"NDLSystemFont">NiPrefabComponent</span> that contains
+pointers to all of its prefab entities.</p>
+
+<p>Because cloning a prefab root must clone all of the prefab
+entities, <span class=
+"NDLSystemFont">NiEntityInterface::Clone</span> cannot properly
+clone a prefab root. It will instead clone just the root and will
+return a pointer to the cloned entity with no prefab entities
+under it. To clone a prefab you should use the new <span class=
+"NDLSystemFont">NiEntityCloneHelper</span> class. See the
+description of it for more information about this and other uses
+of the new class. For more information, see NiEntityInterface.</p>
+
+<h3>NiEntityComponentInterface</h3>
+
+<p>The <span class=
+"NDLSystemFont">NiEntityComponentInterface::GetMasterComponent</span>
+function has been made const. Any derived component classes will
+need to be updated in order to properly compile. For more
+information, see NiEntityComponentInterface.</p>
+
+<h3>NiEntitySelectionSet</h3>
+
+<p>Selection set behavior has been changed to keep the other
+entities in order when an entity is removed from the selection
+set. For more information, see NiEntitySelectionSet.</p>
+
+<h3>NiDOMTool</h3>
+
+<p>Several member variables have been added to this class to
+store information about scenes that is needed during streaming,
+such as the version number and the full path of the file that was
+loaded. For more information, see NiDOMTool.</p>
+
+<h3>NiEntityStreaming/NiEntityStreamingAscii</h3>
+
+<p>The streaming classes have been modified to support loading
+multiple scenes, depending on whether or not the main scene being
+loaded externally references other scenes.</p>
+
+<p>The Load function has been changed to accept a Boolean
+indicating whether or not all loaded scenes should be
+concatenated into a single large scene. This is the default
+behavior and will provide similar behavior to the old behavior of
+this class. Thus, applications that expect there to be a single
+scene loaded from a scene file can still get that behavior. If
+this Boolean is false, each loaded scene will be stored
+separately, with access provided by the <span class=
+"NDLSystemFont">GetSceneCount</span> and <span class=
+"NDLSystemFont">GetSceneAt</span> functions.</p>
+
+<p>The Save function has been changed to accept a scene index to
+save. If multiple scenes exist in the <span class=
+"NDLSystemFont">NiEntityStreaming</span> object when Save is
+called, the provided index specifies which scene to save. Only
+one scene can be saved to disk with a single call to the Save
+function. Only entities that have a source filename the same as
+the file being saved will be saved out. When an entity is added
+to a scene, it has its source filename set to match that of the
+scene. However, if all loaded scenes were concatenated into a
+single large scene upon load, the source filename for the
+entities is preserved to be their original filenames. Thus,
+saving out such a combined scene will only save out the entities
+that were originally in that scene file.</p>
+
+<p>Loaded scenes are now retained by the <span class=
+"NDLSystemFont">NiEntityStreaming</span> object until it is
+destructed or the Reset function is called. This is to support
+data sharing between loaded scenes. If two scenes are loaded that
+both reference the same third scene, only one copy of the third
+scene's entities will reside in memory. If a scene is listed in
+the loaded scenes for the <span class=
+"NDLSystemFont">NiEntityStreaming</span> object, loading it again
+will not reload the file from disk but will instead use the one
+in memory. Scenes can be individually removed with the
+<span class="NDLSystemFont">RemoveLoadedScene</span> function,
+and all loaded scenes can be removed by the <span class=
+"NDLSystemFont">Reset</span> or <span class=
+"NDLSystemFont">ClearLoadedScenes</span> functions. There is also
+now an option on the Load function to fully load all referenced
+scenes or only those entities that are necessary. This is mostly
+pertinent for palettes, as you may not want to load all palettes
+at runtime. This option by default only loads entities needed by
+the scene, but Scene Designer always fully loads all scenes to
+avoid multiple loading from disk.</p>
+
+<p>Functions have been added that return whether or not a loaded
+scene was converted or modified during the loading operation.
+Scene files are converted when loaded from an old file version.
+They may be modified if links to other entities cannot be
+properly resolved. In that case, the links will be removed and
+messages will be sent to the registered error handler.</p>
+
+<p>Because template dependencies are resolved at runtime now
+palette files must be available in order to load any scene file.
+For more information, see NiEntityStreaming/NiEntityStreamingAscii.</p>
+
+<h3>NiScene</h3>
+
+<p>An array of layer filenames has been added to this class that
+specifies the explicit layers upon which this scene depends.
+Also, a source filename member variable has been added that
+specifies the full path to the filename from which this scene was
+loaded. Finally, a <span class=
+"NDLSystemFont">GetEntityByID</span> function has been added to
+provide quick lookup of an entity object in the scene using its
+unique ID. For more information, see NiScene.</p>
+
+<h3>NiInheritedTransformationComponent</h3>
+
+<p>This class has been removed and its functionality rolled into
+NiTransformationComponent.
+See NiTransformationComponent for more information. Any file that
+is loaded that references an NiInheritedTransformationComponent
+will be updated to refer to an instance of an
+NiTransformationComponent instead. The
+NiInheritedTransformationComponent source files must be removed
+from the AppFrameworks\UtilityLibs\NiEntity directory before the
+NiEntity project will properly build for Wii. For more
+information, see NiInheritedTransformationComponent.</p>
+
+<a name="Changes_to_the_Scene_Designer_API" id="Changes_to_the_Scene_Designer_API"></a><h2>Changes to the Scene Designer API</h2>
+
+<h3>Writable Flag</h3>
+
+<p><span class=
+"NDLSystemFont">MLayer</span>, <span class=
+"NDLSystemFont">MScene</span>, and <span class=
+"NDLSystemFont">MEntity</span> all have the concept of
+writable/read-only state now. This cannot be enforced everywhere
+but in debug builds will throw an assertion if an attempt is made
+to change a read-only entity, scene, or layer. The entity will
+check upwards, to see if its owning layer is read-only, so in
+general it is only necessary to check an entity before changing
+its properties or removing it. You should also check the status
+of a layer (including the default layer) before adding entities
+or layers to it. This is done everywhere in Scene Designer, but
+custom plug-ins will need to pay special attention to this.
+Failure to do this may cause crashes or, if running in debug
+mode, an assertion will occur with the following text:</p>
+
+<p><span class="NDLSystemFont">Object is read-only and cannot be
+modified!</span></p>
+
+<h3>Layers</h3>
+
+<p><span class="NDLSystemFont">MLayer</span> is a new class to represent
+sub-layers in a scene file. All entities must be in one and only
+one layer. They can be in the default layer (the main file) but
+they cannot be there and in another layer. To render entities
+correctly and to simplify code that needs to walk through all
+entities, entities are also added to a single "main scene". Any
+time an entity is added to the main scene (as returned by
+<span class="NDLSystemFont">MFramework::Scene</span>) it will
+also be added to the current, or active, layer.</p>
+
+<p>Because there can be multiple scenes loaded, walking through
+entities might return different source filenames.</p>
+
+<h3>Autosave</h3>
+
+<p>Autosave used to save a single scene file in the temp
+directory. Now, because of layers, Autosave may create more than
+one file (one for each layer) and they will be placed in the
+directory beside the file being saved with a ".autosave"
+suffix.</p>
+
+<h3>Interaction Modes</h3>
+
+<p>Prefabs and layers necessitated several changes in the Interaction Modes.
+Because some layers can be read-only you must check to see if
+there is an active layer before creating any entities. The tool
+does not allow any of the existing interaction modes to be
+entered if there is no active layer but if you create a new
+interaction mode you will need to make sure this holds true as
+well.</p>
+
+<p>Prefabs can contain multiple entities so cloning a object from
+an interaction mode, or creating an instance of a prefab from one
+may create multiple entities. Your code will need to be prepared
+to handle any number of entities being created from a create or
+clone operation.</p>
+
+<a name="Changes_to_the_NiTerrain_Library" id="Changes_to_the_NiTerrain_Library"></a><h2>Changes to the NiTerrain Library</h2>
+
+<h3>Include File Rename</h3>
+
+<p>The main include file for the terrain library has been renamed
+to <span class="NDLSystemFont">NiTerrainLib.h</span> to allow for
+the creation of the <span class="NDLSystemFont">NiTerrain</span>
+class.</p>
+
+<h3>LOD Naming Convention</h3>
+
+<p>In previous versions of Gamebryo, the highest level of detail
+of a terrain (the highest resolution) was known as level 0. Above
+this, there were .lower' levels of detail which represented the
+terrain with less geometric detail. The naming convention now
+states that level 0 is the least detailed, with additional higher
+numbered levels of detail introducing more detail. Any code that
+uses the terrain interactor should take this into account when
+defining a custom value for <span class=
+"NDLSystemFont">uiDetailLevel</span> function parameters. If
+interaction with the highest available detail is desired, use the
+following public static member of <span class=
+"NDLSystemFont">NiTerrainUtils</span> namespace when specifying a
+LOD level:</p>
+
+<p><span class="NDLSystemFont">NiUInt32
+NiTerrainUtils::ms_uiMAX_LOD</span></p>
+
+<h3>Deprecation of NiTerrainSectorComponent</h3>
+
+<p>In Gamebryo 2.5, to create a terrain within Scene Designer a
+designer would need to work with two entities; one containing an
+<span class="NDLSystemFont">
+NiTerrainComponent</span> with the other containing an
+<span class="NDLSystemFont">NiTerrainSectorComponent</span>.
+Since the NiTerrain library has been re-worked such that you can
+add a <a href=
+"../../Reference/NiTerrain/NiTerrain.htm"><span class=
+"NDLSystemFont">NiTerrain</span></a> object directly to an
+<span class="NDLSystemFont">NiNode</span> derived scene, it is no
+longer strictly necessary to use the <span class=
+"NDLSystemFont">NiEntity</span> system to create a terrain. As a
+result of this, the
+<span class="NDLSystemFont">NiTerrainSectorComponent</span>
+is no longer required.</p>
+
+<h3>The NiTerrainComponent Now Contains all Terrain Related
+Properties and Simply Wraps an NiTerrain Object</h3>
+
+<p>While the NiTerrain library can still load GSA files
+containing the old format, it is recommended to update your files
+to reflect this change. The 2.6 version of Scene Designer is able
+to convert old files to the new format; it will prompt to do so
+when an old file is opened.</p>
+
+<h3>NiTerrainComponent</h3>
+
+<p>To support the depreciation of the 
+<span class="NDLSystemFont">NiTerrainSectorComponent</span>,
+some properties previously found within the sector component have
+been moved to the terrain component. The following properties
+were moved:</p>
+
+<ul>
+    <li>"Scene Root Pointer"</li>
+
+    <li>"Default Surface Mask Size"</li>
+</ul>
+
+<h3>New Properties</h3>
+
+<ul>
+    <li><b>Cook PhysX Data</b>&mdash;If the PhysX Scene Designer
+    plug-in is present, PhysX data will be cooked when the scene
+    is saved if this flag is set to true. Note, the PhysX plug-in
+    also adds a "Cook PhysX Button" to the terrain command panel
+    as well.</li>
+
+    <li><b>Sector List</b>&mdash;Which sectors will are defined
+    by this terrain object. Currently only a single sector is
+    supported.</li>
+</ul>
+
+<h3>Terrain Archive Format</h3>
+
+<p>The 'quadtree.dof' archive file contained within the terrain
+archive directory has been modified to support more sophisticated
+loading techniques, including loading the sector up to a certain
+depth. While the terrain is still able to read in sector data of
+the old format, it is recommended that GSA scene files containing
+a terrain are re-saved in a 2.6 build of the scene designer. This
+which will automatically update the archive files to the new
+format.</p>
+
+<h3>NiSurfacePalette Constructor</h3>
+
+<p>The surface palette now has "tagging" permanently enabled, so
+there is no longer a parameter in the constructor to toggle this
+feature.</p>
+
+<h3>Terrain Materials</h3>
+
+<ul>
+    <li><span class="NDLSystemFont">NiSurface::GetName</span>
+    function now returns a const reference to an <span class=
+    "NDLSystemFont">NiFixedString</span>.</li>
+
+    <li>Refactored <span class=
+    "NDLSystemFont">NiSurfacePalette::CompileSurface(NiFixedString)</span>
+    to <span class=
+    "NDLSystemFont">NiSurfacePalette::CompileSurfaces()</span>.
+    It now compiles all surfaces contained in the palette.</li>
+</ul>
+
+<h3>Procedurally Importing RAW files</h3>
+
+<p>The <span class="NDLSystemFont">LoadFromRAWFile</span>
+function within the <span class=
+"NDLSystemFont">NiTerrainSector</span> class has been removed.
+The new method to import a raw file is:</p>
+
+<ul>
+    <li>Mark the terrain as 'InToolMode' using the terrain
+    interactor. ( <span class=
+    "NDLSystemFont">NiTerrainInteractor::SetInToolMode(true)</span>
+    )</li>
+
+    <li>Load the RAW file contents into a temporary buffer</li>
+
+    <li>Send the buffer to the terrain: <span class=
+    "NDLSystemFont">NiTerrainInteractor::SetHeightFromMap(.);</span></li>
+</ul>
+
+<h3>NiMetaData Get/Set Functions</h3>
+
+<p>In order to support different blending techniques for meta
+data, the signature of the get/set functions in the <a href=
+"../../Reference/NiTerrain/NiMetaData.htm"><span class=
+"NDLSystemFont">NiMetaData</span></a> class has had an additional
+parameter added to it.</p>
+
+<h4>Old:</h4>
+<pre>
+bool Set(const NiFixedString&amp; kKey, NiInt32 iValue, float fWeight = 1.0f);
+bool Set(const NiFixedString&amp; kKey, float fValue, float fWeight = 1.0f);
+bool Set(const NiFixedString&amp; kKey, const NiFixedString&amp; kValue, float fWeight = 1.0f);
+</pre>
+
+<h4>New:</h4>
+<pre>
+bool Set(const NiFixedString&amp; kKey, NiInt32 iValue, KeyType eType = INTEGER, float fWeight = 1.0f);
+bool Set(const NiFixedString&amp; kKey, float fValue, KeyType eType = FLOAT, float fWeight = 1.0f);
+bool Set(const NiFixedString&amp; kKey, const NiFixedString&amp; kValue, KeyType eType = STRING, float fWeight = 1.0f);
+</pre>
+
+<p>Any code that uses these functions will need to be modified
+accordingly.</p>
+
+<a name="Changes_to_the_Wii_Renderer" id="Changes_to_the_Wii_Renderer"></a><h2>Changes to the Wii Renderer</h2>
+
+<p>The renderer has been updated to work with the redesigned
+geometry system introduced in Gamebryo 2.5. See the <a href=
+"Converting_to_Gamebryo_2_5_Overview.htm">Converting to Gamebryo
+2.5 Overview</a> for general details regarding the changes
+between 2.3 and 2.5. In addition, review the <a href=
+"../../ee_goto.htm#RelNotes/Wii/Release_Notes__Wii.htm">Wii
+release notes</a> for additional details regarding changes to the
+renderer.</p>
+
+<a name="New_Renderer_Selection_Dialog_in_NiApplication" id="New_Renderer_Selection_Dialog_in_NiApplication"></a><h2>New Renderer Selection Dialog in NiApplication</h2>
+
+<p>Gamebryo 2.6 introduces a new <a href=
+"../../Reference/NiApplication/Renderer_Settings_Dialog.htm">renderer
+selection dialog</a> for samples and demos based on <span class=
+"NDLSystemFont">NiApplication</span>. Applications that derive
+from <span class="NDLSystemFont">NiApplication</span> can make
+use of the dialog by calling <span class=
+"NDLSystemFont">NiApplication::CreateRenderer</span> (either
+explicitly or by letting the standard <span class=
+"NDLSystemFont">NiApplication::Initialize</span> call it). If
+they do, then they must link in the resource file located at
+<span class=
+"NDLSystemFont">$(EGB_PATH)\sdk\Win32\Resource\NiApplicationResource.rc</span>.
+Failure to link in this resource file will result in the
+following error when trying to create a renderer at runtime:</p>
+
+<p><span class="NDLSystemFont">Error: Resource files are not
+linked in. Please link file NiApplicationResource.rc into your
+project. This file can be found in SDK\Win32\Resource.</span></p>
+
+<p>Note that applications do not need to link in this resource
+file if they will not call <span class=
+"NDLSystemFont">NiApplication::CreateRenderer</span>. If your
+application will directly create a renderer without using the
+Gamebryo-supplied dialog box, then there will be no consequence
+for not linking in this resource file, even if other parts of
+<span class="NDLSystemFont">NiApplication</span> are used.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

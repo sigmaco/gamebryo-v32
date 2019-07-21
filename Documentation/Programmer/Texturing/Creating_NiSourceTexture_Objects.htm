@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating NiSourceTexture Objects</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating NiSourceTexture Objects</h1>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiSourceTexture.htm">NiSourceTexture</a></span> 
+ objects are created from either an image filename or a block of <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span>. 
+ The creation steps are different for the two methods and are described 
+ below.</p>
+
+<h2>Creating NiSourceTexture Objects from Filenames</h2>
+
+<p>When an <span class="NDLSystemFont">NiSourceTexture</span> 
+ object is created from a filename using the <span class="NDLSystemFont">NiSourceTexture::Create</span> 
+ function that takes a string as its required argument, that texture object 
+ then represents the data in that file. The file may be of any format supported 
+ by the current image converter object (see the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span> or 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDevImageConverter.htm">NiDevImageConverter</a></span> 
+ for details).</p>
+
+<p>Note that applications may reference different texture 
+ image files with a single filename at load time by enabling and configuring 
+ platform-specific filename processing. This feature allows the application 
+ to save multiple sets of image data in different subdirectories, each 
+ formatted for a different platform. See the section below on platform-specific 
+ loading of images.</p>
+
+<p>Once the <span class="NDLSystemFont">NiSourceTexture</span> 
+ is created, the filename cannot be changed&mdash;the <span class="NDLSystemFont">NiSourceTexture</span> 
+ represents that image file for its entire lifespan. Texture image files 
+ may need power of two pixel dimensions in some cases, depending on the 
+ level of renderer support. By default, the system does not keep a system-memory, 
+ renderer-independent version of this data, as the image file itself can 
+ form the backing store. However, applications can force a such a representation 
+ to be loaded for perusal or modification using the function <span class="NDLSystemFont">NiSourceTexture::LoadPixelDataFromFile</span>.</p>
+
+<h2>Creating NiSourceTexture Objects from NiPersistentSrcTextureRendererData 
+ Objects</h2>
+
+<p>Platform-specific texture capabilities enable platform-specific 
+ source texture renderer data to be loaded directly into a renderer-specific 
+ resource at application load time, with the result that no texture format 
+ conversions are required at load time.</p>
+
+<p>These capabilities operate on the principle of streaming
+ persistent versions of source texture renderer data
+ (<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPersistentSrcTextureRendererData.htm">NiPersistentSrcTextureRendererData</a></span>)
+ to support platform-specific texture format conversions for "internal
+ textures" (those included in a scene's NIF file) at export time.</p>
+
+<p>Assuming that the specific platform can support the pixel
+ format in question at application load time, the renderer will load the
+ persistent source texture renderer data directly into a renderer-specific
+ resource, bypassing the application-level
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiPixelData.htm">NiPixelData</a></span> 
+ object and all
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiImageConverter.htm">NiImageConverter</a></span>-based 
+ texture conversion at load time entirely.</p>
+
+<p>Textures that are internal to a NIF may be shared, even
+ across NIF files, but only if the same texture palette is used to load all
+ those NIF files (either by using the same
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>
+ or by transferring the
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span>
+ from one
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>
+ to another).  This sharing is best managed
+ by the application which knows when streams may or may not share an
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturePalette.htm">NiTexturePalette</a></span>
+ to minimize the complexity of thread-safety issues.</p>
+
+<p>[Note that each time a platform SDK (for example, Xbox360 XDK, 
+ Playstation3 SDK, or Revolution SDK) changes, there is at least a possibility 
+ that the new SDK will cause textures to be formatted differently on that 
+ platform. It is not likely to happen frequently, but the possibility exists. 
+ In such a case, it may be desirable to re-export Nifs containing platform-specific 
+ textures using exporters built with that platform's most recent SDK version.]</p>
+
+<h2>Creating NiSourceTexture Objects from NiPixelData 
+ Objects</h2>
+
+<p>Applications that load image data from their own internal 
+ formats or need to create procedural textures on the fly can create <span 
+ class="NDLSystemFont">NiSourceTextures</span> 
+ directly from <span class="NDLSystemFont">NiPixelData</span>. 
+ <span class="NDLSystemFont">NiPixelData 
+ </span>objects that are used to create <span class="NDLSystemFont">NiSourceTextures</span> may 
+ require power of two pixel dimensions in some cases (see below).</p>
+
+<p>Once an <span class="NDLSystemFont">NiSourceTexture</span> 
+ is created from an application's <span class="NDLSystemFont">NiPixelData</span> 
+ object, the texture keeps a reference to the <span class="NDLSystemFont">NiPixelData</span>. It does 
+ not copy this data and hold the copy. As a result, applications must take 
+ care before modifying the data in an <span class="NDLSystemFont">NiPixelData</span> 
+ object that has been passed to an <span class="NDLSystemFont">NiSourceTexture::Create</span> 
+ function.</p>
+
+<h2>Format Preferences and NiSourceTexture Creation</h2>
+
+<p>Both of the <span class="NDLSystemFont">NiSourceTexture::Create</span> 
+ functions take an optional
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexture__FormatPrefs.htm">
+ NiTexture::FormatPrefs</a></span> 
+ argument, which allows the application to request particular properties 
+ of the texture format used in the renderers' internal cache versions. 
+ These format preferences include the overall color accuracy, the alpha-channel 
+ behavior (none, on/off, smooth) and the need for mipmapping. These formats 
+ are only requests&mdash;renderers may choose to ignore them if they cannot 
+ satisfy them. See the sections below on the image converters for details 
+ of this process.</p>
+
+<h2>Preloading of NiSourceTexture Objects</h2>
+
+<p>When an <span class="NDLSystemFont">NiSourceTexture</span> 
+ object is created or loaded from disk, it is generally preloaded in all 
+ of the currently active renderers. If the <span class="NDLSystemFont">NiSourceTexture</span> is created 
+ from a filename, the image file is read into a temporary block in memory. 
+ Then, either the <span class="NDLSystemFont">NiPixelData</span> 
+ object used to create the texture or the temporary just mentioned is converted 
+ (if need be) to a format that the renderer can load to its internal cache. 
+ Note that the renderers do not generally load the textures to their internal 
+ video memory caches at this time&mdash;they simply format them so that the 
+ transfer to the cache is as fast as possible and generate as low an overhead 
+ as possible.</p>
+
+<p>If desired, preloading of <span class="NDLSystemFont">NiSourceTexture</span>s may 
+ be disabled using the static function <span class="NDLSystemFont">NiSourceTexture::SetUsePreloading(false)</span>. 
+ If preloading is disabled, or if a renderer was created after an <span 
+ class="NDLSystemFont">NiSourceTexture</span> 
+ was created, then the <span class="NDLSystemFont">NiSourceTexture</span> 
+ will be loaded to the renderer's cache format when it is first required 
+ for rendering in a frame. This can lead to framerate "hits" 
+ when the disk is accessed during gameplay.</p>
+
+<h2>Textures with Non-power-of-two Dimensions</h2>
+
+<p>A full-screen splash screen is an example of a texture 
+ with non-power-of-two dimensions. Often, it is desirable to use such a 
+ texture "as is", without wasting texture storage due to power-of-two 
+ dimension requirements, or having to stretch a texture with power-of-two 
+ dimensions to screen dimensions.</p>
+
+<p>Gamebryo supports non-power-of-two texture dimensions 
+ on hardware that supports them. For example, <span class="NDLSystemFont">NiPixelData</span> 
+ objects that are used to create <span class="NDLSystemFont">NiSourceTextures</span> 
+ may have non-power-of-two pixel dimensions if the hardware supports it, 
+ but require power-of-two pixel dimensions otherwise. Refer to the specific 
+ renderer documentation for information regarding support for non-power-of-two 
+ textures.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

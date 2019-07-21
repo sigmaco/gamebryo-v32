@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating the Shader System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating the Shader System</h1>
+
+<p>There are two distinct types of libraries in use in
+ the shader system:</p>
+
+<ul>
+
+	<li>Parser libraries&mdash;used to convert text-based shader files into optimized binary format files.
+ As a convenience for developers, this can be done at runtime as opposed
+ to a pre-process of the data.</li>
+
+	<li>Shader creation libraries&mdash;used to read in shader files and create <span class="NDLSystemFont">NiShader</span>
+ objects for use in rendering geometry.</li>
+</ul>
+
+<p>The following member variables are used to interact
+ with the shader system:</p>
+
+<ul>
+
+	<li><span class="NDLSystemFont">m_kShaderLibraries</span>&mdash;This is an array of NiShaderLibrary names (example: &quot;NiD3DXEffectShaderLib&quot;).</li>
+
+	<li><span class="NDLSystemFont">m_kParserLibraries</span>&mdash;This is an array of NiShaderParser names (example:
+ &quot;NSFParserLib&quot;).</li>
+</ul>
+
+<p>The following member functions are used to interact
+ with the shader system:</p>
+
+<ul>
+
+	<li><span class="NDLSystemFont">CreateShaderSystem</span>&mdash;Initializes the shader system.</li>
+
+	<li><span class="NDLSystemFont">RunShaderParsers</span>&mdash;Calls all parser libraries specified by the associated Register method</li>
+
+	<li><span class="NDLSystemFont">RunShaderLibraries</span>&mdash;Calls all shader libraries specified by the associated Register method.</li>
+
+	<li><span class="NDLSystemFont">RegisterShaderParsers</span>&mdash;Used by derived applications to register shader parser libraries with
+ the shader system. See code below.</li>
+
+	<li><span class="NDLSystemFont">RegisterShaderLibraries</span>&mdash;Used by derived applications to register shader creation libraries with
+ the shader system. See code below.</li>
+
+	<li><span class="NDLSystemFont">ShaderErrorCallback</span>&mdash;A custom callback in all builds that outputs the results of any shader
+ errors to the debug window.</li>
+</ul>
+
+<p>A derived class will need to specify which libraries
+ that it wishes to use. The following code is an example of what would
+ need to be added to make an <span class="NDLSystemFont">NiSample</span>-derived
+ class support the default Gamebryo shader parser library and shader creation
+ library:</p>
+
+<pre>
+#include &lt;NiBinaryShaderLib.h&gt;
+#include &lt;NSFParserLib.h&gt;
+#if defined(WIN32)
+    #include &lt;NiD3D10BinaryShaderLib.h&gt;
+    #include &lt;ecrD3D11BinaryShaderLib/D3D11BinaryShaderLib.h&gt;
+    #pragma comment(lib, "NiBinaryShaderLib.lib")
+    #pragma comment(lib, "NiD3D10BinaryShaderLib.lib")
+    #pragma comment(lib, "ecrD3D11BinaryShaderLib.lib")
+    #pragma comment(lib, "NSBShaderLib.lib")
+    #pragma comment(lib, "NSFParserLib.lib")
+#elif defined(_XENON)
+    #pragma comment(lib, "NiBinaryShaderLib.lib")
+    #pragma comment(lib, "NSBShaderLib.lib")
+    #pragma comment(lib, "NSFParserLib.lib")
+#elif defined (_PS3)
+#else
+    #error "target platform not defined"
+#endif
+
+//---------------------------------------------------------------------------
+bool MyNiSampleDerivation::RegisterShaderParsers()
+{
+    m_kParserLibraries.Add("NSFParserLib");
+    return true;
+}
+//---------------------------------------------------------------------------
+bool MyNiSampleDerivation::RegisterShaderLibraries()
+{
+    m_kShaderLibraries.Add("NiBinaryShaderLib");
+#if defined(WIN32)
+    m_kShaderLibraries.Add("NiD3D10BinaryShaderLib");
+    m_kShaderLibraries.Add("ecrD3D11BinaryShaderLib");
+#endif
+    return true;
+}
+//---------------------------------------------------------------------------
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

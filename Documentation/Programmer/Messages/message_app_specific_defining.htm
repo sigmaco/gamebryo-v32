@@ -1,0 +1,269 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Defining application-specific messages</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Defining application-specific messages</h1>
+
+<p>You can define your own IMessage-derived class. To create and use your own IMessage-derived class, you must:</p>
+
+<ol>
+<li>Define a unique message class ID.</li>
+<li>Declare your message class.<p class="indent1">You need to decide if your message is intended to go over the network. 
+If so, you must override the ToStream and FromStream defined in IMessage.</p></li>
+<li>Implement your message class.</li>
+<li>Declare and define a handler for your new message type.</li>
+</ol>
+
+<p>The following section explains each of these steps, in detail.</li>
+
+<h2>Creating an application-specific message class</h2>
+
+<ol>
+    <li>Each message type you create must have a unique class ID to allow the receiver
+    to unmarshall and deliver it correctly. Do not reuse message class IDs for different
+    types of messages. You can create a message class ID using one of the 
+    following methods:
+
+        <ul>
+            <li>data driven enum</li>
+
+            <li>EE_DECLARE_EXTERNAL_CLASSID macro</li>
+        </ul>
+
+        <p class="indent1">Message class ids must be unique within the context
+        of an application. Values for class ids that are declared by
+        EE_DECLARE_EXTERNAL_CLASSID are restricted to the 0x06200000-0x062fffff
+        range.</p>
+    </li>
+
+    <li>Declare an IMessage-derived class. Your message should derived from efd::IMessage
+    and contain data members representing the payload of your message.
+    
+    <p class="indent1">If you need to send your message over
+    the network, you must override the IMessage ToStream/FromStream methods and has 
+    as data members the payload you want the message to contain. If you don't intend
+    to send your message over the network, you do not need to override these methods.</p>
+
+        <h3>Example: CustomMessage.h</h3>
+        <pre>
+    // Define the message class id.
+    EE_DECLARE_EXTERNAL_CLASSID(kMSGID_CustomMessage, 0x6200003);
+    class CustomMessage : public IMessage
+    {
+        EE_DECLARE_CLASS1(CustomMessage, kMSGID_CustomMessage, efd::IMessage);
+    public:
+        // read and write our payload.  Only used when messages are sent over the network.  
+        // Otherwise the actual message object is delivered to each handler.
+        virtual void ToStream(efd::ParameterList&amp; stream) const;
+        virtual bool FromStream(const efd::ParameterList&amp; stream);
+        
+        // our actual payload.  Must be populated before sending message.
+        efd::SInt16 m_customUInt16;
+        efd::UInt32 m_customUInt32;
+        efd::Float32 m_customFloat32;
+        efd::utf8string m_customString;
+        efd::Point3 m_customPoint3;
+    };</pre>
+   </li>
+      
+   <li>Define your class. At a minimum, you must use the EE_IMPLEMENT_CONCRETE_CLASS_INFO
+   macro to define your class. If you're sending your message over the network you must
+   also provided implementations for your overridden ToStream and FromStream methods.<br/><br/>
+        <h3>Example: CustomMessage.cpp</h3>
+        <pre>
+#include "CustomMessage.h"
+
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(CustomMessage);
+
+// Prepare the message to stream it over the network. If your message class
+// is intended for local delivery only, you can skip these overrides.
+//
+// The order in which data members are streamed must be the same in ToStream and FromStream
+virtual void CustomMessage::ToStream(efd::ParameterList&amp; stream) const
+{
+    stream &lt;&lt; m_customUInt16;
+    stream &lt;&lt; m_customUInt32;
+    stream &lt;&lt; m_customFloat32;
+    stream &lt;&lt; m_customString;
+    stream &lt;&lt; m_customPoint3;
+}
+virtual bool CustomMessage::FromStream(const efd::ParameterList&amp; stream)
+{
+    stream &gt;&gt; m_customUInt16;
+    stream &gt;&gt; m_customUInt32;
+    stream &gt;&gt; m_customFloat32;
+    stream &gt;&gt; m_customString;
+    stream &gt;&gt; m_customPoint3;
+}
+</pre>
+    </li>
+
+    <li>Declare and define a Handler for the custom message type. Note that the handler
+    method has the exact message class in its signature. First declare the handler
+    in your header file.<br/><br/>
+    
+    <h3>Example: SampleMessageTarget.h</h3>
+    
+<pre>class SampleMessageTarget::public efd:IBase
+{
+    void HandleCustomMessage( const CustomMessage* pMessage, efd::Category targetChannel);
+};</pre>
+
+    <p class="indent1">Next, use EE_HANDLER to bind this handler to the message type.</p>
+    
+    <h3>Example: SampleMessageTarget.cpp</h3>
+    
+<pre>EE_HANDLER(
+    SampleMessageTarget,   // The class that will handle the message
+    HandleCustomMessage,   // The member method that will handle the message
+    CustomMessage);        // The message class id to pass to MessageWrapper
+</pre>
+
+    <p class="indent1">Finally, define your message handler.</p>
+    
+    <h3>Example: SampleMessageTarget.cpp</h3>
+    
+<pre>void SampleMessageTarget::HandleCustomMessage(
+    const CustomMessage* pMessage,
+    efd::Category targetChannel)
+{ 
+    value = m_customUInt16 * m_customUInt32; 
+    ... 
+}</pre>
+</li>
+</ol>
+
+<p>For an example of subscribing to a category, and sending a message, see
+<a href="message_custom_creating.htm">Creating custom message types</a>.</p>
+
+<h2>Alternative Implementation using efd::StreamMessage</h2>
+
+<p>As an alternative to extending efd::IMessage, you can extend the efd::StreamMessage
+class. This allows you to send an arbitrary payload in your message and to define
+this payload at the time of delivery. The downside is that your messages are now
+mostly opaque and both sender and receiver must know the contents and remain 
+in synch.</p>
+
+<ol>
+    <li>First, derive your custom message from StreamMessage. There is no need to
+    implement the marshalling code. You could also use one of the WRAPPER
+    macros in this example. As with all message classes, each message type must have a 
+    unique message class ID.
+
+        <p class="indent1">CustomMessage.h:</p>
+        <pre>
+    // Define the message class id 
+    EE_DECLARE_EXTERNAL_CLASSID(kMSGID_CustomMessage, 0x6200003);
+    class CustomMessage : public efd::StreamMessage
+    {
+        EE_DECLARE_CLASS1(CustomMessage, kMSGID_CustomMessage, efd::StreamMessage);
+        // No payload, no streaming.
+    };
+</pre>
+
+        <p class="indent1">Marshalling data is explicitly done by the sender, demarshalling
+        is explicitly done by the receiver. The sender(s) and receiver(s) must remain
+        consistent in marshalling / demarshalling the message payload. Failure to maintain
+        this consistency will result in undefined behavior.</p>
+        
+        <pre>
+// The order in which data members are streamed must be the same for sender and receiver.
+void SendIt()
+{
+    SmartPointer&lt;IMessage&gt;&lt;CustomMessage&gt; spMessage = EE_NEW CustomMessage&lt;IMessage, kMSGID_ApplicationSpecificMessage&gt;;
+    
+    // Data we want to send
+    utf8string stringData = "hello";
+    UInt32 uint32Data = 100;
+    Float32 float32Data = 43.0;
+    Point3 point3Data(0.0, 0.3, 4.6);
+
+    // write the data into the stream
+    *spMessage &lt;&lt; stringData;
+    *spMessage &lt;&lt; uint32Data;
+    *spMessage &lt;&lt; float32Data;
+    *spMessage &lt;&lt; point3Data;
+    
+    // since this uses the c++ stream operator you can also put that all on one line:
+    //*spMessage &lt;&lt; stringData &lt;&lt; uint32Data &lt;&lt; float32Data &lt;&lt; point3Data;
+    
+    // send the message
+    m_spMessageService-&gt;Send(spMessage, kCAT_LocalMessage);
+}
+
+void SampleMessageTarget::HandleCustomMessage(const CustomMessage* pMessage, efd::Category targetChannel)
+{
+    // Data we want to receive
+    utf8string stringData;
+    UInt32 uint32Data;
+    Float32 float32Data;
+    Point3 point3Data;
+
+    // read the data out of the stream
+    *spMessage &gt;&gt; stringData;
+    *spMessage &gt;&gt; uint32Data;
+    *spMessage &gt;&gt; float32Data;
+    *spMessage &gt;&gt; point3Data;
+    
+    // since this uses the c++ stream operator you can also put that all on one line:
+    //*spMessage &gt;&gt; stringData &gt;&gt; uint32Data &gt;&gt; float32Data &gt;&gt; point3Data;
+}
+</pre>
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Tools/DataDrivenEnum/DataDrivenEnum_intro.htm">Data Driven Enumeration Header Generator: Introduction</a></li>
+
+    <li><a href="message_custom_creating.htm">Creating custom message
+    types</a></li>
+
+    <li><a href="message_custom_modifying.htm">Modifying custom message
+    types</a></li>
+
+    <li><a href="message_custom_deleting.htm">Deleting custom message
+    types</a></li>
+
+    <li><a href="message_app_specific_exchanging.htm">Exchanging
+    application-specific messages between applications that are located on
+    separate hosts</a></li>
+
+    <li><a href="message_multithreading.htm">Using the message service for
+    multithreading</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

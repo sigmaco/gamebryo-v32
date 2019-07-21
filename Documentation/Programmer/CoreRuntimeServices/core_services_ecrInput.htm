@@ -1,0 +1,450 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>The ecrInput Library</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>The ecrInput Library</h1>
+
+<p>The <a href="../../Reference/QuickRef_Services/svc_qckref_input_svc.htm"><span
+    class="NDLSystemFont">ecrInput::InputService</span> class</a> interfaces the Game Framework
+    to the <a href="../../Reference/NiInput/Introduction_To_NiInput.htm">NiInput system</a>. The
+    Input Service supports multiple methods of configuring and handling actions:</p>
+<ul>
+    <li>Message Based Actionmap Callbacks</li>
+    <li>Behavior Based Actionmap Callbacks</li>
+    <li>Tool Mode Event Messages</li>
+    <li>Legacy Actionmap Broadcast Messages</li>
+</ul>
+
+<h3>Message Based Actionmap Callbacks</h3>
+<p>With this style of callback the application calls either the <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputService.htm#classecr_input_1_1_input_service_197a9e0918252aa00df60e5a546f05bcc">InputService::ListenForInputActionEvent</a></span>
+    or <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputService.htm#classecr_input_1_1_input_service_1a9e9bd71a8a2ee4d4ecb504cd163c7ad">InputService::ListenForInputStickEvent</a></span>
+    methods and provides a category to which a specific action message should be sent. You can
+    use a well known category to send the resulting message to many handlers or you can use a
+    private category to send the message to a specific handler. The same action name can also be
+    registered multiple times. The receiving message handler should subscribe to the selected
+    category in order to receive those action. Then simply load an actionmap file containing the
+    control bindings for generating the registered action and you will receive a message whenever
+    that action is triggered.</p>
+
+<p>The BaseGame sample shows examples of using both of the callback oriented methods, which are the
+    only methods recommended for most applications. See <span
+    class="NDLSystemFont">BaseGame::SetupInputActions()</span> for an example of requesting message
+    based actionmap callbacks and <span class="NDLSystemFont">BaseGame::HandleActionMessage()</span>
+    for an example of handling an actionmap callback message.</p>
+
+<h3>Behavior Based Actionmap Callbacks</h3>
+<p>With this style of callback the application can call the <span class="NDLSystemFont"><a href=
+    "../../Reference/ecrInput/ecrInput__InputService.htm#classecr_input_1_1_input_service_197a9e0918252aa00df60e5a546f05bcc">InputService::ListenForInputEvent</a></span>
+    method to request that a behavior event be sent to a specific entity or set of entities when
+    the action is triggered. Alternately, behavior based callbacks can be configured entirely from
+    data by mixing-in the <span class="NDLSystemFont">InputHandler</span> standard model and setting
+    the <span class="NDLSystemFont">NormalEventMap</span> property. When the <span class=
+    "NDLSystemFont">InputHandler</span> built-in model is used it will automatically make the
+    required calls to <span class="NDLSystemFont">InputService::ListenForInputEvent</span> when the
+    entity properties are changed so you can dynamically change your input bindings through script.
+    When an actionmap file is loaded any matching actions will trigger a behavior call.</p>
+
+<p>BaseGame mixes the <span class="NDLSystemFont">InputHandler</span> model into the <span
+    class="NDLSystemFont">BGAvatar</span> model in order to bind the avatar movement controls. If
+    you examine <span class="NDLSystemFont">BGAvatar</span> in the Entity Modeling Tool you will
+    see that the <span class="NDLSystemFont">NormalEventMap</span> property defines bindings between
+    several input related actions and the Lua behaviors that handle those actions. Look at the
+    <span class="NDLSystemFont">OnStick</span> and all of the <span class="NDLSystemFont">OnKey*</span>
+    behaviors in <span class="NDLSystemFont">EseBgAvatar.lua</span> for details.</p>
+
+<h3>Tool Mode Event Messages</h3>
+<p>In this mode every key press or mouse movement will send out a message to the local message
+    category. Applications wishing to receive all key and mouse events must set the <span class=
+    "NDLSystemFont">sendSingleMessages</span> parameter to true in the <span class=
+    "NDLSystemFont">ecrInput::InputService</span> constructor. This mode can generate a lot of
+    message traffic as even keys that have no effect will still generate a message when they are
+    pressed. It is recommended that only tools or other non-performance critical applications use
+    this method. You can combine this mode with the use of actionmaps.</p>
+
+<h3>Legacy Actionmap Broadcast Messages</h3>
+<p>This method is similar to Message Based Actionmap Callbacks except the destination callback is
+    hardcoded in the actionmap file itself and you cannot specify a user data parameter. Handlers
+    must still subscribe to the correct category even though it can be hard to know what category is
+    being used since they are set from the data. Use the <span class="NDLSystemFont">EventCategory</span>
+    attribute on the <span class="NDLSystemFont">Event</span> tag inside the action map to specify
+    the destination category for the resulting messages. Applications wishing to use this mode must
+    set the <span class="NDLSystemFont">legacyMode</span> parameter to true in the <span class=
+    "NDLSystemFont">ecrInput::InputService</span> constructor. You can combine this mode with the
+    callback based and tool modes. This method has been deprecated due to easy of use issues.</p>
+
+<h2>Action Maps</h2>
+
+<p>Action Maps are used to create control schemes for an application. They support digital and
+    analog controls, thumb sticks, timing specific combinations, metakey modifiers and more.</p>
+
+<p>Action maps can be data-driven, using the *.actionmap file, or created in C++. The parameters
+    are similar for each method. Generated action maps can also be written to actionmap files. The
+    following tables and examples will provide the details.</p>
+
+<p>Changes to action maps are detected during Rapid Iteration. When any actionmap file is modified
+    during rapid iteration previous actions will be discarded and the new actionmap will be loaded.
+    Any actionmap callbacks will continue to function after the reload.</p>
+
+<h3>InputService::AddAction()</h3>
+<pre>
+    efd::Category AddAction(
+        const efd::utf8string&amp; eventName,
+        efd::Category actionCat,
+        efd::UInt32 semantic,
+        efd::UInt32 flags,
+        efd::UInt32 appData = 0,
+        efd::UInt32 deviceID = 0,
+        efd::UInt32 modifiers = 0,
+        efd::Float32 minRange = -1.0f,
+        efd::Float32 maxRange = 1.0f);
+</pre>
+
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+
+            <th>Description</th>
+
+            <th>Options</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>efd::utf8string&amp; eventName</td>
+
+            <td>String name for the event.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>efd::Category actionCat</td>
+
+            <td>The specific Category that the event will be sent on when using legacy mode.</td>
+
+            <td>Deprecated, pass kCAT_INVALID when not used.</td>
+        </tr>
+
+        <tr>
+            <td>efd::UInt32 semantic</td>
+
+            <td>The key or button press (or other) that initiates the action.</td>
+
+            <td>See NiAction.h or NiInputKeyboard.h for all defined semantic values.</td>
+        </tr>
+
+        <tr>
+            <td>efd::UInt32 flags</td>
+
+            <td>Action details. (ON_ACTIVATE, ON_DEACTIVATE)</td>
+
+            <td>See InputService.h for all valid flags values. Multiple flags can be combined using
+                bitwise or (|).</td>
+        </tr>
+
+        <tr>
+            <td>efd::UInt32 appData</td>
+
+            <td>User defined data.</td>
+
+            <td>Custom field for special application data, not required.</td>
+        </tr>
+
+        <tr>
+            <td>efd::UInt32 deviceID</td>
+
+            <td>A field to specify the action for a specific controller.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>efd::UInt32 modifiers</td>
+
+            <td>Device modifiers field.</td>
+
+            <td>See NiInputKeyboard.h Modifiers enum for options. Multiple flags can be combined
+                using bitwise or (|).</td>
+        </tr>
+
+        <tr>
+            <td>efd::Float32 minRange</td>
+
+            <td>The minimum range of magnitude/axis value.</td>
+
+            <td></td>
+        </tr>
+
+        <tr>
+            <td>efd::Float32 maxRange</td>
+
+            <td>The maximum range of magnitude/axis value.</td>
+
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Here is an example call setting up a button action command
+bound to the N key on the keyboard which fires only when the button is pressed down:</p>
+<pre>
+    pInputService-&gt;AddAction(
+        "ACTION_PICKUP",
+        kCAT_INVALID,
+        NiAction::KEY_MASK | NiInputKeyboard::KEY_N,
+        InputService::ON_ACTIVATE);
+</pre>
+
+<p>There are <span class="NDLSystemFont">AddStick()</span> and <span class=
+    "NDLSystemFont">AddDPad()</span> calls analogous to <span class="NDLSystemFont">AddAction()</span>.
+    Here is an example using <span class="NDLSystemFont">AddStick()</span> to implement elementary
+    gamepad support.</p>
+
+<p>Include the stick message header:</p>
+<pre>
+#include &lt;ecrInput/InputStickMessage.h&gt;
+</pre>
+
+<p>In your handler class declaration, which is typically a system service, declare a stick message
+handler:</p>
+<pre>
+public:
+    void HandleInputStickMessage(const ecrInput::InputStickMessage* pMessage,
+        efd::Category targetChannel);
+</pre>
+
+<p>In your source code register the message handler and implement the handler function:</p>
+<pre>
+EE_HANDLER(
+    YourService,
+    HandleInputStickMessage,
+    ecrInput::InputStickMessage,
+    efd::kCLASSID_InputStickMessage);
+
+void YourService::HandleInputStickMessage(const ecrInput::InputStickMessage* pMessage,
+        efd::Category targetChannel)
+{
+    EE_UNUSED_ARG(targetChannel);
+    efd::Float32 x = pMessage-&gt;GetX();
+    efd::Float32 y = pMessage-&gt;GetY();
+    // ... handle a stick deflection of (x, y) where 0,0 is the center and positive is the top
+    // right. The input ranges are configured when the action was created and can be set to be
+    // a unit circle or unit square. ...
+}
+</pre>
+
+<p>During initialization you should register to receive the action:</p>
+<pre>
+YourService::OnInit()
+{
+    ...
+    // Here we generate and subscribe to a private channel for the input messages:
+    m_myInputChannel = pMessageService->GetGloballyUniqueCategory();
+    pMessageService-&gt;Subscribe(this, m_myInputChannel);
+
+    // Request the stick action be sent to our handler. Note that we can register this handler
+    // before the named action has been defined. The data defining handlers is separate from the
+    // actionmap itself.
+    pInputService-&gt;ListenForInputStickEvent("Movement_Stick", m_myInputChannel);
+
+    // Someone must create the action, but normally this would be defined in an .actionmap file.
+    pInputService-&gt;AddStick(
+        "Movement_Stick",
+        kCAT_INVALID,
+        ecrInput::InputService::GP_STICK_LEFT,
+        ecrInput::InputService::ON_ACTIVATE);
+    ...
+}
+</pre>
+
+
+<h3>Actionmap file</h3>
+
+<p>Here is an example of a simple actionmap file that only defines two actions with both keyboard
+    and gamepad bindings:</p>
+<pre>
+&lt;InputServiceBindings&gt;
+    &lt;!--Input service bindings: action maps, events and actions--&gt;
+    &lt;ActionMapsList&gt;
+        &lt;ActionMap ActionMapName="SAMPLE_ACTION_MAP"&gt;
+            &lt;EventsList&gt;
+                &lt;Event EventName="ACTION_DROP" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;!--Flags - InputService.h ActionFlags enum - use individual string values or combined bitmask as an int--&gt;
+                        &lt;!--DeviceID - a way to define action for specific controllers--&gt;
+                        &lt;!--Modifiers - NiInputKeyboard Modifiers enum--&gt;
+                        &lt;!--ActionClsID - (ACTION/DPAD/STICK)--&gt;
+                        &lt;!--Semantic - NiAction.h Semantic enum for gpad string values GP_BUTTON_LUP or 
+                                NiInputKeyboard.h for key value strings KEY_M, etc--&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" 
+                            Semantic="KEY_M" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" 
+                            Semantic="GP_BUTTON_RDOWN" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="ACTION_PICKUP" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" 
+                            Semantic="KEY_N" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" 
+                            Semantic="GP_BUTTON_RRIGHT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+            &lt;/EventsList&gt;
+        &lt;/ActionMap&gt;
+    &lt;/ActionMapsList&gt;
+    &lt;GlobalActionMap ActionMapName="Global"&gt;
+        &lt;EventsList /&gt;
+    &lt;/GlobalActionMap&gt;
+&lt;/InputServiceBindings&gt;
+</pre>
+
+<table>
+    <thead>
+        <tr>
+            <th>HTML tag</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>InputServiceBindings</td>
+
+            <td>Main outer content tag for InputService
+            mappings.</td>
+        </tr>
+
+        <tr>
+            <td>ActionMapsList</td>
+
+            <td>Contains one or more ActionMap listings.</td>
+        </tr>
+
+        <tr>
+            <td>ActionMap or GlobalActionMap</td>
+
+            <td>
+                Defines an action map.
+
+                <ul>
+                    <li>ActionMapName: string field for action
+                    map name</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td>EventsList</td>
+
+            <td>Contains one or more Event listings.</td>
+        </tr>
+
+        <tr>
+            <td>Event</td>
+
+            <td>Definition of the event.
+
+                <ul>
+                    <li>EventName: string name for the event. This is the name used to request
+                        callbacks for the action.</li>
+
+                    <li>EventCategory: Deprecated. Category to send action messages to if legacy
+                        mode is enabled. Value must be a valid efd::Category in either hex or
+                        decimal form and should not collide with any existing statically or
+                        dynamically allocated category which can be challenging for a hardcoded
+                        data value. It is recommended that the legacy mode not be used.</li>
+
+                    <li>EventFlags: valid options found in InputService.h, EventFlags enum. Multiple
+                        flags can be combined by seperating the names with a '|' character. This can
+                        be used to control whether the actions in the ActionList for a multi-key
+                        command (all must be pressed to trigger the action), a combination command
+                        (each control must be pressed in sequence), or (the default) each trigger
+                        the action independently.</li>
+
+                    <li>Timeout: maximum time in seconds between actions for combos.</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td>ActionsList</td>
+
+            <td>Contains one or more Action listings.</td>
+        </tr>
+
+        <tr>
+            <td>Action</td>
+
+            <td>Definition of the Action that creates the events.
+
+                <ul>
+                    <li>Flags: see InputService.h, ActionFlags enum for options. Multiple flags can
+                        be combined by seperating the names with a '|' character.</li>
+
+                    <li>AppData: An optional integer (defaults to 0) that will be passed in
+                    messages for this action. Use it in cases where one handler receives messages
+                    from multiple actions.</li>
+
+                    <li>DeviceID: An optional way to limit the action to a specific controller</li>
+
+                    <li>Modifiers: see NiInputKeyboard.h and NiInputMouse.h modifiers enum for
+                        options. The string version of the enumeration value may be used, such as
+                        "MMOD_LSHIFT". Multiple values can be combined by seperating the names with
+                        a '|' character.</li>
+
+                    <li>ActionClsID: The type of control, one of ACTION, DPAD, MOUSE or STICK</li>
+
+                    <li>Semantic: NiAction.h Semantic enum for gpad string values GP_BUTTON_LUP or
+                        NiInputKeyboard.h for key value strings</li>
+
+                    <li>MinRange: The minimum range of magnitude/axis value</li>
+
+                    <li>MaxRange: The maximum range of magnitude/axis value</li>
+                </ul>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>A more complicated actionmap file accompanies the MangledMetal example, in the
+MangledMetal\Data\MangledMetal\GamebryoData\Generic folder.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

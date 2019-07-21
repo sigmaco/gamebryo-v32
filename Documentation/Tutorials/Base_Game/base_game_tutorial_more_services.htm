@@ -1,0 +1,736 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Base Game: Adding More Services</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Base Game: Adding More Services</h1>
+
+<p>In this section, we'll replace the fixed camera from Hello World with a camera that tracks your
+avatar as it moves around the scene. We'll also update the avatar movement by using a built-in
+model, which simplifies some of the functionality that has thus far been provided by the script.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="base_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="base_game_tutorial_transform_hw.htm">Transforming Hello World</a></li>
+
+    <li><a href="base_game_tutorial_models.htm">Creating New Models</a></li>
+
+    <li><a href="base_game_tutorial_behaviors.htm">Adding New Behaviors</a></li>
+
+    <li><a href="base_game_tutorial_world.htm">Populating Your First Level</a></li>
+
+    <li><a href="base_game_tutorial_project.htm">C++ Project Changes</a></li>
+
+    <li><a href="base_game_tutorial_code.htm">C++ Code Changes</a></li>
+
+    <li><a href="base_game_tutorial_loading.htm">Loading Your World and Starting the
+    Application</a></li>
+
+    <li><b>Adding More Services&nbsp;&nbsp;&lt;-- You are here</b></li>
+</ol>
+
+<h2>Copying Samples Model Library Models and Assets</h2>
+
+<p>All of the new functionality that we are trying to add to Base Game is already available in the
+<span class="NDLSystemFont">egmSample</span> library and its models (Samples Model Library). To use
+them during this tutorial, you need to copy them to your project directory. We've provided a script
+(<span class="NDLSystemFont">CopySamplesModelLibrary.bat</span>) that automates this process for
+you. To prepare the Samples Model Library for use in this tutorial, run the following, passing the
+full path to your game solution file on the command line:</p>
+<pre>
+CD /D "%EMERGENT_PATH%\Samples\GameFrameworkTechDemos\BaseGame"
+CopySamplesModelLibrary.bat C:\Emergent\BaseGameTutorial\Media
+</pre>
+
+<h2>Adding SamplesModelLibrary.emtproj</h2>
+
+<p>We want to reference the Samples Model Library EMT project. To do this, we first add the
+<span class="NDLSystemFont">.emtproj</span> to our solution. To do so, right-click the <span class=
+"NDLGUILabel">Solution 'BaseGame.gsl'</span> in the <span class="NDLGUILabel">Game Solution</span>
+panel and select <span class="NDLGUILabel">Add &gt; Existing Content</span> from the context menu.
+Browse to the <span class="NDLSystemFont">SamplesModelLibrary</span> directory and select the
+<span class="NDLSystemFont">SamplesModelLibrary.emtproj</span>.</p>
+
+<h2>Adding SamplesModelLibrary as a Base Game Project Reference</h2>
+
+<p>We want to mix-in models from the Samples Model Library to models in Base Game. To do this, we
+need to add a reference to the SamplesModelLibrary EMT project to our Base Game EMT project. First,
+double-click the BaseGame.emtproj file in the <span class="NDLGUILabel">Game Solution</span> view.
+Next, expand the emtproj file to expose the <span class="NDLGUILabel">References</span> folder.
+Right-click this folder and select <span class="NDLGUILabel">Add Reference</span> from the context
+menu. Browse to the <span class="NDLGUILabel">SamplesModelLibrary</span> directory and select the
+<span class="NDLSystemFont">SamplesModelLibrary.emtproj</span> file.</p>
+
+<p>At this point, your Game Solution panel will look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_samples_ref.png" width="272" height="234" alt=
+    "base_game_tutorial_hw_ref(20K)">
+
+    <p class="FigureCaption">Base Game project with Samples Model Library reference</p>
+</div>
+
+<h2>Updating the BgAvatar Model</h2>
+
+<p>We want to mix in the <span class="NDLSystemFont">MovementHandler</span> model from the
+<span class="NDLSystemFont">SamplesModelLibrary</span> folder for enhanced avatar movement. To do
+this, we remove the Avatar model from BgAvatar, because the Avatar model has its own movement
+handling. Instead, we directly mix in the <span class="NDLSystemFont">StandardModelLibrary.InputHandler</span> model
+(which was also mixed in to the Avatar model) along with the <span class=
+"NDLSystemFont">MovementHandler</span>.</p>
+
+<p>Override the following properties within the <span class="NDLGUILabel">Mixin Properties</span>
+section:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Mixin Model</th>
+
+            <th>Property</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>PhysXShape</td>
+
+            <td>ShapeDimensions</td>
+
+            <td>50,0,0</td>
+        </tr>
+
+        <tr>
+            <td>Actor</td>
+
+            <td>KfmAsset</td>
+
+            <td>Jack</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>InitialSequence</td>
+
+            <td>Idle</td>
+        </tr>
+
+        <tr>
+            <td>InputHandler</td>
+
+            <td>NormalEventMap</td>
+
+            <td>MOVE_FORWARD, OnKeyUp<br>
+            <br>
+            MOVE_BACKWARD, OnKeyDown<br>
+            <br>
+            MOVE_TURNLEFT, OnKeyLeft<br>
+            <br>
+            MOVE_TURNRIGHT, OnKeyRight<br>
+            <br>
+            MOVE_STICK, OnStick</td>
+        </tr>
+
+        <tr>
+            <td>MovementHandler</td>
+
+            <td>IdleSequence</td>
+
+            <td>Idle</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>WalkSequence</td>
+
+            <td>Run</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>WalkTopSpeed</td>
+
+            <td>100</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>WalkPlaybackRate</td>
+
+            <td>0.5</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>RunSequence</td>
+
+            <td>Run</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>RunTopSpeed</td>
+
+            <td>200</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Add the following properties:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Property</th>
+
+            <th>Type</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>LateralMovement</td>
+
+            <td>Float32</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>LongitudinalMovement</td>
+
+            <td>Float32</td>
+
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>StickMovement</td>
+
+            <td>Point3</td>
+
+            <td>0,0,0</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Add the following behaviors:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Target</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnKeyUp</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyDown</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyLeft</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnKeyRight</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>OnStick</td>
+
+            <td>Lua</td>
+        </tr>
+
+        <tr>
+            <td>SetMovement</td>
+
+            <td>Lua</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>You should end up with a model that looks like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_bgavatar_updated.png" width="449" height="417" alt=
+    "base_game_tutorial_bgavatar_updated (34K)">
+
+    <p class="FigureCaption">Updated BaseGame BgAvatar model</p>
+</div>
+
+<h2>EseBgAvatar.lua</h2>
+
+<p>We have updated the <span class="NDLSystemFont">BgAvatar</span> model and added the following
+behaviors:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">OnKeyUp</span></li>
+
+    <li><span class="NDLSystemFont">OnKeyDown</span></li>
+
+    <li><span class="NDLSystemFont">OnKeyLeft</span></li>
+
+    <li><span class="NDLSystemFont">OnKeyRight</span></li>
+
+    <li><span class="NDLSystemFont">OnStick</span></li>
+
+    <li><span class="NDLSystemFont">SetMovement</span></li>
+</ul>
+
+<p>Let's define what happens when each of these behaviors is called. Full source code for these
+behaviors can be found in <a href="base_game_tutorial_code_samples.htm#EseBgAvatar_lua">BaseGame
+Code Samples</a>.</p>
+
+<p>The behaviors that are called in response to user input (the On*** behaviors) all perform the
+same basic functionality of setting the following properties:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">LateralMovement</span></li>
+
+    <li><span class="NDLSystemFont">LongitudinalMovement</span></li>
+
+    <li><span class="NDLSystemFont">StickMovement</span></li>
+</ul>
+
+<p>For example, in the <span class="NDLSystemFont">OnKeyUp</span> behavior, we first get some
+arguments passed to this function from the provided data stream.</p>
+<pre>
+local magnitude = params:GetFloat32("Magnitude")
+</pre>
+
+<p>Then, we set the <span class="NDLSystemFont">LongitudinalMovement</span> property, and call the
+<span class="NDLSystemFont">SetDirection</span> function, which calculates the avatar movement and
+updates the camera accordingly:</p>
+<pre>
+self.LongitudinalMovement = -magnitude
+SetDirection(self)
+</pre>
+
+<p>The <span class="NDLSystemFont">SetDirection</span> function calculates the Avatar movement and
+updates the camera using the properties set by the On*** behaviors:</p>
+<pre>
+function SetDirection(self)
+    local lateral = self.LateralMovement
+    local longitudinal = self.LongitudinalMovement
+    local stick = self.StickMovement
+
+    stick[1] = stick[1] + lateral
+    stick[2] = stick[2] + longitudinal
+
+    local cameraRotation = {0.0, 0.0, 0.0}
+    local camera = egmSample.GetActiveCamera()
+    if(camera ~= Entity.InvalidEntity) then
+        cameraRotation = camera.Rotation
+    end
+
+    local movement = egmSample.Idle
+    if (math.abs(stick[1]) &gt; 0.05 or math.abs(stick[2]) &gt; 0.05) then
+        local direction = {-stick[1], -stick[2], 0.0}
+        egmSample.SetTargetDirection(self, direction, cameraRotation)
+        if (math.abs(stick[1]) &gt; 0.6 or math.abs(stick[2]) &gt; 0.6) then
+            movement = egmSample.Running
+        else
+            movement = egmSample.Walking
+        end
+    end
+
+    -- update the movement type (animation)
+    local args = ParameterList.ParameterList()
+    args:PutUInt32(&quot;MovementType&quot;, movement)
+    self:SendEvent(&quot;SetMovement&quot;, args)
+end
+</pre>
+
+<h2>Updating the Level</h2>
+
+<p>In this step, you will switch to a more sophisticated camera from the SamplesModelLibrary that
+is capable of following an entity as it moves about the world (like a traditional 3rd person view).
+The BgAvatar will be the camera's subject.</p>
+
+<p>First, we need to add the SamplesModelLibrary to your block file's references so that you can
+place models from this library into the world. From the Game Solution view, expand the <span class=
+"NDLSystemFont">BaseGame.block</span> node. Then, right-click References and add a reference to the
+SamplesModelLibrary.</p>
+
+<p>Next, open the <span class="NDLSystemFont">BaseGame.block</span> in World Builder. Use the
+"Transmogrify" feature to change your existing camera to a ThirdPersonRotatingCamera by following
+these steps:</p>
+
+<ol>
+    <li>Select the camera entity (likely named "Camera0") in the Entity View.</li>
+
+    <li>Select the ThirdPersonRotatingCamera in the Palette View.</li>
+
+    <li>Click the "Transmogrify" button in the World Builder toolbar.</li>
+</ol>
+
+<p>With your new camera entity, override: IsCameraActive=True and CameraSubject="BgAvatar0"</p>
+
+<p>At this point, we have script code in place that implements the enhanced Avatar movement and a
+camera that tracks the Avatar. Be sure that you have the script file under the <span class=
+"NDLSystemFont">Media\BaseGameLibrary\Behaviors</span> directory. In this tutorial,the directory is
+<span class=
+"NDLSystemFont">C:\Emergent\BaseGameTutorial\Media\BaseGameLibrary\Behaviors</span>.</p>
+
+<h2>Updating Code to Enable Movement Around Your World with a Movable Camera</h2>
+
+<h3>Updating BaseGame.cpp</h3>
+
+<p>From the <span class="NDLSystemFont">egmSample</span> library, we'll use the MovementService to
+move the Avatar and the EntityCameraService to control a camera that can track the Avatar. With the
+MovementService, you will be able to move the avatar in all directions without first turning and
+then moving forward.</p>
+
+<p>First, we need to add the headers to the <span class="NDLSystemFont">BaseGame.cpp</span>
+file.</p>
+<pre>
+#include &lt;egmSample/EntityCameraService.h&gt;
+#include &lt;egmSample/MovementService.h&gt;
+
+using namespace egmSample;
+</pre>
+
+<p>Next, we add these services and register them with the Service Manager by adding them to the
+SetupServices() method of our application object.</p>
+<pre>
+// Create and register EntityCameraService. This camera differs from NiCamera in that it
+// targets the player. The camera zooms and orbits around the selected target.
+EntityCameraServicePtr spECameraService = EE_NEW EntityCameraService();
+m_spServiceManager-&gt;RegisterSystemService(spECameraService);
+
+// The MovementService works with the MovementHandler built-in model to calculate positional
+// updates for entities that move about the world.
+MovementServicePtr spMovementService = EE_NEW MovementService();
+m_spServiceManager-&gt;RegisterSystemService(spMovementService);
+</pre>
+
+<p>We make the functionality provided by the <span class="NDLSystemFont">egmSample</span> library
+accessible from the Lua scripts. To do this, we first declare this external and register it
+later.</p>
+<pre>
+extern "C" int luaopen_egmSample(lua_State *L);
+</pre>
+
+<p>We need to tell the scripting engine to load an extra built-in for <span class=
+"NDLSystemFont">egmSample</span> by also adding this code to BaseGame::SetupServices.</p>
+<pre>
+EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_egmSample));
+</pre><a name="ActionMap" id="ActionMap"></a>
+
+<h2>Updating the Action Map File</h2>
+
+<p>We add one additional mapping of the down arrow key to the action map file to enable the avatar
+movement in all directions. We also add mappings for camera movements. The complete mapping now
+looks like this:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Keyboard</th>
+
+            <th>Game Pad</th>
+
+            <th>Event Name</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>UP_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_FORWARD</td>
+        </tr>
+
+        <tr>
+            <td>DOWN_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_BACKWARD</td>
+        </tr>
+
+        <tr>
+            <td>LEFT_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_TURNLEFT</td>
+        </tr>
+
+        <tr>
+            <td>RIGHT_ARROW</td>
+
+            <td></td>
+
+            <td>MOVE_TURNRIGHT</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>Left Analog</td>
+
+            <td>MOVE_STICK</td>
+        </tr>
+
+        <tr>
+            <td>KEY_W</td>
+
+            <td></td>
+
+            <td>CAMERA_KEYB_FORWARD</td>
+        </tr>
+
+        <tr>
+            <td>KEY_S</td>
+
+            <td></td>
+
+            <td>CAMERA_KEYB_BACKWARD</td>
+        </tr>
+
+        <tr>
+            <td>KEY_A</td>
+
+            <td></td>
+
+            <td>CAMERA_KEYB_LEFT</td>
+        </tr>
+
+        <tr>
+            <td>KEY_D</td>
+
+            <td></td>
+
+            <td>CAMERA_KEYB_RIGHT</td>
+        </tr>
+
+        <tr>
+            <td></td>
+
+            <td>Right Analog</td>
+
+            <td>CAMERA_STICK</td>
+        </tr>
+
+        <tr>
+            <td>ESC</td>
+
+            <td>Start &amp; Select/Back buttons</td>
+
+            <td>GAME_QUIT</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Update the existing HelloWorldActionMap content and save it as <span class=
+"NDLSystemFont">BaseGameActionMap.actionmap</span> in the media directory. In this example, it
+should be placed at:</p>
+
+<p><span class=
+"NDLSystemFont">C:\Emergent\BaseGameTutorial\Media\BaseGameActionMap.actionmap</span></p>
+<pre>
+&lt;?xml version="1.0" ?&gt;
+&lt;InputServiceBindings&gt;
+    &lt;!--Input service bindings: action maps, events and actions--&gt;
+    &lt;ActionMapsList&gt;
+        &lt;ActionMap ActionMapName="GAMEPLAY_ACTION_MAP"&gt;
+            &lt;EventsList&gt;
+                &lt;Event EventName="CAMERA_KEYB_BACKWARD" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_S" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="CAMERA_KEYB_FORWARD" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_W" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="CAMERA_KEYB_LEFT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_A" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="CAMERA_KEYB_RIGHT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_D" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="CAMERA_STICK" EventFlags="RETURN_COORD"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="" ActionClsID="STICK" StickType="GP_STICK_RIGHT" XAxisSemantic="0" YAxisSemantic="0" ZAxisSemantic="0" XMinRange="-1.000000" XMaxRange="1.000000" YMinRange="-1.000000" YMaxRange="1.000000" ZMinRange="-1.000000" ZMaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_BACKWARD" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_DOWN" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_FORWARD" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_UP" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_STICK" EventFlags="RETURN_COORD"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="" ActionClsID="STICK" StickType="GP_STICK_LEFT" XAxisSemantic="0" YAxisSemantic="0" ZAxisSemantic="0" XMinRange="-1.000000" XMaxRange="1.000000" YMinRange="-1.000000" YMaxRange="1.000000" ZMinRange="-1.000000" ZMaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_TURNLEFT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_LEFT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+                &lt;Event EventName="MOVE_TURNRIGHT" EventFlags="RETURN_MAGNITUDE"&gt;
+                    &lt;ActionsList&gt;
+                        &lt;Action Flags="ON_ACTIVATE|ON_DEACTIVATE" DeviceID="0" Modifiers="" ActionClsID="ACTION" Semantic="KEY_RIGHT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;/ActionsList&gt;
+                &lt;/Event&gt;
+            &lt;/EventsList&gt;
+        &lt;/ActionMap&gt;
+    &lt;/ActionMapsList&gt;
+    &lt;GlobalActionMap ActionMapName="Global"&gt;
+        &lt;EventsList&gt;
+            &lt;Event EventName="GAME_QUIT" EventFlags="ACTION_AND"&gt;
+                &lt;ActionsList&gt;
+                    &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" Semantic="GP_BUTTON_SELECT" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                    &lt;Action Flags="ON_ACTIVATE" DeviceID="0" Modifiers="0" ActionClsID="ACTION" Semantic="GP_BUTTON_START" MinRange="-1.000000" MaxRange="1.000000" /&gt;
+                &lt;/ActionsList&gt;
+            &lt;/Event&gt;
+
+        &lt;/EventsList&gt;
+    &lt;/GlobalActionMap&gt;
+&lt;/InputServiceBindings&gt;
+</pre>
+
+<h2>Updating Your Visual Studio Project File</h2>
+
+<p>If your project is based on the one that you used in the Hello World tutorial, you need to add a
+few additional libraries that must be linked to in order to get the functionality of the
+<span class="NDLSystemFont">egmSample</span> module.</p>
+
+<p>Modify the properties of your project in Visual Studio, and add the following libraries as
+additional dependencies:</p>
+<pre>
+egmSample.lib egmTerrain.lib NiTerrain.lib egmTerrainLua.lib egmSampleLua.lib
+</pre>
+
+<h2>Starting Your Application</h2>
+
+<p>When you start your application, you can move around the world using the UP, DOWN, LEFT, RIGHT
+arrow keys. You should be also be able to move the camera that tracks the Avatar using the A, W, S,
+D keys. You'll need to pass an additional argument on the command-line to start the Lua script
+engine. Your new command line is:</p>
+
+<p><span class="NDLSystemFont">Game.InitialWorld=urn:emergent-world:BaseGame AssetWeb.Path=../Media
+ScriptEngine.Lua.SystemScriptPath#=../Scripts
+InputService.ActionMapURN=urn:gamebryo-actionmap:BaseGameActionMap</span></p>
+
+<p>For DLL builds, use the following command line:</p>
+
+<p><span class="NDLSystemFont">Game.InitialWorld=urn:emergent-world:BaseGame AssetWeb.Path=../Media
+ScriptEngine.Lua.SystemScriptPath#=../Scripts ScriptEngine.Lua.LoadBuiltin#=ecrLua!luaopen_ecr
+ScriptEngine.Lua.LoadBuiltin#=egmAnimationLua!luaopen_egmAnimation
+ScriptEngine.Lua.LoadBuiltin#=egfPhysXLua!luaopen_bapiPhysXBase
+ScriptEngine.Lua.LoadBuiltin#=egmSampleLua!luaopen_egmSample
+InputService.ActionMapURN=urn:gamebryo-actionmap:BaseGameActionMap</span></p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_room1_mcamera.png" width="640" height="480" alt=
+    "base_game_tutorial_room1_mcamera (45K)">
+
+    <p class="FigureCaption">BaseGame with movable camera</p>
+</div>
+
+<h2>Moving On...</h2>
+
+<p>This concludes the Base Game tutorial. You have learned how to add PhysX-aware entities into
+your world and have the collisions of these entities trigger entity behaviors. You've created a new
+camera that tracks your player avatar as it moves around the scene. And you've seen how you can
+reference a different EMT project to serve as a basis for a new EMT project. The full source for
+the complete <span class="NDLSystemFont">BaseGame.h</span>, <span class=
+"NDLSystemFont">BaseGame.cpp</span>, and <span class="NDLSystemFont">Main.cpp</span> files is
+available in <a href="base_game_tutorial_code_samples.htm#final_basegame_source_files">Base Game
+Code Samples</a>.</p>
+
+<p>The full <a href="base_game_demo.htm">Base Game demo</a> contains all of the functionality that
+you explored in this tutorial, plus a lot more. It expands the world by creating additional models
+in EMT and adding these to the world in World Builder. It has computer controlled Jack characters
+that try to prevent your avatar from completing its mission. We add a Walkable service that
+determines the areas where entities can walk; thus preventing you from walking through walls. It
+adds puzzles by using entity properties and scripted behaviors to change entities in the world
+without requiring recompilation of the C++ source code. It also uses GameStateService to load the
+LightSpeed splash screen and implement the block file load state before starting the game play.</p>
+
+<p>Further still, you can check out Kickstart, which extends Gamebryo
+LightSpeed by providing libraries, tools, and game samples that are designed to support your rapid
+prototyping needs and reduce the time that it takes you to create a first playable. Kickstart 
+demonstrates Gamebryo LightSpeed best practices, provides samples that are easy to follow and
+update, and includes useful library code in both C++ and scripting languages.</p>
+
+<p>Visit the Kickstart Project at the following location:</p>
+
+<p><a href="https://pulse.emergent.net/wiki/index.php/Kickstart" target=
+"_blank">https://pulse.emergent.net/wiki/index.php/Kickstart</a></p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

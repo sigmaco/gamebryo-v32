@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Bounding Spheres</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Bounding Spheres</h1>
+
+<p>The bounding spheres for nodes in a Gamebryo scene graph 
+ are held in the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ class and can be used for a variety of purposes. One use is for detecting 
+ collisions between objects in a scene. The hierarchical nature of a scene 
+ graph is used in computing object intersections.</p>
+
+<p>A simple hierarchical approach to determining intersections 
+ of two objects, each represented by a subtree of the scene graph, is as 
+ follows.&nbsp; If the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a> 
+ </span>objects of the root nodes of the subtrees are disjoint then the 
+ objects themselves do not intersect.&nbsp; If the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ objects do intersect, the objects may or may not intersect.&nbsp; In this 
+ case, the subtrees are descended recursively and the <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ objects of the children are compared for overlap.&nbsp; If at some point 
+ in the traversal the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ tests show two spheres are disjoint, then the objects contained in those 
+ spheres do not intersect.&nbsp; Otherwise, each subtree has a leaf node 
+ with geometry for which the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ objects overlap.&nbsp; While the actual polygons represented by those 
+ leaf nodes still might not intersect, the application may assume that 
+ an intersection has occurred.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image002.jpg" width="454" height="319" alt="image002 (23K)" />
+    <p class="NDLFigureCaption">Bounding sphere example</p>
+</div>
+
+<p>In the figure above, a test of the Red and Blue <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a> 
+ </span>objects indicates a potential collision. Recursing through Blue's 
+ 2<sup>nd</sup> level <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> objects reveals a potential collision between 
+ one of them and Red's main <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span>.&nbsp; 
+ Testing Red's 2<sup>nd</sup> level <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> objects against this last blue <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiBound.htm">NiBound</a></span> 
+ shows that none of them intersect with it.&nbsp; We don't need to do further 
+ polygon intersection tests at this point, as we know there is no way they 
+ can intersect.</p>
+
+<p>This algorithm is simple but has a couple of drawbacks.&nbsp; 
+ First, the geometry at a leaf node may be complex and the bounding sphere 
+ may not accurately represent the shape of the represented object.&nbsp; 
+ The application might have a need for a more accurate intersection test.&nbsp; 
+ Second, the intersection tests are static; that is, the objects are assumed 
+ to have zero velocity.&nbsp; This assumption is inadequate for a 3D game.</p>
+
+<p>For example, the object in the figure below could pass 
+ through the wall without any collision being detected by a static overlap 
+ test.&nbsp; The application could increase the sampling rate to lower 
+ the chance of this situation happening, but the computational cost would 
+ be prohibitive, and it is still not guaranteed to work.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/image004.jpg" width="252" height="204" alt="image004 (4K)" />
+    <p class="NDLFigureCaption">Collision missed by static overlap test</p>
+</div>
+
+<p>The Gamebryo collision detection system avoids both 
+ drawbacks.&nbsp; Collision detection occurs in two phases.&nbsp; As mentioned 
+ earlier, the system enables the application to place objects in <span 
+ class="NDLSystemFont"><a href="NiCollisionGroup.htm">NiCollisionGroup</a> </span>containers. Each group 
+ is a collection of objects for which the occurrence of an intersection 
+ between any two members is relevant to the application.&nbsp; The first 
+ phase is to apply the hierarchical bounding sphere intersection tests 
+ to pairs of objects.&nbsp; If this phase shows that two or more objects 
+ might intersect, then the second phase performs additional dynamic collision 
+ detection tests, with velocities, using alternate bounding volumes (ABVs), 
+ oriented bounding boxes (OBBs), or triangles.&nbsp;</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

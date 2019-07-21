@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Floodgate Workflow Completion Monitoring</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Floodgate Workflow Completion Monitoring</h1>
+
+<p>Once an <a href="../../Reference/NiFloodgate/NiSPWorkflow.htm"><span 
+ class="NDLSystemFont">NiSPWorkflow</span></a> has been submitted, the application 
+ can wait (blocking) or poll (non-blocking) for completion.</p>
+
+<h2>Source Code</h2>
+
+<p>The following code shows how the <span class="NDLSystemFont">NiStreamProcessor::Wait()</span> 
+ method is used to wait for an <span class="NDLSystemFont">NiSPWorkflow</span> 
+ to complete execution. In addition to the blocking <span class="NDLSystemFont">Wait</span> 
+ method, a <span class="NDLSystemFont">Poll</span> method is also available 
+ which does not block. The <span class="NDLSystemFont">Wait</span> and <span 
+ class="NDLSystemFont">Poll</span> methods are thread safe and can be called 
+ at anytime, from anywhere in the code to determine if a specific <span 
+ class="NDLSystemFont">NiSPWorkflow</span> has completed. Once the <span 
+ class="NDLSystemFont">NiSPWorkflow</span> has completed and the application 
+ is finished with it, the smart pointer to the workflow object should be 
+ released (set to 0) to return the <span class="NDLSystemFont">NiSPWorkflow</span> 
+ to the pool.</p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiFloodgate/NiSPTask.htm">NiSPTask</a></span> 
+ objects can be re-used in a different workflow simply by holding their 
+ smart pointers. However, in this example we release the tasks and return 
+ them to the pool.</p>
+
+<pre>
+//---------------------------------------------------------------------------
+bool MyApplication::UpdateFrame()
+{
+    // Update base class
+    NiApplication::UpdateFrame();
+ 
+    // Initialize data buffers
+    for (NiUInt32 i = 0; i &lt; 256; i++)
+    {
+        auiInputBuffer1[i] = i;
+        auiInputBuffer2[i] = i;
+    }
+    memset(auiOutputBuffer1, 0, sizeof(auiOutputBuffer1));
+    memset(auiOutputBuffer2, 0, sizeof(auiOutputBuffer2));
+ 
+    // Initialize streams
+    NiTSPStream&lt;NiUInt32&gt; kStream0(auiInputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream1(auiInputBuffer2, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream2(auiOutputBuffer1, 256);
+    NiTSPStream&lt;NiUInt32&gt; kStream3(auiOutputBuffer2, 256);
+ 
+    // Initialize fixed input
+    NiTSPFixedInput&lt;NiUInt32&gt; kFixedInput(&amp;uiFixedInput, 1);
+ 
+    // Obtain NiSPWorkflow from NiStreamProcessor
+    NiSPWorkflowPtr spWorkflow = NiStreamProcessor::Get()-&gt;GetFreeWorkflow();
+ 
+<span class="CodeHighLight">    // Setup tasks
+    // Task1 - kStream2 = kStream0 + kStream1
+    NiSPTaskPtr spTask1 = spWorkflow-&gt;AddNewTask();
+    spTask1-&gt;SetKernel(&amp;m_kSum2Kernel);
+    spTask1-&gt;AddInput(&amp;kStream0);
+    spTask1-&gt;AddInput(&amp;kStream1);
+    spTask1-&gt;AddOutput(&amp;kStream2);
+    
+    // Task2 - Stream3 = FixedInput * Stream2
+    NiSPTaskPtr spTask2 = spWorkflow-&gt;AddNewTask();
+    spTask2-&gt;SetKernel(&amp;m_kScaleKernel);
+    spTask2-&gt;AddInput(&amp;kFixedInput);
+    spTask2-&gt;AddInput(&amp;kStream2);
+    spTask2-&gt;AddOutput(&amp;kStream3);
+ 
+    // Submit workflow for execution with Medium priority
+    NiStreamProcessor::Get()-&gt;Submit(spWorkflow, NiStreamProcessor::MEDIUM);
+</span> 
+    //... Other operations can be performed here in parallel with the Floodgate...
+ 
+<span class="CodeHighLight">    // Wait for completion
+    NiStreamProcessor::Get()-&gt;Wait(spWorkflow);
+ 
+    // Verify results
+    NiUInt32 * pData = (NiUInt32*)kStream3.GetData();
+    for (NiUInt32 uiIndex = 0; uiIndex &lt; kStream3.GetBlockCount(); uiIndex++)
+    {
+        // Check that kStream3 = (kStream0 + kStream1) * uiFixedInput
+        NIASSERT(pData[uiIndex] ==
+            (auiInputBuffer1[uiIndex] + auiInputBuffer2[uiIndex]) *
+            uiFixedInput);
+    }
+    // Release workflow and tasks
+    spWorkflow = 0;
+    spTask1 = 0;
+    spTask2 = 0;</span>
+}
+//---------------------------------------------------------------------------
+</pre>
+
+
+<p>In the final page of this section, we discuss <a href="Floodgate_Using_the_NiSPWorkflowManager_Class.htm">the 
+ NiSPWorkflowManager class</a>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

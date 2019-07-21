@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Shadowing System Use Cases</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Shadowing System Use Cases</h1>
+
+<p>While the Gamebryo shadowing system ships with a number 
+ of valuable default techniques, the requirements of individual applications 
+ vary greatly. The following section describes some situations where the 
+ shadowing system might be extended.</p>
+
+<h2>Custom Shadow Map Purging</h2>
+
+<p>The shadow manager allows a custom callback to be specified 
+ that is called when the shadow manager runs out of allowed texture memory. 
+ The default callback will first purge all unused shadow cube maps and 
+ all unused shadow maps. If this is not enough, it will start deactivating 
+ shadow generators and purging their shadow maps until the texture memory 
+ allocation limit is respected.</p>
+
+<p>When this callback starts to deactivate shadow generators, 
+ there is no mechanism to indicate which shadow generators will be deactivated. 
+ This behavior could result in a shadow generator that affects the main 
+ character of scene to be deactivated, while leaving active a shadow generator 
+ that only affects an unimportant prop. A custom callback function can 
+ deactivate the shadow generators based on application-provided priorities. 
+ Changing the callback allows an application to ensure that the shadow 
+ generator affecting the main character is always preserved.</p>
+
+<h2>Multiple Shadow Maps per Shadow Generator</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span> 
+ object only uses one shadow map per shadow generator. As such it assigns 
+ callbacks to the shadow generators that only support accessing one shadow 
+ map per shadow generator. It may be desired to allow a shadow generator 
+ to use multiple shadow maps and then chose which shadow map is applied 
+ to a shadow receiving geometry object based on some specialized criteria.</p>
+
+<p>The shadowing system can be extended to support this 
+ by providing specialized <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span> 
+ callbacks and creating a new <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShadowClickGenerator.htm">NiShadowClickGenerator</a></span> 
+ object that inherits from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span> 
+ and assigns these new callbacks via the <span class="NDLSystemFont">PrepareSpotLightShadowGenerator</span>, 
+ <span class="NDLSystemFont">PreparePointLightShadowGenerator</span>, and 
+ <span class="NDLSystemFont">PrepareDirectionalLightShadowGenerator</span> 
+ virtual functions.</p>
+
+<p>The new shadow generator callbacks would store the shadow 
+ maps that are used in some custom data structure that can be easily accessed 
+ based on some custom criteria. This custom data structure can then be 
+ pointed to by the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowGenerator</a></span> 
+ object's extra data pointer. The callbacks can access this data structure 
+ when assigning and retrieving shadow maps. Below is a list of the shadow 
+ generator callbacks that one would need to customize to achieve this result:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont">AssignSMTextureCallback</span></li>
+	
+	<li><span class="NDLSystemFont">RetrieveSMTextureCallback</span></li>
+	
+	<li><span class="NDLSystemFont">RetrieveOwnedShadowMap</span></li>
+	
+	<li><span class="NDLSystemFont">ShadowMapCountCallback</span></li>
+	
+	<li><span class="NDLSystemFont">CleanUpExtraDataCallback</span></li>
+</ul>
+
+<h2>Adjusting NiDefaultShadowClickGenerator to use Perspective 
+ Shadow Mapping</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span> 
+ makes no attempt at performing any specialized spatial transformation 
+ of geometry when rendering to a shadow map. The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span> 
+ simply determines the smallest view frustum needed to encapsulate all 
+ of its shadow casters and uses that view frustum with a normal transformation. 
+ It may be desired to switch from this scheme to something more specialized, 
+ such as perspective or trapezoidal shadow mapping.</p>
+
+<p>A new <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowClickGenerator</a></span> 
+ subclass could be created that inherits from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiDefaultShadowClickGenerator.htm">NiDefaultShadowClickGenerator</a></span> 
+ and overrides the virtual functions <span class="NDLSystemFont">HandleSpotLight</span>, 
+ <span class="NDLSystemFont">HandlePointLight</span>, and <span class="NDLSystemFont">HandleDirectionalLight</span>. 
+ The new <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShadowGenerator.htm">NiShadowClickGenerator</a></span> 
+ could then setup the view matrix, the projection matrix, and the view 
+ frustum used by the camera as desired with an arbitrary spacial warping 
+ algorithm.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

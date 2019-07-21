@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiShaderFactory</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiShaderFactory</p>
+
+<p class="NDLRefParentage">: public <span><a href=
+"NiRefObject.htm">NiRefObject</a></span></p>
+
+<p class="NDLRefHeaderFile">&lt;NiShaderFactory.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiShaderFactory</span> is the factory class for
+attaching shaders to geometry instances. The system operates off a single
+static pointer, which is filled in with the platform-specific derivation of
+this class. If a platform does not support the shader system, this pointer will
+never be set, and no shader-related factory function will perform any
+action.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">NiShaderFactory</span> does not expose a public constructor.
+This behavior is intentional, so that only platforms that implement the shader
+system can actually set the static factory pointer.</p>
+
+<p class="NDLRefHead1">Defined Callback Function Types</p>
+
+<p class="NDLRefMemberFunction">typedef bool
+(*NISHADERFACTORY_CLASSCREATIONCALLBACK)(const char*, NiRenderer*, int,
+char*[], bool, NiShaderLibrary**)</p>
+
+<p class="NDLRefMemberDescription">This function will be called when the
+<span class="NDLSystemFont">LoadAndRegisterShaderLibrary</span> function is
+called. The function should then look at the name of the library requested, and
+create and return an instance of the appropriate library in the <span class=
+"NDLSystemFont"><a href="NiShaderLibrary.htm">NiShaderLibrary</a>**</span>
+parameter, and return a Boolean value indicating whether or not the shader
+library creation was successful. The const <span class=
+"NDLSystemFont">char*</span> parameter will be the name of the library
+requested, <span class="NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>*</span> will be a pointer to the renderer,
+<span class="NDLSystemFont">int</span> will be the number of directories
+contained in the <span class="NDLSystemFont">char*[]</span> array, which will
+in turn contain the directories where shaders should be located. The
+<span class="NDLSystemFont">bool</span> flag indicates if those directories
+should have their subfolders recursed when searching for shaders.
+Custom-created shader libraries are not required to utilize any of these
+parameters if they don't require them. For an example of how they are used,
+please refer to the <a href=
+"../../Reference/NSBShaderLib/NSBShaderLib_Reference.htm">NSBShaderLib
+Reference</a>.</p>
+
+<p class="NDLRefMemberFunction">typedef unsigned int
+(*NISHADERFACTORY_RUNPARSERCALLBACK)(const char*, <a href=
+"NiRenderer.htm">NiRenderer</a>*, const char*, bool)</p>
+
+<p class="NDLRefMemberDescription">This function will be called when the
+<span class="NDLSystemFont">LoadAndRunParserLibrary</span> function is called.
+The function should then look at the name of the library requested, and create
+an instance of the appropriate parser, run it, and then return the count of
+parsed files. The const char* parameter will be the name of the library
+requested, <span class="NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>*</span> will be a pointer to the renderer, the
+second <span class="NDLSystemFont">const char*</span> will be the directory to
+run the parser on, and the <span class="NDLSystemFont">bool</span> flag
+indicates if those directories should have their subfolders recursed when
+searching for files to parse.</p>
+
+<p class="NDLRefMemberFunction">typedef unsigned int
+(*NISHADERFACTORY_ERRORCALLBACK)(const char*, <a href=
+"NiShaderError.htm">NiShaderError</a>, bool)</p>
+
+<p class="NDLRefMemberDescription">This callback is utilized when an error
+occurs in the shader system. The const <span class="NDLSystemFont">char*</span>
+parameter will be a string describing the error, <span class=
+"NDLSystemFont"><a href="NiShaderError.htm">NiShaderError</a></span> will be
+the error code, and the <span class="NDLSystemFont">bool</span> flag indicates
+if the error is recoverable or not. Refer to the <span class=
+"NDLSystemFont"><a href="NiShaderError.htm">NiShaderError</a></span>
+documentation for details about the error code. The callback should return 0
+for now, but in the future a code will be returned indicating how the system
+should handle the error.</p><a name="Static_Members" id="Static_Members"></a>
+
+<p class="NDLRefHead1">Supported Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static void Shutdown()</p>
+
+<p class="NDLRefMemberDescription">Destroys the static <span class=
+"NDLSystemFont">NiShaderFactory</span> instance. This function should never be
+called by an application, and should only be called by Gamebryo code as part of
+the shutdown process.</p>
+
+<p class="NDLRefMemberFunction">static NiShaderFactory* GetInstance()</p>
+
+<p class="NDLRefMemberDescription">Return a pointer to the static <span class=
+"NDLSystemFont">NiShaderFactory</span> instance.</p>
+
+<p class="NDLRefMemberFunction">static void ReleaseAllShaders()</p>
+
+<p class="NDLRefMemberDescription">Releases all shaders held by the
+factory.</p>
+
+<p class="NDLRefMemberFunction">static void RegisterLibrary(<a href=
+"NiShaderLibrary.htm">NiShaderLibrary</a>* pkLibrary)</p>
+
+<p class="NDLRefMemberDescription">If the library is not already in the
+factory's library map, it registers the given library in its map. At this
+point, any shaders available in the library are available to the application to
+obtain via the <span class="NDLSystemFont">RetrieveShader</span> or
+<span class="NDLSystemFont">FindShader</span> calls.</p>
+
+<p class="NDLRefMemberFunction">static void UnregisterLibrary(<a href=
+"NiShaderLibrary.htm">NiShaderLibrary</a>* pkLibrary)</p>
+
+<p class="NDLRefMemberDescription">Removes the given library from the factory's
+library map.</p>
+
+<p class="NDLRefMemberFunction">static void UnregisterAllLibraries()</p>
+
+<p class="NDLRefMemberDescription">Removes all libraries from the library
+map.</p>
+
+<p class="NDLRefMemberFunction">static void AddLibraryCallback(const char*
+pcName, NISHADERLIBRARY_CLASSCREATIONCALLBACK pfnCallback)</p>
+
+<p class="NDLRefMemberDescription">Method is automatically called by an
+NiShaderLibrary library to link a string identifier with a callback that will
+create an instance of a particular NiShaderLibrary subclass.</p>
+
+<p class="NDLRefMemberFunction">static void RemoveLibraryCallback(
+NISHADERLIBRARY_CLASSCREATIONCALLBACK pfnCallback)</p>
+
+<p class="NDLRefMemberDescription">Remove the callback that creates a
+particular NiShaderLibrary.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int
+GetNumLibraryCallbacks()</p>
+
+<p class="NDLRefMemberDescription">Return the total number of library creation
+callbacks.</p>
+
+<p class="NDLRefMemberFunction">static const char* GetLibraryName(unsigned int
+uiIdx)</p>
+
+<p class="NDLRefMemberDescription">Returns a library name from the callbacks
+set.</p>
+
+<p class="NDLRefMemberFunction">static NISHADERLIBRARY_CLASSCREATIONCALLBACK
+GetLibraryCallback(unsigned int uiIdx)</p>
+
+<p class="NDLRefMemberDescription">Returns a library callback from the
+callbacks set.</p>
+
+<p class="NDLRefMemberFunction">static bool
+RegisterClassCreationCallback(NISHADERFACTORY_CLASSCREATIONCALLBACK
+pfnCallback)</p>
+
+<p class="NDLRefMemberDescription">Registers the class creation callback
+function described above.</p>
+
+<p class="NDLRefMemberFunction">static bool DefaultCreateClass(const char*
+pcLibName, NiRenderer* pkRenderer, int iDirectoryCount, const char*
+apcDirectories[], bool bRecurseSubFolders, NiShaderLibrary** ppkLibrary)</p>
+
+<p class="NDLRefMemberDescription">Default implementation of the
+NISHADERFACTORY_CLASSCREATIONCALLBACK callback. Searches for a
+NISHADERLIBRARY_CLASSCREATIONCALLBACK callback whose name matches pcLibName and
+executes the callback when found. Returns true when a callback was found, and
+updates ppkLibrary to point at the newly created NiShaderLibrary.</p>
+
+<p class="NDLRefMemberFunction">static bool LoadAndRegisterShaderLibrary(const
+char* pcLibName, int iDirectoryCount, char* pacDirectories[], bool
+bRecurseSubFolders)</p>
+
+<p class="NDLRefMemberDescription">This function will attempt to load the
+shader library of the given <span class="NDLSystemFont">pcLibName</span>, and
+provide the directory information provided to it upon successful creation.</p>
+
+<p class="NDLRefMemberFunction">static bool
+RegisterRunParserCallback(NISHADERFACTORY_RUNPARSERCALLBACK pfnCallback)</p>
+
+<p class="NDLRefMemberDescription">Registers the run parser callback function
+described above.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int DefaultRunParser(const
+char* pcLibName, NiRenderer* pkRenderer, const char* pcDirectory, bool
+bRecurseSubFolders)</p>
+
+<p class="NDLRefMemberDescription">Default implementation of the
+NISHADERFACTORY_RUNPARSERCALLBACK. Searches NiShaderParser for a
+NISHADERPARSER_CLASSCREATIONCALLBACK callback whose name matches pcLibName and
+executes the callback when found. Returns the number of shaders that the parser
+library was able to parse. If the return value is zero, either a callback could
+not be found for pcLibName, or the parser was unable to find shaders of the
+type that it is responsible for.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int
+LoadAndRunParserLibrary(const char* pacLibName, const char* pcDirectory, bool
+bRecurseSubFolders)</p>
+
+<p class="NDLRefMemberDescription">This function will attempt to load the
+parser library of the given <span class="NDLSystemFont">pcLibName</span>, and
+will run said parser with the directory information provided if successful. The
+parser library will be release prior to returning from the function, so any
+parser library created should complete its operations in this single call.</p>
+
+<p class="NDLRefMemberFunction">static bool
+RegisterErrorCallback(NISHADERFACTORY_ERRORCALLBACK pfnCallback)</p>
+
+<p class="NDLRefMemberDescription">Registers the error callback function
+described above. Applications are free to log this error, pop up a message box
+to inform the user, etc. In a future release, the callback will be able to
+inform the engine of how to handle the error.</p>
+
+<p class="NDLRefMemberFunction">static unsigned int ReportError(<a href=
+"NiShaderError.htm">NiShaderError</a> eErr, bool bRecoverable, const char*
+pcFmt, ...)</p>
+
+<p class="NDLRefMemberDescription">This function is called by the shader system
+whenever an error occurs, such as the failure to find a given shader program
+file. The function will call the registered error handling callback.</p>
+
+<p class="NDLRefMemberFunction">static bool RegisterGlobalShaderConstant(const
+char* pcKey, <a href=
+"NiShaderAttributeDesc.htm#AttributeType_Enumerations">NiShaderAttributeDesc::AttributeType</a>
+eType, unsigned int uiDataSize, void* pvInitialData)</p>
+
+<p class="NDLRefMemberDescription">Registers a global shader constant, which
+can be set in a shader constant mapping (see <span class=
+"NDLSystemFont"><a href=
+"NiGlobalConstantEntry.htm">NiGlobalShaderConstantEntry</a></span> and
+<span class="NDLSystemFont"><a href=
+"NiShaderConstantMap.htm">NiShaderConstantMap</a></span> for more information
+on global shader constants). Global constants are useful for passing values to
+shader program constants that are global to the application, such as lighting
+information. <span class="NDLSystemFont">pcKey</span> is the name by which the
+constant is referenced, <span class="NDLSystemFont">eType</span> informs the
+system of the data type of the constant, <span class=
+"NDLSystemFont">uiDataSize</span> is the size of the data, and <span class=
+"NDLSystemFont">pvInitialData</span> is a pointer to the data the constant
+should be initialized to.</p>
+
+<p class="NDLRefMemberDescription">When using global shader constants, it is
+important to properly set up the system. The global entry should be registered
+with the shader factory first, and then the constant map entry utilizing it
+should be added to the constant map, using the data pointer from the global
+constant map entry. This process is described in detail <a href=
+"../../Programmer/NiShader/How_to_properly_register_a_global_shader_constant_map_entry.htm">
+here</a>.</p>
+
+<p class="NDLRefMemberFunction">static bool ReleaseGlobalShaderConstant(const
+char* pcKey)</p>
+
+<p class="NDLRefMemberDescription">Frees a previously registered global
+constant of the name <span class="NDLSystemFont">pcKey</span>.</p>
+
+<p class="NDLRefMemberFunction">static bool RetrieveGlobalShaderConstant(const
+char* pcKey, unsigned int&amp; uiDataSize, void*&amp; pvData)</p>
+
+<p class="NDLRefMemberDescription">Retrieves the currently set value for the
+global constant of the given <span class="NDLSystemFont">pcKey</span>.</p>
+
+<p class="NDLRefMemberFunction">static bool UpdateGlobalShaderConstant(const
+char* pcKey, unsigned int uiDataSize, void* pvData)</p>
+
+<p class="NDLRefMemberDescription">Updates the given <span class=
+"NDLSystemFont">pcKey</span> global constant with the given data. NOTE: The
+type and size must be correct.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">virtual <a href="NiShader.htm">NiShader</a>*
+RetrieveShader(const char* pcName, unsigned int uiImplementation, bool
+bReportNotFound = true)</p>
+
+<p class="NDLRefMemberDescription">This function will attempt to find the
+shader with the given name and implementation among all the shaders that the
+<span class="NDLSystemFont">NiShaderFactory</span> has created. If it does not
+find a match, then it will query all of the <span class=
+"NDLSystemFont"><a href="NiShaderLibrary.htm">NiShaderLibrary</a></span>
+objects that have been registered. If any shader library contains a shader with
+the given name, then it will return an instance of that shader. If no matching
+shader is found even after querying all the shader libraries, and the
+<span class="NDLSystemFont">bReportNotFound</span> parameter is true, then this
+function will call <span class="NDLSystemFont">ReportError</span> with the
+<span class="NDLSystemFont">NISHADERERR_SHADERNOTFOUND</span> error. It is
+through this function that the Gamebryo shader system creates new shaders from
+the registered shader libraries.</p>
+
+<p class="NDLRefMemberFunction">virtual NiShader* FindShader(const char*
+pcName, unsigned int uiImplementation)</p>
+
+<p class="NDLRefMemberDescription">This function will attempt to find the
+shader with the given name and implementation among all the shaders that the
+<span class="NDLSystemFont">NiShaderFactory</span> has created. If no such
+shader is found, then the shader libraries are not queried, and the function
+simply returns <span class="NDLSystemFont">NULL</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual bool ReleaseShaderFromLibrary(const
+char* pcName, unsigned int uiImplementation)</p>
+
+<p class="NDLRefMemberFunction">virtual bool ReleaseShaderFromLibrary(NiShader*
+pkShader)</p>
+
+<p class="NDLRefMemberDescription">Attempts to search through all registered
+libraries to release the shader that's passed in through <span class=
+"NDLSystemFont">pkShader</span>, or that matches the given name and
+implementation. If the shader is successfully found and released from the
+shader library, then the function returns <span class=
+"NDLSystemFont">true</span>. Note that releasing a shader from the shader
+library won't necessarily cause it to be deleted if there are other objects in
+an application that hold smart pointers to the shader.</p>
+
+<p class="NDLRefMemberFunction">virtual void SetShaderProgramLocation( const
+char* pcFile, const char* pcPath)</p>
+
+<p class="NDLRefMemberDescription">Record the path of a shader program.</p>
+
+<p class="NDLRefMemberFunction">virtual void GetShaderProgramLocation(
+NiFixedString&amp; kFile, NiFixedString&amp; kOutput) const</p>
+
+<p class="NDLRefMemberDescription">Retrieve the path of a shader program.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+RemoveAllShaderProgramLocations()</p>
+
+<p class="NDLRefMemberDescription">Remove all information about where shader
+programs are located.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

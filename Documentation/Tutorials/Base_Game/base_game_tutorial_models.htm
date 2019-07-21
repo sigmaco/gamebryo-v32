@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Base Game: Creating New Models</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Base Game: Creating New Models</h1>
+
+<p>In this section we'll add some new models to support features in Base Game.
+Specifically, we'll add Door and trigger models to separate the different rooms
+in our level. We'll also expand Hello World models to support the door
+feature.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="base_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="base_game_tutorial_transform_hw.htm">Transforming Hello
+    World</a></li>
+
+    <li><b>Creating New Models&nbsp;&nbsp;&lt;&#45;&#45; You are here</b></li>
+
+    <li><a href="base_game_tutorial_behaviors.htm">Adding New
+    Behaviors</a></li>
+
+    <li><a href="base_game_tutorial_world.htm">Populating Your First
+    Level</a></li>
+
+    <li><a href="base_game_tutorial_project.htm">C++ Project Changes</a></li>
+
+    <li><a href="base_game_tutorial_code.htm">C++ Code Changes</a></li>
+
+    <li><a href="base_game_tutorial_loading.htm">Loading Your World and
+    Starting the Application</a></li>
+
+    <li><a href="base_game_tutorial_more_services.htm">Adding More
+    Services</a></li>
+</ol>
+
+<h2>Creating the BgAvatar Model</h2>
+
+<p>Our Avatar in Base Game needs to mix in a PhysX shape so it can interact
+with other PhysX-enabled entities. To do this, add a new model named BgAvatar.
+Mix in the Avatar model from <span class=
+"NDLSystemFont">HelloWorld.emtproj</span>, and the PhysXSphere model from the
+<span class="NDLSystemFont">PhysXModelLibrary.emtproj</span>.</p>
+
+<p>Override the PhysXShape::ShapeDimensions property and set it to
+(50,1,1).</p>
+
+<p>You should end up with a model that looks like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_bgavatar.png" width="397" height="385"
+    alt="BaseGame BgAvatar model (17K)">
+
+    <p class="FigureCaption">BaseGame BgAvatar model</p>
+</div>
+
+<h2>Adding a Door</h2>
+
+<p>We want to separate different rooms in our application with doors that can
+open and close. Begin by adding a BgDoor model that inherits from <span class=
+"NDLSystemFont">StandardModelLibrary::Actor</span>.</p>
+
+<p>Add the <span class="NDLSystemFont">OnOpen</span>, <span class=
+"NDLSystemFont">OnClose</span>, and <span class=
+"NDLSystemFont">OnOpenClose</span> behaviors that will be called when the door
+is opened, closed, and open then closed.</p>
+
+<p>Override the KfmAsset property and select the <span class=
+"NDLSystemFont">Door.kfm</span> from the Graphics directory.</p>
+
+<p>Add new properties of type <em>Boolean</em> named <span class=
+"NDLSystemFont">isOpen</span> (default=False) and <span class=
+"NDLSystemFont">canClose</span> (default=True). The <span class=
+"NDLSystemFont">isOpen</span> property indicates if the door is open. The
+<span class="NDLSystemFont">canClose</span> property indicates whether the door
+can be closed.</p>
+
+<p>When you're done, you should have a model that looks like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_bgdoor.png" width="308" height="407"
+    alt="base_game_tutorial_bgdoor(11K)">
+
+    <p class="FigureCaption">BaseGame BgDoor model</p>
+</div>
+
+<h2>Adding the TriggerRing Model</h2>
+
+<p>To operate the door, we'll add a PhysX-enabled model called a <span class=
+"NDLSystemFont">TriggerRing</span>. This model can detect when another
+PhysX-aware model enters its sphere of influence.</p>
+
+<p>Before we create our <span class="NDLSystemFont">TriggerRing</span> model,
+we need to add a couple of additional models that define what happens when we
+enter the ring.</p>
+
+<h3>RemoteBehaviorResponse Model</h3>
+
+<p>The <span class="NDLSystemFont">RemoteBehaviorResponse</span> model defines
+a set of behaviors that are invoked on a remote entity when a trigger collision
+is detected. Start by creating a the <span class=
+"NDLSystemFont">RemoteBehaviorResponse</span> model in the BaseGame EMT
+project. Add the following properties to this model:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Type</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>OnEnterBehaviors</td>
+
+            <td>String Map</td>
+
+            <td>Which behavior (map value) to call when an entity of the
+            specified model (map key) enters the trigger.</td>
+        </tr>
+
+        <tr>
+            <td>OnStayBehaviors</td>
+
+            <td>String Map</td>
+
+            <td>Which behavior (map value) to call when an entity of the
+            specified model (map key) enters and remains within the
+            trigger.</td>
+        </tr>
+
+        <tr>
+            <td>OnLeaveBehaviors</td>
+
+            <td>String Map</td>
+
+            <td>Which behavior (map value) to call when an entity of the
+            specified model (map key) exits the trigger.</td>
+        </tr>
+
+        <tr>
+            <td>RemoteEntity</td>
+
+            <td>EntityRef</td>
+
+            <td>Reference to the entity that we will use when calling one of
+            the above behaviors.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>CollideExecuteRemote Model</h3>
+
+<p>Next, we want to create a model that describes what happens to a remote
+entity when something collides with a PhysX trigger. Create a new model named
+<span class="NDLSystemFont">CollideExecuteRemote</span> and mix in both the
+<span class="NDLSystemFont">RemoteBehaviorResponse</span> model that we created
+above and the <span class="NDLSystemFont">PhysXSphereTrigger</span> from the
+PhysXModelLibrary folder.</p>
+
+<p>We'll want to do something when a trigger collision is detected, so override
+the <span class="NDLSystemFont">OnPhysXTrigger</span> behavior.</p>
+
+<p>You should end up with a model that looks like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_collideexecuteremote.png" width="370"
+    height="383" alt="base_game_tutorial_collideexecuteremote(11K)">
+
+    <p class="FigureCaption">BaseGame CollideExecuteRemove model</p>
+</div>
+
+<h3>TriggerRing</h3>
+
+<p>Finally, we create the <span class="NDLSystemFont">TriggerRing</span>
+model.</p>
+
+<p>The trigger ring mixes in the <span class=
+"NDLSystemFont">CollideExecuteRemote</span> model that we created above and the
+<span class="NDLSystemFont">Mesh</span> model from StandardModelLibrary
+folder.</p>
+
+<p>A <span class="NDLSystemFont">TriggerRing</span> has a visible presence in
+the world, and invokes a behavior on another entity when something collides
+with it. Override the <span class="NDLSystemFont">Mesh::NifAsset</span> mix-in
+property and set it to the <span class="NDLSystemFont">TriggerProxy.nif</span>
+file in the Graphics directory. Also, override the default <span class=
+"NDLSystemFont">PhysXShape::ShapeDimension</span> property to (100, 1, 1).</p>
+
+<p>Your final model for the TriggerRing should look like this:</p>
+
+<div class="FigureContainer">
+    <img src="images/base_game_tutorial_triggerring.png" width="356" height=
+    "383" alt="base_game_tutorial_triggerring (13K)">
+
+    <p class="FigureCaption">BaseGame TriggerRing model</p>
+</div>
+
+<h2>Moving on...</h2>
+
+<p>Next, we need to add some new behaviors. See <a href=
+"base_game_tutorial_behaviors.htm">Adding new behaviors</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Tools/Toolbench/tb_intro.htm">Toolbench
+    Introduction</a></li>
+
+    <li><a href="../../Tools/WorldBuilder/wb_intro.htm">World Builder
+    Introduction</a></li>
+
+    <li><a href=
+    "../../Reference/QuickRef_Models/PhysXModelLibrary__PhysXSphereTrigger.htm">
+    PhysXSphereTrigger Model Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

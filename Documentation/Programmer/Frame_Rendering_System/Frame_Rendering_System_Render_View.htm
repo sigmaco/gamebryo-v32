@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Frame Rendering System Render View</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Frame Rendering System Render View</h1>
+
+<p>A <em>render view</em> 
+ represents a view into a particular scene that must be rendered. At its 
+ base level, it generates and returns an array of potentially visible geometry 
+ objects to the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ class so that those objects can be rendered. The method by which it generates 
+ that array is implementation-specific, but a typical method is to cull 
+ a scene graph against the viewing frustum of a camera.</p>
+
+<p>The same render view can be used by multiple render 
+ clicks, if desired. Each render view caches its last generated array of 
+ potentially visible geometry and the ID of the frame at which that array 
+ was generated to avoid recomputing the array for a different render click 
+ in the same frame.</p>
+
+<h2>NiRenderView</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderView.htm">NiRenderView</a></span> 
+ class is an abstract base class for all render view objects. It contains 
+ pure virtual functions for setting the camera data on the renderer with 
+ a specified viewport and for generating an array of potentially visible 
+ geometry objects. It also holds cached values for the last generated array 
+ and the last frame ID to avoid building the array again during the same 
+ frame.</p>
+
+<p>Typically, an application would create one or more render 
+ view instances during initialization and assign them to <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiViewRenderClick.htm">NiViewRenderClick</a></span> 
+ objects. Those render views are then automatically used during the rendering 
+ process, requiring no further application intervention unless some value 
+ on the render view must be programmatically changed. Since <span class="NDLSystemFont">NiRenderView</span> 
+ is an abstract class, applications create instances of one of its derived 
+ classes.</p>
+
+<p>The current frame ID is passed into the <span class="NDLSystemFont">GetPVGeometry</span> 
+ function by the render click. This ID is used to eliminate the computation 
+ of the geometry array when called during the same frame. An enumerated 
+ value can be passed into that function to force computation of the array, 
+ if necessary. When the array needs to be computed, the <span class="NDLSystemFont">GetPVGeometry</span> 
+ function calls the pure virtual <span class="NDLSystemFont">CalculatePVGeometry</span> 
+ function to regenerate the array.</p>
+
+<h2>Ni3DRenderView</h2>
+
+<p>The <span class="NDLSystemFont"><a href="../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span> 
+ class is the most standard render view used in the frame rendering system. 
+ It holds pointers to a list of <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ scene graphs, an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCamera.htm">NiCamera</a></span>, 
+ and an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiCullingProcess.htm">NiCullingProcess</a></span>. 
+ It overrides the <span class="NDLSystemFont">CalculatePVGeometry</span> 
+ function to frustum cull the scene graphs using its culling process and 
+ build the array of potentially visible geometry. If no culling process 
+ has been set for the render view, it will add all geometry objects to 
+ the array without culling.</p>
+
+<p><span class="NDLSystemFont">Ni3DRenderView</span> also 
+ overrides the <span class="NDLSystemFont">SetCameraData</span> function 
+ from its parent class to use the stored camera to set the camera data 
+ on the renderer. It optionally supports always using the viewport stored 
+ on its camera rather than the viewport passed into the <span class="NDLSystemFont">SetCameraData</span> 
+ function by the render click. This class provides interfaces for getting 
+ and setting the list of scenes, the camera, and the culling process so 
+ that applications can have some measure of control over them at runtime.</p>
+
+<p>Applications create <span class="NDLSystemFont">Ni3DRenderView</span> 
+ instances during initialization and specify the scenes, cameras, and culling 
+ processes for them. These render views are then assigned to the appropriate 
+ render click objects to be used during rendering. In most cases, an application 
+ will have no need to change its <span class="NDLSystemFont">Ni3DRenderView</span> 
+ data during rendering. If a different scene needs to be rendered, a different 
+ render view should be used.</p>
+
+<h2>Other Types of Render Views</h2>
+
+<p>While <span class="NDLSystemFont"><a href="../../Reference/NiMain/Ni3DRenderView.htm">Ni3DRenderView</a></span> 
+ is the most common, it is not the only render view implemented in the 
+ frame rendering system. Any collection of <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiRenderObject.htm">NiRenderObject</a></span> 
+ objects that need to be rendered can be encapsulated in a render view. 
+ Here are some examples of other render views that ship with Gamebryo:</p>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiMesh2DRenderView.htm">NiMesh2DRenderView</a></span>: 
+ stores a list of <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> 
+ objects.</li>
+	
+	<li><span class="NDLSystemFont"><a 
+ href="../../Reference/NiMain/NiScreenFillingRenderView.htm">NiScreenFillingRenderView</a></span>: 
+ stores a single, screen-filling quad (useful for performing full-screen 
+ post-processing effects).</li>
+ 
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

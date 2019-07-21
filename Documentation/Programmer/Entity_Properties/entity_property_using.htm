@@ -1,0 +1,338 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Using entity properties</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Using entity properties</h1>
+
+<p>This section describes how to get and set entity properties
+from C++ and Lua.</p>
+
+<h2>Getting and Setting properties in C++</h2>
+
+<h3>scalar types</h3>
+
+<p>To get a property value in C++, get a reference to the entity
+of interest and call GetPropertyValue. To set a property value,
+call SetPropertyValue. Both of these methods take either the
+property name or property ID.</p>
+
+<h4>Example of getting and setting scalar property values in
+C++</h4>
+
+<pre>
+Entity* pEntity = pScheduler-&gt;FindEntity(entityID);
+
+// Get the Position property value.
+Point3 pos;
+pEntity-&gt;GetPropertyValue("Position", pos);    
+
+// Set the Scale property value.
+pEntity-&gt;SetPropertyValue("Scale", 2.0);
+</pre>
+
+<h3>Associative container types</h3>
+
+<p>List and Map property types are implemented as associative
+containers. To access values in these containers, use the
+GetPropertyKeys method to get the keys for the container and the
+GetPropertyValue overloaded method that takes a 3rd parameter for
+the associative container key.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                All keys used to reference associative containers
+                are utf8strings. Even List containers use strings
+                as key values.<br>
+                <br>
+                For Lists, keys start at "0". This differs from
+                Lua table indexes which start at 1.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h4>Example of getting and setting associative array property
+values in C++</h4>
+
+<pre>
+// using the same entity from above.
+
+// Get the keys for the 'Limbs' list property.
+efd::list&lt;efd::utf8string&gt; keys;
+pEntity-&gt;GetPropertyKeys("Limbs", keys);
+   
+efd::list&lt;efd::utf8string&gt;::const_iterator keyIt = keys.begin();
+while(keyIt != keys.end())
+{
+    egf::EntityID limbID;
+    pEntity-&gt;GetPropertyValue("Limbs", keyIt++, limbID);
+    
+    // do something with this limb.
+}
+
+// Set Awards[Beginner] = true;
+pEntity-&gt;SetPropertyValue("Awards", "Beginner", true);
+</pre>
+
+<p>GetPropertyKeys is appropriate when the number of values in
+your container is relatively small. For containers with a large
+number of entries, use GetNextPropertyKey.</p>
+
+<pre>
+// Iterate over our 'Inventory'
+
+// prime our iterator with the empty string. 
+utf8string nextKey = pEntity-&gt;GetNextPropertyKey("Inventory", "")
+while(!next.IsEmpty())
+{
+    EntityID itemId;
+    pEntity-&gt;GetPropertyValue("Inventory", nextKey, &amp;itemID)
+    
+    // do something with this item.
+    
+    nextKey = pEntity-&gt;GetNextPropertyKey, "Inventory", nextKey);
+}
+</pre>
+
+<h2>Getting and Setting properties in Lua</h2>
+
+<h3>Scalar types</h3>
+
+<p>To get a property value in Lua, you need to know the entity ID
+of the entity of interest. Any function that returns an efd::EntityID
+will automatically be converted to an Lua entity proxy object. You
+can access properties on these objects directly. If you have a UInt64
+value representing an EntityID, you can convert this to a proxy
+by calling Emergent:GetEntity(UInt64).</p>
+
+<h4>Example of getting and setting scalar property values in
+Lua</h4>
+
+<pre>
+// Get the position property value, self is an Entity proxy object.
+local table pos = self.Position
+
+// Set the scale property value.
+self.Scale = 2.0
+</pre>
+
+<h3>Associative container types</h3>
+
+<h4>Example of getting and setting associative array property
+values in Lua</h4>
+
+<pre>
+// Get the keys for the 'Limbs' list property.
+local keys = self.Limbs:GetKeys()
+for _, key in pairs(keys) do
+    local limbEntity = self.Limbs[key]
+    
+    -- do something with this limb.
+end
+
+// Set Awards[Beginner] = true.
+self.Awards["Beginner"] = true
+</pre>
+
+<p>GetKeys is appropriate when the number of values in
+your container is relatively small. For containers with a large
+number of entries, use BehaviorAPI.GetNextPropertyKey.</p>
+
+<pre>
+-- Iterate over our 'Inventory'
+
+-- prime our iterator with the empty string. 
+local result, nextKey = BehaviorAPI.GetNextPropertyKey(self, "Inventory", "")
+while(string.length(nextKey)) do
+    local itemId = self.Inventory[nextKey]
+    
+    -- do something with this item.
+
+    -- get the next key
+    result, nextKey = BehaviorAPI.GetNextPropertyKey(self, "Inventory", nextKey)
+}
+</pre>
+
+<h3>How utility properties are bound in Lua</h3>
+
+<p>The Game Framework utility property types are bound in Lua
+differently from the generic basic types. The following table
+explains how these property types are mapped into Lua types.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+
+            <th>Lua representation</th>
+
+            <th>Example</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Category</td>
+
+            <td>64-bit integer</td>
+
+            <td>local catId = 0xD0060F0000000001</td>
+        </tr>
+
+        <tr>
+            <td>Color</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local r= myColor.r; local c = Color.Color(r,g,b)</td>
+        </tr>
+
+        <tr>
+            <td>ColorA</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local a=myColorA.a; local c = ColorA.ColorA(r,g,b,a)</td>
+        </tr>
+
+        <tr>
+            <td>Point2</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local x=myPoint2.x; local p2 = Point2.Point2(x,y,z)</td>
+        </tr>
+
+        <tr>
+            <td>Point3</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local z=myPoint3.z; local p3 = Point3.Point3(x,y,z)</td>
+        </tr>
+
+        <tr>
+            <td>Point4</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local w=myPoint4.w; local p4 = Point4.Point4(x,y,z,w)</td>
+        </tr>
+
+        <tr>
+            <td>Matrix3</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local x3=myMatrix3[3][1]; m1 = Matrix3.Matrix3( {1,2,3}, {4,5,6}, {7,8,9} )</td>
+        </tr>
+
+        <tr>
+            <td>Quaternion</td>
+
+            <td>Userdata with metatable providing an object wrapper</td>
+
+            <td>local w = myQuaternion[1]; q1 = Quaternion.Quaternion(w,x,y,z)</td>
+        </tr>
+
+        <tr>
+            <td>ID128</td>
+
+            <td>String</td>
+
+            <td>local id128 =
+            "c4c165caa7054c36a383cab5620a851b"</td>
+        </tr>
+
+        <tr>
+            <td>AssetID</td>
+
+            <td>String</td>
+
+            <td>local assetId = "urn:test2"</td>
+        </tr>
+
+        <tr>
+            <td>TimeType</td>
+
+            <td>number</td>
+
+            <td>local timetype = 4.83213</td>
+        </tr>
+
+        <tr>
+            <td>EntityID</td>
+
+            <td>Lua Entity proxy object.</td>
+			
+            <td>local enemyEntity = self.Enemy</td>
+        </tr>
+
+        <tr>
+            <td>EventID</td>
+
+            <td>64-bit integer</td>
+
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr>
+            <td>PropertyID</td>
+
+            <td>32-bit integer</td>
+
+            <td>&nbsp;</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_property_adding.htm">Adding new entity
+    property types</a></li>
+
+    <li><a href="entity_property_debugging.htm">Debugging entity
+    properties</a></li>
+
+    <li><a href="../../Reference/egf/egf__Entity.htm">egf::Entity
+    class reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

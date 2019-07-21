@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Setting up PhysX system services</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Build" content="PhysX" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Setting up PhysX system services</h1>
+
+<p>Like any system services, you should construct the PhysX system services in
+your application during initialization. However, choosing the correct
+priorities for these services demands extra care.</p>
+
+<p>The PhysX SDK can run <a href=
+"../NiPhysX/Basic_PhysX_Updating_Tasks.htm">either synchronously or
+asynchronously</a> with your application. When you run asynchronously, PhysX
+simulation will take place in an alternate thread <em>at the same time as
+rendering</em>, and so the order of service execution in your frame will
+be:</p>
+
+<ol>
+    <li>egfPhysX::TriggerService</li>
+
+    <li>egfPhysX::SceneService</li>
+
+    <li>ecrPhysX::PropService</li>
+
+    <li>egmPhysX::TerrainService</li>
+
+    <li>egmPhysX::RagdollService</li>
+
+    <li>ecr::RenderService</li>
+</ol>
+
+<p>When you run synchronously, all simulation completes during a frame before
+rendering. This keeps the physics results more closely synchronized with the
+rendered images, but prevents pipelining, and so reduces performance. In this
+case, the order of service execution within a frame will be:</p>
+
+<ol>
+    <li>egfPhysX::SceneService</li>
+
+    <li>ecrPhysX::PropService</li>
+
+    <li>egmPhysX::TerrainService</li>
+
+    <li>egmPhysX::RagdollService</li>
+
+    <li>egfPhysX::TriggerService</li>
+
+    <li>ecr::RenderService</li>
+</ol>
+
+<p>Either way, if you use Core Runtime PhysX features, the Prop Service
+<em>must</em> know whether you are running synchronously or asynchronously
+before you create any NiPhysXScene objects. This information is communicated by
+<span class=
+"NDLSystemFont">ecrPhysX::PropService::SetAsynchronousSimulation()</span>,
+which must be called before you load a block file and begin entity discovery.
+</p>
+
+<h2>Asset Streaming</h2>
+
+<p>As with games that only use the Core Runtime, in order to enable streaming
+of PhysX content, the top-level headers for any linked libraries must be
+included in the final game. If they are not, then classes in those libraries
+will not be registered with the streaming system and thus will be prevented
+from being streamed. These top-level headers include:</p>
+
+<ul>
+    <li><span class="NDLSystemFont">NiPhysX.h</span></li>
+
+    <li><span class="NDLSystemFont">NiPhysXFluid.h</span></li>
+
+    <li><span class="NDLSystemFont">NiPhysXParticle</span>.h</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="physx_system_service_overview.htm">PhysX system services
+    overview</a></li>
+
+    <li><a href="physx_system_service_using_without_core.htm">Using PhysX
+    service without Gamebryo Core Runtime</a></li>
+
+    <li><a href="physx_system_service_using_core.htm">Using PhysX services with
+    Gamebryo Core Runtime</a></li>
+
+    <li><a href="physx_system_service_using_entity_model.htm">Using PhysX
+    entity models</a></li>
+
+    <li><a href="physx_system_service_using_builtins_script.htm">Using PhysX
+    built-ins in script</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

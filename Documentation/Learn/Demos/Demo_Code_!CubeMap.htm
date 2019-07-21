@@ -1,0 +1,151 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Demo Code</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Demo Code</h1>
+
+<p>The following sections describe each function in the 
+ two major classes used to create the demo.</p>
+
+<h2>UpdateFrame</h2>
+
+<p>In addition to calling the base class version, this 
+ function also updates the scene and camera. The camera code involves a 
+ procedural placement of the animated camera to track the reflective sphere's 
+ position only (not rotation), with offsets to frame the scene. Note, the 
+ animated camera is always updated, but the camera used to render the scene 
+ is under control of the navigation system. One of the navigation system's 
+ controllers will track the animated camera.</p>
+
+<h2>CreateFrame</h2>
+
+<p>This function first calls the base class version to 
+ create a default <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">render 
+ frame</a> that will render the scene and all screen-space elements with 
+ the Gamebryo <a HREF="../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">frame 
+ rendering system</a>. It then adds pre- and post-processing callback functions 
+ to the <span class="NDLSystemFont">CubeMapCamera</span> <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">render 
+ step</a> and prepends it to the list of render steps in the render frame 
+ so that it will generate the cube maps prior to rendering the scene. The 
+ pre- and post-processing callback functions for the <span class="NDLSystemFont">CubeMapCamera</span> 
+ object set <span class="NDLSystemFont">m_spSphere</span> (containing the 
+ active planet) to be culled during cube map generation.</p>
+
+<h2>RenderFrame</h2>
+
+<p>Prior to calling 
+ the base class version of the function, which will use the frame rendering 
+ system to render the scene, this function sets the active state of the 
+ cube map render step to enable and disable cube map generation depending 
+ on user settings.</p>
+
+<h2>Terminate</h2>
+
+<p>Nothing out of the ordinary in this function&mdash;all allocated 
+ objects are destroyed, including the <span class="NDLSystemFont">CubeMapCamera</span>.</p>
+
+<h2>CreateScene</h2>
+
+<p><span class="NDLSystemFont">CreateScene</span> 
+ loads the mobile, finds the camera, and creates the reflective sphere 
+ in <span class="NDLSystemFont">CreateDynamicMultitexturedEffects</span> 
+ (detailed below) to set up the cube map.</p>
+
+<h2>CreateNavigationControllers</h2>
+
+<p>The NiSample navigation system is augmented by adding 
+ a <a href="../../Reference/NiUserInterface/NiNavInterpToController.htm"><span 
+ class="NDLSystemFont">NiNavInterpToController</span></a>. The new controller 
+ is configured to track the animated camera. Finally, the navigation system 
+ is updated to use the new controller by default. </p>
+
+<h2>ToggleCubeMapSource</h2>
+
+<p>This function switches between the source and rendered 
+ cube maps by attaching the desired cube map texture to the environment 
+ map effect. The rendered cube map is the reflective effect, while the 
+ source cube map simply contains six faces with white borders and the &quot;name&quot; 
+ of the cube face on it, and is designed to show how cube mapping works. 
+ Note that the cube map is in world space in this case. Because the scene 
+ was modeled in 3ds max, this &quot;up&quot; direction is shown as&nbsp;+Z.</p>
+
+<h2>ToggleCubeMapMethod</h2>
+
+<p>This method simply switches the environment map effect 
+ between <span class="NDLSystemFont">DIFFUSE_CUBE_MAP</span> 
+ and <span class="NDLSystemFont">SPECULAR_CUBE_MAP</span> 
+ using <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a>::SetTextureCoordGen</span>. 
+ This shows the (in this case subtle) difference between the two mapping 
+ modes. The most obvious differences will be seen at the silhouette edges 
+ of the sphere, where the reflection vector (specular mode) differs by 
+ up to 90 degrees from the surface normal (diffuse mode).</p>
+
+<h2>CreateDynamicMultitextureEffects</h2>
+
+<p>This function creates all of the objects that are needed 
+ to generate the live reflection effects. First, it creates two cube maps; 
+ one that will be updated live via rendering, and one that is loaded from 
+ static image files.</p>
+
+<p>The&nbsp; <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiRenderedCubeMap.htm">NiRenderedCubeMap</a></span> 
+ object is created first&mdash;this will serve as the live reflection map. 
+ The demo prints a warning to the debugging output if the rendered cube 
+ map cannot be created.&nbsp; Next, for demonstration purposes, an <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiSourceCubeMap.htm">NiSourceCubeMap</a></span> 
+ is created. Note that <span class="NDLSystemFont">ConvertMediaFilename</span> 
+ is not called six times in the creation function&mdash;because the Convert 
+ function uses a single shared static string, if it is called multiple 
+ times in the same function invocation, the multiple arguments will result 
+ in multiple copies of the same string. So, the filenames are converted 
+ one by one into individual storage.</p>
+
+<p>The sphere shell that will be wrapped around each planet 
+ is loaded from disk and is modified by applying a black base map and a 
+ normal map to the texturing property. Because environment mapping is an 
+ effect that is additive w.r.t. the base map, we use a black base map to 
+ cause the cube map to be rendered directly.&nbsp;</p>
+
+<p>The cube map is applied via an <span class="NDLSystemFont"><a HREF="../../Reference/NiMain/NiTextureEffect.htm">NiTextureEffect</a></span>, 
+ whose texture coordinate generation mode is (by default) <span class="NDLSystemFont">SPECULAR_CUBE_MAP</span> (a keystroke in the demo 
+ can change this to diffuse cube mapping).&nbsp; The texture applied to 
+ this effect is the rendered cube map (a keystroke in the demo can change 
+ this to the source cube map).</p>
+
+<p>The spherical shell is adjusted to fit the first planet 
+ using the <span class="NDLSystemFont">SelectNextPlanet</span> method.</p>
+
+<p>Finally, the <span class="NDLSystemFont">CubeMapCamera</span> 
+ object is created, which will manage the rendering of the cube faces. 
+ The rendered cube map is used as the target cube map; the main renderer 
+ is used as the cube map rendering device; the main scene is set as the 
+ scene to be rendered into the cube map, and the sphere object's center 
+ is used as the cube map camera's rendering center.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

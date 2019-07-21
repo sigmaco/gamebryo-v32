@@ -1,0 +1,255 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiTaskManager</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiTaskManager</p>
+
+<p class="NDLRefParentage">:public <a href=
+"NiObject.htm">NiObject</a></p>
+
+<p class="NDLRefParentage">&lt;NiTaskManager.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiTaskManager</span> manages
+<span class="NDLSystemFont"><a href=
+"NiTask.htm">NiTask</a></span> objects and executes them based on
+priority. <span class="NDLSystemFont">NiTaskManager</span>
+contains an array of <span class="NDLSystemFont"><a href=
+"NiTQueue.htm">NiTQueue</a>&lt;NiTask*&gt;</span> objects from
+which it executes tasks. An <span class="NDLSystemFont"><a href=
+"../../Reference/NiSystem/NiCriticalSection.htm">NiCriticalSection</a></span>
+member protects these arrays so the manager can be accessed
+safely from multiple threads. The base class <span class=
+"NDLSystemFont">NiTaskManager</span> is not abstract; It
+implements a synchronous task manager.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiTaskManager()</p>
+
+<p class="NDLRefMemberDescription">Creates a task manager in the
+STOPPED state.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">virtual bool AddTask(<a href=
+"NiTask.htm">NiTask</a>* pkTask, TaskPriority ePriority =
+MEDIUM)</p>
+
+<p class="NDLRefMemberDescription">This function provides the
+basic capability of adding tasks to the system. Tasks are added
+with a priority based off the <span class=
+"NDLSystemFont">TaskPriority</span> enumeration. Note that a task
+does not know what priority it is; Only the manager is concerned
+with priority. Since each manager is expected to handle a certain
+type of tasks, the manager uses RTTI during debug builds to
+insure that the appropriate type of <span class=
+"NDLSystemFont"><a href="NiTask.htm">NiTask</a></span> subclass
+is passed into the <span class="NDLSystemFont">AddTask</span>
+method. The RTTI check is removed from release builds for
+performance. In the event that the manager cannot enqueue the
+task for some reason, false is returned. As detailed below,
+<span class="NDLSystemFont"><a href=
+"NiTask.htm">NiTask</a></span> objects added via <span class=
+"NDLSystemFont">AddTask</span> must be in the IDLE state. This
+method sets the status to PENDING.</p>
+
+<p class="NDLRefMemberFunction">virtual ManagerStatus
+DoTasks()</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">DoTasks</span> method starts the task manager.
+<span class="NDLSystemFont">DoTasks</span> returns the manager's
+status from the <span class="NDLSystemFont">ManagerStatus</span>
+enumeration. Calling <span class="NDLSystemFont">DoTasks</span>
+does not insure completion of the tasks. It is up to the
+implementation of the task manager to determine when tasks are
+executed. If <span class="NDLSystemFont">DoTasks</span> returns a
+value of RUNNING, it implies that the manager is executing tasks
+in a helper thread rather than synchronously. Synchronous
+managers will return a value of STOPPED, and a subsequent call to
+<span class="NDLSystemFont">GetTotalNumTasks</span> would return
+0.</p>
+
+<p class="NDLRefMemberFunction">virtual bool
+DoSingleTask(TaskPriority ePriority)</p>
+
+<p class="NDLRefMemberDescription">Execute a single task from the
+specified priority queue. The return value indicates whether a
+task was executed from that queue. A false return value indicates
+that no tasks exist in the queue or that the tasks in the queue
+blocked on the return value of the each task's <span class=
+"NDLSystemFont">CanExecute</span> method. This public method is
+needed to allow background thread processes with only a pointer
+to the appropriate manager to process tasks.</p>
+
+<p class="NDLRefMemberFunction">virtual bool Clear()</p>
+
+<p class="NDLRefMemberDescription">This virtual function cleans
+all resources of a manager and sets the state to STOPPED. It
+returns false if the state is not STOPPING when clear is called
+or if manager resources cannot be freed appropriately. Managers
+may opt to execute all tasks at this time, or set task status to
+ABORTED.</p>
+
+<p class="NDLRefMemberFunction">virtual ManagerStatus Stop()</p>
+
+<p class="NDLRefMemberDescription">Issues a stop request to the
+manager. Because the manager may be executing tasks in background
+threads, the stop request may simply set the manager status to
+STOPPING. In the case of asynchronous managers, the manager will
+set its own status to STOPPED when it is safe.</p>
+
+<p class="NDLRefMemberFunction">ManagerStatus GetStatus()</p>
+
+<p class="NDLRefMemberDescription">Returns the status of the
+manager.</p>
+
+<p class="NDLRefMemberFunction">int GetTotalNumTasks()</p>
+
+<p class="NDLRefMemberFunction">int GetNumTasks(TaskPriority
+ePriority)</p>
+
+<p class="NDLRefMemberDescription">Get the number of tasks in the
+manager by priority or for the entire manager.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">NiTaskManager::TaskPriority</p>
+
+<p><span class="NDLSystemFont">NiTaskManager::TaskPriority</span>
+is an enumeration with the following values. Tasks are executed
+by the manager from IMMEDIATE priority down to LOW priority.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Open Mode</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::LOW</span></td>
+
+            <td>Tasks that will only be executed once other
+            queues are empty.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::MEDIUM</span></td>
+
+            <td>The task has been assigned to a task manager
+            using the AddTask function but has not begun
+            execution.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::HIGH</span></td>
+
+            <td>Tasks which need a higher priority
+            execution.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::IMMEDIATE</span></td>
+
+            <td>Tasks which require immediate execution.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::NUM_PRIORITIES</span></td>
+
+            <td>The number of priority queues.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead2">NiTaskManager::ManagerStatus</p>
+
+<p><span class=
+"NDLSystemFont">NiTaskManager::ManagerStatus</span> is an
+enumeration with the following values indicating the execution
+state of the <span class=
+"NDLSystemFont">NiTaskManager</span>.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Open Mode</th>
+
+            <th>Description</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::STOPPED</span></td>
+
+            <td>The manager is not currently executing
+            tasks.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::STOPPING</span></td>
+
+            <td>The manager has received a request to quit
+            processing tasks but has not finished execution of
+            the current task or cleanup.</td>
+        </tr>
+
+        <tr>
+            <td><span class=
+            "NDLSystemFont">NiTaskManager::RUNNING</span></td>
+
+            <td>The manager is currently executing tasks in
+            another thread.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

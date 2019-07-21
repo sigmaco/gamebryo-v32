@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Dynamic Shadowing with 3ds Max</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Dynamic Shadowing with 3ds Max</h1>
+
+<p>The Gamebryo Max Plug-in can export lights that cast
+ shadows across a scene, which can have a striking visual effect. However, 
+ shadow casting lights are very expensive so some additional considerations
+ must be made when creating a scene that contains shadows.</p>
+ 
+<p>This page discusses performance implications and 
+ optimizations when using shadow-casting lights. For more information on how
+ to set up Shadows and supported parameters, see <a href="Max_Light_Settings.htm">Max
+ Light Settings</a>.</p>
+ 
+<p>Once a light has been marked as shadowing, it will
+render all of the objects it affects that are marked as casters to a shadow
+map each frame, which can be used to determine what parts of the scene are
+in the caster's shadow. This means that each object that is a caster must be
+rendered an additional time which has an impact on performance.</p>
+
+<p>Objects that are marked as shadow receivers must make use
+ of the shadow map in their material calculations, which adds to the rendering
+ cost of the material.</p>
+ 
+<p>Due to the performance overhead of each caster and receiver,
+ it is a good idea to try to minimize the number of casters and receivers in
+ a given scene. Consider carefully which objects might not need to cast shadows
+ such as terrain or a skydome as well as which objects do not need to receive
+ shadows because they are never going to be obscured from the light source.</p>
+ 
+<p>To mark an object as either a non-caster, non-receiver, or
+ both, bring up the object properties dialog for that object. There are 
+ 'Receive Shadows' and 'Casts Shadows' flags in the Rendering Control section.</p>
+ 
+<p>Additional considerations need to be made depending on the
+ type of light casting the shadows. Spot lights have the least amount of 
+ considerations because the shadow map always corresponds to the cone of the 
+ spotlight. Directional lights must fit the shadow map to encompas all casters
+ at once, which means that if the shadow casters are too far apart, the shadows
+ cast by each will be low resolution and could give poor results. Omni lights 
+ must render six shadow maps each frame to form a cubemap image. This is not
+ only expensive on the object rendering side, it also means that each omni 
+ light requires a significant amount of texture memory. Shadow casting omni
+ lights should be used as sparingly as possible.</p>
+ 
+<p>When setting up a shadow casting light, you have the option
+of chosing between any <a HREF="../../Programmer/Shadowing_System/Shadow_Techniques.htm">shadowing technique</a>
+that is available in Gamebryo. Different shadowing techniques can have very 
+different performance considerations so it is important to understand them 
+before chosing a shadowing technique.</p>
+
+<p>Take for example &quot;<a href="../../Programmer/Shadowing_System/Shadow_Techniques.htm"><span 
+ class="NDLSystemFont">NiPCFShadowTechnique</span></a>&quot;. In this technique, 
+ the material of the shadow receivers must make multiple reads into the 
+ shadow map. This means that the expense of using this technique increases 
+ as the pixel coverage of the shadow receiver does. In the case of <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiVSMShadowTechnique.htm">NiVSMShadowTechnique</a></span>, 
+ the rendered shadow map has a gaussian blur performed, which means that 
+ as the shadow map increases in resolution, the cost of the shadow increases.</p>
+ 
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

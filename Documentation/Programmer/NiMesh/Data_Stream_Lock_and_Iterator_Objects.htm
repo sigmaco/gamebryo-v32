@@ -1,0 +1,215 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Data Stream Lock and Iterator Objects</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Data Stream Lock and Iterator Objects</h1>
+
+<p>Gamebryo provides a suite of classes for automatically 
+ locking NiDataStreams and abstracting iteration over its contents. </p>
+
+<p><span class="NDLSystemFont">NiDataStreamLock</span>, <span 
+ class="NDLSystemFont">NiDataStreamElementLock</span>, and <span class="NDLSystemFont">NiDataStreamPrimitiveLock</span> 
+ each cover a common usage pattern when working with <span class="NDLSystemFont">NiDataStream</span> 
+ data. Much like Gamebryo smart pointers, these lock classes work on the 
+ RAII principle of resource acquisition is initialization. The data stream 
+ lock is acquired upon construction and it subsequently unlocked during 
+ destruction. Since a stack variable is destroyed when the stack unwinds, 
+ any locks declared on the stack will be automatically unlocked when a 
+ function returns.</p>
+
+<p><span class="NDLSystemFont">NiTStridedRandomAccessIterator</span> 
+ is provided to encapsulate the problem of multiple semantics being interleaved 
+ in the same data stream. It will be discussed in more detail in this document.</p>
+
+<a name=Vertex_Elements></a><h2>Vertex Elements</h2>
+
+<p>Elements (vertex elements) are arrays of vertex data 
+ representing a single vertex attribute. Positions, normals, and tangents 
+ are all examples of vertex elements. There may be several different vertex 
+ elements in a single data stream. An element iterator allows one to iterate 
+ over a single element in a data stream regardless of whether or not the 
+ data stream is interleaved. The following code segment shows how to iterate 
+ over vertex positions on a mesh. It assumes a mesh has been created and 
+ populated with data. </p>
+
+<pre>
+// Add data to the mesh.
+//
+NiDataStreamElementLock kLock(pkMesh, NiCommonSemantics::POSITION(), 0,
+    NiDataStreamElement::F_FLOAT32_3, NiDataStream::LOCK_READ |
+    NiDataStream::LOCK_WRITE);
+ 
+// If the lock is not valid, then vertex positions were not present on the mesh.
+NIASSERT(kLock.IsValid());
+ 
+for (NiUInt32 uiSubmesh = 0; uiSubmesh &lt; kLock.GetSubmeshCount(); uiSubmesh++)
+{
+NiTStridedRandomAccessIterator&lt;NiPoint3&gt; kBegin = kLock.begin&lt;NiPoint3&gt;(uiSubmesh);
+NiTStridedRandomAccessIterator&lt;NiPoint3&gt; kEnd = kLock.end&lt;NiPoint3&gt;(uiSubmesh);
+for (NiTStridedRandomAccessIterator&lt;NiPoint3&gt; kIter = kBegin;
+    kIter != kEnd; ++kIter)
+{
+    (*kIter).x = 10.0f;
+}
+}
+</pre>
+
+<a name=NiDataStreamElementLock></a><h3>NiDataStreamElementLock</h3>
+
+<p>The first item of business when iterating over any data 
+ in a mesh is to lock the data. The locking behavior is exposed directly 
+ on a data stream; however, there exists a lock acquisition class which 
+ simplifies the locking process. As shown in the code above, an <span class="NDLSystemFont">NiDataStreamElementLock</span> 
+ is the lock acquisition class and is located in the <span class="NDLSystemFont">NiMesh</span> 
+ class library.</p>
+
+<p>The first parameter is the mesh containing the data 
+ stream to lock.</p>
+
+<p>The second parameter is the semantic corresponding to 
+ the specific data the user is interested in. As noted several times in 
+ this document, data only has meaning when accompanied by a semantic. Where 
+ as a semantic is only a string (<span class="NDLSystemFont">NiFixedString</span> 
+ in this case), it is highly encouraged to use the <span class="NDLSystemFont">NiCommonSemantics</span> 
+ class as a means of ensuring the correct string is used for the semantic 
+ in question. For a list of all the common semantics available, refer to 
+ <span class="NDLSystemFont">NiCommonSemantics</span> in the NiMesh class 
+ library.</p>
+
+<p>Third, a semantic index must be specified. A semantic 
+ index is used as an additional identifier for the data stream containing 
+ the data and its value is dependent on the semantic in question. In the 
+ source code above, the semantic index is zero because the user desires 
+ to access the first position semantic. If instead of vertex positions, 
+ the user was interested in texture coordinates (<span class="NDLSystemFont">NiCommonSemantics::TEXCOORD</span>), 
+ then the semantic index would refer to the individual texture unit. </p>
+
+<p>The next parameter describes the type (NiDataStreamElement::Format) 
+ of data for the specified semantic. A data type of <span class="NDLSystemFont">INVALID</span> 
+ may be specified if no particular NiDataStreamElement::Format is desired 
+ to satisfy a valid match. In the case of the above code the data type 
+ is three 32-bit floating point numbers. </p>
+
+<p>Lastly, the access flag is passed to the lock object. 
+ The access flag determines how the locked data will be used and must match 
+ the capacities of the underlying data stream. For example, if the data 
+ stream was created without any <span class="NDLSystemFont">CPU_READ</span> 
+ flags then specifying a <span class="NDLSystemFont">CPU_READ</span> flag 
+ on the <span class="NDLSystemFont">NiDataStreamElementLock</span> will fail. 
+ Note, two access flags are provided for tools use: <span class="NDLSystemFont">NiDataStream::LOCK_TOOL_READ</span> 
+ and <span class="NDLSystemFont">NiDataStream::LOCK_TOOL_WRITE</span>. These 
+ access flags override any other flags and allow the tool unlimited access 
+ to the stream. See <a href="Data_Stream_Access.htm">Data Stream Access</a> 
+ for more details.</p>
+
+<h3>Retrieving an Iterator</h3>
+
+<p>Once a valid lock has been established, an actual iterator 
+ can be retrieved. As demonstrated in the code above, an <span class="NDLSystemFont">NiTStridedRandomAccessIterator</span> 
+ is created from the element lock. This iterator provides array-like random 
+ access to the stream data and can be, using an STL style iteration pattern, 
+ iterated from begin to end. Note that the iterator is responsible for 
+ all logic relating to element striding and packing regardless of the interleaving 
+ of the data stream. </p>
+
+<p>In the above example, notice that the sub-mesh index 
+ is being passed into the calls to <span class="NDLSystemFont">begin</span> 
+ and <span class="NDLSystemFont">end</span>. In most cases there will only 
+ ever be one sub-mesh associated with a mesh. However, for completeness, 
+ it is useful to iterate over all sub-meshes.</p>
+
+<a name=NiDataStreamLock></a><h3>NiDataStreamLock</h3>
+
+<p>It is useful to mention <span class="NDLSystemFont">NiDataStreamLock</span> 
+ when discussing iterating over vertex elements. This lock cannot be instantiated 
+ through <span class="NDLSystemFont">NiMesh</span> as it only works with 
+ <span class="NDLSystemFont">NiDataStream</span> objects directly. Unlike 
+ <span class="NDLSystemFont">NiDataStreamElementLock</span>, the user can 
+ choose to work with the entire contents of the data stream or individual 
+ regions. For details on the differences between regions and sub-meshes, 
+ see <a href="NiMesh_Primer.htm#Streams_and_Regions_Meshes_and_submeshes">Streams 
+ and Regions Meshes and Submeshes</a>. This iteration is encapsulated in 
+ matching begin/end/count methods.</p>
+
+<a name=Primitive_Elements></a><h2>Primitive Elements</h2>
+
+<p>In addition to iterating over an individual vertex element 
+ the <span class="NDLSystemFont">NiMesh</span>/<span class="NDLSystemFont">NiDataStream</span> 
+ API provides the ability to iterate over individual primitives of a mesh. 
+ The following code segment illustrates this principle. The <span class="NDLSystemFont">NiDataStreamPrimitiveLock</span> 
+ class is located in the <span class="NDLSystemFont">NiMesh</span> class 
+ library.</p>
+
+<pre>
+NiDataStreamPrimitiveLock kLock(pkMesh, NiDataStream::TOOL_READ |
+    NiDataStream::TOOL_WRITE);
+NIASSERT(kLock.IsValid());
+NiIndexedPrimitiveIterator32 kBegin = kLock.BeginIndexed32();
+NiIndexedPrimitiveIterator32 kEnd = kLock.EndIndexed32();
+NiIndexedPrimitiveIterator32 kIter = kBegin;
+while(kIter != kEnd)
+{
+    NiUInt32 uiNumIndicesPerPrimitive = (*kIter).count();
+    for (NiUInt32 ui = 0; ui &lt; uiNumIndicesPerPrimitive; ui++)
+    {
+        NiUInt32 uiIdx = (*kIter)[ui];
+        uiIdx += 3;
+        (*kIter)[ui] = uiIdx;
+    }
+    ++kIter;
+}
+</pre>
+
+<a name=NiDataStreamPrimitiveLock></a><h3>NiDataStreamPrimitiveLock</h3>
+
+<p>The <span class="NDLSystemFont">NiDataStreamPrimitiveLock</span> 
+ is the lock acquisition class of choice for iterating over the primitives 
+ of a mesh. The locking parameters are much simpler in the case of a primitive 
+ lock as the primitive type and data type are handled once the lock has 
+ been acquired. </p>
+
+<h3>Retrieving an Iterator</h3>
+
+<p>Once a primitive lock has been acquired, iterators are 
+ retrieved based on the type of index data present on the locked stream. 
+ There are four possibilities. The geometry can either be indexed or unindexed 
+ and 32-bit or 16-bit. Therefore, there are methods on the <span class="NDLSystemFont">NiDataStreamPrimitiveLock</span> 
+ to get an iterator matching one of the aforementioned combinations. The 
+ code sample above gets an iterator to the beginning of a stream containing 
+ 32-bit indices. It is recommended to use the type-checking functionality 
+ in the NiDataStreamLock objects to verify any type assumptions made when 
+ obtaining an iterator.</p>
+
+ <h3>Considerations When Iterating Over Multiple Streams</h3>
+
+ <p>When iterating over a set of streams on the same mesh, it is not always the case that they are all the same size.  In particular, the <span class="NDLSystemFont">NiDataStream::GetGPUConstantSingleEntry()</span> may be set, which indicates that the GPU will only provide the first entry in the stream for all invocations of the vertex shader.  If the logical value of the stream is needed (for example, what is the normal for the 8th vertex?), then you should consider the value of this flag when determining which value should be returned.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

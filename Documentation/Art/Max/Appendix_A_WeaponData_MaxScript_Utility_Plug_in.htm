@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+		<title>Appendix A: WeaponData MaxScript Utility Plug-in</title> 
+		
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Appendix A: WeaponData MaxScript Utility Plug-in</h1>
+
+<p>Put this maxscript into an ms file and store in your	3dsmax\scripts\startup folder. It can then be accessed just like any other MaxScript utility plug-in (in other words, through the MaxScript utility).</p>
+
+<pre>
+WeaponDataDef = attributes "weaponData" version:1 attribid:#(0x42dfaecb, 0x71356c9f)
+(
+	parameters main rollout:params
+	(  
+		hitPoints type:#float ui:hits default:10
+		cost type:#float ui:cost default:100
+		sound type:#string default:"boom"
+	)
+	rollout params "Weapon Parameters"
+	(
+		spinner hits "Hit Points" type:#float
+		spinner cost "Cost" type:#float
+		dropdownlist sound_dd "Sound" items:#("boom", "sparkle", "zap", "fizzle")
+
+		on sound_dd selected i do sound = sound_dd.items[i]
+
+		on params open do
+		(
+			for i = 1 to sound_dd.items.count do
+			(
+				if (sound == sound_dd.items[i]) then
+				(
+					sound_dd.selection = i
+				)
+			)
+		)
+	)
+)
+
+utility CustAttributeTestUtils "WeaponData Attribute" -- define the utility
+(
+
+	function GetCustAttribDef Temp attribName=
+	(
+		bHasOldDef = false
+		old_attr_def = undefined
+		count = custAttributes.count Temp
+		print count
+		for i = 1 to custAttributes.count Temp do
+		(
+
+			old_attr_def = custAttributes.getdef Temp i
+			if old_attr_def != undefined and old_attr_def.name == attribName do
+			(
+
+				bHasOldDef = true
+				return old_attr_def
+
+			)
+		)
+		return undefined
+	)
+
+	rollout WeaponDataPanel "Weapon Data"
+	(
+
+		button WeaponDataApply "Apply to Selection" width:122 height:20
+		button WeaponDataRemove "Remove from Selection" width:122 height:20
+
+		on WeaponDataApply pressed do
+		(
+			for item in selection do
+			(
+
+				old_def = GetCustAttribDef item WeaponDataDef.name
+				if old_def == undefined do
+				(
+					custAttributes.add item WeaponDataDef
+				)
+			)
+
+		)
+
+		on WeaponDataRemove pressed do
+		(
+			print "Removing CA"
+			for item in selection do
+			(
+				old_def = GetCustAttribDef item WeaponDataDef.name
+				print old_def
+				if old_def != undefined do
+				(
+					print item.name
+					custAttributes.delete item old_def
+				)
+			)
+		)
+	)
+
+	on CustAttributeTestUtils open do
+	(
+		addRollout WeaponDataPanel
+	)
+
+	on CustAttributeTestUtils close do
+	(
+		removeRollout WeaponDataPanel
+	)
+)
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

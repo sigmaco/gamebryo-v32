@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How entities work</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How entities work</h1>
+
+<p>Entities are implemented as C++ objects with a container of
+IProperties that can be looked up by integer PropertyID or the
+string name of the property. Each Entity has a data-driven FlatModel that is
+associated with it. The FlatModel contains information about all of the
+Models that are mixed in, including the behaviors that are available to execute
+on that Entity. FlatModels also contain the default values for
+all properties. The Entity does not actually have storage
+dedicated to any properties unless they have changed from the
+    Model default. If a property is changed from the default on a specific
+Entity, a new Property is allocated in the Property container for that Entity 
+    instance, and the new value is set. When looking up a property for reading,
+the Property container is first checked to see if the Property has been changed. If no IProperty that matches the PropertyID is found, the default value is used from the FlatModel.</p>
+
+<p>Entities can make use of built-in models. A built-in model is
+similar to a regular Model that is data-defined in the Entity Modeling Tool
+(and in fact built-in models are described in much the same way in
+the Entity Modeling Tool). However, built-in models are linked to an object derived 
+    from IBuiltinModel. IBuiltinModel is a C++ class that is
+automatically created and attached to an Entity that mixes in the
+    derived IBuiltinModel (as defined in the Entity Modeling Tool).
+IBuiltinModel provides the ability to get and set properties that
+are stored in native or custom data types. IBuiltinModel also provides a
+dispatch mechanism for behaviors. All get and set property calls,
+as well as behavior invocations, go through the IBuiltinModel.
+This can be used for more efficient data storage, better
+notification of property changes, and conversion between custom data
+types and the data types already bound into script. Built-in Models are ideal for 
+    integrating to existing game code and exposing those legacy Entities into EMT 
+    and World Builder. Legacy Entities can then be laid out, tuned and can interact 
+    with newly created data-driven Entities.</p>
+
+<p>Entities can be manipulated by themselves, other Entities, or
+system services. There are APIs for directly getting and setting
+properties and invoking behaviors from C++. Behaviors are usually invoked
+by calling an API that sends a message to the Scheduler. The
+Scheduler then queues the behavior for execution on the specified
+Entity. In <span class="NDLSystemFont">Scheduler::OnTick</span>, the Scheduler decides which
+behaviors to run on which Entities based on the Category of the request, 
+    subscriptions on the Entity, and the behaviors available to the Entity. Not all behaviors for all
+Entities will necessarily run each tick. Behaviors can be queued
+with a delay time after which they are to be executed. Also, each
+Entity has a tunable limit on the number of concurrent behaviors that can
+be run on it for resource management reasons. If an Entity already has too many behaviors running
+on it, any pending behaviors will remain queued until one of the
+executing behaviors finishes.</p>
+
+<p>Behaviors can call <span class="NDLSystemFont">Entity::CallImmediateBehavior
+    </span>from C++ or
+BehaviorAPI.CallBehavior from Lua (if the behavior is marked
+with the immediate trait) to invoke a behavior as a nested blocking call. A
+behavior that is invoked in this way will run immediately without being
+queued on the Scheduler. When the call to
+<span class="NDLSystemFont">Entity::CallImmediateBehavior </span>from C++ or
+BehaviorAPI.CallBehavior from Lua returns, the behavior has
+completed and execution immediately continues in the caller. Behaviors that are marked with the immediate trait
+cannot sleep or call any *AndWait built-ins.</p>
+
+<p>It is possible to directly call any C++ function from C++
+behaviors and any Lua function from Lua behaviors. However, 
+we do not recommend directly calling a function that is a behavior. 
+The only safe way to call a function that is a behavior is to use 
+    <span class="NDLSystemFont">Entity::CallImmediateBehavior </span>from C++ or
+BehaviorAPI.CallBehavior from Lua. Both use the
+appropriate rules for resolving which behavior to call. Both call all appropriate behaviors if the Extends trait is set.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_limitations.htm">Entity limitations</a></li>
+
+    <li><a href="entity_best_practice.htm">Best practices for working with entities</a></li>
+
+    <li><a href="entity_examples.htm">Entity examples</a></li>
+    <li><a href="entity_tuning.htm">Tuning entity performance</a></li>
+    <li><a href="entity_lifecycle.htm">Entity lifecycles</a></li>
+    <li><a href="entity_world_state.htm">Controlling entity in-world/out-of-world state</a></li>
+
+    <li><a href="../Entity_Properties/entity_property_overview.htm">Entity properties
+        overview</a></li>
+
+    <li><a href="../Entity_Properties/entity_property_how_work.htm">How entity properties
+        work</a></li>
+
+    <li><a href="../Builtins/builtin_overview.htm">Built-ins overview</a></li>
+
+    <li><a href="../Builtins/builtin_how_work.htm">How custom built-ins work</a></li>
+
+    <li><a href="../Entity_Interaction/entity_interaction_overview.htm">Entity interaction
+        overview</a></li>
+
+    <li><a href="../Entity_Interaction/entity_interaction_how_work.htm">How entity interaction
+        works</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

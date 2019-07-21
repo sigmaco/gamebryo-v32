@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How NIF File I/O Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How NIF File I/O Works</h1>
+
+<p>At its highest level, a Gamebryo file contains a list of
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived
+objects that have been "streamed" to disk. This technique is
+called streaming because the complex structure of the objects has
+been reduced to a linear stream of information, represented by a
+NIF file.</p>
+
+<p>Because these objects may have data members that point to
+other such objects, an implicit directed graph relates all the
+objects. The object pointers are the graph's arcs.</p>
+
+<p>The greatest challenge in implementing streaming is to be able
+to save the objects to disk with the appropriate information
+about the graph's arcs, sequentially load the objects, and
+recreate the directed graph. Building the graph after all objects
+have been loaded essentially requires linking in the sense that
+we are used to in linking modules into an executable program.</p>
+
+<p>The Gamebryo streaming system is unlike that of serialization
+used in the Microsoft Foundation Class library. In the latter
+case, a depth-first traversal of a graph is applied. Any
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a></span> data
+members that are visited will call their own serialization
+routines immediately. Other native data members (<span class=
+"NDLSystemFont">int</span>, <span class=
+"NDLSystemFont">float</span>, etc.) are streamed as they are
+encountered.</p>
+
+<p>In the case of Gamebryo streaming, the objects are streamed in
+a more breadth-first fashion (although scene graphs are traversed
+in depth-first order). Any <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiObject.htm">NiObject</a></span> data
+members that are encountered do not call their own streaming
+routines. An actual pointer value is written to disk. The
+corresponding object may or may not have already been written to
+disk.</p>
+
+<p>When loading the objects, the pointer values are no longer
+valid memory addresses. They are instead used as link IDs to be
+used in a later linking pass. <a href=
+"../Object_Systems/Introduction_to_Object_Systems.htm">Object
+Systems</a> describes the architecture and features in more
+detail.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Base Game: C++ Code Changes</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Base Game: C++ Code Changes</h1>
+
+<p>In this section we'll describe the code changes we need to make to enable some of the additional
+features in Base Game. By the end of this section you should have enough code in place to move the
+avatar to the TriggerRing and open the door in room one.</p>
+
+<h2>Tutorial at-a-Glance</h2>
+
+<ol>
+    <li><a href="base_game_tutorial_overview.htm">Tutorial Overview</a></li>
+
+    <li><a href="base_game_tutorial_transform_hw.htm">Transforming Hello World</a></li>
+
+    <li><a href="base_game_tutorial_models.htm">Creating New Models</a></li>
+
+    <li><a href="base_game_tutorial_behaviors.htm">Adding New Behaviors</a></li>
+
+    <li><a href="base_game_tutorial_world.htm">Populating Your First Level</a></li>
+
+    <li><a href="base_game_tutorial_project.htm">C++ Project Changes</a></li>
+
+    <li><b>C++ Code Changes&nbsp;&nbsp;&lt;-- You are here</b></li>
+
+    <li><a href="base_game_tutorial_loading.htm">Loading Your World and Starting the
+    Application</a></li>
+
+    <li><a href="base_game_tutorial_more_services.htm">Adding More Services</a></li>
+</ol>
+
+<h2>Source Code for this Section</h2>
+
+<p>If you want to see the results of the following code changes outlined in this section, you can
+see versions of <span class="NDLSystemFont">Main.cpp</span>, <span class=
+"NDLSystemFont">BaseGame.h</span>, and <span class="NDLSystemFont">BaseGame.cpp</span> in <a href=
+"base_game_tutorial_code_samples.htm#initial_basegame_source_files">BaseGame: Tutorial Code
+Samples</a>.</p>
+
+<h2>Adding the Demo System Service ID Data Driven Enum File</h2>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                If you're using the Hello World tutorial Visual Studio project, you can skip this
+                step.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Base Game uses a data driven enumeration (DDE) file (<span class="NDLSystemFont">.enum</span>)
+to manage IDs that are needed at compile time. We need to add the <span class=
+"NDLSystemFont">.enum</span> file to our project and add some custom build rules so that this file
+generates an appropriate header file.</p>
+
+<p>First, add the following file to your project under the <span class=
+"NDLSystemFont">Resources</span> folder:</p>
+
+<ul>
+    <li><span class=
+    "NDLSystemFont"><em>%EMERGENT_PATH%</em>/Media/Enums/egfDemoSystemServiceIDs.enum</span></li>
+</ul>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                When you add this file to your Visual Studio project, VS may ask you if you want to
+                associate a custom build rule for files of type <span class=
+                "NDLSystemFont">.enum</span>. Individual <span class="NDLSystemFont">.enum</span>
+                files may depend on other <span class="NDLSystemFont">.enum</span> files which, in
+                turn, means each needs specific custom build rule parameters. Although letting VS
+                associate a custom build rule is convenient, it may result in incorrectly generated
+                <span class="NDLSystemFont">.h</span> files. We recommend that you add custom build
+                rules on a per-file basis using the File Properties dialog.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>Attach the following custom build rule to this file to generate the header file by
+right-clicking the file in the Solution Explorer and defining the Custom Build Step for all build configurations.. Note that the
+<span class="NDLGUILabel">Outputs</span> field must contain the fully qualified path to your
+tutorial source directory. For this example, the directory is <span class=
+"NDLSystemFont">C:\Emergent\BaseGameTutorial</span>.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Build Step Field</th>
+
+            <th>Value</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Command Line</td>
+
+            <td>$(EMERGENT_PATH)\Source\Tools\DDEHeaderGen\bin\DDEHeaderGenRelease.exe
+            output=$(ProjectDir)\egfDemoSystemServiceIDs.h
+            base#=$(EMERGENT_PATH)\Media\Enums\efdSystemServiceIDs.enum
+            base#=$(EMERGENT_PATH)\Media\Enums\egfSystemServiceIDs.enum
+            base#=$(EMERGENT_PATH)\Media\Enums\ecrSystemServiceIDs.enum
+            enum=$(EMERGENT_PATH)\Media\Enums\egfDemoSystemServiceIDs.enum</td>
+        </tr>
+
+        <tr>
+            <td>Description</td>
+
+            <td>Generating enumeration header for
+            $(EMERGENT_PATH)/Media/Enums/egfDemoSystemServiceIDs.enum</td>
+        </tr>
+
+        <tr>
+            <td>Outputs</td>
+
+            <td>$(ProjectDir)\egfDemoSystemServiceIDs.h</td>
+        </tr>
+
+        <tr>
+            <td>Additional Dependencies</td>
+
+            <td>$(EMERGENT_PATH)/Media/Enums/efdSystemServiceIDs.enum;
+            $(EMERGENT_PATH)/Media/Enums/egfSystemServiceIDs.enum;
+            $(EMERGENT_PATH)/Media/Enums/ecrSystemServiceIDs.enum</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Right-click the <span class="NDLSystemFont">egfDemoSystemServiceIDs.enum</span> file and select
+compile. Verify that the build step generated the <span class=
+"NDLSystemFont">egfDemoSystemServiceIDs.h</span> file in your tutorial source directory. Add this
+generated file to your project under the <span class="NDLSystemFont">Generated</span> folder.</p>
+
+<h2>Updates to Main.cpp</h2>
+
+<p>The <span class="NDLSystemFont">Main.cpp</span> file contains a small amount of bootstrapping
+code and thus there is no change required. The code within the <span class=
+"NDLSystemFont">Main.cpp</span> that you created in the previous section is available in <a href=
+"base_game_tutorial_code_samples.htm#initial_basegame_source_files">BaseGame Tutorial Code
+Samples</a>.</p>
+
+<h2>Updates to BaseGame.h and .cpp</h2>
+
+<p>This section describes the changes that need to be made to Hello World's <span class=
+"NDLSystemFont">HelloWorld.h</span> and <span class="NDLSystemFont">.cpp</span> to transform them
+into <span class="NDLSystemFont">BaseGame.h</span> and <span class="NDLSystemFont">.cpp</span>.
+These changes are already reflected in the <span class="NDLSystemFont">BaseGame.h</span> and
+<span class="NDLSystemFont">.cpp</span> that you created in the previous section. See <a href=
+"base_game_tutorial_code_samples.htm#initial_basegame_source_files">BaseGame Tutorial Code
+Samples</a>.</p>
+
+<h3>PhysX Services</h3>
+
+<p>We need to add several PhysX-related services to Base Game and register these with the service
+manager. First, we add required headers.</p>
+<pre>
+#include &lt;efdPhysX/PhysXSDKManager.h&gt;     // In BaseGame.h
+#include &lt;egfPhysX/ServiceAllocator.h&gt;    // In BaseGame.cpp
+</pre>
+
+<p>We need to register the Base PhysX built-in methods with the Lua runtime. Declare the
+initialization function in BaseGame.cpp.</p>
+<pre>
+extern "C" int luaopen_bapiPhysXBase(lua_State *L);
+</pre>
+
+<p>We register this with the runtime in SetupServices:</p>
+<pre>
+EE_VERIFY(SchedulerLua::AddStaticBuiltinInitFunction(luaopen_bapiPhysXBase));
+</pre>
+
+<p>Next, we create appropriate PhysX instances and register them with the Service Manager, using
+the <span class="NDLSystemFont">egfPhysX::ServiceAllocator</span>.</p>
+<pre>
+// PhysX services -  PhysX simulation and collision/triggers
+EE_VERIFY (egfPhysX::CreatePhysXServices(m_spServiceManager));
+</pre>
+
+<p>In the Base Game class, we add a <span class="NDLSystemFont">efdPhysX::PhysXSDKManager</span>
+instance. This is responsible for initializing the PhysX library at startup, and shutting it down
+when the application exits.</p>
+<pre>
+efdPhysX::PhysXSDKManager* m_pPhysXSDKManager;
+</pre>
+
+<p>We initialize this in SetupServices.</p>
+<pre>
+// Startup PhysX
+m_pPhysXSDKManager = efdPhysX::PhysXSDKManager::GetManager();
+if (!m_pPhysXSDKManager-&gt;Initialize())
+{
+    EE_FAIL("Could not initialize the PhysX SDK.");
+    return false;
+}
+m_pPhysXSDKManager-&gt;Configure(spConfigManager);
+</pre>
+
+<h2>Moving on...</h2>
+
+<p>We have our code in place. Next, we'll see how to launch the Base Game application. See <a href=
+"base_game_tutorial_loading.htm">Loading Your World and Starting the Application</a></p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/Build/build_prereqs_pc.htm">Windows build requirements</a></li>
+
+    <li><a href="../../GetStart/PC/Building_Gamebryo_for_Win32__source_licensees_only_.htm">Build
+    Guidelines for Win32</a></li>
+
+    <li><a href="../../Tools/DataDrivenEnum/DataDrivenEnum_intro.htm">DDE Header Generator
+    Introduction</a></li>
+
+    <li><a href="../../GetStart/Architecture/architecture_framework_overview.htm">Game Framework
+    overview</a></li>
+
+    <li><a href="../../Reference/efdPhysX/efdPhysX__PhysXSDKManager.htm">PhysX SDK Manager Class
+    Reference</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_start_simulation_svc.htm">PhysX Start
+    Simulation Service Reference</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_finish_simulation_svc.htm">PhysX
+    Finish Simulation Service Reference</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_scene_svc.htm">PhysX Scene Service
+    Quick Reference</a></li>
+
+    <li><a href="../../Reference/QuickRef_Services/svc_qckref_trigger_svc.htm">PhysX Trigger
+    Service Quick Reference</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

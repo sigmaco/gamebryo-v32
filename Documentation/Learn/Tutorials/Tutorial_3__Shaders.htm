@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 3: Shaders</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Core Runtime Tutorial 3: Shaders</h1>
+
+<p>In this tutorial, we cover initializing the Gamebryo shader system for library-based and
+DLL-based applications.</p>
+
+<h2>The Demo</h2>
+
+<p>In <a href="Tutorial_2__Nif_Files.htm">Core Runtime Tutorial 2: Nif Files</a>, we noted that the
+ground looks incorrect. This is because it cannot find the shader, "VCAlphaTextureBlender" and is
+falling back to the default rendering pipeline. In <span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span>-based applications, the
+shader system is set up in the <span class="NDLSystemFont">CreateShaderSystem</span> method, which
+is called after creating the renderer but before loading the scene. This ordering is important
+because it guarantees that the loaded NIF files can resolve any shaders that they reference. The
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiSample/Introduction_To_NiSample.htm">NiSample</a></span> class encapsulates most
+of the details, but for the purpose of this tutorial we will re-implement the functionality.</p>
+
+<p>Gamebryo shaders are all derived from a common base class, <a href=
+"../../Reference/NiMain/NiShader.htm"><span class="NDLSystemFont">NiShader</span></a>, which
+completely encapsulates the rendering of the geometry object. Some shaders are entirely generated
+from C++ code. Other shaders are data-driven from defined formats like <a href=
+"../../Programmer/NiShader/Introduction_!FX_Shaders.htm">FX</a>, <a href=
+"../../Programmer/NiShader/Introduction_to_CGFX_And_COLLADA_FX.htm">CGFX</a>, or <a href=
+"../../Programmer/NiShader/Introduction_to_NSF_NSB_Shaders.htm">NSF</a> files. Data-driven Gamebryo
+shaders are unlike textures and NIF files. They are pre-loaded by the application so that they can
+be quickly applied during rendering. Therefore, the <span class=
+"NDLSystemFont">CreateShaderSystem</span> method must register the shaders that are needed by the
+application as well as initializing any of the libraries used in loading the shaders. There are
+three callbacks associated with the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a></span> that can be useful when
+working with the shader system:</p>
+
+<ul>
+    <li>The error callback (<span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a>::RegisterErrorCallback</span>)&mdash;This
+    callback is called whenever a GPU program fails to compile. This is incredibly useful for
+    debugging.</li>
+
+    <li>The parser callback (<span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a>::RegisterRunParserCallback</span>)&mdash;This
+    callback is called whenever the application has requested that a set of directories be scanned
+    for text shaders that need to be parsed. This parsing process converts the text-based shaders
+    to a more efficient binary representation. In general, this can be done as a build step, but
+    for the convenience of development this is usually done at runtime.</li>
+
+    <li>The shader creation callback (<span class="NDLSystemFont"><a href=
+    "../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a>::RegisterClassCreationCallback</span>)&mdash;This
+    callback is called whenever the application has requested that a set of directories be scanned
+    for binary versions of shaders. Loading these files will allow the shader system to create
+    <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShaders</a></span>,
+    which define the passes, <a href="../../Reference/NiMain/NiGPUProgram.htm">GPU programs</a>,
+    and render states for rendering an <span class="NDLSystemFont"><a href=
+    "../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>.
+
+        <p class="indent1">This topic is discussed in greater detail in <a href=
+        "../../Programmer/NiShader/Registering_your_ShaderLibrary_with_the_ShaderFactory.htm">Registering
+        your ShaderLibrary with the ShaderFactory</a>. In this application, only the error callback
+        is used as the default parser and shader callbacks are sufficient.</p>
+    </li>
+</ul>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display the following rendering. The following screen capture was taken
+from the <span class="NDLSystemFont">Win32</span> platform.</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial3.jpg" width="515" height="400" alt="tutorial3 (63K)">
+
+    <p class="NDLFigureCaption">Loading Shader libraries</p>
+</div>
+
+<h2>The Relevant Code</h2>
+
+<p>There are several functions that are overloaded for this sample.</p>
+
+<h3>CreateShaderSystem</h3>
+
+<p>This section of code is called after the renderer is created and is the control function that
+sets up all shaders in the sample.</p>
+
+<p>First, it sets up the error callback function, which is useful for debugging problems.</p>
+<pre>
+// Register for an application callback should a shader fail to compile.
+NiShaderFactory::RegisterErrorCallback(ShaderCallback_Errors);
+</pre>
+
+<p>It also sets up shader program code directories, which will be searched later when executing
+<span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShader</a></span>
+objects. <span class="NDLSystemFont"><a href=
+"../../Reference/NiApplication/NiApplication.htm">NiApplication::ConvertMediaFilename</a></span> is
+used to specify the appropriate data folders</p>
+<pre>
+    // Set up the shader directories that we will use to parse.
+    const char* pcShaderDir = "Shaders";
+#if defined(_XENON)
+    const char* pcShaderProgramDir = "Shaders\\Xbox360";
+#elif defined(WIN32)
+    const char* pcShaderProgramDir = NULL;
+    if (m_spRenderer->GetRendererID() == efd::SystemDesc::RENDERER_D3D10)
+        pcShaderProgramDir = "Shaders\\D3D10";
+    else if (m_spRenderer->GetRendererID() == efd::SystemDesc::RENDERER_D3D11)
+        pcShaderProgramDir = "Shaders\\D3D11";
+
+#elif defined(_PS3)
+    const char* pcShaderProgramDir = "Shaders/PS3";
+#else
+    #error "Unknown platform"
+#endif
+
+    // Tell the shader factory where to locate any GPU program files.
+    // These are files used by shaders such as vsh, psh, cg, or hlsl files.
+    NiShaderFactory::AddShaderProgramFileDirectory(
+        ConvertMediaFilename("Shaders/Common"));
+    NiShaderFactory::AddShaderProgramFileDirectory(
+        ConvertMediaFilename(pcShaderProgramDir));
+</pre>
+
+<p>The first shaders that are loaded are from parsed formats. This is done to make sure that any
+text-based shader files that have been modified are recompiled to binary before loading their
+binary versions.</p>
+<pre>
+    if (!RunShaderParsers(pcShaderDir))
+    {
+        NiMessageBox("Failed to run shader parsers!", "ERROR");
+        return true;
+    }
+</pre>
+
+<p>Now, we will load the shader libraries. This will load all known binary shaders in the specified
+directory.</p>
+<pre>
+    if (!RunShaderLibraries(pcShaderDir))
+    {
+        NiMessageBox("Failed to run shader parsers!", "ERROR");
+        return true;
+    }
+</pre>
+
+<h3>RunShaderParsers</h3>
+
+<p>This function loads and runs the NSFParserLib, the only parser library that is used by this
+tutorial. The default parser callback will work for both statically and dynamically linked
+libraries and so it is not overridden here. In statically linked applications, so long as the top
+level header for the parser lib (in this case <span class="NDLSystemFont">NSFParserLib.h</span>).
+This header does not need to be included in dynamically linked executables, but it won't cause a
+problem if it is.</p>
+<pre>
+    NiShaderFactory::LoadAndRunParserLibrary("NSFParserLib", ConvertMediaFilename(pcShaderDir),
+        false);
+</pre>
+
+<h3>RunShaderLibraries</h3>
+
+<p>This method sets up the binary shader libraries (NiBinaryShaderLib) that will be used by this
+application. We first set up the directories to load. Note that more than one directory is
+supported, although we only need to load from a single specified folder (but no subdirectories, by
+default) in this case.</p>
+<pre>
+    unsigned int uiCount = 1;
+    const char* apcDirectories[1];
+    apcDirectories[0] = ConvertMediaFilename(pcShaderDir);
+
+    // Tell the shader factory to load all of the shaders in the specified folder.
+    if (!NiShaderFactory::LoadAndRegisterShaderLibrary(
+        "NiBinaryShaderLib", 
+        uiCount, 
+        apcDirectories,
+        false))
+    {
+        NiMessageBox("Failed to load shader library!", "ERROR");
+        return false;
+    }
+</pre>
+
+<p>After this is done, the D3D10 and D3D11 versions of the NiBinaryShaderLib shader library are
+also registered.</p>
+
+<p>Similarly to the <span class="NDLSystemFont">LoadAndRunParserLibrary</span> function, the top
+level header for the shader library must be included in the application so that <span class=
+"NDLSystemFont">LoadAndRegisterShaderLibrary</span> can find the linked shader library. This is
+only required for statically linked executables.</p>
+
+<h3>ShaderCallback_Errors</h3>
+
+<p>This method is a callback for any problems that occurred when parsing <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiShader.htm">NiShaders</a></span> or <a href=
+"../../Reference/NiMain/NiGPUProgram.htm">shader programs</a> used by the <a href=
+"../../Reference/NiMain/NiShader.htm"><span class="NDLSystemFont">NiShaders</span></a>. While not
+explicitly required for an application, overriding this callback can be useful in tracking down
+problems.</p>
+
+<h2>Moving on...</h2>
+
+<p>That completes this tutorial. We covered initializing the Gamebryo shader system for
+library-based and DLL-based applications. Next, we'll look at attaching one scene graph to another.
+See <a href="Tutorial_4__Scene_Attachment.htm">Core Runtime Tutorial 4: Scene Attachment</a>.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../../Programmer/General_Topics/Naming_Conventions.htm">Naming
+    Conventions</a></li>
+
+    <li><a href="../../Reference/NiMain/NiGPUProgram.htm">NiGPUProgram</a></li>
+
+    <li><a href="../../Reference/NiMain/NiShader.htm">NiShader</a></li>
+
+    <li><a href="../../Reference/NiMain/NiShaderFactory.htm">NiShaderFactory</a></li>
+
+    <li><a href=
+    "../../Programmer/NiShader/Introduction_to_the_Gamebryo_Shader_System_Architecture.htm">Introduction
+    to the Gamebryo Shader System Architecture</a></li>
+
+    <li><a href="../../Programmer/NiShader/Introduction_to_NSF_NSB_Shaders.htm">Introduction to
+    NSF/NSB Shaders</a></li>
+
+    <li><a href="../../Programmer/NiShader/Introduction_!FX_Shaders.htm">Introduction to FX
+    Shaders</a></li>
+
+    <li><a href="../../Programmer/NiShader/Introduction_to_CGFX_And_COLLADA_FX.htm">Introduction to
+    CGFX And COLLADA FX</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

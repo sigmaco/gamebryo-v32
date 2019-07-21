@@ -1,0 +1,406 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiPersistentSrcTextureRendererData</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">
+NiPersistentSrcTextureRendererData</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiTexture__RendererData.htm">NiTexture::RendererData</a></p>
+
+<p class="NDLRefHeaderFile">
+&lt;NiPersistentSrcTextureRendererData.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> and
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> objects are the two main
+forms of texture data representation in Gamebryo. <span class=
+"NDLSystemFont"><a href=
+"NiSourceTexture.htm">NiSourceTexture</a></span> and <span class=
+"NDLSystemFont"><a href=
+"NiSourceCubeMap.htm">NiSourceCubeMap</a></span> texture objects
+may be created from either <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> or
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> objects.</p>
+
+<p>The <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> class
+is designed specifically for streaming persistent versions of
+source texture renderer data to support platform-specific texture
+format conversions for "internal textures" (those included in a
+scene's NIF file) at export time.</p>
+
+<p>This capability enables platform-specific source texture
+renderer data to be loaded directly into the appropriate platform
+at application load time, with two very beneficial results:</p>
+
+<ul>
+    <li>Improvements in "high water mark" behavior for texture
+    memory at load time. In other words, temporary memory
+    allocations for texture format conversion will not be
+    required if a platform-specific export option is requested in
+    the art pipeline.</li>
+
+    <li>Load time performance improvements, since there are no
+    texture format conversions at load time.</li>
+</ul>
+
+<p>A caveat to this approach is that the texture is configured
+specifically for a target platform (or graphics card), and may
+not be loadable for use with alternative platforms or graphics
+cards, or with tools on the PC. If a texture is configured
+specifically for one target platform or graphics card, but an
+attempt is made to load it on a platform or graphics card that
+can't support it, <a href=
+"../../Programmer/Texturing/Failures.htm">"error" replacement
+textures</a> are used to indicate load-time errors.</p>
+
+<p>To specify <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span>-based
+textures for export from the art packages, you may select any of
+the non-generic platform types with internal textures (include
+textures in the main NIF). Specifically, these choices
+include:</p>
+
+<ul>
+    <li>Xbox360, with internal textures</li>
+
+    <li>Playstation3, with internal textures</li>
+
+    <li>DX9, with internal textures</li>
+
+    <li>D3D10, with internal textures</li>
+
+    <li>D3D11, with internal textures</li>
+</ul>
+
+<p>[Note that each time a platform SDK (e.g., Xbox360 XDK or
+Playstation3 SDK) changes, there is at least a possibility that
+the new SDK will cause textures to be formatted differently on
+that platform. It is not likely to happen frequently, but the
+possibility exists. In such a case, it may be desirable to
+re-export Nifs containing platform-specific textures using
+exporters built with that platform's most recent SDK
+version.]</p>
+
+<p>If application requirements dictate fully general support of
+textures within a NIF file on multiple platforms or graphics
+cards, then <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>-based textures may be
+used, since they enable on the fly texture format conversions at
+load time. To specify <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span>-based textures for
+export from the art packages, you may select one of four export
+options: (1) "generic" platform type, but include textures in
+main NIF, (2) save textures as separate NIFs, (3) textures as
+original images, or (4) textures as original images VRAM.</p>
+
+<p>Consult the export options for <a href=
+"../../Art/Max/Gamebryo_3ds_max_Export_Options1.htm">3ds max</a>
+or <a href="../../Art/Maya/Export_Display_Options.htm">Maya</a>
+for more details.</p>
+
+<p><span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> objects
+represent one or more two-dimensional arrays of pixel values or
+"faces", as well as pyramids of multiple mipmap levels, each of
+two-dimensional arrays of pixel values. The object also contains
+information representing the format of the pixels in the data
+arrays, as well as the dimensions of the arrays. <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> objects
+can represent full mipmap pyramids and a wide range of pixel
+formats. <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> objects
+may also refer to <span class="NDLSystemFont"><a href=
+"NiPalette.htm">NiPalette</a></span> objects, and can even share
+them. All "faces" of the <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> are
+laid out so that each face's full mip-map pyramid is contiguous
+in memory.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>There are no public constructors for <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span>
+objects. All instances should be created via the static member
+<span class="NDLSystemFont">Create()</span> function or via the
+streaming system creation functions.</p>
+
+<p class="NDLRefHead1">Static Member Functions</p>
+
+<p class="NDLRefMemberFunction">static
+NiPersistentSrcTextureRendererData* Create(NiSourceTexture*
+pkTexture, const <a href = "../../Reference/efd/efd__SystemDesc.htm">efd::SystemDesc::RendererID</a> eTargetRenderer)</p>
+
+<p class="NDLRefMemberDescription">Creates an <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> object
+that represents, for the supplied source texture for the
+specified renderer, a persistent (streamable) version of
+renderer-specific source texture renderer data. Appropriate
+texture format decisions and texture format conversions are
+handled during <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span>
+creation, with the expectation that this object will ultimately
+be streamed out to a NIF file, to optimize load time performance
+and load time memory efficiencies for specific platforms.</p>
+
+<p class="NDLRefMemberDescription">When the texture data is
+loaded into the renderer at application load time, the renderer
+will load the persistent source texture renderer data directly
+into a renderer-specific resource, bypassing the
+application-level <span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> object and all
+<span class="NDLSystemFont"><a href=
+"NiImageConverter.htm">NiImageConverter</a></span>-based texture
+conversion at load time entirely. By default, the image is
+assumed to be static.</p>
+
+<p class="NDLRefMemberFunction">static void
+SetToolModeStreaming(bool bToolModeStreaming);</p>
+
+<p class="NDLRefMemberFunction">static bool
+GetToolModeStreaming();</p>
+
+<p class="NDLRefMemberDescription">The intent of the <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> class
+and its renderer-specific subclasses (for example, 
+<span class=
+"NDLSystemFont">NiDX9PersistentSrcTextureRendererData</span>) is
+to perform as much texture conversion, tiling, and set-up work as
+feasible at export time, enabling fast and memory-efficient
+loading of platform-specific textures at load time.</p>
+
+<p class="NDLRefMemberDescription">If you also wish to stream out
+the platform-specific texture data that was streamed into your
+application, the data streamed out will likely match the data
+streamed in. However, there is no absolute guarantee that the
+data loaded into a platform-specific resource by the platform SDK
+won't be altered by the platform SDK or drivers.</p>
+
+<p class="NDLRefMemberDescription">Thus, a "tools mode" option
+exists, in which pristine copies of platform-specific texture
+data are saved in memory to guarantee that what will be streamed
+out matches what has been streamed in. Applications that need to
+stream out platform-specific textures that are guaranteed to
+match exactly the platform-specific textures that were streamed
+in may need to call <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData::SetToolModeStreaming(true)</span>
+during application initialization. Such applications tend to be
+tools, as opposed to run-time applications.</p>
+
+<p class="NDLRefMemberDescription">However, if your application
+does not need to stream out the platform-specific texture data,
+it is obviously superior to leave tool mode streaming off (the
+default setting), to avoid what then would constitute unnecessary
+memory allocations.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumMipmapLevels()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the number of mipmap
+levels in the <span class="NDLSystemFont">NiPixelData</span> object. If
+either of the dimensions are 0, then this function will return
+0.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetWidth(unsigned
+int uiMipmapLevel = 0, unsigned int uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the width of the
+face's mipmap level at the given index, where level 0 is the
+finest (largest) mipmap level, and level (<span class=
+"NDLSystemFont">GetNumMipmapLevels()-1</span>) is the coarsest
+(smallest) mipmap level.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetHeight(unsigned
+int uiMipmapLevel = 0, unsigned int uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the height of the
+face's mipmap level at the given index, where level 0 is the
+finest (largest) mipmap level, and level (<span class=
+"NDLSystemFont">GetNumMipmapLevels()-1</span>) is the coarsest
+(smallest) mipmap level.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetPixelStride()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the stride (in bytes)
+from the start of one pixel to the start of the next. If the
+pixel format is a compressed format, this value will be zero, as
+pixel stride is not constant in a compressed image (compressed
+images are block-based).</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+GetSizeInBytes(unsigned int uiMipmapLevel = 0, unsigned int
+uiFace = 0) const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of
+the face's mipmap level at the given index, where level 0 is the
+finest (largest) mipmap level, and level (<span class=
+"NDLSystemFont">GetNumMipmapLevels()-1</span>) is the coarsest
+(smallest) mipmap level. This value is valid for all pixel
+formats.</p>
+
+<p class="NDLRefMemberFunction">unsigned int
+GetTotalSizeInBytes() const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of
+all faces and their entire mipmap pyramids. This value is valid
+for all pixel formats.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetFaceSizeInBytes()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the size in bytes of
+one face and its entire mipmap pyramid. This value is valid for
+all pixel formats.</p>
+
+<p class="NDLRefMemberFunction">ptrdiff_t
+GetOffsetInBytes(unsigned int uiMipmapLevel = 0, unsigned int
+uiFace = 0) const;</p>
+
+<p class="NDLRefMemberDescription">Returns the pointer offset in
+bytes of a particular mipmap level for a specific face. This
+value is valid for all pixel formats.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiPixelFormat.htm">NiPixelFormat</a>&amp; GetPixelFormat()
+const</p>
+
+<p class="NDLRefMemberDescription">Returns the pixel format of
+the data in the object.</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetNumFaces()
+const;</p>
+
+<p class="NDLRefMemberDescription">Returns the number of faces
+for this platform-specific source texture renderer data.</p>
+
+<p class="NDLRefMemberFunction"><a href = "../../Reference/efd/efd__SystemDesc.htm">efd::SystemDesc::RendererID</a> GetTargetPlatform()
+const;</p>
+
+<p class="NDLRefMemberDescription">Returns the ID of the target
+platform for this platform-specific source texture renderer data.
+Possible values are enumerated in the <span class="NDLSystemFont">
+<a href = "../../Reference/efd/efd__SystemDesc.htm">efd::SystemDesc</a></span> doc.
+RENDERER_GENERIC is the default generic case, which indicates that
+<span class="NDLSystemFont"><a href=
+"NiPixelData.htm">NiPixelData</a></span> will be used instead of
+<span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span>, for on
+the fly conversions at load time.</p>
+
+<p class="NDLRefMemberFunction">void SetPalette(<a href=
+"NiPalette.htm">NiPalette</a>* pkPal)</p>
+
+<p class="NDLRefMemberDescription">Attaches an <span class=
+"NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span> to
+the object the <span class="NDLSystemFont">NiPixelData</span>
+object should have a palettized format if this value is
+non-<span class="NDLSystemFont">NULL</span>. If the object
+already had a palette, the existing palette will have its
+reference count decremented.</p>
+
+<p class="NDLRefMemberFunction"><span class=
+"NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span>*
+GetPalette()</p>
+
+<p class="NDLRefMemberFunction">const <span class=
+"NDLSystemFont"><a href="NiPalette.htm">NiPalette</a></span>*
+GetPalette() const</p>
+
+<p class="NDLRefMemberDescription">Returns a pointer to the
+object's <span class="NDLSystemFont"><a href=
+"NiPalette.htm">NiPalette</a></span>. This pointer should be
+<span class="NDLSystemFont">NULL</span> if and only
+if the format is not palettized.</p>
+
+<p class="NDLRefMemberFunction">unsigned char* GetPixels(unsigned
+int uiMipmapLevel = 0, unsigned int uiFace = 0))</p>
+
+<p class="NDLRefMemberFunction">const unsigned char*
+GetPixels(unsigned int uiMipmapLevel = 0, unsigned int uiFace =
+0)) const</p>
+
+<p class="NDLRefMemberDescription">These functions return a
+pointer to the first pixel of the mipmap level at the given index
+and specified face, where level 0 is the finest (largest) mipmap
+level, and level (<span class=
+"NDLSystemFont">GetNumMipmapLevels()-1</span>) is the coarsest
+(smallest) mipmap level.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Mipmap_Level_Pixel_Storage" id="Mipmap_Level_Pixel_Storage"></a><p class="NDLRefHead2">Mipmap Level Pixel Storage</p>
+
+<p><span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> objects
+store the pixel values for each mipmap level consecutively,
+packed one right after another. Each mipmap level is not
+individually aligned. As a result, the data may be copied using a
+single <span class="NDLSystemFont">memcpy</span> operation by
+retrieving the base address of mipmap level 0 and copying the
+number of bytes returned by <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData::GetTotalSizeInBytes</span>.</p>
+
+<a name="Mipmap_Pyramid_Generation" id="Mipmap_Pyramid_Generation"></a><p class="NDLRefHead2">Mipmap Pyramid Generation</p>
+
+<p>Gamebryo supports partial mipmap pyramids. For example, while
+the full pyramid for a 16x16 image would be the following set of
+mipmap levels: 16x16, 8x8, 4x4, 2x2, 1x1, <span class=
+"NDLSystemFont">NiPersistentSrcTextureRendererData</span> may
+also be used to store the following partial mipmap pyramid: 
+16x16, 8x8. However, intermediate mipmap levels cannot be skipped
+each mipmap level must be half the dimension of the one above it
+in the chain.</p>
+
+<p>Note that Gamebryo considers a full pyramid with a non-square
+image to be the one whose coarsest mipmap level is 1x1; e.g.,
+16x4, 8x2, 4x1, 2x1, 1x1.</p>
+
+<p>Also, although mipmaps are not generated automatically for
+non-power-of-two dimensions, a mipmap with non-power-of-two
+dimensions may be used if it is supplied with the texture. In
+such cases, mipmaps for non-power-of-two textures adopt the
+convention of "rounding down" as you go from an odd dimension to
+the corresponding "halved" dimension for the next smaller mipmap
+level; e.g., 14x6, 7x3, 3x1, 1x1.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

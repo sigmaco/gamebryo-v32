@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How Replication Works</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>How Replication Works</h1>
+
+<p>In Gamebryo LightSpeed, the Replication system uses the Replication Service (<span class=
+"NDLSystemFont"><a href=
+"../../Reference/eon/eon__ReplicationService.htm">eon::ReplicationService</a></span>) and extends
+the Entity Manager (<span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__EntityManager.htm">egf::EntityManager</a></span>) with the Online Entity
+Manager (<span class="NDLSystemFont"><a href=
+"../../Reference/eon/eon__OnlineEntityManager.htm">eon::OnlineEntityManager</a></span>).</p>
+
+<p>The Online Entity Manager registers an entity factory that creates one of two classes that
+derive from <span class="NDLSystemFont"><a href=
+"../../Reference/egf/egf__Entity.htm">egf::Entity</a></span>. To create an original producer
+entity, the Online Entity Manager allocates a subclass called <span class="NDLSystemFont"><a href=
+"../../Reference/eon/eon__ReplicationProducerEntity.htm">eon::ReplicationProducerEntity</a></span>.
+To create an entity that is created as a result of replication (commonly referred to as a consumer
+or replica entity), the Online Entity Manager creates an <span class="NDLSystemFont"><a href=
+"../../Reference/eon/eon__ReplicationConsumerEntity.htm">eon::ReplicationConsumerEntity</a></span>
+instance.</p>
+
+<p>Producer entities are for the most part treated just like entities (<span class=
+"NDLSystemFont">egf::Entity</span> instances). They are known as original or producer entities
+because they are the original source of entity properties and can produce replication messages that
+are sent to interested consumers. Original entities can have any of their properties changed as
+normal. Each producer entity is automatically subscribed to its own entity ID (Entity private
+Category) and will receive events (Behavior invocation requests) sent to its EntityID just like
+entities (<span class="NDLSystemFont">egf::Entity</span> instances).</p>
+
+<p>The Replication Service sends and receives replication messages. When a replication message that
+discovers a new, previously unknown entity arrives, a consumer entity (<span class=
+"NDLSystemFont">eon::ReplicationConsumerEntity</span> instance) is created to cache the replicated
+entity state. Consumer entities are not original, so their properties cannot normally be changed by
+anyone other than the Replication Service itself (which will apply replicated state updates
+automatically). However, properties that are marked with the <span class=
+"NDLSystemFont">mutable</span> property trait can be changed on a consumer. Note that mutable
+property changes on consumers are not replicated to any other process, nor are they pushed back to
+the original entity. Rather, they are stored locally only for the convenience of other locally
+owned entities or services. Future replication updates will overwrite the local mutable value.
+Unlike original entities, consumer entities do not subscribe to the entity ID (Entity private
+Category) and will not receive event messages that are destined for the original producer
+entity.</p>
+
+<p>When a property changes on the original entity, the replication system marks that property as
+dirty for all of the replication groups that are used by that property. Updates for those dirty
+properties are sent to any process that consumes the category, and all matching consumer entities
+are updated. The replication group policies determine how these updates are sent. All dirty
+properties for each replication group on an Entity are sent in the same update message. This
+ensures that all changes in one tick of a Behavior will be applied atomically to a consumer also
+during a single update. There is no need to manually manage transactions because a Behavior tick
+will never be interrupted. Typically, update messages are delivered in order when they are sent to
+the same Category. However, there is no guarantee that updates from multiple entities will be sent
+or received simultaneously, even if they were updated in the same tick.</p>
+
+<p>Entities do not replicate without, first, doing some configuration. This is true because not all
+properties of all entities should replicate (doing so would send more information than is
+required). Instead, properties must be explicitly marked in the Entity Modeling Tool to indicate
+which <em>replication group or groups</em> they belong to. A replication group is a group of
+related entity properties that all replicate using the same usage pattern. For each entity
+instance, a <em>category</em> can be determined by the producer to control who receives updates.
+Each group has a specific <em>replication group policy</em> that is used for all entities. A
+replication group policy determines when and how a replication group updates. Properties on
+entities can be placed into one or more groups, and each replication group can update at a
+different interval and with a different Quality of Service.</p>
+
+<p>The Replication Service in the owning process applies the replication group policy to all owned
+entities. That policy determines when and how update messages are sent and property dirtiness is
+cleared. For example, you might configure a group to send out updates only once per second, which
+means the dirtiness will only be cleared once per second. All properties set during that interval
+will accumulate and go out in a single update after the timeout has expired. Typically, each group
+has an update interval at which it sends an update message using a chosen Quality of Service. The
+smallest interval is a single simulator tick that results in an update message each time the entity
+changes any property. Only dirty entities are considered for replication, and only at the indicated
+rate. Once the message is sent, the dirtiness is cleared just for the group that was updated. Each
+producer entity stores per-property, per-group dirty information so that a property can be dirty in
+multiple groups that update at different intervals. See <a href=
+"sso_replication_config_groups.htm">Configuring Replication Groups</a> for details.</p>
+
+<p>Producer entities must also have a category set for each replication group that they use. Each
+owned entity instance can use a different category for each replication group. Many different
+entities can also use the same category if they share the same set of interested consumers. For
+example, this allows an entity that uses a replication group for geographical region to produce
+replication messages to a category that is specific to the region that the entity is currently in.
+Many entities might be in the same region and they would all use the same category for that
+replication group. As the entity moves from one region to another, it would change the category
+that is being used to the unique category for the new region.</p>
+
+<p>To receive replication messages and keep replicated entities up-to-date in its cache, a process
+must indicate interest in the various categories that the producer entities are being published
+into. This can be done from code by calling <span class=
+"NDLSystemFont">eon::ReplicationService::SubscribeReplicationChannel</span> or from script by
+calling <span class="NDLSystemFont">bapiOnline.SubscribeReplicationChannel</span>. These methods
+will subscribe the Replication Service to the given category and, if this is a new subscription,
+will request initial discovery of any producer entities already publishing into the category.
+Following this initial discovery, updates for any entities that produce into that category will be
+sent automatically for as long as the category is subscribed. Note that this discovery and update
+process operates for each replication group independently. Only those properties in a replication
+group that is publishing to a category that is consumed by the current process will be transferred.
+Any properties on the original producer entity that either do not have any replication group traits
+set or are not publishing to a category we consume will have the default value as defined in the
+flat model of the replica entity. If multiple replication groups are being consumed for the same
+entity and we stop consuming just one of those groups, the properties from that group will retain
+the last replicated value and will not revert to the default value. Finally, if we stop consuming
+all of the categories that are used by a replica entity, then that entity will be lost and removed
+from our cache. To stop consuming a replication category, use either <span class=
+"NDLSystemFont">eon::ReplicationService::UnsubscribeReplicationChannel</span> from code or
+<span class="NDLSystemFont">bapiOnline.UnsubscribeReplicationChannel</span> from script. Calls to
+these methods are reference counted, so there must be an equal number of calls to unsubscribe for
+each call to subscribe. See <a href="sso_replication_groups_categories.htm">Understanding
+Replication Groups and Categories</a> for further details.</p>
+
+<p>In addition to controlling what properties are published by producer entities, replication
+groups can also have policies attached to them to control how the properties are updated. See
+<a href="sso_replication_policies.htm">Understanding Replication Policies</a> for details.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_replication_overview.htm">Replication Overview</a></li>
+
+    <li><a href="sso_replication_prereqs.htm">Replication Prerequisites</a></li>
+
+    <li><a href="sso_replication_requirements.htm">Replication Requirements</a></li>
+
+    <li><a href="sso_replication_limitations.htm">Replication Limitations</a></li>
+
+    <li><a href="sso_replication_best_practice.htm">Best Practices for Working with
+    Replication</a></li>
+
+    <li><a href="sso_replication_groups_categories.htm">Understanding Replication Groups and
+    Categories</a></li>
+
+    <li><a href="sso_replication_policies.htm">Understanding Replication Policies</a></li>
+
+    <li><a href="sso_replication_config_groups.htm">Configuring Replication Groups</a></li>
+
+    <li><a href="sso_replication_troubleshoot.htm">Troubleshooting Replication</a></li>
+
+    <li><a href="../../Reference/eon/eon__ReplicatingEntity.htm">eon::ReplicatingEntity</a></li>
+
+    <li><a href=
+    "../../Reference/eon/eon__IReplicationGroupPolicy.htm">eon::IReplicationGroupPolicy</a></li>
+
+    <li><a href="../../Reference/eon/eon__GroupUpdatePolicy.htm">eon::GroupUpdatePolicy</a></li>
+
+    <li><a href="../../Reference/QuickRef_Config/config_qckref.htm#ReplicationGroup">Replication
+    Group Configuration Options</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

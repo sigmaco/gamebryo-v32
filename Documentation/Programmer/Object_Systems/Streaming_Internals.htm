@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Streaming Internals</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Streaming Internals</h1>
+
+<p>Applications creating their own <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span>-subclass 
+ derived classes can add streaming behavior.&nbsp; This will allow the 
+ application-specific classes to be saved to and loaded from NIF files.</p>
+
+<p>For the sake of demonstrating how to create a new <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived 
+ class that supports streaming, we will define a new class called <span class="NDLSystemFont">NiNewClass</span>, 
+ derived from <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTimeController.htm">NiTimeController</a></span>, 
+ and show the code that must be added to <span class="NDLSystemFont">NiNewClass</span> in order 
+ for it to support streaming. Having a pointer to an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived 
+ class as a member of a stream-able class makes streaming a little more 
+ complicated, so we will make sure <span class="NDLSystemFont">NiNewClass</span> 
+ includes such a pointer. The declaration of <span class="NDLSystemFont">NiNewClass</span>, which would 
+ probably appear in the file <span class="NDLSystemFont">NiNewClass.h</span>, 
+ follows:</p>
+
+<pre>
+class NiNewClass : public NiTimeController
+{
+    NiDeclareStream;
+    NiDeclareRTTI;
+    // NiDeclareRTTI must be declared for streaming classes.
+ 
+public:
+    // &lt;public stuff goes here&gt;
+    // There are several pure virtual functions in
+    // NiTimeController that must be declared.
+ 
+protected:
+    float m_fNewFloat;
+    NiAVObjectPtr m_spNewReference;
+};
+</pre>
+
+<p>The <span class="NDLSystemFont">NiDeclareStream</span> 
+ macro declares the following functions, which we will discuss individually:</p>
+
+<ul>
+  <li><span class="NDLSystemFont">virtual bool RegisterStreamables(NiStream&amp; kStream);</span></li>
+  <li><span class="NDLSystemFont">virtual void SaveBinary(NiStream&amp; kStream);</span></li>
+  <li><span class="NDLSystemFont">static NiObject* CreateObject(const char** pcArguments = 0, unsigned int uiArgCount = 0);</span></li>
+  <li><span class="NDLSystemFont">virtual void LoadBinary(NiStream&amp; kStream);</span></li>
+  <li><span class="NDLSystemFont">virtual void LinkObject(NiStream&amp; kStream);</span></li>
+  <li><span class="NDLSystemFont">virtual bool IsEqual(NiObject* pkObject);</span></li>
+</ul>
+
+<p>Abstract classes should use the <span class="NDLSystemFont">NiDeclareAbstractStream</span> 
+ macro rather than <span class="NDLSystemFont">NiDeclareStream</span>. 
+ <span class="NDLSystemFont">NiDeclareAbstractStream</span> 
+ declares all the same functions that <span class="NDLSystemFont">NiDeclareStream</span> 
+ declares, except for <span class="NDLSystemFont">CreateObject</span>, 
+ which is unnecessary for abstract classes (since by definition, abstract 
+ classes cannot be instantiated). </p>
+
+<p>The <span class="NDLSystemFont">NiRegisterStream</span> 
+ macro registers the <span class="NDLSystemFont">NiNewClass</span> 
+ creation function (<span class="NDLSystemFont">CreateObject</span>) 
+ with the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ class.&nbsp; The call</p>
+
+<p><span class="NDLSystemFont">NiRegisterStream(NiNewClass);</span></p>
+
+<p>must be made by the application prior to loading any 
+ streams containing <span class="NDLSystemFont">NiNewClass</span> 
+ objects.&nbsp;See the <a href="Static_Data_Management_Internals.htm">Static 
+ Data Manager internals</a> documentation for more information. For example, 
+ for all classes in <span class="NDLSystemFont"><a href="../../Reference/NiMain/Hyperlinked_Hierarchy_of_Classes.htm">NiMain</a></span>, 
+ the code to register streaming is in <span class="NDLSystemFont">NiMainSDM.cpp</span>. 
+ <span class="NDLSystemFont">NiRegisterStream</span> is 
+ not used by abstract classes.</p>
+
+<p>Also note that the <span class="NDLSystemFont">NiDeclareRTTI</span> 
+ macro is in <span class="NDLSystemFont">NiNewClass</span>.&nbsp; 
+ Any class that implements streaming should also implement RTTI as the 
+ RTTI info is used by the streaming system to determine which <span class="NDLSystemFont">CreateObject</span> method is called.</p>
+
+<h2>NiNewClass::RegisterStreamables</h2>
+
+<p>A NIF file is created by inserting objects into an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ by calling <span class="NDLSystemFont">NiStream::InsertObject</span>, 
+ and then calling <span class="NDLSystemFont">NiStream::Save</span>. 
+ We call the objects that are inserted into the stream with <span class="NDLSystemFont">InsertObject</span> "top-level 
+ objects". Normally, many more objects are saved to the NIF file than 
+ just the top-level objects. For example, if an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ object is inserted into an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span>, 
+ not only must that <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiNode.htm">NiNode</a></span> 
+ object be streamed, but so must all of the node's scene graph descendants, 
+ all the properties attached to the node and its descendants, all the lights 
+ that illuminate the node and its descendants, etc. The purpose of the 
+ <span class="NDLSystemFont">RegisterStreamables</span> 
+ function is to allow an object to let the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ object know which other objects must be saved to the stream. So <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ simply calls the <span class="NDLSystemFont">RegisterStreamables</span> 
+ function for each top-level object, and after it has done this, it has 
+ a complete list of all the objects that must be saved to the NIF file. 
+ <span class="NDLSystemFont">NiNewClass::RegisterStreamables</span> 
+ is implemented as follows:</p>
+
+<pre>
+bool NiNewClass::RegisterStreamables(NiStream&amp; kStream)
+{
+    if (!NiTimeController::RegisterStreamables(kStream))
+        return false;
+    m_spNewReference-&gt;RegisterStreamables(kStream);
+    return true;
+}
+</pre>
+
+<p>Any implementation of <span class="NDLSystemFont">RegisterStreamables</span> 
+ begins by calling its base class version of <span class="NDLSystemFont">RegisterStreamables</span>, 
+ and immediately returns <span class="NDLSystemFont">false</span> 
+ if the base class version of <span class="NDLSystemFont">RegisterStreamables</span> 
+ returns <span class="NDLSystemFont">false</span>. 
+ This serves multiple purposes. It allows base classes to register objects 
+ that they refer to. It also returns a value that indicates whether "<span class="NDLSystemFont">this</span>" 
+ has already been registered. If it has (indicated by a return value of 
+ <span class="NDLSystemFont">false)</span>, 
+ <span class="NDLSystemFont">RegisterStreamables</span> 
+ should immediately return <span class="NDLSystemFont">false</span>. 
+ This prevents infinite loops that would otherwise result from reference 
+ cycles. If the base class version of <span class="NDLSystemFont">RegisterStreamables</span> 
+ returns <span class="NDLSystemFont">true</span>, 
+ all that remains to be done is to register any <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived 
+ variables to which this object refers, and then return <span class="NDLSystemFont">true</span>. The only reference 
+ to an instance of an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiObject.htm">NiObject</a></span>-derived 
+ class in <span class="NDLSystemFont">NiNewClass</span> 
+ is m_<span class="NDLSystemFont">spNewReference</span>, 
+ so <span class="NDLSystemFont">NiNewClass::RegisterStreamables</span> 
+ registers that variable and returns <span class="NDLSystemFont">true</span>. 
+ The actual registration of an object with the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ is done by <span class="NDLSystemFont">NiObject::RegisterStreamables</span>, 
+ which is eventually called because every implementation of <span class="NDLSystemFont">RegisterStreamables</span> 
+ calls its base class version of <span class="NDLSystemFont">RegisterStreamables</span>.</p>
+
+<h2>NiNewClass::SaveBinary</h2>
+
+<p>After calling <span class="NDLSystemFont">RegisterStreamables</span> 
+ for each of the top-level objects, <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ has an array of registered objects that should be saved to the NIF file. 
+ It then proceeds to call <span class="NDLSystemFont">SaveBinary</span> 
+ for each of these objects. <span class="NDLSystemFont">NiNewClass::SaveBinary</span> 
+ is as follows:</p>
+
+<pre>
+void NiNewClass::SaveBinary(NiStream&amp; kStream)
+{
+    NiTimeController::SaveBinary(kStream);
+    NiStreamSaveBinary(kStream, m_fNewFloat);
+    kStream.SaveLinkID(m_spNewReference);
+}
+</pre>
+
+<p>All implementations of <span class="NDLSystemFont">SaveBinary</span> must call their base-class version of <span class="NDLSystemFont">SaveBinary</span> before doing anything else. The template function <span class="NDLSystemFont">NiStreamSaveBinary</span> can then be used to save simple objects such as floats, ints, shorts, and so on. A little more work must be done to save references to other <span class="NDLSystemFont">NiObject</span>-based class objects. The pointer itself cannot be saved, since the object referred to by the pointer will, in all likelihood, have a different address when the NIF file is loaded. The issues involved in saving a reference to an object are hidden by the <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> class by the use of the function <span class="NDLSystemFont">NiStream::SaveLinkID</span>, which maps the pointer to an unsigned integer, which we refer to as a "<span class="NDLSystemFont">LinkID</span>", and saves that unsigned integer to the stream.</p>
+
+<h2>NiNewClass::CreateObject</h2>
+
+<p><span class="NDLSystemFont">RegisterStreamables</span> 
+ and <span class="NDLSystemFont">SaveBinary</span> are used 
+ to save a NIF file. We now move on to the functions that are used to load 
+ a NIF file. The static function <span class="NDLSystemFont">CreateObject</span> 
+ is used to create an instance of an object from a NIF file and return 
+ a pointer to the created object. All implementations of <span class="NDLSystemFont">CreateObject</span> look similar. 
+ <span class="NDLSystemFont">NiNewClass::CreateObject</span> 
+ is implemented as follows:</p>
+
+<pre>
+NiObject* NiNewClass::CreateObject(const char** pcArguments, unsigned int uiArgCount)
+{
+    return NiNew NiNewClass;
+}
+</pre>
+ 
+
+<p>Since these implementations are all so similar, a macro 
+ exists to easily create the method. The code above would be represented 
+ below when using the macro.</p>
+
+<p><span class="NDLSystemFont">NiImplementCreateObject(NiNewClass);</span></p>
+
+<p>Note the arguments array and the argument count in the prior definition. These exist for the rare class that needs to have stream-time polymorphism. The only existing case for usage in Gamebryo is <span class="NDLSystemFont">NiDataStream</span>, which needs to instantiate the correct class upon load to match up with the application-defined renderer and creation flags. The arguments are parsed by NiStream and must be delimited by the <span class="NDLSystemFont">NiStream::ms_cRTTIDelimiter</span> static constant.</p>
+
+<h2>NiNewClass::LoadBinary</h2>
+
+<p>After calling <span class="NDLSystemFont">CreateObject</span>, <span class="NDLSystemFont">NiStream::LoadStream</span> then calls the newly created object's <span class="NDLSystemFont">LoadBinary</span> function. <span class="NDLSystemFont">LoadBinary</span> loads the same data that was saved by <span class="NDLSystemFont">SaveBinary</span>:</p>
+
+<pre>
+void NiNewClass::LoadBinary(NiStream&amp; kStream)
+{
+    NiTimeController::LoadBinary(kStream);
+    NiStreamLoadBinary(kStream, m_fNewFloat);
+ 
+    kStream.ReadLinkID(); //m_spNewReference
+}
+</pre>
+
+<p>Like the other virtual streaming functions we have examined, <span class="NDLSystemFont">NiNewClass::LoadBinary</span> begins by calling its base-class version of <span class="NDLSystemFont">LoadBinary</span>. The template function <span class="NDLSystemFont">NiStreamLoadBinary</span> is used to load the float member <span class="NDLSystemFont">m_fNewFloat</span>. This loading of members must be done in the same order as they were saved by <span class="NDLSystemFont">NiNewClass::SaveBinary</span>. Initializing the member <span class="NDLSystemFont">m_spNewReference</span> is slightly more complicated than simply reading a value from the stream. References to objects are saved as unsigned integers (by <span class="NDLSystemFont">NiStream::SaveLinkID</span>). The class <span class="NDLSystemFont">NiStream</span> holds the <span class="NDLSystemFont">LinkID</span> that is read which will be used later in <span class="NDLSystemFont">LinkObject</span>.</p>
+
+<h2>NiNewClass::LinkObject</h2>
+
+<p>The <span class="NDLSystemFont">LinkID</span> 
+ of the object that was referred to by the member variable <span class="NDLSystemFont">m_spNewReference</span> 
+ could not be resolved when <span class="NDLSystemFont">NiNewClass::LoadBinary</span> 
+ was called because there was no way to guarantee that the object had even 
+ been created at the time <span class="NDLSystemFont">NiNewClass::LoadBinary</span> 
+ was called. The <span class="NDLSystemFont">LinkObject</span> 
+ function gives each object a chance to resolve its pointers to other <span 
+ class="NDLSystemFont">NiObject</span>-derived variables. 
+ By the time <span class="NDLSystemFont">LinkObject</span> 
+ is called, all objects that were streamed to the NIF file have been created. 
+ </p>
+
+<pre>
+void NiNewClass::LinkObject(NiStream&amp; kStream)
+{
+    NiTimeController::LinkObject(kStream);
+    m_spNewReference = (NiAVObject*) kStream.GetObjectFromLinkID();
+}
+</pre> 
+
+<p>Like all implementations of <span class="NDLSystemFont">LinkObject</span>, <span class="NDLSystemFont">NiNewClass::LinkObject </span>begins 
+ by calling its base class version of <span class="NDLSystemFont">LinkObject</span>.&nbsp; 
+ It then calls <span class="NDLSystemFont">NiStream::GetObjectFromLinkID 
+ </span>to resolve the unsigned int that was read by <span class="NDLSystemFont">kStream.ReadLinkID </span>in 
+ <span class="NDLSystemFont">LoadBinary 
+ </span>into a pointer.&nbsp; These LinkID's are resolved in the 
+ order that they are saved and read, so it is important that the ordering 
+ of all calls to <span class="NDLSystemFont">SaveLinkID</span>, 
+ <span class="NDLSystemFont">ReadLinkID</span>, 
+ and <span class="NDLSystemFont">GetObjectFromLinkID</span> 
+ match.</p>
+
+<h2>NiNewClass::IsEqual</h2>
+
+<p>The <span class="NDLSystemFont">IsEqual</span> 
+ function is purely for debugging. Its implementation could be as simple 
+ as this:</p>
+
+<pre>
+bool NiNewClass::IsEqual(NiObject* pkObject)
+{
+    assert(NiIsKindOf(NiNewClass, pkObject));
+    if(!NiTimeController::IsEqual(pkObject))
+        return false;
+ 
+    NiNewClass* pkNewObject = (NiNewClass*) pkObject;
+    return m_fNewFloat == pkNewObject-&gt;m_fNewFloat;
+}
+</pre> 
+
+<p>Depending on the nature of the object pointed to by 
+ <span class="NDLSystemFont">m_spNewReference</span>, 
+ a stricter implementation of <span class="NDLSystemFont">NiNewClass::IsEqual</span> 
+ might be as follows:</p>
+
+<pre>
+bool NiNewClass::IsEqual(NiObject* pkObject)
+{
+    assert(NiIsKindOf(NiNewClass, pkObject));
+    if(!NiTimeController::IsEqual(pkObject))
+        return false;
+ 
+    NiNewClass* pkNewObject = (NiNewClass*) pkObject;
+ 
+    return m_fNewFloat == pkNewObject-&gt;m_fNewFloat &amp;&amp;
+        m_spNewReference-&gt;IsEqual(pkNewObject-&gt;m_spNewReference);
+}
+</pre> 
+ 
+<p>Care must be taken to avoid infinite recursion when 
+ calling <span class="NDLSystemFont">IsEqual</span> 
+ for member variables (due to the possibility of circuits of object references).</p>
+
+<p>The implementation of <span class="NDLSystemFont">IsEqual</span> allows simple 
+ code like the following to be used to help debug streaming code in new 
+ classes:</p>
+
+<pre>
+void Test(NiNewClass* pkObject)
+{
+    NiStream kStream;
+ 
+    kStream.InsertObject(pkObject);
+    kStream.Save("test.nif");
+    kStream.Load("test.nif");
+ 
+    NiObject* pkNewObject = kStream.GetObjectAt(0);
+    assert(pkObject-&gt;IsEqual(pkNewObject));
+}
+</pre> 
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

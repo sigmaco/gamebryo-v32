@@ -1,0 +1,505 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiMemHint</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+
+<!--(Begin Links)===================================================-->
+
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">NiMemHint</p>
+
+<p class="NDLRefParentage">&lt;NiMemHint.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p><span class="NDLSystemFont">NiMemHint</span> is a container
+ for hints or requirements on how a memory allocation should be performed.
+  These hints
+ include things such as lifetime, usage, and platform-specific requirements
+ and requests on which memory arena the allocation should be placed in.</p>
+
+<p>All memory allocation and reallocation functions in
+ <a href="NiMemoryDefines.htm"><span class="NDLSystemFont">NiMemoryDefines.h</span></a>
+ have a form that take a <span class="NDLSystemFont">NiMemHint</span> object,
+ and the core allocator classes (<span class="NDLSystemFont"><a href="NiMemManager.htm">NiMemManager</a></span>,
+ <span class="NDLSystemFont"><a href="NiAllocator.htm">NiAllocator</a></span>)
+ require that a hint be specified.  A
+ default hint of <span class="NDLSystemFont">NI_MEMHINT_NONE</span> or <span
+ class="NDLSystemFont">NiMemHint::NONE</span>, (the two are equivalent) signals
+ no special requests or requirements and the memory managers will behave
+ normally.  </p>
+
+<p>Note: All portions of a <span class="NDLSystemFont">NiMemHint</span>
+ may be ignored by an allocator for except for certain platform-specific
+ hints explicitly documented as being requirements.  If
+ an allocator fails to satisfy one of these hard requirements, it will
+ either throw or return NULL, depending on whether exceptions are enabled
+ and the type of allocation function called.</p>
+
+<p>See the extend notes below for more details on the construction
+ of a hint.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p class="NDLRefMemberFunction">NiMemHint()</p>
+
+<p class="NDLRefMemberDescription">Constructs a hint object with no additional
+ information (e.g., use default allocation strategies).  Equivalent
+ to <span class="NDLSystemFont">NI_MEMHINT_NONE</span> or <span class="NDLSystemFont">NiMemHint(NiMemHint::NONE)</span></p>
+
+<p class="NDLRefMemberFunction">NiMemHint(Bits eValue)</p>
+
+<p class="NDLRefMemberDescription">Constructs a hint object given a specific
+ value.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p class="NDLRefMemberFunction">Bits GetPlatform() const</p>
+
+<p class="NDLRefMemberDescription">Returns the platform-specific hint (masks
+ all but bits 7..0)</p>
+
+<p class="NDLRefMemberFunction">Bits GetLifetime() const</p>
+
+<p class="NDLRefMemberDescription">Returns the lifetime hint (masks all but
+ bits 9..8)</p>
+
+<p class="NDLRefMemberFunction">bool CompilerProvidesSizeOnDeallocate() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if the hint specifies that
+ the compiler will provide an accurate size on deallocations (bit 10)</p>
+
+<p class="NDLRefMemberFunction">Bits GetAccess() const</p>
+
+<p class="NDLRefMemberDescription">Returns the access hint (masks all but
+ bits 15..11)</p>
+
+<p class="NDLRefMemberFunction">Bits GetUsage() const</p>
+
+<p class="NDLRefMemberDescription">Returns the usage hint (masks all but
+ bits 21..16)</p>
+
+<p class="NDLRefMemberFunction">bool IsBulk() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if the hint indicated that
+ it is a bulk allocation (bit 30)</p>
+
+<p class="NDLRefMemberFunction">bool IsCustomHint() const</p>
+
+<p class="NDLRefMemberDescription">Returns true if the hint is a custom hint
+ (if so, bits 30..16 are not defined and not used by the standard allocators)</p>
+
+<p class="NDLRefMemberFunction">NiMemHint MergeGlobalHints(NiMemHint kGlobal)
+ const</p>
+
+<p class="NDLRefMemberDescription">Merges this hint with a global (or per-thread)
+ bitset passed in, returning the resulting hint</p>
+
+<p class="NDLRefMemberFunction">unsigned int GetRaw() const</p>
+
+<p class="NDLRefMemberDescription">Returns the internal representation of
+ the hint</p>
+
+<p class="NDLRefMemberFunction">NiMemHint&amp; operator|=(const NiMemHint
+ kRhs)</p>
+
+<p class="NDLRefMemberFunction">NiMemHint&amp; operator|=(const NiMemHint::Bits
+ eRhs)</p>
+
+<p class="NDLRefMemberFunction">NiMemHint operator|(const NiMemHint kRhs)
+ const</p>
+
+<p class="NDLRefMemberFunction">NiMemHint operator|(const NiMemHint::Bits
+ eRhs) const</p>
+
+<p class="NDLRefMemberDescription">These operators combine two memory hints,
+ expressed either as NiMemHint objects or NiMemHint::Bits values.</p>
+
+<p class="NDLRefMemberFunction">bool operator==(const NiMemHint kRhs) const</p>
+
+<p class="NDLRefMemberFunction">bool operator!=(const NiMemHint kRhs) const</p>
+
+<p class="NDLRefMemberDescription">These operators compare two memory hints
+ for bitwise equality.</p>
+
+<p class="NDLRefHead1">Examples</p>
+
+<p>An audio buffer that will be used throughout the current
+ level might look like:</p>
+
+<p><span class="NDLSystemFont">NiAlignedMalloc2(stSize,
+ 16, NiMemHint::USAGE_AUDIO | NiMemHint::LIFETIME_LONG | NiMemHint::IS_BULK)</span></p>
+
+<p>while pixel data intended for a texture may be allocated
+ as:</p>
+
+<p><span class="NDLSystemFont">// TEXTURE is
+ shorthand for USAGE_TEXTURE | IS_BULK</span></p>
+
+<p><span class="NDLSystemFont">NiAlloc2(unsigned
+ char, uiBufferLength, NiMemHint::TEXTURE)</span></p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<p>The <span class="NDLSystemFont">NiMemHint::Bits</span>
+ enumeration specify the valid values of each field in a memory hint, and
+ are broken up according to category.  Unless
+ otherwise noted, a hint must consist of only one of these values from
+ each category.  In
+ each field, the default strategy used when no hint is specified is marked
+ with &quot;<span class="NDLSystemFont">(default)</span>&quot;.</p>
+
+<p class="NDLRefHead2">Platform-specific hints</p>
+
+<p>These should only be used by platform-specific code.
+  In particular,
+ this means that you cannot combine platform-specific hint enumerations
+ from two different platforms in a single hint.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">PLATFORM_NONE</span> (default)</td>
+       	<td>No platform specific hints are provided</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Playstation 3</p>
+
+<p>The following allocation hints are unacceptable to the default <span class="NDLSystemFont"><a href="NiAllocator.htm">NiAllocator</a></span>
+ classes, and are only allowed when making an allocation via the <a href="../../ee_goto.htm#Reference/NiPS3Renderer/NiPS3GPUMemoryManager.htm"><span class="NDLSystemFont">NiPS3GPUMemoryManager</span></a>.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">PS3_MAIN</span></td>
+       	<td>(Requirement) The allocation must come from GPU-visible main memory or the allocation will fail.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">PS3_RSX_LOCAL</span></td>
+       	<td>(Requirement) The allocation must come from RSX local memory or the allocation will fail</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">PS3_TRY_MAIN</span></td>
+       	<td>Try to place the allocation in GPU-visible main memory, but RSX local memory is acceptable if main memory is unable to satisfy the request.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">PS3_TRY_RSX_LOCAL</span></td>
+       	<td>Try to place the allocation in RSX local memory, but main memory is acceptable if RSX local memory is unable to satisfy the request.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Lifetime Hints</p>
+
+<p>The lifetime hint allows the expected lifetime of the allocation to be presented to the allocator.</p>
+
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">The lifetime hint is currently provided for use in logging or custom allocators, and is not acted on by the default allocator.
+              </div>
+          </td>
+      </tr>
+  </table>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">LIFETIME_APPLICATION</span> default</td>
+       	<td>This allocation will be around for essentially the duration
+ of the application.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">LIFETIME_LONG</span></td>
+       	<td>This allocation is reasonably long term, perhaps per-level or region content.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">LIFETIME_SHORT</span</td>
+       	<td>This allocation is short term, on the order of tens or hundreds of frames (special effects, particle systems, and so on.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">LIFETIME_FRAME</span></td>
+       	<td>This allocation is likely to only last until the end
+ of the frame or the same period in the next frame.
+ 				<div class="NDLTDNote"><span class="NDLTableNote">Note:</span> Short term allocations or reallocations like these should be avoided via pools or maximum size fixed allocations if possible. </div>
+ 			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Compiler provides an accurate size on deallocation</p>
+
+<p>This is a hint to the allocation subsystem that this
+ allocation will be given its own size on subsequent deallocate or reallocate
+ calls. This may allow some allocator implementations to perform useful
+ optimizations, like avoiding explicit storage of the allocation size.</p>
+
+<p>This hint interacts with typical allocator implementations
+ in the following way, when this hint is set, calls to <span class="NDLSystemFont"><a
+ href="NiAllocator.htm">NiAllocator</a>::Deallocate</span> will have an
+ accurate <span class="NDLSystemFont">stSizeInBytes</span>, and <span class="NDLSystemFont"><a
+ href="NiAllocator.htm">NiAllocator</a>::Reallocate</span> will have an
+ accurate <span class="NDLSystemFont">stSizeCurrent</span>. When
+ the hint is missing, these arguments will typically be <span class="NDLSystemFont">NI_MEM_DEALLOC_SIZE_DEFAULT</span>.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">NONE</span> (default)</td>
+       	<td>No accurate size is provided. The allocator implementation may need to store the size during allocations.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">COMPILER_PROVIDES_SIZE_ON_DEALLOCATE</span></td>
+       	<td>An accurate size will be available on deallocation (this
+ typically indicates that the underlying allocator saves a size itself).</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Access hints</p>
+
+<p>The access hint allows the expected access pattern of
+ the allocation to be presented to the allocator.</p>
+
+  <table class="NDLNoteContainer" width="100%">
+      <tr align="left">
+          <td class="NDLNoteContainerTD"><p class="NDLHeadingNoteContainer">Note</p>
+              <div class="NDLNote">The access hint is currently provided for use in logging or custom allocators, and is not acted on by the default allocator.
+              </div>
+          </td>
+      </tr>
+  </table>
+
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">ACCESS_CPU</span> (default)</td>
+       	<td>Readable and writable by the CPU.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ACCESS_VOLATILE</span></td>
+       	<td>Writable by the CPU. Readable by the GPU.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ACCESS_MUTABLE</span></td>
+       	<td>Readable and writable by the CPU. Readable by the GPU.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ACCESS_STATIC</span></td>
+       	<td>Readable by the GPU. Will be initialized by the CPU but then never touched again.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">ACCESS_GPU_READ</span></td>
+       	<td>The allocation is readable by the GPU, and is likely to only be written to once.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Usage hints</p>
+
+<p>These hints are the most common type of specification,
+ as several other things can be implied by a single usage hint, including
+ platform-specific behavior like which memory arena should be used.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_UNKNOWN</span> (default)</td>
+       	<td>The usage of the allocated memory is unknown.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_POOL</span></td>
+       	<td>Pool of small objects that are probably frequently access. This is the allocation hint given for the pools used in the <a href="NiSmallObjectAllocator.htm">small object allocator</a>.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_TEXTURE</span></td>
+       	<td>Texture data.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_AUDIO</span></td>
+       	<td>Audio data.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_VIDEO</span></td>
+       	<td>Full motion video.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_INDEX</span></td>
+       	<td>Vertex indices.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_VERTEX</span></td>
+       	<td>Vertex data.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">USAGE_PHYSICS</span></td>
+       	<td>Physics data.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Is a Bulk Allocation?</p>
+
+<p>This field is used to indicate if an allocation is a bulk allocation instead of a book-keeping or meta-data allocation. For example, the pixel information associated with a texture might have a hint of <span class="NDLSystemFont">USAGE_TEXTURE | IS_BULK</span>, while the <span class="NDLSystemFont">NiPixelData</span> object pointing to the
+ texture data would be allocated with only <span class="NDLSystemFont">USAGE_TEXTURE</span> or no hint at all.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">NONE</span> (default)</td>
+       	<td>The allocation is not bulk data.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">IS_BULK</span></td>
+       	<td>The allocation is for bulk data.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Is a custom hint?</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td><span class="NDLSystemFont">TYPE_GB</span> (default)</td>
+       	<td>The hint is a standard GB one, with meanings assigned to usage and is-bulk as defined above.</td>
+		</tr>
+		<tr>
+       	<td><span class="NDLSystemFont">TYPE_CUSTOM</span></td>
+       	<td>The hint is custom, intended for a custom allocator with bits 30..16 free for use by a new allocator. Standard allocators receiving such a hint will ignore bits 30..16.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="NDLRefHead2">Current bit allocations</p>
+
+<p>Note that in general, the hint field accessors and enumerations should be used to deconstruct or construct a hint, because the internal layout may change in future. This table is included more to give a general idea of the bit layout.</p>
+
+<!--(Table)=========================================================-->
+<table>
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Bits</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+       	<td>Is a custom hint?</td>
+       	<td>31</td>
+		</tr>
+		<tr>
+       	<td>Is a Bulk Allocation?</td>
+       	<td>30 [standard]</td>
+		</tr>
+		<tr>
+       	<td>Unused</td>
+       	<td>29..22 [standard]</td>
+		</tr>
+		<tr>
+       	<td>Usage</td>
+       	<td>21..16 [standard]</td>
+		</tr>
+		<tr>
+       	<td>Access</td>
+       	<td>15..11</td>
+		</tr>
+		<tr>
+       	<td>Deallocator is given reliable size</td>
+       	<td>10</td>
+		</tr>
+		<tr>
+       	<td>Expected allocation lifetime</td>
+       	<td>9..8</td>
+		</tr>
+		<tr>
+       	<td>Platform-specific hints and requirements</td>
+       	<td>7..0</td>
+		</tr>
+	</tbody>
+</table>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

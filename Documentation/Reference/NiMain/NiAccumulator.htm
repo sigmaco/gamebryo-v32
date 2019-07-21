@@ -1,0 +1,275 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiAccumulator</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiAccumulator</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiObject.htm">NiObject</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiAccumulator.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is the abstract base class for all
+accumulators.</p>
+
+<p>Accumulators implement sorted rendering of sets of pre-culled
+<span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span> objects
+(<span class="NDLSystemFont"><a href=
+"NiVisibleArray.htm">NiVisibleArray</a></span> objects, generally
+populated via <span class="NDLSystemFont"><a href=
+"NiCullingProcess.htm">NiCullingProcess</a></span>). Accumulators
+are the last step in the rendering process (after updating and
+culling), and allow for automated sorting and rendering of sets
+of visible geometry objects. Accumulators can implement all
+manner of special rendering behavior, such as depth-sorting,
+texture sorting, temporary replacement of render state during
+rendering, etc. Owing to their derivation from this base class
+(and the resulting shared interfaces), accumulators can be easily
+swapped in and out of an application's rendering pipeline in
+order to change the rendering behavior.</p>
+
+<p>Each subclass of <span class=
+"NDLSystemFont">NiAccumulator</span> implements different metrics
+for sorting and rendering the objects that are registered with
+it. See the Gamebryo Programming manual and the <span class=
+"NDLSystemFont">NiAccumulator</span> subclasses for details on
+the sorting system.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>As <span class="NDLSystemFont">NiAccumulator</span> is an
+abstract base class, there are no useful constructors.</p>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<p>Note that while none of the base class member functions are
+designed for application usage, some applications may create
+their own subclasses of <span class=
+"NDLSystemFont">NiAccumulator</span>. The documentation for these
+functions is specifically geared towards implementing them in
+subclass.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+StartAccumulating(<a href="NiCamera.htm">NiCamera</a>*
+pkCamera)</p>
+
+<p class="NDLRefMemberDescription">This function is called to
+start the process of accumulating a set of visible objects, most
+often at a frequency of once per frame (although some
+applications will use several accumulators in the course of
+rendering each frame). <span class=
+"NDLSystemFont">NiAccumulator</span> subclasses should call the
+base class <span class=
+"NDLSystemFont">NiAccumulator::StartAccumulating(pkCamera)</span>
+at the start of their overloaded version. In general, this
+function should only be called when there is a valid, current
+render target group (i.e. the renderer is ready for geometry
+rendering), as subsequent calls to <span class=
+"NDLSystemFont">RegisterObjectArray</span> and <span class=
+"NDLSystemFont">FinishAccumulating</span> generally result in
+geometry being rendered.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+RegisterObjectArray(NiVisibleArray&amp; kObject)</p>
+
+<p class="NDLRefMemberDescription">Pure virtual in this base
+class, this function is used to register the visible geometry
+objects that result from culling. <span class=
+"NDLSystemFont"><a href=
+"NiCullingProcess.htm">NiCullingProcess</a></span> and its
+subclasses generate <span class="NDLSystemFont"><a href=
+"NiVisibleArray.htm">NiVisibleArray</a></span> objects populated
+with pointers to visible <span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span> subclass objects.
+This function consumes these arrays, iterating over the given
+array and rendering, skipping, or storing each object for later
+rendering. All calls to <span class=
+"NDLSystemFont">RegisterObjectArray</span> must occur between a
+pair of calls to <span class=
+"NDLSystemFont">StartAccumulating</span> and <span class=
+"NDLSystemFont">FinishAccumulating</span>. Each call to this
+function may result in any number of calls to render individual
+geometry objects. However, the application must not assume that
+all objects in the provided <span class=
+"NDLSystemFont">NiVisibleArray</span> have been rendered when
+<span class="NDLSystemFont">RegisterObjectArray</span> returns,
+as an accumulator can choose to defer any and all rendering until
+the call to <span class=
+"NDLSystemFont">FinishAccumulating</span>. If an
+accumulator decides to keep the object for later sorting, it must
+store it locally (which is subclass dependent). This function may
+be called any number of times between paired calls to
+<span class="NDLSystemFont">StartAccumulating</span> and
+<span class="NDLSystemFont">FinishAccumulating</span>.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+FinishAccumulating()</p>
+
+<p class="NDLRefMemberDescription">This function is called once
+all desired <span class="NDLSystemFont"><a href=
+"NiRenderObject.htm">NiRenderObject</a></span> objects have been
+registered for rendering via calls to <span class=
+"NDLSystemFont">RegisterObjectArray</span>. The call to this
+function will complete the rendering of all accumulated objects.
+An accumulator should sort and render all of the objects whose
+rendering it chose to defer during the calls to <span class=
+"NDLSystemFont">RegisterObjectArray</span>. <span class=
+"NDLSystemFont">NiAccumulator</span>subclasses should call
+<span class=
+"NDLSystemFont">NiAccumulator::FinishAccumulating</span>immediately
+before returning (i.e. at the end of the derived class version of
+the function). A call to this function normally results in the
+rendering of some or all of the geometry that has been registered
+since the last call to <span class=
+"NDLSystemFont">StartAccumulating</span>.</p>
+
+<p class="NDLRefMemberFunction">bool IsAccumulating() const</p>
+
+<p class="NDLRefMemberDescription">This function returns true if
+the accumulator is between calls to <span class=
+"NDLSystemFont">StartAccumulating</span> and <span class=
+"NDLSystemFont">FinishAccumulating</span>. In other words, it
+returns true if it is safe to call <span class=
+"NDLSystemFont">RegisterObjectArray</span> on the
+accumulator.</p>
+
+<a name="Update_Correctness" id=
+"Update_Correctness"></a><p class="NDLRefHead1">Notes</p>
+
+<p class="NDLRefHead2">Basic</p>
+
+<p>The accumulator system provides the final step in the standard
+rendering system. The most simple use case is:</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Update the scene</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Cull the scene into a visible array <span class=
+"NDLSystemFont">kArray</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">BeginUsingRenderTarget</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">StartAccumulating</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">RegisterObjectArray(kArray)</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">FinishAccumulating</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">EndUsingRenderTarget</span></p>
+
+<p>However, an application may use as many calls to register
+objects as it wishes. For example, see the following pseudo-code,
+which implements individual culling of scenery and each
+character, the results of which are reunited into a single
+rendered scene via an accumulator:</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Update the scenery</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Update the characters</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Cull the scenery into a visible array <span class=
+"NDLSystemFont">kScenery</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Cull the characters into individual visible arrays
+<span class="NDLSystemFont">kCharacter1</span> to <span class=
+"NDLSystemFont">kCharacterN</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">BeginUsingRenderTarget</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">StartAccumulating</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">RegisterObjectArray(kScenery)</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each <span class="NDLSystemFont">kArray</span> in
+<span class="NDLSystemFont">kCharacter1</span> to <span class=
+"NDLSystemFont">kCharacterN</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">RegisterObjectArray(kArray)</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">FinishAccumulating</span></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class=
+"NDLSystemFont">EndUsingRenderTarget</span></p>
+
+<p>Finally, more than one accumulator may be used when rendering
+to a given render target. However, care must be taken when using
+several accumulators at the same time (i.e. more than one
+accumulator is "open" for <span class=
+"NDLSystemFont">RegisterObjectArray</span> calls at once). Since
+an accumulator can decide to render any or all objects at the
+time of the call to <span class=
+"NDLSystemFont">RegisterObjectArray</span>, interspersing calls
+to <span class="NDLSystemFont">RegisterObjectArray</span>
+for multiple accumulators can result in some of the geometry
+being rendered in an interleaved order. In most cases,
+applications will not need to keep more than one accumulator
+"open" at once.</p>
+
+<p class="NDLRefHead2">NiRenderer::Set/GetSorter</p>
+
+<p>An accumulator can be attached to the renderer as a
+convenience using <span class="NDLSystemFont"><a href=
+"NiRenderer.htm">NiRenderer</a>::SetSorter</span>&mdash;note that
+the renderer <em>does not</em> use this attached accumulator in
+any way. The renderer simply provides a convenient,
+standard storage location. However, other functions, such as
+<span class="NDLSystemFont">NiDrawScene</span> may use the
+accumulator attached to the renderer when rendering visible
+geometry.</p>
+
+<p class="NDLRefHead2">Accumulators and their NiVisibleArrays</p>
+
+<p>By convention, accumulators do not "consume" or modify
+the lists of geometry passed to them (although they may
+temporarily modify characteristics of the geometry objects
+themselves, so long as they return the objects to their original
+state prior to returning from any accumulator function), so the
+same list of visible geometry objects may be used with several
+accumulators in a single frame, avoiding the need to have a
+one-to-one relationship of culling to rendering.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

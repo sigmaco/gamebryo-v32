@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Models overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Models overview</h1>
+
+<ul>
+    <li>An Entity Model has the following:
+
+        <ul>
+            <li>A title-wide unique Model name.</li>
+
+            <li>A collection of Property descriptions: name, type, initial
+            default value.</li>
+
+            <li>A collection of Behaviors: name, location of code.</li>
+
+            <li>A list of base Models that are mixed into the Model and the
+            priority order used in resolving collisions between its
+            children.</li>
+        </ul>
+    </li>
+
+    <li>A Model is an Entity class, and is required when creating an Entity.
+    The Entity will contain a corresponding Property for each of the Model's
+    Property descriptions initialized to the corresponding value from the
+    Model. When a Property is read-only, all Entities of that type share one
+    copy of the constant value. Properties are allocated and copied only when
+    changed from their initial value. Built-in Models and any Properties they
+    maintain are fully allocated when the Entity is created.</li>
+
+    <li>A Behavior is a public method associated with a Model that is executed
+    in response to an identically named Event arriving for a given Entity. The
+    Behaviors on a Model can be written in multiple scripting languages.</li>
+
+    <li>When mixing Models together, the derived Model contains the union of
+    set of Properties and Behaviors from those Models. The designer can choose
+    which child has higher priority. The initial value of a Property and the
+    implementation of a Behavior is determined by the highest priority child
+    that provides it. The Model itself always has a higher priority than any of
+    its children to support overriding and extending.</li>
+
+    <li>All Models derive from the Base Entity found in the Standard Model
+    Library. It is an interface-type Model and declares the set of Behaviors
+    that every Entity provides. For example: OnCreate is called when an Entity
+    is first created.</li>
+
+    <li>Another useful fundamental Model in the Standard Model Library is
+    Nameable, which interacts with World Builder such that Entity instances can
+    optionally have useful readable names.</li>
+
+    <li>A Model can be implemented entirely in C++ or entirely data-driven
+    using EMT. A C++ Model can choose to expose its C++ member variables and
+    methods as Properties and Behaviors. Data-driven Models will mix properly
+    with C++ Models, but there are restrictions enforced between multiple
+    built-in models to avoid unresolvable conflicts.</li>
+
+    <li>There are two main advantages of C++ Models. They can allocate many
+    atomic properties and manage them with no memory overhead. A C++ Model can
+    also work around Property Accessor virtual function calls by using a direct
+    pointer to the C++ Property. System Services that need access to Entity
+    Properties would find this approach highly efficient. However, anytime the
+    Built-in Model updates a property in its own specific way, it is required
+    to mark the property dirty by calling the SetPropertyDirty function on the
+    entity, allowing the Game Framework to notify other systems of the change
+    as if it had gone through a set-property mechanism.</li>
+
+    <li>When an Entity is created, each of its C++ Models are immediately
+    created and its Properties are set to the initial values declared in EMT
+    and World Builder. It is common for a Game Module to provide a C++ Model
+    that can be mixed into Entities that want the capability of that Game
+    Module. The System Service in the Game Module is informed of each of these
+    creations. It can then cache a reference and access the members of the C++
+    Model instances directly as opposed to accessing Properties via the Entity
+    system. In fact, it can allocate per-Entity Property data and store it
+    itself externally to the Entity while still providing the Property get/set
+    interface to avoid copying the data back and forth.</li>
+
+    <li>The use of interfaces and polymorphism in Entity Models is valuable for
+    incremental extension and specialization of game objects. Behaviors
+    requests resolve at runtime based on their name (late binding) regardless
+    of the type of the Entity it arrives at. This allows for new Entity types
+    to be added to a game without changing existing content to be aware of the
+    new work.</li>
+</ul>
+
+<h2>Terminology</h2>
+
+<ul>
+    <li>
+        <b>Model</b> A data-driven description of a class of Entity from which
+        many Entity instances are created and initialized. A Model is derived
+        from other Models using a resolution mechanism called mix-in. A
+        built-in, compiled Model is called a <b>Built-in Model</b>. A Model is
+        made of Property Descriptions and Behaviors, and follows object
+        oriented paradigms.
+
+        <ul>
+            <li><b>Entity Model</b> used to disambiguate between a
+            <b><em>Graphical Model</em></b> and logical <b><em>Entity
+            Model</em></b></li>
+
+            <li><b>Flat Model</b> is a term used to refer to the result of
+            resolving mix-in inheritance hierarchy, and can be thought of as
+            the compiled version of a Model definition.</li>
+        </ul>
+    </li>
+
+    <li><b>Property Declaration</b> A piece of a Model that defines the name,
+    type, initial value, and traits used to create a run time Property on an
+    Entity of that Model.</li>
+
+    <li><b>Property</b> A object that holds a value determined by the execution
+    of an Entity. The type and initial value of a Property is initially set
+    based on the corresponding Property Description in its Entity's Model.
+    Allocation of a Property is optimized to refer to the Model's initial value
+    until it is changed (copy-on-write).</li>
+
+    <li><b>Behavior Declaration</b> A piece of a Model that describes the name,
+    type, traits, and location of a Behavior that can be executed at run
+    time.</li>
+
+    <li><b>Behavior</b> A piece of executable code identified by a Model that
+    can be implemented in a scripting language or native code.</li>
+
+    <li><b>Behavior Built-in</b> A C++ function that is registered with the
+    Behavior system such that it can be called by another Behavior even across
+    language boundaries.</li>
+</ul>
+
+<h2>Behavior and Interaction</h2>
+
+<p>Ideally, a Behavior which is always associated with a Model is the only
+thing that can write to an Entity's Properties. This approach allows the use of
+a very simple concurrency model called Communicating Sequential Processes, or
+"the single-writer model". Therefore, in order for the actions of one Entity to
+affect the state of another Entity, the first must tell the second to execute a
+Behavior. This is called an interaction, and uses the "send behavior request"
+mechanism. These requests are queued up on the target, and executed one at a
+time according to scheduling rules. This approach is required to avoid race
+conditions for parallel execution of Entities or when running them in a
+distributed online game across multiple processes.</p>
+
+<p>For ease of development, in a single process, Entities run single-threaded
+so the concurrency mechanism does not involve preemption. However, when an
+Entity blocks, other Entities can execute and change state. When the blocked
+Entity executes again, state may be different than when it blocked.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_models_best_practice.htm">Best practices for working
+    with models</a></li>
+
+    <li><a href="entity_models_examples.htm">Model examples</a></li>
+
+    <li><a href="entity_models_using.htm">Using models</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

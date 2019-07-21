@@ -1,0 +1,528 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating entities</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Creating entities</h1>
+
+<p>Entities are created by instantiating a specific model which defines the properties and behaviors
+available on the entity. You use the Entity Modeling Tool to define entity models, see <a href=
+"../../Tools/EntityModelingTool/emt_model_create_add.htm">Creating/Adding Entity Models to a
+Project</a> for details on creating models. Once a model is defined, at run-time you can create
+entities from application code or behavior scripts that instantiate the model. You can also create
+entire sets of entities by loading block files. Block file loading is covered in the <a href=
+"../Blocks/block_loading.htm">Loading Blocks</a> documentation. Here we discuss dynamically
+creating entities from code or script.</p>
+
+
+<a name="Asynchronous" id="Asynchronous"></a>
+<h2>To create an entity from application code asynchronously</h2>
+
+<ol>
+    <li>Get pointers to the required services.
+<pre>
+EE_VERIFY(pServiceManager);
+EntityManager* pEntityManager= pServiceManager-&gt;GetSystemServiceAs&lt;EntityManager&gt;();
+EE_VERIFY(pEntityManager);
+</pre>
+    </li>
+
+    <li>Choose which model type to load and use egf::EntityManager::CreateEntity to create an
+    instance. In the simpliest case this is all that is required.
+<pre>
+EntityID eid = pEntityManager-&gt;CreateEntity("MyModel");
+EE_VERIFY(eid != kINVALID_ENTITY);
+</pre>
+    </li>
+
+    <li>If you wish to be notified when the entity creation is complete:
+    <ol>
+        <li>Subscribe to a category to receive creation notification(s). Be aware that under certain
+        conditions the CreateEntity call can complete in the same tick as the creation request. If
+        you call CreateEntity in the same tick as your subscription request, your message handler
+        will not be called. You should ensure you subscribe early to avoid missing the Asset load
+        response message.
+
+        <table class="NDLNoteContainer" width="100%">
+            <tr align="left">
+                <td class="NDLNoteContainerTD">
+                    <p class="NDLHeadingNoteContainer">Warning</p>
+
+                    <div class="NDLNote">
+                        Do not use kCAT_LocalMessage in calls to egf::EntityManager::CreateEntity.
+                        Doing so results in recursive message handling calls that will never exit.
+                        Always use a specific category dedicated to callback messages.</div>
+                </td>
+            </tr>
+        </table>
+<pre>
+MessageService* pMessageService = pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+EE_VERIFY(pMessageService);
+m_entityCreationCallback = pMessageService-&gt;GetGloballyUniqueCategory();
+pMessageService-&gt;Subscribe(this, m_entityCreationCallback);
+</pre>
+        </li>
+
+        <li>Implement a message handler to receive the creation notification(s).
+<pre>
+// We need seperate handlers for the base classes and the final EntityFactoryResponse class.
+// We can receive the base class messages when there is a failure during creation but will always
+// receive the derrived class upon success.
+EE_HANDLER(MyClass, HandleEntityCreateFailure, efd::AssetLoadResponse);
+EE_HANDLER_SUBCLASS(MyClass, HandleEntityCreateFailure, efd::AssetLoadResponse, egf::FlatModelFactoryResponse);
+EE_HANDLER(MyClass, HandleEntityCreateSuccess, egf::EntityFactoryResponse);
+
+void MyClass::HandleEntityCreateSuccess(
+    const efd::EntityFactoryResponse* pResponse,
+    efd::Category targetCategory)
+{
+    if (pResponse-&gt;GetResult() == AssetLoadResponse::ALR_Success)
+    {
+        Entity* pNewEntity = pResponse-&gt;GetEntity();
+
+        // do something with the newly created entity...
+    }
+    else
+    {
+        // The failure occured after all data was loaded, most likely a built-in model could not
+        // be allocated or intitialized. Failure at this stage is rare.
+    }
+}
+
+void MyClass::HandleEntityCreateFailure(
+    const efd::AssetLoadResponse* pMsg,
+    efd::Category targetCategory)
+{
+    EE_ASSERT(pMsg-&gt;GetResult() != AssetLoadResponse::ALR_Success);
+    const egf::FlatModelFactoryResponse* pFMFResponse = EE_DYNAMIC_CAST(egf::FlatModelFactoryResponse, pMsg);
+    if (pFMFResponse)
+    {
+        // The failure occured while trying to factory the required flat model. Is the model file
+        // corrupt?
+    }
+    else
+    {
+        // The failure occured while trying to locate the asset or load the required data. This is
+        // the most common reason to fail, check that the flat model is in your asset web and that
+        // your asset-web-metadata is valid.
+    }
+}
+</pre>
+        </li>
+        <li>Pass the callback category when calling CreateEntity.
+<pre>
+pEntityManager-&gt;CreateEntity("MyModel", m_entityCreationCallback);
+</pre>
+        </li>
+    </ol>
+    </li>
+    
+    <li>To pass information to the entity's OnCreate lifecycle behavior, insert that data into a
+    ParameterList object. It is highly recommended that parameters for any extends-style behavior
+    such as OnCreate be given descriptive parameter names. Pass this parameter list as the third
+    argument to CreateEntity.
+<pre>
+ParameterListPtr spOnCreateParams = EE_NEW ParameterList();
+spOnCreateParams-&gt;AddParameter("Descriptive Name", m_value);
+pEntityManager-&gt;CreateEntity("MyModel", m_entityCreationCallback, spOnCreateParams);
+</pre>
+    </li>
+
+    <li>To initialize properties on the created entity as soon as the entity is created, create a
+    ParameterList with parameters that match the name and data type of the property you wish to
+    initialiaze. These properties will be applied before the OnCreate behavior is invoked. Often
+    using this feature can avoid the need to implement an OnCreate behavior, which will improve
+    performance. Pass this parameter list as the fourth argument to CreateEntity.
+<pre>
+efd::Point3 initialPosition = ...;
+efd::Point3 initialRotation = ...;
+egf::ParameterListPtr spInitParams = EE_NEW egf::ParameterList();
+spInitParams -&gt;AddParameter("Position", initialPosition);
+spInitParams -&gt;AddParameter("Rotation", initialRotation);
+pEntityManager-&gt;CreateEntity("MyModel", m_entityCreationCallback, NULL, spInitParams);
+</pre>
+    </li>
+
+    <li>You can use both creation parameters and initialization parameters if needed.
+<pre>
+pEntityManager-&gt;CreateEntity("MyModel", m_entityCreationCallback, spOnCreateParams, spInitParams);
+</pre>
+    </li>
+</ol>
+
+<p>If the entity was successfully created, the EntityFactoryResponse message in your handler
+contains the newly created entity. The entity will have already compelted its OnCreate lifecycle
+before the response message is sent. You can now start using this entity directly.</p>
+
+
+<a name="Synchronous" id="Synchronous"></a>
+<h2>To instantiate an entity from application code synchronously</h2>
+
+<p>The asynchronous creation process automatically resolves entity dependencies and loads dependent
+model and Lua scripts for you. If you must load an entity synchronously, follow the following
+steps.</p>
+
+<ol>
+    <li>Preload the flat model needed by the entity. Only once the flat model has been loaded is
+    it possible to synchronously create an entity, but the preloading step itself is still
+    asynchronous.
+    <ol>
+        <li>Create a message handler for FlatModelFactory messages.
+<pre>
+EE_HANDLER(MyClass, HandleModelLoadFailure, efd::AssetLoadResponse);
+EE_HANDLER(MyClass, HandleModelLoadSuccess, egf::FlatModelFactoryResponse);
+</pre>
+        </li>
+
+        <li>Subscribe to a callback category. The same warnings as previously mentioned above apply.
+<pre>
+MessageService* pMessageService = pServiceManager-&gt;GetSystemServiceAs&lt;MessageService&gt;();
+EE_VERIFY(pMessageService);
+m_preloadCategory = pMessageService-&gt;GetGloballyUniqueCategory();
+pMessageService-&gt;Subscribe(this, m_preloadCategory);
+</pre>
+        </li>
+
+        <li>Preload the flat model needed by the entity.
+<pre>
+FlatModelManager* pfmm = pServiceManager-&gt;GetSystemServiceAs&lt;FlatModelManager&gt;
+EE_VERIFY(pfmm);
+
+pfmm-&gt;PreloadModel("MyModel", m_preloadCategory);
+++m_pendingPreloads;
+</pre>
+        </li>
+
+        <li>Wait for the preload to complete.
+<pre>
+void MyClass::HandleModelLoadSuccess(
+    const egf::FlatModelFactoryResponse* pMsg,
+    efd::Category targetCategory)
+{
+    --m_pendingPreloads;
+
+    switch (pMsg-&gt;GetResult())
+    {
+    case AssetLoadResponse::ALR_Success:
+        // everything worked
+        break;
+    case AssetLoadResponse::ALR_PartialSuccess:
+        // Some dependency, such as lua script referenced by the flat model, failed to load. The
+        // model itself loaded correctly but this could cause behavior failures. Sometimes this
+        // result can be harmless.
+        break;
+    default:
+        // The failure occured while trying to factory the required flat model. Is the model file
+        // corrupt?
+        break;
+    }
+
+    if (0 == m_pendingPreloads) PreloadingComplete();
+}
+void MyClass::HandleModelLoadFailure(
+    const efd::AssetLoadResponse* pMsg,
+    efd::Category targetCategory)
+{
+    EE_ASSERT(pMsg-&gt;GetResult() != AssetLoadResponse::ALR_Success);
+    // The failure occured while trying to locate the asset or load the required data. This is
+    // the most common reason to fail, check that the flat model is in your asset web and that
+    // your asset-web-metadata is valid.
+
+    --m_pendingPreloads;
+
+    // error handling
+
+    if (0 == m_pendingPreloads) PreloadingComplete();
+}
+</pre>
+        </li>
+    </ol>
+    </li>
+
+    <li>Factory the new entity using the egf::FlatModelManager.
+<pre>
+FlatModelManager* pfmm = pServiceManager-&gt;GetSystemServiceAs&lt;FlatModelManager&gt;
+EE_ASSERT(pfmm);
+
+EntityPtr newEntity = pfmm-&gt;FactoryEntity("MyModel");
+</pre>
+    </li>
+
+    <li>The entity returned from FactoryEntity can immediately be used to get and set property
+    values or queue behaviors, but keep in mind that it will not have run its OnCreate behavior yet.
+    Further, required assets like the NIF or KFM may not be loaded yet.</li>
+
+    <li>Add the newly instantiated entity to the egf::EntityManager.
+<pre>
+EntityManager* pEM = pServiceManager-&gt;GetSystemServiceAs&gt;EntityManager&gt;
+EE_ASSERT(pEM);
+pEM-&gt;AddEntity(newEntity);
+</pre>
+    </li>
+
+    <li>If desired, you may pass parameters for the OnCreate behavior to the AddEntity method:
+<pre>
+ParameterListPtr spOnCreateParams = EE_NEW ParameterList();
+spOnCreateParams-&gt;AddParameter("Descriptive Name", m_value);
+pEM-&gt;AddEntity(newEntity, spOnCreateParams);
+</pre>
+    </li>
+</ol>
+
+
+<h2>To create an entity from script (Lua example)</h2>
+
+<p>There are three BehaviorAPI functions available from Lua to create new entities. These are
+BehaviorAPI.CreateEntity, BehaviorAPI.CreateEntityAndWait and BehaviorAPI.SpawnEntity. The first
+two CreateEntity methods are both asynchronous and the SpawnEntity method is synchronous but
+requires that the flat model is already preloaded. The CreateEntity call can take an optional
+callback behavior name that is invoked once the entity is created and ready for use.
+CreateEntityAndWait will put the current behavior in a yield state until the entity is created and
+ready for use.</p>
+
+<a name="CreateEntity" id="CreateEntity"></a>
+<h4>BehaviorAPI.CreateEntity</h4>
+
+<p>Call this built-in from any behavior to create an entity with the specified model name. You
+    can pass a ParameterList containing arguments to the OnCreate behavior of the created entity. 
+    The function also takes an optional string containing the name of a callback behavior that is
+    invoked once the entity is fully created.</p>
+<pre>
+function SomeBehavior(self, params)
+    local onCreateArgs = ParameterList.ParameterList()
+    onCreateArgs:PutUInt32("SomeValue", val)
+    local newEntity = BehaviorAPI.CreateEntity("MyModel", onCreateArgs, "EntityCreationCB")
+
+    -- We can immediately store the resulting entity ID even though the entity might not exist yet
+    self.CreatedEntity = newEntity
+end
+
+function EntityCreationCB(self, params)
+    local createdEntity = params:GetEntityID("Entity")
+    local status = params:GetUInt32("Result")
+
+    if createdEntity != Entity.InvalidEntity then
+        -- creation was successful
+    else
+        -- creation failed, the status is an efd::AssetLoadResponse::AssetLoadResult value
+    end
+end
+</pre>
+<p>By the time the callback behavior is invoked some services may already be using the new
+    entity (for example, rendering through ecr::AnimationService). If you wish to set initial
+    property values it may be too late once the the callback is invoked as the interim state may be
+    visible to the user. To address this, you can specifiy a parameter list containing parameters
+    whose names and data types match properties on the created entity. These properties will be set
+    to the specified values before the created entity even has OnCreate invoked. In many cases this
+    can eliminate the need to even use a callback which can improve performance.</p>
+<pre>
+function SomeBehavior(self, params)
+
+    local initProperties = ParameterList.ParameterList()
+    initProperties:PutEntityID("ParentEntity", self)
+    initProperties:PutPoint3("Position", newPosition)
+    initProperties:PutPoint3("Rotation", newRotation)
+    -- Once created, the properties specified in initProperties will be applied before the
+    -- OnCreate behavior even runs on the new entity.
+    local createdEntity = BehaviorAPI.CreateEntity("MyModel", nil, nil, initProperties)
+end
+</pre>
+
+<p>The return value is a potentially unbound EntityID proxy containing the EntityID that will be
+used once the entity is created. You should not call any methods on this proxy that require a bound
+proxy until the callback behavior is invoked. If the flat model happenes to already be preloaded it
+is possible the entity will be created but not yet initialized in which case the proxy will be
+bound, however since the enitity is not fully created it is still best to wait for the callback.</p>
+
+
+<a name="CreateEntityAndWait" id="CreateEntityAndWait"></a>
+<h4>BehaviorAPI.CreateEntityAndWait</h4>
+
+<p>CreateEntityAndWait will put the currently executing behavior in a yield state until the
+    requested entity is created, OnCreate is called, preloading completes, and notification
+    messages are sent. Once this function returns the entity is fully available and ready for use.
+    In effect CreateEntityAndWait simulates synchronous entity creation by blocking the current
+    behavior and using the asynchronous creation functionality built into
+    egf::EntityManager::CreateEntity.</p>
+<pre>
+function SomeBehavior(self, params)
+    local onCreateArgs = ParameterList.ParameterList()
+    onCreateArgs:PutUInt32("SomeValue", val)
+    local createdEntity = BehaviorAPI.CreateEntityAndWait("MyModel", onCreateArgs)
+    if createdEntity != Entity.InvalidEntity then
+       -- entity is completely ready for use
+    else
+        -- creation failed
+    end
+end
+</pre>
+<p>Because CreateEntityAndWait delays the current behavior until the entire entity creation
+    process has completed, some services may act on the entity (such as rendering through
+    ecr::AnimationService) before the CreateEntityAndWait call completes and the calling behavior
+    resumes. This may be undesirable behavior if the state change is visible to the user. To address
+    this, you can specifiy a parameter list containing parameters whose names and data types match
+    properties on the created entity. These properties will be set to the specified values before
+    the created entity even has OnCreate invoked.</p>
+<pre>
+function SomeBehavior(self, params)
+
+    local initProperties = ParameterList.ParameterList()
+    initProperties:PutEntityID("ParentEntity", self)
+    initProperties:PutPoint3("Position", newPosition)
+    initProperties:PutPoint3("Rotation", newRotation)
+    local createdEntity = BehaviorAPI.CreateEntityAndWait("DamageSparks", nil, initProperties)
+    if createdEntity != Entity.InvalidEntity then
+       -- Properties on createdEntity will have already been initialized before any consumer can
+       -- see the uninitialized values.
+    end
+
+end
+</pre>
+
+<a name="SpawnEntity" id="SpawnEntity"></a>
+<h4>BehaviorAPI.SpawnEntity</h4>
+
+<p>The SpawnEntity built-in API only works for models that are preloaded as <a href="#Synchronous"
+>described above</a>. When this method is successful, it synchronously returns a fully allocated
+entity that has not yet run its OnCreate behavior. The resulting entity can immediately be used to
+read or write property values or queue behaviors, but keep in mind that the OnCreate behavior will
+not have executed yet and may override some of the property values. Also be careful because assets
+like NIF or KFM data may not be loaded yet which means the resulting entity might not work with all
+built-in API methods.</p>
+<pre>
+function SomeBehavior(self, params)
+
+    local onCreateArgs = ParameterList.ParameterList()
+    onCreateArgs:PutUInt32("SomeValue", val)
+    local createdEntity = BehaviorAPI.SpawnEntity("DamageSparks", onCreateArgs)
+    if createdEntity != Entity.InvalidEntity then
+       -- Entity is created but not yet initialized. You may set properties on the created entity
+       -- and these property values can be used by the OnCreate behavior.
+    else
+       -- Creation failed, the specified flat model is not preloaded.
+    end
+
+end
+</pre>
+
+
+<a name="AssetPreloading" id="AssetPreloading"></a>
+<h2>Preloading Assets</h2>
+
+<p>Some entities may not be valid until certain assets are available. For example, a player avatar
+may not be fully available until the avatar animation files are loaded. To support this, the
+standard model library includes the 'Preloadable' model to indicate whether the entity creation is
+delayed until all entity assets are preloaded. This model is already mixed into the Standard Model
+Library Actor, Mesh, and Terrain models.</p>
+
+<p>When the Preloadable 'PreloadAssets' property is true, the entity is not considered fully
+created until all the entity assets are preloaded. The entity is held in a pending queue until a
+preload response is received from all system services responsible for each asset type.</p>
+
+<p>To be notified when all assets are preloaded, you can implement an <span class=
+"NDLSystemFont">OnAssetsLoaded</span> behavior on your entities. This behavior is called once all
+preloadable assets are loaded. You can also subscribe to the <span class=
+"NDLSystemFont">OwnedEntityAdded</span> message sent on the local message category (<span class=
+"NDLSystemFont">kCAT_LocalMessage</span>). Your message handler will be called once the entity
+assets are preloaded.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Since asset preloading is asynchronous, it is possible for the underlying entity
+                asset property to change before preload completes. The preloading system does not
+                detect these changes, and as a result you might preload assets defined by the
+                previous property value. If you have entity asset properties that change at
+                runtime, you should ensure the resulting preloaded asset matches the current
+                property value.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h2>Reducing delays when creating entities with preloading</h2>
+
+<p>The asset preloading system is asynchronous and can delay the creation of your entity by several
+frames. For time critical or frequently created entities the delays introduced by asynchronous
+creation may not be acceptable. You can reduce this delay considerably by implementing the
+following steps.</p>
+
+<ol>
+    <li>Precache necessary assets.
+
+        <p>If your entity relies on particular assets, precache these assets prior to creating the
+        entity. The various system services that load assets support the preloading / precaching of
+        these assets. For example, you can use the <span class=
+        "NDLSystemFont">egmAnimation::AnimationService::cache</span> function to tell the Animation
+        Service to cache a particular animation file. In particular, precache animations, scene
+        graph files, and flat model files.</p>
+    </li>
+
+    <li>Turn off <span class="NDLSystemFont">AssetPreload</span> in your Entity flat model.
+
+        <p>The <span class="NDLSystemFont">AssetPreload</span> flag associated with the
+        <span class="NDLSystemFont">Preloadable</span> standard model library model tells the
+        entity creation system to preload any assets asynchronously. This can introduce a delay of
+        several frames as the assets are preloaded. This delay is present even if you precache all
+        of the Entity's assets. You can eliminate this delay by disabling <span class=
+        "NDLSystemFont">AssetPreload</span> in your Entity flat model.</p>
+    </li>
+
+    <li>Avoid using the <span class="NDLSystemFont">OnCreate</span> and <span class=
+        "NDLSystemFont">OnAssetsLoaded</span> script behaviors.
+
+        <p>The Entity lifecycle <span class="NDLSystemFont">OnCreate</span> and <span class=
+        "NDLSystemFont">OnAssetsLoaded</span> script behaviors are called during the entity
+        creation process. The runtime system requires at least one frame to invoke these behaviors.
+        If you can avoid implementing these functions you can eliminate this delay.</p>
+    </li>
+    
+    <li>If creation time is still considered unacceptable, consider pre-creating a pool of entities
+        in advance. Keep the unused entities in the out-of-world state and when an entity is needed
+        grab an unused entity, adjust its properties as needed and move the entity into the world.
+    </li>
+</ol>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="entity_destroying.htm">Destroying entities</a></li>
+    <li><a href="entity_lifecycle.htm">Entity lifecycles</a></li>
+    <li><a href="entity_world_state.htm">Controlling entity in-world/out-of-world state</a></li>
+    <li><a href="entity_rapid.htm">Rapidly iterating on Entities</a></li>
+    <li><a href="entity_debugging.htm">Debugging entity properties</a></li>
+    <li><a href="../Blocks/block_load_sequence.htm">Block Loading Sequence</a></li>
+    <li><a href="../Scripting/lua_lib_BehaviorAPI.htm">Lua Scripting API</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

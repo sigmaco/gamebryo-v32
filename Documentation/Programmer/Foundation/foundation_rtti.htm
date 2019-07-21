@@ -1,0 +1,272 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Foundation RTTI</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Foundation RTTI</h1>
+
+<p>The Gamebryo LightSpeed Foundation subsystem implements a custom RTTI system. This system allows
+objects to be dynamically cast at runtime, but it differs significantly from the C++ RTTI system.
+Some applications will only use Foundation RTTI via the <span class=
+"NDLSystemFont">EE_DYNAMIC_CAST</span>, <span class="NDLSystemFont">EE_IS_KIND_OF</span> and
+<span class="NDLSystemFont">EE_IS_EXACT_KIND_OF</span> macros. However, applications that use
+system services or the custom message classes will need to add RTTI to their own class
+implementations. These kinds of applications might also use RTTI for other classes that need
+run-time dynamic casting.</p>
+
+<p>Some of the primary features of the Foundation RTTI system include:</p>
+
+<ul>
+    <li>Compiler independent implementation works identically on all platforms</li>
+
+    <li>Implementation works identically on all build configurations</li>
+
+    <li>Supports multiple inheritance</li>
+
+    <li>Efficient integer identifiers are used instead of string identifiers</li>
+
+    <li>RTTI can be used on a per-class basis to avoid needless size increases</li>
+</ul>
+
+<h2>Implementing RTTI in an Application Class</h2>
+
+<p>Typically, classes that want to use RTTI will derive either directly or indirectly from
+<span class="NDLSystemFont"><a href="../../Reference/efd/efd__IBase.htm">efd::IBase</a></span>. In
+addition to adding RTTI support, <span class="NDLSystemFont">efd::IBase</span> also adds reference
+counting. For example, if an application created its own "<span class=
+"NDLSystemFont">NewService</span>" subclass of <span class=
+"NDLSystemFont">efd::ISystemService</span>, it would do the following:</p>
+<pre>
+// NewService.h
+class NewService : public efd::ISystemService 
+{
+    EE_DECLARE_CLASS1(NewService, kCLASSID_NewService, efd::ISystemService);
+
+    // ...class implementation...
+};
+
+// NewService.cpp
+EE_IMPLEMENT_CONCRETE_CLASS_INFO(NewService);
+</pre>
+
+<p>Any concrete class (in other words, any class that can be instantiated) that uses RTTI will use
+one of the <span class="NDLSystemFont">EE_DECLARE_*</span> macros. For every use of an RTTI
+declaration macro there must be a corresponding <span class=
+"NDLSystemFont">EE_IMPLEMENT_CONCRETE_CLASS_INFO</span> call in the <span class=
+"NDLSystemFont">.cpp</span> file. The constant <span class=
+"NDLSystemFont">kCLASSID_NewService</span> in the above example is a unique <span class=
+"NDLSystemFont">efd::ClassID</span> value that identifies the class (we will discuss these ID
+values later). There are several different versions of the declaration macro available based on how
+many RTTI enabled classes you derive from (you can derive from additional non-RTTI enabled classes
+with no impact). The base classes can be either concrete classes or interface classes.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>With this many base classes...</th>
+
+            <th>Use this RTTI declaration macro...</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>0</td>
+
+            <td>
+                <pre>
+EE_DECLARE_CLASS(FinalClass, UniqueID);
+</pre>
+
+                <div class="NDLTDNote">
+                    <span class="NDLTableNote">Note:</span> This variant is only used if you want
+                    to use RTTI in a class that does not derive from <span class=
+                    "NDLSystemFont">efd::IBase.</span>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td>
+                <pre>
+EE_DECLARE_CLASS1(FinalClass, UniqueID, BaseClass);
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>2</td>
+
+            <td>
+                <pre>
+EE_DECLARE_CLASS2(FinalClass, UniqueID, BaseClass1, BaseClass2);
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>3</td>
+
+            <td>
+                <pre>
+EE_DECLARE_CLASS3(FinalClass, UniqueID, BaseClass1, BaseClass2, BaseClass3);
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>more than 3</td>
+
+            <td>
+                <pre>
+EE_BEGIN_DECLARE_CLASS(FinalClass, UniqueID);
+    EE_INCLUDE_CLASS(BaseClass1);
+    EE_INCLUDE_CLASS(BaseClass2);
+    // ... and so on...
+    EE_INCLUDE_CLASS(BaseClassN);
+EE_END_DECLARE_CLASS();
+</pre>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>In addition to declaring RTTI information for concrete classes, there is a simplified method for
+declaring RTTI for interface classes. The interface-specific RTTI macro does not require
+<span class="NDLSystemFont">EE_IMPLEMENT_CONCRETE_CLASS_INFO</span> because it defines no
+additional static data members. To declare an interface class, select the correct macro based on
+the number of RTTI-enabled base classes that the interface uses:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>With this many base classes...</th>
+
+            <th>Use this RTTI declaration macro...</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>0</td>
+
+            <td>
+                <pre>
+EE_DECLARE_INTERFACE(InterfaceClass, UniqueID);
+</pre>
+
+                <div class="NDLTDNote">
+                    <span class="NDLTableNote">Note:</span> this variant is only used if you wish
+                    to use RTTI in an interface not derived from <span class=
+                    "NDLSystemFont">efd::IBase.</span>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>1</td>
+
+            <td>
+                <pre>
+EE_DECLARE_INTERFACE1(InterfaceClass, UniqueID, BaseInterface);
+</pre>
+            </td>
+        </tr>
+
+        <tr>
+            <td>more than 1</td>
+
+            <td>
+                <pre>
+EE_BEGIN_DECLARE_INTERFACE(InterfaceClass, UniqueID);
+    EE_INCLUDE_INTERFACE(BaseInterface1);
+    // ... and so on...
+    EE_INCLUDE_INTERFACE(BaseInterfaceN);
+EE_BEGIN_DECLARE_INTERFACE();
+</pre>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>In the rare event that your interface class derives from existing concrete classes, you can use
+the <span class="NDLSystemFont">EE_INCLUDE_CLASS</span> macro inside the <span class=
+"NDLSystemFont">EE_BEGIN_DECLARE_INTERFACE</span> section.</p>
+
+<p>While the most common method of including RTTI is to derive from <span class=
+"NDLSystemFont">efd::IBase</span>, the macros mentioned above can be used in any class. This can be
+used in cases where you do not want to support reference counting in your class.</p>
+
+<h2>Defining unique ClassID values</h2>
+
+<p>The correctness of the RTTI system relies on the assignment of unique <span class=
+"NDLSystemFont">efd::ClassID</span> values to every RTTI-enabled class. You must manage these ID
+values while ensuring uniqueness. The ID values used by the Foundation and Game Framework are
+allocated by using a Data Driven Enum (DDE) that allows unique ID values to be generated and also
+supports easy merging when new ID values are being generated by multiple users. A specific range of
+ID values are reserved for final applications. By using this range, you are assured that your ID
+values will not conflict with any ID values used by Emergent and all Emergent partner integrations.
+This range starts at hex value 0x06100000 and extends to 0x062fffff. We recommend that you create
+your own data driven enumeration which assign ID values in this reserved range. Gamebryo LightSpeed
+ships a tool that generates C++ header files from a data driven enumeration. For details, see
+<a href="../../Tools/DataDrivenEnum/DataDrivenEnum_intro.htm">DDE Header Generator</a>. You can
+find examples of using this tool in various solutions, simply look at the custom build commands on
+various *.enum files.</p>
+
+<h2>Foundation RTTI Internals</h2>
+
+<p>The various RTTI declaration macros define a static function to configure the class metadata, a
+static data member to store the class metadata, a virtual method to access the static data and
+virtual type casting methods. The static data member added to each concrete RTTI class is an
+instance of the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ClassInfo.htm">efd::ClassInfo</a></span> class. The macros have the side
+effect of leaving the class in the public access state.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="../Introduction_to_Foundation_Programming.htm">Foundation Programming:
+    Introduction</a></li>
+
+    <li><a href="../../Reference/Macros/efd_macros_rtti.htm">RTTI Macros</a></li>
+
+    <li><a href="../../Tools/DataDrivenEnum/DataDrivenEnum_intro.htm">DDE Header Generator:
+    Introduction</a></li>
+
+    <li><a href="foundation_reference_counting.htm">Foundation Reference Counting and Smart
+    Pointers</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

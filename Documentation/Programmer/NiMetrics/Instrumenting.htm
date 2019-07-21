@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Instrumenting with NiMetrics</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Instrumenting with NiMetrics</h1>
+
+<p>The Gamebryo engine comes pre-instrumented for the <span 
+ class="NDLSystemFont">NiMetrics</span> system, but it is also very easy 
+ for a developer to add custom instrumentation to their application. Adding 
+ new metrics is as easy as making calls to <span class="NDLSystemFont">NiMetricsLayer</span> 
+ or creating an <span class="NDLSystemFont">NiMetricsTimer</span>. Each instrumentation 
+ call needs nothing more than a name and a value. See the below class reference 
+ or list of examples for more details about how to instrument code with 
+ custom metrics.</p>
+
+<p>If your application is based off of <span class="NDLSystemFont">NiApplication</span>, 
+ then you should call <span class="NDLSystemFont">NiApplication::UpdateMetrics</span> 
+ once per frame. This will update the metrics system and allow output modules 
+ to do any work that they need to do. If your application is not derived 
+ from <span class="NDLSystemFont">NiApplication</span>, then you will need 
+ to implement a similar function in your application.</p>
+
+<h2>Class Reference</h2>
+
+<ul>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsLayer.htm">NiMetricsLayer</a></span></li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsTimer.htm">NiMetricsTimer</a></span></li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTMetricsTimer.htm">NiTMetricsTimer</a></span></li>
+	
+	<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsScopeTimer.htm">NiMetricsScopeTimer</a></span></li>
+</ul>
+
+<h2>Metrics Names</h2>
+
+<p>Each call to the metrics system requires a metrics name, 
+ which are arbitrary strings. Different output modules can use the metrics 
+ names in arbitrary ways and so depending on the desired output modules, 
+ it may be necessary to name metrics in a particular way. Gamebryo organizes 
+ its metrics hierarchically. All Gamebryo metrics start with "gb", 
+ then their platform name, and finally the configuration. For example, 
+ metrics for Win32 built with VC80 in Release mode will be "gbWin32VC80Release.*" 
+ Gamebryo metrics also contain the name of the library that they are in 
+ and then finally the name of the metric itself. For example, "gbXenonDebug.main.NumUpdates" 
+ is the name of the Gamebryo metric for debug configurations for number 
+ of <span class="NDLSystemFont">NiAVObject</span> updates in the <span class="NDLSystemFont">NiMain</span> 
+ library.</p>
+
+<p>Although this is not a necessary step for an application, 
+ Gamebryo defines all of its metrics names in a custom header and code 
+ file per library. For example, the <span class="NDLSystemFont">NiAnimation</span> 
+ metrics are stored in <span class="NDLSystemFont">NiAnimationMetrics.h</span> 
+ and <span class="NDLSystemFont">NiAnimationMetrics.cpp</span>. Each library 
+ uses its own set of macros and an enumeration of metrics, rather than 
+ metrics names directly. With this approach, it becomes easy to modify 
+ the names of metrics in a single place.</p>
+
+<h2>Strings in the Metrics System</h2>
+
+<p>Perhaps the most important consideration with metrics 
+ names is that the strings themselves are copied shallowly and not deeply 
+ because of the amount of string passing that must go on within the metrics 
+ system. To avoid having repeated string allocations and deallocations 
+ or the expense of an <span class="NDLSystemFont">NiFixedString</span> lookup 
+ for every single metrics call, the design decision was made to just use 
+ the string pointers shallowly since for the vast majority of the time, 
+ the string data will just be static data. Because of this restriction, 
+ you must ensure that strings that are passed to the metrics system (either 
+ via a timer or calls to <span class="NDLSystemFont">NiMetricsLayer</span>) 
+ exist until <span class="NDLSystemFont">NiShutdown</span> because some output 
+ modules may continue to use strings after the call to <span class="NDLSystemFont">NiMetricsLayer</span> 
+ returns.</p>
+
+<h2>Debug Configuration Timers</h2>
+
+<p>Although timers will return real data in a debug configuration, 
+ this data is not reliable due to the extra overhead of debug mode. Although 
+ the number of times the timers report data is still a valid measurement 
+ and should be considered, the results of those timers should be ignored.</p>
+
+<h2>Recording Singular Values</h2>
+
+<p>Calls to <span class="NDLSystemFont">NIMETRICS_ADDVALUE</span> 
+ with values of 1 is something to be wary of. This is the first approach 
+ that is likely considered when trying to record the number of a particular 
+ kind of event that has occurred. There is nothing incorrect about this 
+ approach, but there is a better one. Consider summing the value internally 
+ in a static variable, guarding it with <span class="NDLSystemFont">NiFastCriticalSection</span> 
+ as appropriate. With this aggregate static variable, call <span class="NDLSystemFont">NIMETRICS_ADDVALUE</span> 
+ once per frame. This has two benefits: one is an increase in performance, 
+ because you are making fewer calls to the metrics system. It is fairly 
+ cheap, but can be significant if you are making many metrics calls. The 
+ more important reason is that aggregating over a frame gives you a metric 
+ with more meaning. When analyzing this metric, the average, min, and max 
+ become meaningful numbers that represent those calculations per frame, 
+ rather than just being 1 in all cases.</p>
+
+<h2>Examples of Instrumentation</h2>
+
+<h2>Example 1: Scope Timers</h2>
+
+<p>Here is an example of timing a function with a scope 
+ timer. The <span class="NDLSystemFont">NiMetricsScopePCTimer</span> is an 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsScopeTimer.htm">NiMetricsScopeTimer</a></span> 
+ that uses the performance counter as the clock. Scope timers start when 
+ they are created and automatically stop when they go out of scope. They 
+ call the appropriate <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsLayer.htm">NiMetricsLayer</a></span> 
+ functions as necessary. The <span class="NDLSystemFont">NIMETRICS_EVAL</span> 
+ macro will include the timer in metrics-enabled builds but will compile 
+ out that line of code in metrics-disabled builds.</p>
+
+<pre>
+    void MyGame::MyFunction()
+    {
+        NIMETRICS_EVAL(NiMetricsScopePCTimer kTimer("MyFunction_Time");)
+        // kTimer starts automatically
+
+        // do timed work here
+        // ...
+
+    } // kTimer goes out of scope and stops
+</pre>
+
+<h2>Example 2: Non-Scope Timers</h2>
+
+<p>Here is an example of using a non-scope timer. The <span 
+ class="NDLSystemFont">NiMetricsClockTimer</span> is an <a href="../../Reference/NiMain/NiMetricsTimer.htm">NiMetricsTimer</a> 
+ that uses the system clock as the source of its timing values. Non-scope 
+ timers need to be started and stopped manually, generally using the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMain/NiMetricsLayer.htm">NiMetricsLayer</a></span> 
+ macros for starting and stopping timers. All of the <span class="NDLSystemFont">NIMETRICS_</span> 
+ macros compile out if metrics is not enabled, so this instrumenting code 
+ will not affect non-metrics builds.</p>
+ 
+ 
+<pre>
+    void MyGame::UpdateMonsters()
+    {
+        // untimed setup work
+        // ...
+
+        NIMETRICS_EVAL(NiMetricsClockTimer kTimer("UpdateMonstersTime");)
+        NIMETRICS_STARTTIMER(kTimer);
+
+        // do timed work here
+        // ...
+
+        NIMETRICS_ENDTIMER(kTimer);
+
+        // untimed cleanup work
+        // ...
+    } 
+</pre>
+ 
+
+<h2>Example 3: Values and Events</h2>
+
+<p>This last block of code is an example function in a 
+ game that gets called after one player has killed another. It increments 
+ some number of kills, stores that in the metric system, and then potentially 
+ enters frenzy mode. In this hypothetical game, when players kill enough 
+ opponents, they enter a "frenzy mode" which gives them some 
+ bonuses and has a full screen graphical effect. However, for some reason 
+ this great looking effect slows down the entire game. In this case, we 
+ use an event to mark where this mode starts.</p>
+
+<p>The <span class="NDLSystem">NIMETRICS_ADDVALUE</span> 
+ macro records a float value for a particular metric name. In this case, 
+ the example is recording number of kills, so that the game could perhaps 
+ track how frequently players kill each other to tweak the excitement of 
+ a multiplayer mode. In addition, it creates an event using the <span class="NDLSystem">NIMETRICS_ADDEVENT</span> 
+ macro to record when "frenzy mode" starts so that when looking 
+ at metrics output, the relation of instrumented metrics and in-game events 
+ can be more closely linked.</p>
+ 
+<pre>
+    void Player::ShotOtherPlayer()
+    {
+        NIMETRICS_ADDVALUE("PlayerKills", 1);
+
+        m_uiNumberOfKills++;
+        if (m_uiNumberOfKills > KILL_FRENZY_THRESHOLD)
+        {
+            // Have enough kills, so enter frenzy mode...
+            NIMETRICS_ADDEVENT("FrenzyMode", 1);
+            StartFrenzyMode();
+        }
+    } 
+</pre>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

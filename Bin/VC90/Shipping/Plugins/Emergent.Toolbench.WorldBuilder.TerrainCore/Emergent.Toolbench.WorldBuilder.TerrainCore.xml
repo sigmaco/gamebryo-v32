@@ -1,0 +1,3120 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Emergent.Toolbench.WorldBuilder.TerrainCore</name>
+    </assembly>
+    <members>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Plugin">
+            <summary>
+            When the terrain core plug-in is loaded, the terrain core service is added to the platform.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Plugin.Start">
+            <summary>
+            Starts the terrain core plug-in. This method injects the terrain core service into the 
+            platform.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Plugin.StaticDescriptor">
+            <summary>
+            Gets an instance of the plug-in's descriptor object. This is only valid after the 
+            plug-in has started.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Plugin.StaticResources">
+            <summary>
+            Gets an instance of the plug-ins resources object. This is only valid after the plug-in
+            has started.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType">
+            <summary>
+            This enumeration defines the different types of meta-data a terrain material can contain.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.BlendedFloat">
+            <summary>
+            IEEE floating point number. If a meta-data value of type BlendedInteger exists on 
+            multiple materials and each material has the same key, the result is blended 
+            based on the material influence.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.BlendedInteger">
+            <summary>
+            32-bit signed integer. If a meta-data value of type BlendedInteger exists on multiple 
+            materials and each material has the same key, the result is blended based on 
+            the material influence.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.Float">
+            <summary>
+            IEEE floating point number. When meta-data queries are performed at run-time, the 
+            material with the highest weight wins and returns the current value for that material.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.Integer">
+            <summary>
+            32-bit signed integer. When meta-data queries are performed at run-time, the material
+            with the highest weight wins and returns the current value for that material.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.String">
+            <summary>
+            Arbitrary string. Note, length is not limited. When meta-data queries are performed at 
+            run-time, the material with the highest weight wins and returns the current value for 
+            that material.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType.Error">
+            <summary>
+            Error Enum. This should only be used to display an error meta-data when attempting to
+            blend meta-data of the same key but using different data types. Can not be used as
+            a standard data type.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MetaDataUsableTypes">
+            <summary>
+            Static helper class that provides functionality to retrieve a list of meta-data types that
+            can be used by a material meta-data.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MetaDataUsableTypes.GetValues">
+            <summary>
+            Returns a list of MaterialMetaDataType usable by a MaterialMetaData.
+            </summary>
+            <returns>The list of types.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData">
+            <summary>
+            Terrain materials can have user defined meta-data attached to them. This meta-data may be 
+            queried at run-time after which application specific logic can interpret and respond to the 
+            meta-data values. This class contains the logic for tool side interaction with terrain 
+            meta-data and UI binding to the different values a piece of terrain meta-data can have.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.#ctor">
+            <summary>
+            Default constructor used primarily when adding new meta-data entries to a WPF datagrid.
+            Sets the key to "Enter unique key" and the data type to string.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.#ctor(System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType)">
+            <summary>
+            Constructs a new instance of the meta-data class using the specified key and 
+            specified data-type.
+            </summary>
+            <param name="key">Key mapped to the new meta-data instance.</param>
+            <param name="dataType">Type of data containing in the meta-data instance.</param>
+            <remarks>The value of the meta-data instance is NOT initialized to a default value and
+            remains null until a value is assigned.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.SetValueFromString(System.String)">
+            <summary>
+            Sets the value of the meta-data instance from the given string value.
+            </summary>
+            <param name="valueStr">String representation of the meta-data value. If the string is 
+            null or empty, the value is not set and the method simple returns.</param>
+            <remarks>If the string does not contain a parsable representation of the meta-data 
+            data-type an exception is thrown.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.SetProperty(System.String,System.Object)">
+            <summary>
+            Sets the material property associated with the given name.
+            </summary>
+            <param name="propertyName">Name of the material property to modify.</param>
+            <param name="value">The new value.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.SetProperty(System.String,System.Object,System.Boolean)">
+            <summary>
+            Sets the material property associated with the given name.
+            </summary>
+            <param name="propertyName">Name of the material property to modify.</param>
+            <param name="value">The new value.</param>
+            <param name="isUndoable">Is this set action on the property undoable?</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.NotifyPropertyChanged(System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+            <param name="oldValue">The old value of the property.</param>
+            <param name="newValue">The new value proposed for the property.</param> 
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.NotifyPropertyChanged(System.String)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.Clone">
+            <summary>
+            This method is mostly used by the WPF DataGrid when creating new meta-data entries or
+            editing existing entries. This is one of the steps to allow tranactional editing of
+            meta-data.
+            </summary>
+            <returns>A new object that is a copy of this instance.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.BeginEdit">
+            <summary>
+            This method is called from the WPF DataGrid when the user starts editing the meta-data.
+            The method creates an internal copy of the current meta-data values so the changes can 
+            be reverted if necessary.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.CancelEdit">
+            <summary>
+            Called from the WPF DataGrid when the user cancels an edit operation. This method simply
+            copies the old values from the internal backup of the old meta-data values.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.EndEdit">
+            <summary>
+            Called when the user has finished an edit operation. This method simply sets the 
+            internal copy of the meta-data to null.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.Key">
+            <summary>
+            Gets or sets the unique key value associated with the meta-data.
+            </summary>
+            <remarks>If the meta-data already has a terrain material owner and the key is changed,
+            this method will ensure the key is unique on a material instance. If it is not, an
+            exception is thrown.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.Description">
+            <summary>
+            Gets or sets the description for the meta-data.
+            </summary>
+            <remarks>If the description has not been set, a string containing "No Description" is 
+            returned.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.Value">
+            <summary>
+            Gets or sets the value of the terrain meta-data.
+            </summary>
+            <remarks>The type of object being set must match the data-type property, if not an 
+            exception is thrown. If the specified value object is a string and the data-type for the
+            meta-data is not a string, an attempt will be made to parse the string based on the
+            current meta-data data-type.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.DataType">
+            <summary>
+            Gets or sets the data-type of the meta-data instance.
+            </summary>
+            <remarks>When setting the data-type, if the current meta-data value is not null, an
+            attempt will be made to coerce the data into the new data-type. For example, if the
+            current value/data-type is MaterialMetaDataType.Float and the new data-type is of type
+            MaterialMetaDataType.Integer, then the current value will be truncated and converted to
+            an integer.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.MaterialOwner">
+            <summary>
+            Gets or sets the terrain material owning the meta-data. This is mostly used for 
+            validating uniqueness of meta-data keys.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData.PropertyChanged">
+            <summary>
+            Event called when a property on the terrain meta-data has changed. This is used to keep
+            the UI in sync with the object.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataConsumer">
+            <summary>
+            A paint consumer is the sink of the paint operation. The paint operation starts with a 
+            kernel that then passes through various filters. Once the data has been filtered, it then 
+            gets passed to a paint consumer to apply the data to whatever data source it deems suitable.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataConsumer.ApplyPaintData(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer)">
+            <summary>
+            Applies the input data to a destination specified by the implementation.
+            </summary>
+            <param name="inputData">An arbitrarily ranked input array. The dimension of the input 
+            array should be validated by the implementation.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.ExtensionPoints">
+            <summary>
+            This class defines the extension points exposed by the terrain core plug-in.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.ExtensionPoints.BrushElement">
+            <summary>
+            Extension point for adding brush elements to the terrain painting system.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.ExtensionPoints.BrushType">
+            <summary>
+            Extension point for adding brush types to the terrain painting system.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor">
+            <summary>
+            This class implements the paint data processor interface by maintaining an active paint 
+            producer, and active paint consumer, and an active kernel. This class also contains the 
+            paint filters applied when DoPaint is called.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor">
+            <summary>
+            Defines the interface for the paint data processor. The paint data processor maintains a 
+            source paint producer object, and sink paint consumer object, and a list of filters. The 
+            list of filters can be modified in order to produce a different result.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.SetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProducer)">
+            <summary>
+            Sets the object responsible for producing input data to the paint operation.
+            </summary>
+            <param name="dataType">Type of incoming data.</param>
+            <param name="producer">Paint producer responsible for retrieving the source data.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            Gets the paint producer registered for the specified incoming source data.
+            </summary>
+            <param name="dataType">Type of incoming data.</param>
+            <returns>The paint producer.</returns>
+            <remarks>Only one paint producer can be specified per paint data type.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.SetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataConsumer)">
+            <summary>
+            Sets the object responsible for consuming the results of a paint operation.
+            </summary>
+            <param name="dataType">Type of data to consume.</param>
+            <param name="consumer">Paint consumer responsible for applying the paint results.
+            </param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            Gets the registered paint consumer on the specified type of data.
+            </summary>
+            <param name="dataType">Type of consumable data.</param>
+            <returns>Currently registered object.</returns>
+            <remarks>Only one paint consumer may be registered per data type.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.ClearFilters">
+            <summary>
+            Clears all filters from the list of filters used to process the input source data. If
+            no filters are present, the output data is equal to the input data.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataFilterOfType(System.Type)">
+            <summary>
+            Tries to look up a paint filter of a particular class type.
+            </summary>
+            <param name="filterType">Class type of the filter.</param>
+            <returns>The first paint filter encountered of the specified class type or null if no 
+            paint filter was found.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetAllPaintDataFiltersOfType(System.Type)">
+            <summary>
+            Tries to look up all paint filters of a particular class type.
+            </summary>
+            <param name="filterType">Class type of the filter.</param>
+            <returns>A list of all paint filters of the specified class type.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetAllPaintDataFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            Tries to look up all paint filters that deal with a particular data type.
+            </summary>
+            <param name="dataType">Data type of the filter.</param>
+            <returns>A list of all paint filters of the specified data type.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetAllPaintDataFilters">
+            <summary>
+            Tries to look up all active paint filters.
+            </summary>
+            <returns>A list of all active paint filters.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.AddPaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)">
+            <summary>
+            Adds a new paint filter to the list of paint filters affecting the input data. Note, 
+            paint filters process data in the order the are added. If a paint filter has a 
+            dependency on the input/output of another paint filter care must be taken to add them 
+            in the correct order.
+            </summary>
+            <param name="filter">The new paint filter to add.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.RemovePaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)">
+            <summary>
+            Removes the specified filter from the paint processor.
+            </summary>
+            <param name="filter">Reference to the filter to remove.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetNumPaintFilters">
+            <summary>
+            Gets the number of paint filters currently in use by the processor.
+            </summary>
+            <returns>The number of active paint filters.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetNumPaintFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            Gets the number of paint filters currently in use by the processor that process a 
+            particular type of data.
+            </summary>
+            <param name="dataType">Type of data.</param>
+            <returns>The number of paint filters operating on the specified data type.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.DoPaint(System.Int32,System.Single)">
+            <summary>
+            Performs a paint operation. For each available data source type, a paint operation first
+            gets source input data and a source kernel using the paint data producer and paint 
+            kernel provider. Next, the input data and kernel are passed to all paint filters that 
+            have been added to the processor. The entire list of filters is continuously applied 
+            using the specified number of iterations. Finally, once all paint filters have processed
+            the input data for the specified number of iterations the resulting data is passed to 
+            the paint consumer.
+            </summary>
+            <param name="numIterations">Number of times to run the filter list over the input data.
+            </param>
+            <param name="paintDirection">Defines which direction to paint which affect the terrain
+            in different ways depending on the filters in use.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.CanProcessPainting">
+            <summary>
+            Performs a check on all available filters to ensure all filters can be used for 
+            painting.
+            </summary>
+            <returns>False if one filter cannot be painted.</returns>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.PaintSourceTypeChanged">
+            <summary>
+            Event fired when the paint data source type changes during a paint cycle.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.PaintKernelProvider">
+            <summary>
+            Gets or sets the kernel provider used in conjunction with the optional paint data 
+            producer to seed the painting operation.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.SetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProducer)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.SetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProducer)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataProducer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.SetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataConsumer)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.SetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType,Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataConsumer)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataConsumer(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.ClearFilters">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.ClearFilters"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.AddPaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.AddPaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.RemovePaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.RemovePaintDataFilter(Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetPaintDataFilterOfType(System.Type)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetPaintDataFilterOfType(System.Type)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetNumPaintFilters">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetNumPaintFilters"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetNumPaintFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetNumPaintFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetAllPaintDataFilters">
+            <summary>
+            Gets list of current Paint Filters.
+            </summary>
+            <returns>A list of all active paint filters.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetAllPaintDataFiltersOfType(System.Type)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetAllPaintDataFiltersOfType(System.Type)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.GetAllPaintDataFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.GetAllPaintDataFiltersForDataType(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.DoPaint(System.Int32,System.Single)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.DoPaint(System.Int32,System.Single)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.CanProcessPainting">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.CanProcessPainting"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting
+            unmanaged resources.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.PaintSourceTypeChanged">
+            <summary>
+            Event fired when the paint operation data type changes.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataProcessor.PaintKernelProvider">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProcessor.PaintKernelProvider"/>
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintKernelProvider">
+            <summary>
+            A paint kernel provider provides a source kernel to be applied in a paint filter-specific 
+            manner to the input data set. In some cases, a paint kernel may not be necessary.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintKernelProvider.GetBuffer">
+            <summary>
+            Gets the data representing the paint kernel buffer.
+            </summary>
+            <returns>Buffer containting paint kernel info.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerInstanceTypes">
+            <summary>
+             Types of decoration layers supported.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerInstanceTypes.Billboard">
+            <summary>
+             Decoration will be a single billboard plane.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerInstanceTypes.CrossBillboard">
+            <summary>
+             Decoration will be crossed billboard planes.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerInstanceTypes.SimpleMesh">
+            <summary>
+             Decoration will be a simple mesh object.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerUpVectorTypes">
+            <summary>
+             Determines which up vector the decoration will use from the terrain.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerUpVectorTypes.TerrainNormal">
+            <summary>
+             Up vector of the decoration will be taken from the normal of the terrain at that point.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerUpVectorTypes.WorldNormal">
+            <summary>
+             Up vector of the decoration will be identical to the world up vector.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer">
+            <summary>
+             Stores properties for decoration layers.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.NoDecorationImage">
+            <summary>
+            Placeholder image used when there is no image or mesh assigned to the decoration layer.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.DefaultMeshImage">
+            <summary>
+            Placeholder image used when there is no image or mesh assigned to the decoration layer.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.#cctor">
+            <summary>
+            Constructs a static image icon used in place of texture maps when the texture has not
+            been assigned.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection)">
+            <summary>
+             Constructor passing in parent.
+            </summary>
+            <param name="collection">The parent collection.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.SetProperty(System.String,System.Object,System.Boolean)">
+            <summary>
+            Sets the material property associated with the given name, and may make it invertable.
+            </summary>
+            <param name="propertyName">Name of the material property to modify.</param>
+            <param name="value">The new value for the property.</param>
+            <param name="isUndoable">Is this set action on the material undoable?</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.NotifyPropertyChanged(System.String,System.Object,System.Object)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+            <param name="oldValue">The old value of the property.</param>
+            <param name="newValue">The new value proposed for the property.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.NotifyPropertyChanged(System.String)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.Name">
+            <summary>
+            Gets or sets the name of the decoration layer. This is used as much for indexing as it
+            is for organization for the user.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.DecorationBillboardAssetThumbnail">
+            <summary>
+            Gets or sets the image source containing the pixel data for the billboard.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.InstanceType">
+            <summary>
+             Gets or sets the form of the mesh that will be used to represent a single decoration
+             instance. It can take values of ‘Billboard’, ‘Cross Billboard’ or ‘Simple Mesh’. There
+             are some further properties that are relevant only to certain values of this property
+             and are visible only when required.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.BillboardTexture">
+            <summary>
+             Gets or sets a diffuse texture asset which will be applied to the instances.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.AlphaEnabled">
+            <summary>
+             Gets or sets a flags toggling the use of alpha, if the billboard texture has an alpha
+             channel. When enabled, alpha will always be reduced to 1-bit.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.MeshNIFPath">
+            <summary>
+             Gets or sets the path to a NIF file that contains a reasonably simple mesh, which will
+             be used for the template for mesh instances. For best results, the mesh should contain
+             only a single index and vertex stream with no bone animation.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.MeshScale">
+            <summary>
+             Gets or sets a scale to apply to the mesh NIF on all 3 axes, in model space, before 
+             applying it as the mesh instance template.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.Density">
+            <summary>
+             Gets or sets the density of mesh instances, relative to the per-terrain density option
+             of the terrain that the material is applied to.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.MaxViewDistance">
+            <summary>
+             Gets or sets the maximum view distance of decoration instances. This is the distance
+             from the camera where the decoration should have fully disappeared. This is a percentage
+             of a terrain-wide property.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.RandomSeed">
+            <summary>
+             Gets or sets a different base seed for all internal random calculations.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.UpVector">
+            <summary>
+             Gets or sets a property describing orientation. When set to ‘Terrain Normal’, rotates
+             each mesh instance such that it points outward from the terrain surface. When set to
+             ‘World Up’, sets all instances such that they always align to the world up vector.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.IdleWindAnimation">
+            <summary>
+             Gets or sets a flag controlling idle wind. If enabled, applies a subtle time-based wind
+             animation loop to the mesh instances. This has a slight overhead in that each billboard 
+             will contain 3 triangles, as opposed to 2 (6, in the case of cross billboards).
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.ReceiveShadows">
+            <summary>
+             Gets or sets a toggle controlling shadows for decorations. If the terrain is set to
+             receive shadows, toggle shadows on the decoration layers. Decorations should always use
+             the standard shadow technique rather than PCF where possible.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.InstanceSize">
+            <summary>
+             Gets or sets both the width and height size, in model space, of each individual mesh
+             instance.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.InstanceScaleVariation">
+            <summary>
+             Gets or sets a per-instance scale variation both above and below the normal scale. This
+             will vary the size of each individual instance.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.QuotaBoost">
+            <summary>
+             Gets or sets a portion of the instance quota (the number of instances per cell) reserved
+             for probability overflow. Since instances are placed within a cell using probability,
+             there is a chance that all available quota is used before the whole cell is filled.
+             Adding an overflow will help counter this by effectively boosting the quota (reducing
+             the probability).
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.OpacityThreshold">
+            <summary>
+             Gets or sets an opacity threshold. The opacity value of a terrain material at a given
+             point must be above this threshold value before it can be used to determine the
+             visibility of a decoration instance.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.ViewDistanceFalloff">
+            <summary>
+             Gets or sets how much of the view distance should be reserved for gradual falloff
+             through the use of screen door pixel culling.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.MinViewDistance">
+            <summary>
+             Gets or sets the minimum distance from the camera where the decoration instances should
+             start appearing. This should be initialized to 0. Like the maximum view distance, this
+             is a percentage of the terrain-wide view distance property.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.ForceNonInstancedMeshes">
+            <summary>
+             Gets or sets a flag that disables GPU-based mesh instances, even if it is supported by
+             the target platform. When activated, this option will force the mesh instance generator
+             to create vertex data for each individual instance, rather than shared. Enabling this
+             option will have an extremely severe impact on memory usage, update and rendering 
+             performance. With large instance counts, it is likely that this option will crash the
+             application.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer.PropertyChanged">
+            <summary>
+            Occurs when a property value changes.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction">
+            <summary>
+            Class that defines an undoable action in order to modify a terrain material's metadata.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.m_terrainMaterial">
+            The terrain material object to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.m_oldValue">
+            The old value of the property
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.m_newValue">
+            The new value of the property
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData)">
+            <summary>
+            Creates a SetTerrainMaterialMetaDataAction to change metadata in an undoable fashion.
+            </summary>
+            <param name="material">Material to modify.</param>
+            <param name="oldValue">Previous value of metadata.</param>
+            <param name="newValue">New value of metadata.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.BeginUndo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the undo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.EndUndo">
+            <summary>
+            Sets the material metadata to the previous value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.BeginRedo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the redo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.EndRedo">
+            <summary>
+            Sets the material metadata to the new value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Executes the material metadata change action.
+            </summary>
+            <param name="context">The execution context.</param>
+            <param name="style">The execution style.</param>
+            <returns>Success.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.ModifiesContent">
+            <summary>
+            Always returns true since the action modifies material data.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.IsUndoable">
+            <summary>
+            This action is currently undoable.
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.IsUndoable"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialMetaDataAction.Description">
+            <summary>
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.Description"/>
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType">
+            <summary>
+            Defines the different types of sources of data paint filters can operate on. Before a 
+            processing session begins, paint filters are sorted by their paint data source type and an 
+            event is triggered before a grouping of filters proceeds.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType.Heightmap">
+            <summary>
+            Paint source representing a height map.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType.MaterialMask">
+            <summary>
+            Paint source representing a material mask.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintSourceTypeChangedEventArgs">
+            <summary>
+            Event arguments used by the paint source type changed handler. Simply contains the new 
+            data type.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintSourceTypeChangedEventArgs.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintDataSourceType)">
+            <summary>
+            Constructs the event arguments. 
+            </summary>
+            <param name="newType">New data type being set on the paint processor.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintSourceTypeChangedEventArgs.NewDataSourceType">
+            <summary>
+            Gets the new data source.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintSourceTypeChangedEventHandler">
+            <summary>
+            This event handler is used when the source data type used by the paint processor changes. 
+            This occurs during a paint cycle as the different filters are traversed and their supported
+            data type discovered.
+            </summary>
+            <param name="sender">The event sender.</param>
+            <param name="eventArgs">The event object.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument">
+            <summary>
+            A class to describe a specific terrain asset.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument.#ctor(System.Guid,System.String,System.String)">
+            <summary>
+            Constructs a terrain document class to describe an asset.
+            </summary>
+            <param name="entityId">The entity ID of the entity referencing this asset.</param>
+            <param name="assetId">The asset ID of the terrain asset.</param>
+            <param name="assetPath">The location of the asset on disk.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument.EntityId">
+            <summary>
+            Gets the entity ID of the entity referencing this asset.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument.AssetId">
+            <summary>
+            Gets the asset ID of the terrain asset.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument.AssetPath">
+            <summary>
+            Gets the location of the asset on disk.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter">
+            <summary>
+            A paint data filter is a simple interface that takes a source data kernel along with source
+            input data and applies the kernel in a filter specific manor. Note, in some cases the kernel
+            and/or input data may be null depending on the type of filter.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.FilterPaintData(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,System.Single)">
+            <summary>
+            Processes the optional kernel and input data and returns the results.
+            </summary>
+            <param name="paintBuffer">PaintBuffer. (Input kernel. This could be null if a 
+            particular filter does not require a kernel.)</param>
+            <param name="inputBuffer">Input data in which to apply the operation. This could be null
+            if the filter is responsible for actually seeding input data.</param>
+            <param name="paintDirection">Defines which direction to paint which affects the terrain
+            in different ways depending on the filters in use.</param>
+            <returns>The filtered data.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.CheckValidFilter">
+            <summary>
+            Ensures a filter is valid for painting. This is the place to output warning messages
+            if a filter is invalid.
+            </summary>
+            <returns>True if the filter is valid. False otherwise.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.DataSourceType">
+            <summary>
+            Gets the paint data source type this paint filter supports.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.DataSource">
+            <summary>
+            Gets the paint data source this paint filter requires data from.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.IsEnabled">
+            <summary>
+            Disables the filter. This function marks the filter as disabled. The filterPaintData 
+            should simply exit early.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement">
+            <summary>
+            This interface defines a brush element. A brush element exposes constraints and data used 
+            by an implementation class to modify a given data set. (e.g. a terrain heightmap).
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.OnActivated(System.Single,System.Single)">
+            <summary>
+            This method is invoked when the brush element is added to the list of active brush 
+            elements. The default implementation of this method updates any brush element contraints
+            based on the current terrain data properties.
+            </summary>
+            <param name="minElev">Minimum elevation of the current terrain.</param>
+            <param name="maxElev">Maximum elevation of the current terrain.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.UpdateChangedProperty(System.String)">
+            <summary>
+            This method is invoked when an external object the brush element is affected by has 
+            changed. This can be the case when a terrain is loaded or a terrain's min and max 
+            elevation constraints are changed. It is up to implementing classes to retrieve
+            the appropriate property value for the given property name.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.OnRemoved">
+            <summary>
+            This method is invoked when the brush element is removed from the list of active brush 
+            elements. This can be used by derived classes to perform custom actions when removing
+            a brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Category">
+            <summary>
+            Gets the category of the brush element. Brush elements are displayed to the user grouped
+            by category so brush elements affecting similar objects should be in the same category.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Name">
+            <summary>
+            Gets the name of the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Icon">
+            <summary>
+            Gets the icon image representing the brush element. A default icon is used if no icon
+            is specified on the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Description">
+            <summary>
+            Gets a description of what the brush element does. This is useful when UI elements are 
+            used to portray a given brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinSlope">
+            <summary>
+            Gets or sets the minimum slope affected by the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxSlope">
+            <summary>
+            Gets or sets the maximum slope affected by the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinElevation">
+            <summary>
+            Gets or sets the minimum elevation affected by the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxElevation">
+            <summary>
+            Gets or sets the maximum elevation affected by the brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Strength">
+            <summary>
+            Gets or sets a floating point value between 0.0f and 1.0f which represents the strength
+            of the applied brush element.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinElevationConstraint">
+            <summary>
+            Gets or sets the minimum elevation the brush element could possibly affect.
+            </summary>
+            <remarks>This value is the smallest value the MinElevation property could contain.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxElevationConstraint">
+            <summary>
+            Gets or sets the maximum elevation the brush element could possibly affect.
+            </summary>
+            <remarks>This value is the largest value the MaxElevation property could contain.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.CanAdjustStrength">
+            <summary>
+            Gets or sets whether or not the strength on this brush element can be modified. In some 
+            cases strength may not be relevant.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction">
+            <summary>
+            Class that defines an undoable action in order to modify a terrain decoration layer's data.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.m_decorationLayer">
+            The terrain material object to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.m_propertyName">
+            The name of the property to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.m_oldValue">
+            The old value of the property
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.m_newValue">
+            The new value of the property
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer,System.String,System.Object,System.Object)">
+            <summary>
+            Creates a SetTerrainDecorationLayerPropertyAction to change a layer property in an
+            undoable fashion.
+            </summary>
+            <param name="decorationLayer">DecorationLayer to modify.</param>
+            <param name="propertyName">Property name for the property to set.</param>
+            <param name="oldValue">Property's previous value.</param>
+            <param name="newValue">Property's new value.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.BeginUndo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the undo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.EndUndo">
+            <summary>
+            Sets the decoration layer property to the previous value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.BeginRedo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the redo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.EndRedo">
+            <summary>
+            Sets the decoration layer property to the new value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Executes the decoration layer property change action.
+            </summary>
+            <param name="context">The execution context.</param>
+            <param name="style">The execution style.</param>
+            <returns>Success.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.ModifiesContent">
+            <summary>
+            Always returns true since the action modifies material data.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.IsUndoable">
+            <summary>
+            This action is currently undoable.
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.IsUndoable"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.SetTerrainDecorationLayerPropertyAction.Description">
+            <summary>
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.Description"/>
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType">
+            <summary>
+            Enumerates the types of decoration layer collection operations that can be performed.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType.AddDecorationLayer">
+            <summary>
+            Denotes action that adds a decoration layer.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType.RemoveDecorationLayer">
+            <summary>
+            Denotes action that removes a decoration layer.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction">
+            <summary>
+            Class that defines an undoable action in order to modify a collection of terrain decoration
+            layers.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.m_decorationLayerObservableCollection">
+            The terrain material object to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.m_decorationLayer">
+            The decoration layer to store
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection,Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer,Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType)">
+            <summary>
+            Creates a ChangeDecorationLayerCollectionAction to change a property in an undoable
+            fashion.
+            </summary>
+            <param name="collection">The decoration layer collection to be modified.</param>
+            <param name="decorationLayer">The decoration layer to be used with the action.</param>
+            <param name="changeType">The type of operation to be performed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.BeginUndo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the undo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.EndUndo">
+            <summary>
+            Sets the decoration layer data to the previous state.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.BeginRedo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the redo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.EndRedo">
+            <summary>
+            Sets the decoration layer data to the new state.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Executes the decoration layer collection change action.
+            </summary>
+            <param name="context">The execution context.</param>
+            <param name="style">The execution style.</param>
+            <returns>Success.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.ModifiesContent">
+            <summary>
+            Always returns true since the action modifies material data.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.IsUndoable">
+            <summary>
+            This action is currently undoable.
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.IsUndoable"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionAction.Description">
+            <summary>
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.Description"/>
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintProcessorException">
+            <summary>
+            Unique exception class for errors generated during the process of executing a paint 
+            operation.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintProcessorException.#ctor(System.String)">
+            <summary>
+            Empty constructor, merely passes the error message to the base Exception class.
+            </summary>
+            <param name="message">Error message to display to users.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep">
+            <summary>
+            An abstract class to describe how to migrate a terrain asset from one version to another. 
+            Derived classes will each deal with a specific migration path.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.#ctor">
+            <summary>
+            Base constructor for a migration step.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.Migrate(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument)">
+            <summary>
+            Requests that a specific document be migrated using this migration step.
+            </summary>
+            <param name="document">The document to be migrated.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.IsDocumentOutdated(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument)">
+            <summary>
+            Queries if the document is outdated with respect to this migration step.
+            </summary>
+            <param name="document">The document to query against.</param>
+            <returns>True if the document is out of date.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.NotifyMigrationComplete(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument,System.Boolean)">
+            <summary>
+            Notifies any listeners that the documentation migration has completed with the given
+            success flag.
+            </summary>
+            <param name="document">The document that was being migrated.</param>
+            <param name="success">True if the migration was successful.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.NotifyPropertyChanged(System.String)">
+            <summary>
+            Called to notify any listening bindings that a property has changed.
+            </summary>
+            <param name="propertyName">The property that has changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.Clone">
+            <summary>
+            Implemented by subclasses to clone internal data.
+            </summary>
+            <returns>A clone of the object. Clone should, in most cases, be a deep copy.</returns>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.MigrationComplete">
+            <summary>
+            An event triggered when the migration step has completed it's task on the document
+            supplied.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.PropertyChanged">
+            <summary>
+            An event used to implement the INotifyPropertyChanged interface.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.Status">
+            <summary>
+            Gets or sets the current status of the migration step.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep.Progress">
+            <summary>
+            Gets or sets the current progress (as a percentage) of the migration step.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils">
+            <summary>
+            Simple utility class containing useful math functions used in the terrain code.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Interpolate(System.Single,System.Single,System.Single)">
+            <summary>
+            Linearly interpolates the specified values.
+            </summary>
+            <param name="a">First value.</param>
+            <param name="b">Second value.</param>
+            <param name="x">Time value between 0.0f and 1.0f.</param>
+            <returns>Value interpolated between [a,b].</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.CosineInterpolate(System.Single,System.Single,System.Single)">
+            <summary>
+            Performs a cosine interpolation of the specified values.
+            </summary>
+            <param name="a">First value.</param>
+            <param name="b">Second value.</param>
+            <param name="x">Time value between 0.0f and 1.0f.</param>
+            <returns>A smoothly interpolated value between [a, b].</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Noise2D(System.Int32,System.Int32)">
+            <summary>
+            Calculates a noise value based on the specified input coordinates.
+            </summary>
+            <param name="x">X coordinate.</param>
+            <param name="y">Y coordinate.</param>
+            <returns>A random float between -1.0 and 1.0.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.SmoothNoise(System.Int32,System.Int32)">
+            <summary>
+            Calculates a smooth noise value by averaging noise values at the current point and 
+            the surrounding points.
+            </summary>
+            <param name="x">X coordinate.</param>
+            <param name="y">Y coordinate.</param>
+            <returns>Averaged noise value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.InterpolatedNoise(System.Single,System.Single)">
+            <summary>
+            Calculates a smooth noise value at the specified coordinates by getting smooth noise 
+            values at the neighboring coordinates and interpolating the results using the fractional
+            portion of the coordinates.
+            </summary>
+            <param name="x">X coordinate.</param>
+            <param name="y">Y coordinate.</param>
+            <returns>Interpolated smooth noise value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.PerlinNoise2D(System.Single,System.Single,System.Single,System.Int32)">
+            <summary>
+            Calculates a noise value using a 2D perlin noise function.
+            </summary>
+            <param name="x">X coordinate.</param>
+            <param name="y">Y coordinate.</param>
+            <param name="persistance">Value multiplied with the amplitude for each octave.</param>
+            <param name="numOctaves">Number of octaves of noise.</param>
+            <returns>Smoothly interpolated noise value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Clamp(System.Single,System.Single,System.Single)">
+            <summary>
+            Clamps the specified floating point number within the specified range.
+            </summary>
+            <param name="value">Value to clamp.</param>
+            <param name="min">Minimum value permitted.</param>
+            <param name="max">Maximum value permitted.</param>
+            <returns>The clamped value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Clamp(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Clamps the specified integer within the specified range.
+            </summary>
+            <param name="value">Value to clamp.</param>
+            <param name="min">Minimum value permitted.</param>
+            <param name="max">Maximum value permitted.</param>
+            <returns>The clamped value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Distance(System.Single,System.Single,System.Single,System.Single)">
+            <summary>
+            Gets the distance between two points.
+            </summary>
+            <param name="x1">X coordinate of the first point.</param>
+            <param name="y1">Y coordinate of the first point.</param>
+            <param name="x2">X coordinate of the second point.</param>
+            <param name="y2">Y coordinate of the second point.</param>
+            <returns>The distance between 2 points using the standard distance formula.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.ApplyGaussianFilter(System.Single[0:,0:],System.Int32,System.Boolean[0:,0:])">
+            <summary>
+            Applies a Gaussian blur by generating a convolution filter using the Gaussian function
+            and then applying the filter to the input data.
+            </summary>
+            <param name="inputData">Input data to process.</param>
+            <param name="amount">Amount to blur. Effectively this is the size of the filter kernel.
+            <param name="validDataMask">Valid data mask of incoming data.</param>
+             </param>
+            <returns>A Gaussian blur of the specified input data.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.ApplyConvFilter(System.Single[0:,0:],System.Single[0:,0:],System.Boolean[0:,0:])">
+            <summary>
+            Applies the specified convolution filter to the specified input data. Both the input 
+            data and the kernel must be a 2D array.
+            </summary>
+            <param name="inputData">2D array of input data to be filtered.</param>
+            <param name="convKernel">Kernel used to process the input data.</param>
+            <param name="validDataMask">Valid data mask of incoming data.</param>
+            <returns>The input data filtered by the specified kernel.</returns>
+            <remarks>Only supports kernels which are separable.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MathUtils.Seed">
+            <summary>
+            Gets or sets a seed value for  random number generation.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection">
+            <summary>
+            Defines a collection of decoration layers.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.m_terrainMaterial">
+            <summary>
+            The terrain material this collection is part of.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial)">
+            <summary>
+            Default constructor.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.FindDecorationLayer(System.String)">
+            <summary>
+            Looks up a decoration layer by its name.
+            </summary>
+            <param name="name">Name with which to search.</param>
+            <returns>The decoration layer with the specified name or null if no such entry is found.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.RemoveDecorationLayer(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer)">
+            <summary>
+            Removes the decoration layer and alerts the proxy.
+            </summary>
+            <param name="layer">The layer to remove.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.AddDecorationLayer">
+            <summary>
+            Adds a decoration layer with a generated name that is unique.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.AddDecorationLayer(System.String)">
+            <summary>
+            Adds a named decoration layer and alerts the proxy.
+            </summary>
+            <param name="decorationLayerName">Name of the layer to add.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.SetProperty(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer,Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType)">
+            <summary>
+            Adds or removes a decoration layer.
+            </summary>
+            <param name="decorationLayer">Decoration layer to add or remove.</param>
+            <param name="changeType">Whether to add or remove the layer.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayerObservableCollection.SetProperty(Emergent.Toolbench.WorldBuilder.TerrainCore.DecorationLayer,Emergent.Toolbench.WorldBuilder.TerrainCore.Actions.ChangeDecorationLayerCollectionActionType,System.Boolean)">
+            <summary>
+            Adds or removes a decoration layer, and makes the action invertable.
+            </summary>
+            <param name="decorationLayer">Decoration layer to add or remove.</param>
+            <param name="changeType">Whether to add or remove the layer.</param>
+            <param name="isUndoable">Is this set action on the material undoable?</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushType">
+            <summary>
+            Brush types are used as seeds for determining what type of operation to apply. Brush types
+            could be alpha masks or generic circle paint brush types.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushType.Activated">
+            <summary>
+            Called when the brush type becomes the active brush type.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushType.Name">
+            <summary>
+            Gets the name of the brush type.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction">
+            <summary>
+            Class that defines an undoable action in order to modify a terrain material's data.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.m_terrainMaterial">
+            The terrain material object to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.m_propertyName">
+            The name of the property to modify
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.m_oldValue">
+            The old value of the property
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.m_newValue">
+            The new value of the property
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial,System.String,System.Object,System.Object)">
+            <summary>
+            Creates a SetTerrainMaterialPropertyAction to change a property in an undoable fashion.
+            </summary>
+            <param name="material">Material to modify.</param>
+            <param name="propertyName">Property name for the property to set.</param>
+            <param name="oldValue">Property's previous value.</param>
+            <param name="newValue">Property's new value.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.BeginUndo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the undo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.EndUndo">
+            <summary>
+            Sets the material property to the previous value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.BeginRedo">
+            <summary>
+            Empty implementation. Nothing necessary when beginning the redo operation. Work occurs
+            during the EndUndo method.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.EndRedo">
+            <summary>
+            Sets the material property to the new value.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.Execute(Emergent.Toolbench.Actions.ExecutionContext,Emergent.Toolbench.Actions.ExecutionStyle)">
+            <summary>
+            Executes the material property change action.
+            </summary>
+            <param name="context">The execution context.</param>
+            <param name="style">The execution style.</param>
+            <returns>Success.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.ModifiesContent">
+            <summary>
+            Always returns true since the action modifies material data.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.IsUndoable">
+            <summary>
+            This action is currently undoable.
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.IsUndoable"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.SetTerrainMaterialPropertyAction.Description">
+            <summary>
+            <see cref="P:Emergent.Toolbench.Actions.IUndoableActionHandler.Description"/>
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs">
+            <summary>
+            A class to encode a terrain asset migration request into an event.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument,System.EventHandler{Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationEventArgs})">
+            <summary>
+            Constructor to create the event argument structure.
+            </summary>
+            <param name="document">The document to request migration for.</param>
+            <param name="completionHandler">An event handler object to callback to when the
+            migration has been completed.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs.Document">
+            <summary>
+            Gets or sets the document that should be migrated.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs.CompletionHandler">
+            <summary>
+            Gets or sets the event handler to callback to when the migration has completed.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationEventArgs">
+            <summary>
+            A class to encode a terrain migration event's arguments into. An event of this type is fired
+            to indicate that a migration has completed.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationEventArgs.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument,System.Boolean)">
+            <summary>
+            Constructor for the terrain migration event arguments.
+            </summary>
+            <param name="document">The document that was migrated.</param>
+            <param name="success">True if the migration has completed successfully.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationEventArgs.Document">
+            <summary>
+            Gets or sets the document that was migrated.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationEventArgs.Success">
+            <summary>
+            Sets or sets a flag to indicate if the migration was a success.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob">
+            <summary>
+            A class to describe an executing terrain asset migration job. A job consists of a document
+            to be migrated and a set of steps that must be completed to perform the migration.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainDocument,System.Collections.Generic.List{Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationStep})">
+            <summary>
+            Constructor for a terrain migration job.
+            </summary>
+            <param name="document">The document to be migrated.</param>
+            <param name="steps">The set of steps to undertake to complete the migration.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.ExecuteNextStep">
+            <summary>
+            Call this function to begin execution of the next migration step. External callers
+            should call this function to begin the execution of the migration job.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.Close">
+            <summary>
+            Call this function to indicate that the migration job should be considered complete
+            and to signal any waiting objects of that.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.NotifyMigrationComplete(System.Boolean)">
+            <summary>
+            Called to notify any listening objects that the migration job has completed with the
+            given success flag.
+            </summary>
+            <param name="success">Was the migration a success?</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.NotifyPropertyChanged(System.String)">
+            <summary>
+            Called to notify any listening bindings that a property has changed.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.NeedsMigration">
+            <summary>
+            Gets a flag indicating if the supplied document actually requires migration or not.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.Status">
+            <summary>
+            Gets a string indicating the current status of the migration process.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.Progress">
+            <summary>
+            Gets the current progress of the migration job as a percentage.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.PropertyChanged">
+            <summary>
+            An event indicating that a property on this object has changed.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.MigrationComplete">
+            <summary>
+            An event indicating that this object has completed it's migration process.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrationJob.MigrationClose">
+            <summary>
+            An event indicating that this migration job is being closed off to be removed.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService">
+            <summary>
+            Internal terrain core service implementation.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService">
+            <summary>
+            This interface defines the terrain core service. The terrain core service maintains the 
+            repository of available terrain brush types and terrain brush elements. These terrain types
+            are specified by other plug-ins implementing the interfaces the core service maintains.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.LoadBrushElements">
+            <summary>
+            Loads all brush elements via the BrushElement extension point.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.LoadBrushTypes">
+            <summary>
+            Loads all brush types via the BrushType extension point.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindBrushTypeByName(System.String)">
+            <summary>
+            Finds a registered brush type matching the specified name.
+            </summary>
+            <param name="name">Name of the brush type to find.</param>
+            <returns>The brush type with the specified name or null if no brush type exists with 
+            that name.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.AddMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            Adds a new material package to the list of resident material packages.
+            </summary>
+            <param name="package">The material package to add.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            Removes the specified material package from the list of resident material packages.
+            </summary>
+            <param name="package">The material package to remove.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveMaterialPackage(System.String)">
+            <summary>
+            Removes the material package with the specified name from the list of resident material
+            packages.
+            </summary>
+            <param name="packageName">Name of the material package to remove.</param>
+            <returns>True if the package was removed, false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveAllMaterialPackages">
+            <summary>
+            Removes all resident material packages.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindMaterialPackage(System.String)">
+            <summary>
+            Searches the list of resident material packages for the package with the specified name.
+            </summary>
+            <param name="packageName">Name of the material package to get.</param>
+            <returns>A valid material package with the specified name or null if no such package
+            could be found.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindMaterial(System.String)">
+            <summary>
+            Searches for the first assurance of a terrain material with the specified name.
+            </summary>
+            <param name="materialName">Name of the material.</param>
+            <returns>A valid terrain material or null if a material by that name does not exist in
+            any of the loaded material packages.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.ContainsMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            Searches the list of resident material packages for the specified package to see if it
+            is resident already.
+            </summary>
+            <param name="package">Package to search for.</param>
+            <returns>True if resident, false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.GetMaterialPackageAtIndex(System.Int32)">
+            <summary>
+            Gets the material package at the specified index.
+            </summary>
+            <param name="index">Material package index.</param>
+            <returns>A valid material package.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RegisterMigrationHandler(System.EventHandler{Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs})">
+            <summary>
+            Registers a terrain migration handler.
+            </summary>
+            <param name="handler">The handler to call when a terrain needs migrating.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RequestMigration(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs)">
+            <summary>
+            Requests a migration of a terrain asset.
+            </summary>
+            <param name="request">The event arguments to send with the event.</param>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.PropertyChanged">
+            <summary>
+            Event used to notify other objects that a property on the terrain service has changed.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.MaxBrushSize">
+            <summary>
+            Gets or sets the maximum brush size for the current brush type. Other services and 
+            classes can then manipulate this value and use it for their context-specific terrain 
+            manipulation functions.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.PaintProcessor">
+            <summary>
+            Gets the paint data processor used to apply paint operations to the terrain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.BrushElements">
+            <summary>
+            Gets a list of the brush elements known to the system. Brush elements are registered 
+            with the brush element extension point.
+            <see cref="T:Emergent.Toolbench.WorldBuilder.TerrainCore.ExtensionPoints"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.BrushTypes">
+            <summary>
+            Gets a list of the brush types known to the system. Brush types are registered with the 
+            brush type extension point.
+            <see cref="T:Emergent.Toolbench.WorldBuilder.TerrainCore.ExtensionPoints"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.MaterialPackages">
+            <summary>
+            Gets a list of resident material packages.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.#ctor">
+            <summary>
+            Constructs the terrain core service. The internal implementation of the paint data 
+            processor is constructed at this time.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.FindBrushTypeByName(System.String)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindBrushTypeByName(System.String)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.RegisterMigrationHandler(System.EventHandler{Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs})">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RegisterMigrationHandler(System.EventHandler{Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs})"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.RequestMigration(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RequestMigration(Emergent.Toolbench.WorldBuilder.TerrainCore.Migration.TerrainMigrateRequestEventArgs)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.FindMaterial(System.String)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindMaterial(System.String)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.RemoveMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.RemoveMaterialPackage(System.String)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveMaterialPackage(System.String)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.RemoveAllMaterialPackages">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.RemoveAllMaterialPackages"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.AddMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.AddMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.FindMaterialPackage(System.String)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.FindMaterialPackage(System.String)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.GetMaterialPackageAtIndex(System.Int32)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.GetMaterialPackageAtIndex(System.Int32)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.ContainsMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.ContainsMaterialPackage(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.LoadBrushElements">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.LoadBrushElements"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.LoadBrushTypes">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.LoadBrushTypes"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.Initialize">
+            <summary>
+            Allows a service to perform initialization code.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.Dispose">
+            <summary>
+            Disposes of the paint processor.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.OnPropertyChanged(System.String,System.Object,System.Object)">
+            <summary>
+            Called when a property setter has been invoked. This method actually fires off both the
+            INotifyPropertyChanged handler as well as the material specified changed handlers.
+            </summary>
+            <param name="propertyName">Name of the property that has changed.</param>
+            <param name="oldValue">Old value.</param>
+            <param name="newValue">New value.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.MaxBrushSize">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.MaxBrushSize"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.PaintProcessor">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.PaintProcessor"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.BrushElements">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.BrushElements"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.BrushTypes">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.BrushTypes"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.MaterialPackages">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.ITerrainCoreService.MaterialPackages"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.Name">
+            <summary>
+            <see cref="P:Emergent.Toolbench.IService.Name"/>
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainCoreService.PropertyChanged">
+            <summary>
+            This event is fired when a property on the terrain material changes.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProducer">
+            <summary>
+            The paint data producer provides input data to the painting process. The source of the input
+            data is based on a particular implementation.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataProducer.GetPaintData">
+            <summary>
+            Gets the paint data from an implementation specific source. The paint source data is a 
+            PaintBuffer.
+            </summary>
+            <returns>The source paint data.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement">
+            <summary>
+            An abstract brush element is an abstract class which implements the IBrushElement and 
+            IPaintDataFilter interfaces. Therefore, the abstract brush element class is meant to be 
+            extended by terrain painting brush elements. These brush elements work in conjunction with 
+            the painting system and terrain aware data producers, kernels, and consumers.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.#cctor">
+            <summary>
+            Constructs a static image icon used in place of texture maps when the texture has not
+            been assigned.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.#ctor">
+            <summary>
+            Initializes the brush element.
+            </summary>
+            <remarks>
+                Default Slope Range: 0 degrees to 90 degrees.
+                Default Elevation Range: -100 units to 100 units.
+                Default Strength: 10%.
+            </remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.FilterPaintData(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,System.Single)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.FilterPaintData(Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer,System.Single)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.CheckValidFilter">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.CheckValidFilter"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.OnActivated(System.Single,System.Single)">
+            <summary>
+            Parameter initialization occurs in this function.
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.OnActivated(System.Single,System.Single)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.UpdateChangedProperty(System.String)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.UpdateChangedProperty(System.String)"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.OnRemoved">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.OnRemoved"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Clone">
+            <summary>
+            Implemented by brush element subclasses to clone the internal data of the brush element.
+            </summary>
+            <returns>A clone of the brush element. Clone should, in most cases, be a deep copy.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.GetSlope(System.Single[0:,0:],System.Int32,System.Int32)">
+            <summary>
+            Gets the slope of the specified input data at the specified coordinates. The slope is 
+            the angle between normal vector of the height-map and the vector (0,0,1).
+            </summary>
+            <param name="inputData">Input data with which to calculate the slope.</param>
+            <param name="x">X coordinate in the input data.</param>
+            <param name="y">Y coordinate in the input data.</param>
+            <returns>Slope angle in degrees.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.GetHeight(System.Single[0:,0:],System.Int32,System.Int32)">
+            <summary>
+            Gets the world space height of the input data.
+            </summary>
+            <param name="inputData">Data to query.</param>
+            <param name="x">X coordinate.</param>
+            <param name="y">Y coordinate.</param>
+            <returns>The world space height at the input coordinates.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.VerifyContraints(System.Single[0:,0:],System.Single,System.Single)">
+            <summary>
+            Checks the slope and elevation at the specified point in the input data to see if 
+            it passes the slope and elevation constraints of the brush element.
+            </summary>
+            <param name="inputData">Input data to check.</param>
+            <param name="localCoordsX">X coordinate.</param>
+            <param name="localCoordsY">Y coordinate.</param>
+            <returns>True if the slope and elevation are within the set ranges false otherwise.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.GetTotalStrength(System.Single,Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor)">
+            <summary>
+            Computes a total strength to apply at a given point when painting based on the 
+            strength of the brush element, the min/max terrain elevation ratio and the direction
+            of the operation.
+            </summary>
+            <param name="direction">Floating point value between [-1.0f .. 1.0f] to control how 
+            much to increase or decrease the strength.</param>
+            <param name="descriptor">Data descriptor the the current terrain.</param>
+            <returns>A scaled strength value.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.CanAddBrushElement">
+            <summary>
+            Function that performs appropriate checks to stop users from adding an invalid element.
+            </summary>
+            <returns>Returns true by default.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.OnPropertyChanged(System.String)">
+            <summary>
+            Called when a property on the object changes. This method will invoke the property 
+            changed event.
+            </summary>
+            <param name="propName">Name of the property that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.VerifyProperty(System.String)">
+            <summary>
+            Verifies the contents of a property and returns an error string if it is not valid.
+            </summary>
+            <param name="propertyName">The property to verify the contents of.</param>
+            <returns>An error string if the property's contents are not valid.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.DataSourceType">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.DataSourceType"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.DataSource">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.DataSource"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.IsEnabled">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintDataFilter.IsEnabled"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Category">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Category"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Name">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Name"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Icon">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Icon"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Description">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Description"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MinSlope">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinSlope"/>
+            </summary>
+            <remarks>Minimum slope is always clamped from [0.0f .. 90.0f].</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MaxSlope">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxSlope"/>
+            </summary>
+            <remarks>Maximum slope is always clamped from [0.0f .. 90.0f].</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MinElevation">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinElevation"/>
+            </summary>
+            <remarks>The minimum elevation is always clamped to the minimum terrain elevation.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MaxElevation">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxElevation"/>
+            </summary>
+            <remarks>The maximum elevation is always clamped to the maximum terrain elevation.
+            </remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Strength">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.Strength"/>
+            </summary>
+            <remarks>Strength is always clamped between 0.0f and 1.0f.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.CanAdjustStrength">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.CanAdjustStrength"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MaxElevationConstraint">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MaxElevationConstraint"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.MinElevationConstraint">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushElement.MinElevationConstraint"/>
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.PropertyChanged">
+            <summary>
+            Event used to convey property changes to external listeners.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Error">
+            <summary>
+            Gets an error message indicating what is wrong with this object.
+            </summary>
+            <returns>An error message indicating what is wrong with this object.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushElement.Item(System.String)">
+            <summary>
+            Gets the error message for the property with the given name.
+            </summary>
+            <param name="columnName">The name of the property whose error message to get.</param>
+            <returns>The error message for the property.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType">
+            <summary>
+            Enumerates the different textures a terrain material may contain.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.BaseMap">
+            <summary>
+            Base map or albedo map. (RGB)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.DetailMap">
+            <summary>
+            Detail map. (Single Channel)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.NormalMap">
+            <summary>
+            Normal map. (RGB)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.ParallaxMap">
+            <summary>
+            Parallax map. (Single Channel)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.DistMask">
+            <summary>
+            Distribution mask. (Single Channel)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.SpecularMap">
+            <summary>
+            Specular map. (RGB)
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType.Invalid">
+            <summary>
+            Placeholder indicating a bad texture type.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPropertyChangedEventHandler">
+            <summary>
+            Represents the method handling a change on the terrain material. This is called in 
+            addition to the standard INotifyPropertyChanged event handler in case the user needs
+            to know the old value.
+            </summary>
+            <param name="sender">The event sender.</param>
+            <param name="e">The event object.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialRemovingEventHandler">
+            <summary>
+            Represents the method handling a terrain material being removed from the 
+            TerrainMaterialEditor.
+            </summary>
+            <param name="sender">The event sender.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPropertyChangedEventArgs">
+            <summary>
+            Simple event args class for property changed events on a terrain material. It stores the old
+            and new value so consumers can find materials with the old values if necessary. (e.g. name 
+            changed).
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPropertyChangedEventArgs.#ctor(System.String,System.Object,System.Object)">
+            <summary>
+            Constructs a new property changed event args class. Sets the property name, old value 
+            and new value.
+            </summary>
+            <param name="propertyName">Name of the property just changed.</param>
+            <param name="oldValue">Previous value of the property.</param>
+            <param name="newValue">New value of the property.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPropertyChangedEventArgs.NewValue">
+            <summary>
+            Gets the new value just assigned to the property.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPropertyChangedEventArgs.OldValue">
+            <summary>
+            Gets the old value previously assigned to the property.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo">
+            <summary>
+            Container for an individual texture on a surface material.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType)">
+            <summary>
+            Constructs the new texture entry.
+            </summary>
+            <param name="type">Type of texture.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.#ctor(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType,System.String,System.String,System.Windows.Media.ImageSource)">
+            <summary>
+            Assignment constructor. Sets all values for the slot using the given parameters.
+            </summary>
+            <param name="type">The type of texture.</param>
+            <param name="assetPath">The asset path.</param>
+            <param name="assetID">The asset ID.</param>
+            <param name="asset">Image thumbnail of the texture.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.Equals(System.Object)">
+            <summary>
+            Override function allowing to compare two TextureSlotInfo objects together.
+            </summary>
+            <param name="toCheck">The object to compare with.</param>
+            <returns>False if toCheck is not a TextureSlotInfo object and the value returned by
+            Equals(TextureSlotInfo) otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.Equals(Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo)">
+            <summary>
+            Checks whether the given TextureSlotInfo object is the same.
+            </summary>
+            <param name="toCheck">The TextureSlotInfo object to check against.</param>
+            <returns>True if AssetPath, AssetID and Type are valid and are the same as
+            the object we are checking against. Returns false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.GetHashCode">
+            <summary>
+            When ovrriding the Equals function, we should also override the GetHashCode function.
+            </summary>
+            <returns>Returns an appropriate hashcode value.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.Asset">
+            <summary>
+            Gets or sets the image thumbnail for the texture slot.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.AssetPath">
+            <summary>
+            Gets or sets the path relative to the asset web for the texture contained in the slot.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.AssetID">
+            <summary>
+            Gets or sets the associated asset id.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.Name">
+            <summary>
+            Gets a string description of the texture type for the slot.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureSlotInfo.Type">
+            <summary>
+            Gets the enumerated texture type for the slot.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial">
+            <summary>
+            This class defines an individual terrain material. A terrain material is composed of 
+            several different types of texture maps, input parameters, and user defined meta-data.
+            
+            Terrain materials are also grouped by package. Material packages are meant to be used to 
+            contain materials of similar characteristics. (e.g. artic, desert, etc.).
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.EmptySlotImage">
+            <summary>
+            Placeholder image used when there is no texture assigned to a given texture slot.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MissingSlotImage">
+            <summary>
+            Placeholder image used when there is a texture assigned to a given texture slot but 
+            the file could not be found.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.#cctor">
+            <summary>
+            Constructs a static image icon used in place of texture maps when the texture has not
+            been assigned.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.AssignTexture(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial,System.Windows.Media.ImageSource,System.String,System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType)">
+            <summary>
+            Helper method used to assign a texture icon and path to the material slot specified by
+            the texture type enumeration.
+            </summary>
+            <param name="material">Material to modify.</param>
+            <param name="assetIcon">Image used as the texture slot's thumbnail.</param>
+            <param name="assetPath">Path to the texture, relative to the asset web root.</param>
+            <param name="assetID">Asset Id for the assigned texture.</param>
+            <param name="textureType">Slot to assign the texture.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.GetAssetPath(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType)">
+            <summary>
+            Gets a string containing the asset web relative path based on the specified texture 
+            type.
+            </summary>
+            <param name="material">Material to query against.</param>
+            <param name="textureType">The texture type to find out the asset path.</param>
+            <returns>An asset path relative to the asset web root or null if no texture is loaded in
+            the specified slot.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.GetAssetThumbnail(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType)">
+            <summary>
+            Gets an image containing the thumbnail of the loaded texture.
+            </summary>
+            <param name="material">Material to query against.</param>
+            <param name="textureType">The texture type to find out the asset path.</param>
+            <returns>A thumbnail of the loaded texture or the no_material texture if no texture has
+            been loaded on the specified slot.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.#ctor(System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            Constructs a new terrain material.
+            </summary>
+            <param name="materialName">Name to give to the material.</param>
+            <param name="owner">Material package that owns the material.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.AddMetaData(System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaDataType)">
+            <summary>
+            Adds a new meta-data entry to the material.
+            </summary>
+            <param name="key">Unique key for the new meta-data.</param>
+            <param name="dataType">Data-type used for the meta-data.</param>
+            <returns>A newly constructed and attached piece of meta-data or null if a meta-data 
+            entry with the same key already exists on the material.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.AddMetaDataEntry(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData)">
+            <summary>
+            Adds a new meta-data entry on the material. An exception is thrown if a meta-data entry 
+            with the same key already exists on the material.
+            </summary>
+            <param name="newMetaData">The new meta-data entry.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.FindMetaData(System.String)">
+            <summary>
+            Looks up a meta-data entry by its unique key.
+            </summary>
+            <param name="key">Key with which to search.</param>
+            <returns>The meta-data entry with the specified key or null if no such entry is found.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.IsMetaDataUnique(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData)">
+            <summary>
+            Determines if the material already has an entry with the same key as the specified 
+            meta-data.
+            </summary>
+            <param name="metaData">Meta-data with which to check.</param>
+            <returns>True if the material does not contain any meta-data with the same key, false
+            otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SetProperty(System.String,System.Object)">
+            <summary>
+            Sets the material property associated with the given name.
+            </summary>
+            <param name="propertyName">Name of the material property to modify.</param>
+            <param name="value">The new value.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SetProperty(System.String,System.Object,System.Boolean)">
+            <summary>
+            Sets the material property associated with the given name, and may make it invertable.
+            </summary>
+            <param name="propertyName">Name of the material property to modify.</param>
+            <param name="value">The new value for the property.</param>
+            <param name="isUndoable">Is this set action on the material undoable?</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NotifyMetaDataPropertyChanged(System.String,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData,Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialMetaData)">
+            <summary>
+            Called when a meta-data row is added/removed.
+            </summary>
+            <param name="keyName">Name of the meta-data key that changed.</param>
+            <param name="oldValue">The old value of the property.</param>
+            <param name="newValue">The new value proposed for the property.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NotifyPropertyChanged(System.String,System.Object,System.Object)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+            <param name="oldValue">The old value of the property.</param>
+            <param name="newValue">The new value proposed for the property.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NotifyPropertyChanged(System.String)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.RaiseMaterialRemoving">
+            <summary>
+            Called when a material is being removed from the material editor.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Slots">
+            <summary>
+            Gets a collection of texture slots on the material.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DecorationLayers">
+            <summary>
+             Gets or sets a collection containing the decoration layers and their properties. Does
+             not contain the layer plane properties.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Name">
+            <summary>
+            Gets or sets the name of the material. The setter should only be called by the binding
+            layer to the UI.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Owner">
+            <summary>
+            Gets the material package owning this material.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Scale">
+            <summary>
+            Gets or sets the scale of the material. The scale determines how many times the material
+            is repeated across the terrain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DetailMapScale">
+            <summary>
+            Gets or sets the scale for the detail map of the material. The detail map may have a 
+            different scale than the material itself to provide higher frequency details when the 
+            material is viewed up close.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Rotation">
+            <summary>
+            Gets or sets the rotation of the material. This is an up axis 2D rotation.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DistributionMaskStrength">
+            <summary>
+            Gets or sets the strength in which the distribution mask is applied to the material. The
+            strength is a value between 0.0f and 1.0f where 0.0f implies the distribution mask has 
+            no affect resulting in a linear blend between materials based on the terrain blend 
+            masks. As this value approach 1.0f the blending between the borders of materials become 
+            more and more controlled by the distribution map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.ParallaxMapStrength">
+            <summary>
+            Gets or sets the strength by which the material's parallax map offsets the surface's UV
+            coordinates. This should be adjusted based on the type of material. For example, a rock 
+            material may have a larger parallax offset then small pebbles.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SpecularPower">
+            <summary>
+            Gets or sets the exponent to the specular lighting equation for the material.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SpecularIntensity">
+            <summary>
+            Gets or sets the specular intensity of the material which determines the strength of the
+            specular map when set on the material.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MinElevation">
+            <summary>
+            Gets or sets the minimum elevation the material should affect.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MaxElevation">
+            <summary>
+            Gets or sets the maximum elevation the material should affect.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MinSlope">
+            <summary>
+            Gets or sets the minimum slope the material should affect.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MaxSlope">
+            <summary>
+            Gets or sets the maximum slope the material should affect.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MetaData">
+            <summary>
+            Gets the list of meta-data entries currently attached to the terrain material.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.ObservableMetaData">
+            <summary>
+            Gets an observable collection of the material meta-data. This method should only be 
+            used by UI elements requiring binding since it is unsafe to add meta-data ad-hoc.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.BaseMap">
+            <summary>
+            Gets or sets data for the material's base map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.BaseMapAssetPath">
+            <summary>
+            Gets or sets the path to the base map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.BaseMapAsset">
+            <summary>
+            Gets the image source containing the pixel data for the base map. This is automatically
+            created/changed if the base map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DetailMap">
+            <summary>
+            Gets or sets data for the material's detail map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DetailMapAssetPath">
+            <summary>
+            Gets the path to the detail map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DetailMapAsset">
+            <summary>
+            Gets the image source containing the pixel data for the detail map. This is 
+            automatically created/changed if the detail map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NormalMap">
+            <summary>
+            Gets or sets data for the material's normal map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NormalMapAssetPath">
+            <summary>
+            Gets the path to the normal map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.NormalMapAsset">
+            <summary>
+            Gets the image source containing the pixel data for the normal map. This is 
+            automatically created/changed if the normal map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.ParallaxMap">
+            <summary>
+            Gets or sets data for the material's parrallax map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.ParallaxMapAssetPath">
+            <summary>
+            Gets the path to the parallax map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.ParallaxMapAsset">
+            <summary>
+            Gets the image source containing the pixel data for the parallax map. This is 
+            automatically created/changed if the parallax map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SpecularMap">
+            <summary>
+            Gets or sets data for the material's specular map.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SpecularMapAssetPath">
+            <summary>
+            Gets the path to the specular map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.SpecularMapAsset">
+            <summary>
+            Gets the image source containing the pixel data for the specular map. This is 
+            automatically created/changed if the specular map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DistributionMask">
+            <summary>
+            Gets or sets data for the material's distribution mask.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DistributionMaskAssetPath">
+            <summary>
+            Gets the path to the distribution map texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.DistributionMaskAsset">
+            <summary>
+            Gets the image source containing the pixel data for the distribution map. This is 
+            automatically created/changed if the distribution map asset path is modified.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Error">
+            <summary>
+            Gets null.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.Item(System.String)">
+            <summary>
+            Checks to make sure that the material name is unique in its parent material package.
+            </summary>
+            <param name="name">Variable name to verify.</param>
+            <returns>Null if the name is unique, or an error string if the name is not unique.
+            </returns>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.PropertyChanged">
+            <summary>
+            This event is fired when a property on the terrain material changes.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MaterialPropertyChanged">
+            <summary>
+            This event is fired when a property on the terrain material changes. Note, it also 
+            includes the old value as well as the new value.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial.MaterialRemoving">
+            <summary>
+            This event is fired when a material is being removed from the material editor. This
+            should be caught by the brush element if the material is currently added on the brush.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage">
+            <summary>
+            Simple class used to hold tool time information about a material package and provide simple
+            methods for interacting with material packages from the UI.
+            </summary>
+        </member>
+        <member name="F:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.FileExtension">
+            <summary>
+            File extension for material packages.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.#ctor(System.String,System.Uri)">
+            <summary>
+            Constructs a new material package.
+            </summary>
+            <param name="name">Name of the package.</param>
+            <param name="location">Location of the package file.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.AddMaterial(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial)">
+            <summary>
+            Adds a new material to the material package. If a material by the same name already 
+            exists in the package an exception is thrown.
+            </summary>
+            <param name="material">New material to add to the package.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.RemoveMaterial(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainMaterial)">
+            <summary>
+            Removes the specified material from the material package.
+            </summary>
+            <param name="material">Material to remove. The owner package is automatically cleared.
+            </param>
+            <remarks>If this package does not own the material, this method returns.</remarks>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.FindMaterialByName(System.String)">
+            <summary>
+            Finds a material in the package with a name matching the specified name.
+            </summary>
+            <param name="materialName">Name of the material to find.</param>
+            <returns>The material instance with the specified name or null if no such material 
+            exists.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.Equals(Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage)">
+            <summary>
+            Checks for equality. Material packages are equal if their locations are the same.
+            </summary>
+            <param name="other">Material package with which to compare.</param>
+            <returns>True if location is the same, false otherwise.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.Name">
+            <summary>
+            Gets or sets the name of the material package.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.Location">
+            <summary>
+            Gets or sets the path to the material package file.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.IsDirty">
+            <summary>
+            Gets or sets whether not not the package is dirty. Dirty packages can then be flagged
+            in the UI.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialPackage.MaterialList">
+            <summary>
+            Gets the list of materials contained in the package.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer">
+            <summary>
+            Class used to store all painting data.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.#ctor(System.Int32,System.Int32)">
+            <summary>
+            New PaintBuffer initialization.
+            </summary>
+            <param name="Width">Width of paint buffer.</param>
+            <param name="Height">Height of paint buffer.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.GetBuffer">
+            <summary>
+            Gets the data representing a paint buffer.
+            </summary>
+            <returns>Paint buffer array of values.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.SetBuffer(System.Array)">
+            <summary>
+            Sets the data in a paint buffer.
+            </summary>
+            <param name="setValue">Array of data to insert into a paint buffer.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.GetValidDataMask">
+            <summary>
+            ValidDataMask data.
+            </summary>
+            <returns>A valid data mask.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.GetPixelValue(System.Int32,System.Int32)">
+            <summary>
+            Returns unmodified pixel data at the given position in the paint buffer.
+            </summary>
+            <param name="positionY">X position.</param>
+            <param name="positionX">Y position.</param>
+            <returns>Unmodified pixel data from position x,y.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.SetPixelValue(System.Int32,System.Int32,System.Single)">
+            <summary>
+            Sets pixel data to a given value for a given position.
+            </summary>
+            <param name="positionX">X position of data.</param>
+            <param name="positionY">Y position of data.</param>
+            <param name="value">New pixel data.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.GetInterpolatedData(System.Single,System.Single)">
+            <summary>
+            Returns interpolated data at a given position.
+            </summary>
+            <param name="positionX">X position.</param>
+            <param name="positionY">Y position.</param>
+            <returns>Interpolated data result.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.ConvertLocalCoordsToWorld(System.Single,System.Single,System.Single@,System.Single@)">
+            <summary>
+            Used to transform local coordinates to worldspace.
+            </summary>
+            <param name="localCoordsX">Local x coord at point.</param>
+            <param name="localCoordsY">Local y coord at point.</param>
+            <param name="worldCoordsX">World x coord at point.</param>
+            <param name="worldCoordsY">World y coord at point.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.ConvertWorldCoordsToLocal(System.Single,System.Single,System.Single@,System.Single@)">
+            <summary>
+            Used to transform worldspace coordinates to local.
+            </summary>
+            <param name="worldCoordX">World x coord at point.</param>
+            <param name="worldCoordY">World y coord at point.</param>
+            <param name="localCoordX">Local x coord at point.</param>
+            <param name="localCoordY">Local y coord at point.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.Clone">
+            <summary>
+            Clones the paint buffer.
+            </summary>
+            <returns>A deep copy of the paint buffer.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.RotateCoordinates(System.Single,System.Single,System.Single,System.Single,System.Single,System.Single@,System.Single@)">
+            <summary>
+            Rotates Coordinates around a center point.
+            </summary>
+            <param name="originalPositionX">Original position of coordinate X.</param>
+            <param name="originalPositionY">Original position of coordinate Y.</param>
+            <param name="centerX">Center position of X to rotate about.</param>
+            <param name="centerY">Center position of Y to rotate about.</param>
+            <param name="angleDegrees">Rotation angle in degrees.</param>
+            <param name="resultX">Rotated position of coordinate X.</param>
+            <param name="resultY">Rotated position of coordinate Y.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.InitializeValidData">
+            <summary>
+            Initializes the valid data mask to true.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.MarkDataMask(System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Mark Data Mask.
+            </summary>
+            <param name="x_left">Left X.</param>
+            <param name="y_bottom">Bottom Y.</param>
+            <param name="x_right">Right X.</param>
+            <param name="y_top">Top Y.</param>
+            <param name="valid">Validation state (t/f).</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.Rotation">
+            <summary>
+            Gets or sets the rotation angle of the kernel.
+            </summary>
+            <returns>A number representing the angle of kernel rotation.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.WorldDimensionsX">
+            <summary>
+            Gets or sets the worldspace scale of a paint buffer.
+            </summary>
+            <returns>A float representing the X value worldspace scale.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.WorldDimensionsY">
+            <summary>
+            Gets or sets the worldspace scale of a paint buffer.
+            </summary>
+            <returns>A float representing the Y value worldspace scale.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.PositionX">
+            <summary>
+            Gets or sets the worldspace position of a paint buffer.
+            </summary>
+            <returns>X position in world space.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.PositionY">
+            <summary>
+            Gets or sets the worldspace position of a paint buffer.
+            </summary>
+            <returns>Y position in world space.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.BufferWidth">
+            <summary>
+            Gets the width of a paint buffer.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.PaintBuffer.BufferHeight">
+            <summary>
+            Gets the height of a paint buffer.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushSettings">
+            <summary>
+            This interface defines a function that can be used by both brush type and brush element
+            to allow for the usage of settings to save user preferences.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushSettings.InitializeSettings(Emergent.Toolbench.Settings.ISettingsAspect)">
+            <summary>
+            Function used to initialize settings.
+            </summary>
+            <param name="settings">The setting aspect to initialize data from.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushSettings.UpdateSettings(Emergent.Toolbench.Settings.ISettingsAspect)">
+            <summary>
+            Function used to apply changes to settings.
+            </summary>
+            <param name="settings">The setting aspect to save data to.</param>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.ImageUtils">
+            <summary>
+            Contains helper functions for working with terrain data and WPF bitmaps.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ImageUtils.ConvertElevationDataToBitmap(System.Single[0:,0:])">
+            <summary>
+            Helper function to convert the 2D array of floating point values into a valid image 
+            for use in the UI.
+            </summary>
+            <param name="elevationData">The 2D array of elevation data.</param>
+            <returns>The image resulting from the conversion.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ImageUtils.ResizeBitmapSource(System.Windows.Media.Imaging.BitmapSource,System.Int32,System.Int32)">
+            <summary>
+            Resizes an existing bitmap source and returns the result. Very useful for generating 
+            thumbnails in order to use less memory.
+            </summary>
+            <param name="source">Source bitmap.</param>
+            <param name="newWidth">New width of the bitmap.</param>
+            <param name="newHeight">New height of the bitmap.</param>
+            <returns>The newly resized bitmap.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.ImageUtils.ResizeHeightMap(System.Single[0:,0:],System.Int32,System.Int32)">
+            <summary>
+            Resizes a heightmap array from it's old size to the new size. The heightmap is resized
+            using a simple nearest neighbor re-sampling scheme with a Gaussian blur applied if the 
+            new heightmap is larger than the old heightmap.
+            </summary>
+            <param name="srcHeightMap">Array of floating point values representing the heightmap.
+            </param>
+            <param name="newWidth">Width of the new heightmap.</param>
+            <param name="newHeight">Height of the new heightmap.</param>
+            <returns>An array of floating point values containing a resized version of the source
+            heightmap data.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo">
+            <summary>
+            Defines a simple data class for storing information about a texture such as name, size, 
+            and format.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.#ctor">
+            <summary>
+            Simple constructor for the texture information data. Simply assigns the "Not Loaded" 
+            string to all fields.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Name">
+            <summary>
+            Gets or sets the name of the texture where name is usually a path relative to the 
+            current asset web root.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.TextureType">
+            <summary>
+            Gets or sets the string representation of the texture slot type. (e.g. Detail map, 
+            Base map, etc.)
+            <see cref="T:Emergent.Toolbench.WorldBuilder.TerrainCore.MaterialTextureType"/>
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Size">
+            <summary>
+            Gets or sets the size of the texture where size is a string containing width x height.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Format">
+            <summary>
+            Gets or sets a string representing a simple format for the texture.
+            (ex: RGB, DXT1, etc.)
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Thumbnail">
+            <summary>
+            Gets or sets a thumbnail representation of the texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.IsMipMapped">
+            <summary>
+            Gets or sets a string indicating whether or not the texture is mip-mapped in the form of
+            "HasMipMaps = Yes|No".
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Width">
+            <summary>
+            Gets or sets the width of the texture.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TextureInfo.Height">
+            <summary>
+            Gets or sets the height of the texture.
+            </summary>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor">
+            <summary>
+            This class is a data class meant to hold information about the singleton terrain in the 
+            world. This class may also be bound to UI elements for modifying said data.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.#ctor">
+            <summary>
+            Constructs the terrain data descriptor using default values.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.OnPropertyChanged(System.String)">
+            <summary>
+            Called when a property setter is invoked.
+            </summary>
+            <param name="propertyName">Name of the property that changed.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.Equals(Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor)">
+            <summary>
+            Checks for equality with all of the descriptor fields. If each field is equal then 
+            the two instances are equal.
+            </summary>
+            <param name="other">Descriptor to check against this one.</param>
+            <returns>True if all fields are equal, false otherwise.</returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.Clone">
+            <summary>
+            Clones the data descriptor.
+            </summary>
+            <returns>A clone of the descriptor.</returns>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.MinElevation">
+            <summary>
+            Gets or sets the minimum elevation of the terrain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.MaxElevation">
+            <summary>
+            Gets or sets the minimum elevation of the terrain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.CellSize">
+            <summary>
+            Gets or sets the terrain cell size. All cells in the terrain hierachy are of 
+            CellSize x CellSize vertices. As lower level of detail terrain cells are created, this 
+            CellSize is maintained by skipping vertices.
+            </summary>
+            <remarks>CellSize must be greater than or equal to 8 and must be a power of 2.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.SectorSize">
+            <summary>
+            Gets or sets the property controlling the size of a single sector. A terrain may be
+            comprised of many sectors. SectorSize ultimately determines the page unit when terrain
+            is paged from disk.
+            </summary>
+            <remarks>Sector size must be greater than or equal to cell size and must be a power of 
+            2.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.NumLods">
+            <summary>
+            Gets the number of levels in the terrain quadtree hierarchy. The depth of this tree is 
+            based on the ratio of sector size to cell size.
+            </summary>
+            <remarks>If one wishes to have a terrain object with no lod hierarchy, simple set cell 
+            size to be the same as sector size. Note, material mask size should also be dramatically
+            increased to compensate.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.TerrainScale">
+            <summary>
+            Gets or sets the world scale of the terrain. By default, sectors have 1 game unit
+            spacing between vertices. This value controls that spacing.
+            </summary>
+            <remarks>Value must be greater than 0.0f.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.LowDetailTextureSize">
+            <summary>
+            Gets or sets the value controlling the resolution of the low detail base texture and low
+            detail normal map texture applied on a per-sector basis. These textures are used to
+            render distant terrain instead of using the high resolution blending shaders for
+            performance reasons.
+            </summary>
+            <remarks>Texture size must be a power of 2.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.MaterialMaskSize">
+            <summary>
+            Gets or sets the value controlling the resolution of the material mask on a per-cell
+            basis. The material mask controls the resolution by which materials are blended onto an 
+            individual cell. Greater values lead to crisper higher resolution blending at the 
+            expense of texture memory.
+            </summary>
+            <remarks>Value must be a power of 2 and greater than or equal to 2.</remarks>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.TerrainAssetId">
+            <summary>
+            Gets or sets a string containing the asset web relative path to the terrain xml 
+            configuration file. The configuration file is the root asset of the terrain and 
+            references the other various assets needed to load/save/render the terrain.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.LowDetailTextureDensity">
+            <summary>
+            Gets a value indicating the world space texel density of the low detail texture. The 
+            texel density is a ratio of the texture size by the world space size of the terrain 
+            sector.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.MaterialMaskDensity">
+            <summary>
+            Gets a value indicating the world space texel density of the material mask. The texel 
+            density is a ratio of the material mask size by the world space size of the terrain 
+            cell.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.ApproxTerrainSize">
+            <summary>
+            Gets the size of the terrain. The size of the terrain is the total sector size across 
+            sectors multiplied by the scale. Note, the terrain is actually a little bigger since 
+            there are actually (SectorSize + 1) x (SectorSize + 1) vertices in a terrain sector.
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.PropertyChanged">
+            <summary>
+            Event fired when a property is changed.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.Error">
+            <summary>
+            Gets an error message for the object. This always returns null as the property error 
+            interface is used.
+            </summary>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.TerrainDataDescriptor.Item(System.String)">
+            <summary>
+            Gets the error for the object based on the specified property name.
+            </summary>
+            <param name="columnName">Property name to verify.</param>
+            <returns>An error message or null if there was no error.</returns>
+        </member>
+        <member name="T:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType">
+            <summary>
+            This class represents a brush type capable producing a viable paint kernel based on the 
+            particular brush type. Brush types are exposed by other Toolbench plug-ins via the 
+            BrushType extension point.
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.GetBuffer">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IPaintKernelProvider.GetBuffer"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.Activated">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushType.Activated"/>
+            </summary>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.InitializeSettings(Emergent.Toolbench.Settings.ISettingsAspect)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushSettings.InitializeSettings(Emergent.Toolbench.Settings.ISettingsAspect)"/>
+            </summary>
+            <param name="settings">The setting aspect to initialize data from.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.UpdateSettings(Emergent.Toolbench.Settings.ISettingsAspect)">
+            <summary>
+            <see cref="M:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushSettings.UpdateSettings(Emergent.Toolbench.Settings.ISettingsAspect)"/>
+            </summary>
+            <param name="settings">The setting aspect to save data to.</param>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.Clone">
+            <summary>
+            Implemented by brush type subclasses to clone the internal data of the brush type.
+            </summary>
+            <returns>A clone of the brush type. Clone should, in most cases, be a deep copy.
+            </returns>
+        </member>
+        <member name="M:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.OnPropertyChanged(System.String)">
+            <summary>
+            Called when a property setter has been invoked.
+            </summary>
+            <param name="propertyName">Name of the property that has changed.</param>
+        </member>
+        <member name="P:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.Name">
+            <summary>
+            <see cref="P:Emergent.Toolbench.WorldBuilder.TerrainCore.IBrushType.Name"/>
+            </summary>
+        </member>
+        <member name="E:Emergent.Toolbench.WorldBuilder.TerrainCore.AbstractBrushType.PropertyChanged">
+            <summary>
+            Event called a property has changed on the brush type.
+            </summary>
+        </member>
+    </members>
+</doc>

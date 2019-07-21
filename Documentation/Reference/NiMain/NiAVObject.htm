@@ -1,0 +1,915 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiAVObject</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<p class="NDLRefHeadClassTitle">NiAVObject</p>
+
+<p class="NDLRefParentage">: public <a href=
+"NiObjectNET.htm">NiObjectNET</a></p>
+
+<p class="NDLRefHeaderFile">&lt;NiAVObject.h&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This class is the base class from which all of Gamebryo's
+scene graph objects inherit.</p>
+
+<p class="NDLRefHead1">Constructors</p>
+
+<p>No public constructors are available, however, as a note for
+all derived classes, the default constructor sets the following
+data:</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+
+            <th>Default Setting</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Parent pointer</td>
+
+            <td><span class="NDLSystemFont">NULL</span></td>
+        </tr>
+
+        <tr>
+            <td>Local &amp; World transforms</td>
+
+            <td>Identity rotation + <span class=
+            "NDLSystemFont">[0,0,0]</span> translation +
+            <span class="NDLSystemFont">1.0</span> scale</td>
+        </tr>
+
+        <tr>
+            <td>Rendering properties</td>
+
+            <td>None attached</td>
+        </tr>
+
+        <tr>
+            <td>Collision object</td>
+
+            <td><span class="NDLSystemFont">NULL</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>Flags</th>
+
+            <th>Default Setting</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>Application culling flag</td>
+
+            <td><span class="NDLSystemFont">False</span> (not
+            culled)</td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdate</td>
+
+            <td><span class="NDLSystemFont">False</span></td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdateTransforms</td>
+
+            <td><span class="NDLSystemFont">False</span></td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdatePropertyControllers</td>
+
+            <td><span class="NDLSystemFont">False</span></td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdateRigid</td>
+
+            <td><span class="NDLSystemFont">True</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="NDLRefHead1">Supported Member Functions</p>
+
+<a name="Parent_Access_Functions" id="Parent_Access_Functions"></a><p class="NDLRefHead2">Parent Access Functions</p>
+
+<p class="NDLRefMemberFunction"><a href="NiNode.htm">NiNode</a>*
+GetParent()</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiNode.htm">NiNode</a>* GetParent() const</p>
+
+<p class="NDLRefMemberDescription">Returns the parent node of the
+current object, or <span class="NDLSystemFont">NULL</span> if the
+object has no parent.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiAVObject.htm">NiAVObject</a>* GetRoot() const</p>
+
+<p class="NDLRefMemberDescription">Returns the root <a href=
+"NiAVObject.htm">NiAVObject</a>. If this <a href=
+"NiAVObject.htm">NiAVObject</a> has no parent <a href=
+"NiNode.htm">NiNode</a>, it will be returned as the
+root.</p>
+
+<a name="UpdateFunctions" id="UpdateFunctions"></a><p class="NDLRefHead2">Update Functions</p>
+
+<p class="NDLRefMemberFunction">void Update(<span class=
+"NDLSystemFont"><a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a>&amp;
+kUpdate</span>)</p>
+
+<p class="NDLRefMemberDescription">Geometric transform and
+bounding sphere update routine. Calling this function at an
+<span class="NDLSystemFont">NiAVObject</span> will update the
+world transforms of the calling object and all child subtrees,
+and will update the bounding spheres of all children, the calling
+object, and all ancestors of the calling node. As a result,
+<span class="NDLSystemFont">Update</span> must be called on an
+object or a parent of that object after the transforms of the
+object or its model space geometry have been changed. This step
+must be done before the next call to a draw or check collisions
+routine with the object or its child subtrees. The <span class=
+"NDLSystemFont">kUpdate</span> argument contains the parameters
+to use during update, and defines pre- and post-update functions.
+When calling <span class=
+"NDLSystemFont">NiAVObject::Update</span> from multiple threads,
+a different <span class="NDLSystemFont">NiUpdateProcess</span>
+object must be used for each thread to ensure thread safety. See
+the "Notes" below for a discussion of <span class=
+"NDLSystemFont">Update</span>, correctness, and efficiency.</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">void
+UpdateSelected(<a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a>&amp;
+kUpdate</span><span class="NDLSystemFont">)</span></p>
+
+<p class="NDLRefMemberDescription">Performs a selective update of
+the scene graph. It is functionally the same as a regular
+<span class="NDLSystemFont">Update</span>, but with per-object
+control of <span class="NDLSystemFont">Update</span> features.
+<span class="NDLSystemFont">UpdateSelected</span> can be much
+faster than regular <span class="NDLSystemFont">Update</span>s
+depending upon how the <span class=
+"NDLSystemFont">UpdateSelected</span> flags are set. If the flags
+are not set correctly, the results of the <span class=
+"NDLSystemFont">UpdateSelected</span> may not be correct.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UpdateDownwardPass(<a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a>&amp; kUpdate)</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UpdateSelectedDownwardPass(<a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a>&amp; kUpdate)</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UpdateRigidDownwardPass(<a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a>&amp; kUpdate)</p>
+
+<p class="NDLRefMemberDescription">These three functions are
+called from Update and perform the bulk of the work of scene
+graph update by updating time controllers, world transforms, and
+world bounding volume data. Subclasses desiring to override or
+extend update behavior should extend these methods. <span class=
+"NDLSystemFont">Update</span> will call <span class=
+"NDLSystemFont">UpdateDownwardPass</span>. <span class=
+"NDLSystemFont">UpdateSelected</span> will call either
+<span class="NDLSystemFont">UpdateSelectedDownwardPass</span> or
+<span class="NDLSystemFont">UpdateRigidDownwardPass</span>
+depending on the value of the <span class=
+"NDLSystemFont">SelectiveUpdateRigid</span> flag. As a result, it
+is recommended that any class which overrides one of these
+functions override all three.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UpdateNodeBound()</p>
+
+<p class="NDLRefMemberDescription">This function recursively sets
+the <span class="NDLSystemFont">NiBound NiNode::m_kBound</span>
+member for <span class="NDLSystemFont">NiNode</span>s in a scene
+graph. This action is required for Rigid bound updating. See
+<span class="NDLSystemFont">UpdateSelected</span> "Notes" below
+for a description of Rigid bound updating. A node's local bound
+represents a "local" bounding sphere of the node's subtree. In
+other words, the node's world bound can be found by simply
+multiplying <span class="NDLSystemFont">m_kBound</span> by the
+node's world transform<span class="NDLSystemFont">.
+UpdateNodeBound</span> must be called after the scene graph has
+been <span class="NDLSystemFont">Update</span>d at least once,
+because it depends on the world transforms being valid.</p>
+
+<p class="NDLRefMemberFunction">void UpdateProperties()</p>
+
+<p class="NDLRefMemberDescription">Calls <span class=
+"NDLSystemFont">Update</span> on the list of properties attached
+to the object. Predecessors of Gamebryo updated the properties
+each time <span class="NDLSystemFont">Update</span> was called,
+but since the properties do not necessarily change each frame,
+updating properties is not necessary all the time. This function
+should be called at or above an object after any properties are
+attached or detached (but not if only the values in a property
+attached to the object are changed) or when the object's parent
+is attached or detached. See the "Notes" below for a discussion
+of <span class="NDLSystemFont">Update</span>, correctness, and
+efficiency. Also, see the programming manual for a detailed
+discussion of the <span class=
+"NDLSystemFont">UpdateProperties</span> call.</p>
+
+<p class="NDLRefMemberFunction">void UpdateEffects()</p>
+
+<p class="NDLRefMemberDescription">Calls <span class=
+"NDLSystemFont">Update</span> on the list of dynamic effects
+attached to the object. Predecessors of Gamebryo updated the
+effects each time <span class="NDLSystemFont">Update</span> was
+called, but since the effects do not necessarily change each
+frame, updating effects is not necessary all the time. This
+function should be called at or above an object after any dynamic
+effects are attached or detached (but not if only the values in a
+dynamic effect attached to the object are changed). See the
+"Notes" below for a discussion of <span class=
+"NDLSystemFont">Update</span>, correctness, and efficiency. Also,
+see the programming manual for a detailed discussion of the
+<span class="NDLSystemFont">UpdateEffects</span> call.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+UpdateControllers(float fTime)</p>
+
+<p class="NDLRefMemberDescription">This function recursively
+updates the controllers in the scene graph. Typically, there is
+no need to call this function because it is handled by
+<span class="NDLSystemFont">Update</span> and <span class=
+"NDLSystemFont">UpdateSelected</span>.</p>
+
+<p class="NDLRefMemberFunction">void
+UpdateObjectControllers(float fTime, bool bProperties = true)</p>
+
+<p class="NDLRefMemberDescription">This function updates the
+controllers on the object. The <span class=
+"NDLSystemFont">bProperties</span> flag indicates whether or not
+to iterate over the attached properties and update any
+controllers. Typically, there is no need to call this function
+because it is handled by <span class=
+"NDLSystemFont">Update</span> and <span class=
+"NDLSystemFont">UpdateSelected</span>.</p>
+
+<p class="NDLRefHead2">Deprecated Update Functions</p>
+
+<p class="NDLRefMemberFunction">void Update(float fTime,
+bool bUpdateControllers = true)</p>
+
+<p class="NDLRefMemberDescription">This function has been
+deprecated in favor of <span class=
+"NDLSystemFont">NiAVObject::Update(NiUpdateProcess&amp;
+kUpdateProcess)</span>. Internally, this function uses a
+statically allocated <span class="NDLSystemFont"><a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a></span> object, which in
+future versions of Gamebryo will cease to be available. This
+function is not safe to call from multiple threads
+simultaneously.</p>
+
+<p class="NDLRefMemberDescription">The <span class=
+"NDLSystemFont">bUpdateSelected</span> flag will be passed into
+the <span class="NDLSystemFont">SetUpdateControllers</span> and
+<span class="NDLSystemFont">SetSubmitModifiers</span> functions
+of a temporary <span class="NDLSystemFont"><a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a></span> object. This may
+cause unexpected behavior, depending on the mesh modifiers that
+exist in the scene and what actions they perform. 
+<!--kadov_tag{{<spaces>}}--> <!--kadov_tag{{</spaces>}}-->For
+that reason, passing false to the <span class=
+"NDLSystemFont">bUpdateSelected</span> flag should only be used
+on a scene that will not be displayed immediately and that will
+be updated in the standard manner before it is displayed.
+Otherwise, out-of-date results from computations may be used in
+rendering.</p>
+
+<p class="NDLRefMemberFunction"><span class="NDLSystemFont">void
+UpdateSelected(float fTime)</span></p>
+
+<p class="NDLRefMemberDescription">This function has been
+deprecated in favor of <span class=
+"NDLSystemFont">NiAVObject::UpdateSelected(NiUpdateProcess&amp;
+kUpdateProcess)</span>. Internally, this function uses a
+statically allocated <span class="NDLSystemFont"><a href=
+"NiUpdateProcess.htm">NiUpdateProcess</a></span> object, which in
+future versions of Gamebryo will cease to be available. This
+function is not safe to call from multiple threads
+simultaneously.</p>
+
+<a name="SelectiveUpdate" id="SelectiveUpdate"></a><p class="NDLRefHead2">Selective Update Flags</p>
+
+<p class="NDLRefMemberFunction">bool GetSelectiveUpdate()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetSelectiveUpdate(bool
+bUpdate)</p>
+
+<p class="NDLRefMemberFunction">bool
+GetSelectiveUpdateTransforms() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetSelectiveUpdateTransforms(bool bUpdate)</p>
+
+<p class="NDLRefMemberFunction">bool
+GetSelectiveUpdatePropertyControllers() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetSelectiveUpdatePropertyControllers(bool bUpdate)</p>
+
+<p class="NDLRefMemberFunction">bool GetSelectiveUpdateRigid()
+const</p>
+
+<p class="NDLRefMemberFunction">void SetSelectiveUpdateRigid(bool
+bRigid)</p>
+
+<p class="NDLRefMemberDescription">These functions are accessor
+functions for the four <span class=
+"NDLSystemFont">UpdateSelected</span> flags. The flag values are
+all initialized to false by the <span class=
+"NDLSystemFont">NiAVObject</span> constructor, except for the
+<span class="NDLSystemFont">SelectiveUpdateRigid</span> flag,
+which is initialized to true. These initial values represent the
+faster, less work, of the two possibilities. Please see the
+<a href=
+"NiAVObject.htm#UpdateSelected__UpdateNodeBound__and_the_UpdateSelected_flags">
+Notes</a> section for more details.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+SetSelectiveUpdateFlags(bool&amp; bSelectiveUpdate, bool
+bSelectiveUpdateTransforms, bool&amp; bRigid)</p>
+
+<p class="NDLRefMemberDescription">Intended to be called at the
+root of a scene graph, this function recursively sets the
+<span class="NDLSystemFont">UpdateSelected</span> flags based on
+attached <span class="NDLSystemFont">NiTimeController'</span>s in
+the scene graph. <span class=
+"NDLSystemFont">bSelectiveUpdate</span> and <span class=
+"NDLSystemFont">bRigid</span> are required, return value
+parameters. Their initial value is ignored and they need not be
+initialized. <span class=
+"NDLSystemFont">bSelectiveUpdateTransforms</span> should
+generally be false, unless the root has animated transforms. If
+<span class="NDLSystemFont">bSelectiveUpdateTransforms</span> is
+true, a "true" value for both the <span class=
+"NDLSystemFont">SelectiveUpdate</span> and the <span class=
+"NDLSystemFont">SelectiveUpdateTransforms</span> flags will be
+propagated to all objects in the scene graph. Please see the
+<a href=
+"NiAVObject.htm#UpdateSelected__UpdateNodeBound__and_the_UpdateSelected_flags">
+Notes</a> section for more details. See also <span class=
+"NDLSystemFont">NiTimeController::IsTransformController</span>.
+The following table shows how the flags are set:</p>
+
+<!--(Table)=========================================================-->
+<div class="ReferenceTable">
+    <table>
+        <thead>
+            <tr>
+                <th>Flag</th>
+
+                <th>Behavior of SetSelectiveUpdateFlags</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><span class=
+                "NDLSystemFont">SelectiveUpdate</span></td>
+
+                <td>Flag set to <span class=
+                "NDLSystemFont">true</span> if object or its
+                descendants have any controllers, or if any of
+                its ancestors have animated transforms,
+                <span class="NDLSystemFont">false</span>
+                otherwise.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">SelectiveUpdatePropertyControllers</span></td>
+
+                <td>Flag set to <span class=
+                "NDLSystemFont">true</span> if object has any
+                property controllers, <span class=
+                "NDLSystemFont">false</span> otherwise.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">SelectiveUpdateTransforms</span></td>
+
+                <td>Flag set to <span class=
+                "NDLSystemFont">true</span> if object has any
+                transform controllers, or any ancestors with
+                transform controllers, <span class=
+                "NDLSystemFont">false</span> otherwise.</td>
+            </tr>
+
+            <tr>
+                <td><span class=
+                "NDLSystemFont">SelectiveUpdateRigid</span></td>
+
+                <td><span class="NDLSystemFont">Flag</span> set
+                to Merge if node has any descendants with
+                animated transforms, Rigid otherwise.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p class="NDLRefMemberFunction">bool
+GetSelectiveUpdateTransformsOverride() const</p>
+
+<p class="NDLRefMemberFunction">void
+SetSelectiveUpdateTransformsOverride(bool bOverride)</p>
+
+<p class="NDLRefMemberDescription"><span class=
+"NDLSystemFont">SetSelectiveUpdateFlags</span> uses the presence
+of transform controllers on a node to determine if it is
+animated. The override flag, accessed by these functions, forces
+<span class="NDLSystemFont">SetSelectiveUpdateFlags</span> to
+consider a node's transformation as changing, even if no
+controllers are present. Use it when an application is changing a
+node's transform directly, such as with physics. This flag
+influences only <span class=
+"NDLSystemFont">SetSelectiveUpdateFlags</span>, and has no other
+impact on the behavior of the <span class=
+"NDLSystemFont">UpdateSelected</span> mechanism. It must be set
+before a call to <span class=
+"NDLSystemFont">SetSelectiveUpdateFlags</span> in order to have
+any effect.</p>
+
+<a name="Transform" id="Transform"></a><p class="NDLRefHead2">Transformation Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; GetTranslate() const</p>
+
+<p class="NDLRefMemberFunction">void SetTranslate(const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kTrn)</p>
+
+<p class="NDLRefMemberFunction">void SetTranslate(float x, float
+y, float z)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the local
+translation of the object. Note that this translation is not the
+world-space translation, which may be accessed using the
+<span class="NDLSystemFont">GetWorldTranslate</span> function.
+This translation is the model-space translation of the object.
+Details of the hierarchical transformation system may be found in
+the Gamebryo Programming Manual.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiMatrix3.htm">NiMatrix3</a>&amp; GetRotate() const</p>
+
+<p class="NDLRefMemberFunction">void SetRotate(const <a href=
+"NiMatrix3.htm">NiMatrix3</a>&amp; kRot)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the local
+rotation matrix of the object as a matrix. Note that this
+rotation is not the world-space rotation, which may be accessed
+using the GetWorldRotate function. This rotation is the
+model-space rotation of the object. The matrix sent to
+<span class="NDLSystemFont">SetRotate</span> must be a pure
+rotation matrix (no reflections, shearing or scaling) -- the
+library assumes that this matrix is a pure rotation matrix
+without checking it (for efficiency). Details of the hierarchical
+transformation system may be found in the Gamebryo Programming
+Manual.</p>
+
+<p class="NDLRefMemberFunction">void GetRotate(float&amp; angle,
+float&amp; x, float&amp; y, float&amp; z) const</p>
+
+<p class="NDLRefMemberFunction">void SetRotate(float angle, float
+x, float y, float z)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the
+model-space rotation matrix of the object as an axis-angle
+rotation. The angle is assumed to be in units of radians, and the
+axis must be unit-length. If the angle is positive, then the
+rotation is clockwise about the given angle as one is facing down
+(opposite the direction of) the given axis. If the angle is
+negative, the rotation is counter-clockwise. Note that since
+these functions do not specify or return the rotation as a
+matrix, the object must perform a conversion internally. As a
+result, these functions are more expensive than their
+counterparts that accept/return <span class=
+"NDLSystemFont">NiMatrix3</span> objects.</p>
+
+<p class="NDLRefMemberFunction">void GetRotate(<a href=
+"NiQuaternion.htm">NiQuaternion</a>&amp; kQuat) const</p>
+
+<p class="NDLRefMemberFunction">void SetRotate(const <a href=
+"NiQuaternion.htm">NiQuaternion</a>&amp; kQuat)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the
+model-space rotation matrix of the object as an <span class=
+"NDLSystemFont">NiQuaternion</span>. Note that since these
+functions do not specify or return the rotation as a matrix, the
+object must perform a conversion internally. As a result, these
+functions are more expensive than their counterparts that
+accept/return <span class="NDLSystemFont">NiMatrix3</span>
+objects.</p>
+
+<p class="NDLRefMemberFunction">void SetRotateAboutCenter(const
+<a href="NiMatrix3.htm">NiMatrix3</a>&amp; kRot, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kCen, const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; kTrans = <a href=
+"NiPoint3.htm">NiPoint3</a>::ZERO)</p>
+
+<p class="NDLRefMemberDescription">A convenience function that
+replaces the current model-space rotation and translation with a
+rotation of the model about the given model-space point, followed
+by the standard translation (by factoring such a rotation about a
+point into a rotation followed by a translation). This action
+enables the application to rotate an object about a center that
+is not the model space origin. Note that this function overwrites
+any previous model-space rotation and translation transforms in
+the object.</p>
+
+<p class="NDLRefMemberFunction">float GetScale() const</p>
+
+<p class="NDLRefMemberFunction">void SetScale(float fScale)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the
+model-space scaling factor of the object. The value sent to
+<span class="NDLSystemFont">SetScale</span> should be greater
+than zero. If a negative scale is sent, the absolute value is
+used as the scaling.</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiPoint3.htm">NiPoint3</a>&amp; GetWorldTranslate() const</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiMatrix3.htm">NiMatrix3</a>&amp; GetWorldRotate() const</p>
+
+<p class="NDLRefMemberFunction">float GetWorldScale() const</p>
+
+<p class="NDLRefMemberDescription">Return the world-space
+translation, rotation and scaling of the given object. These
+values are only valid after a parent's transforms have been
+changed if the integrity of the scene graph has been restored
+using <span class="NDLSystemFont">Update</span>. Note that since
+the world-space values are derived quantities, they cannot be
+modified directly, only returned.</p>
+
+<p class="NDLRefMemberFunction">void SetLocalTransform(const
+NiTransform&amp; kTransform)</p>
+
+<p class="NDLRefMemberDescription">Sets all transformation
+components. If a negative scale is sent, the absolute value is
+used.</p>
+
+<p class="NDLRefMemberFunction">void
+SetLocalFromWorldTransform(const NiTransform&amp;
+kWorldTransform)</p>
+
+<p class="NDLRefMemberDescription">Sets the local transform such
+that its world position will match the provided world
+transform.<br>
+NOTE: Parent must have been updated to have correct world
+location.<br>
+NOTE: This object must have update called to reflect this
+transform.</p>
+
+<a name="Bounds" id="Bounds"></a><p class="NDLRefHead2">Bounding Volume Functions</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiBound.htm">NiBound</a>&amp; GetWorldBound() const</p>
+
+<p class="NDLRefMemberDescription">Returns the world space bound
+of the object. This bound is valid only if all of the ancestors
+and children of the given object are up-to-date (via the
+<span class="NDLSystemFont">Update</span> routine).</p>
+
+<a name="Properties" id="Properties"></a><p class="NDLRefHead2">Rendering Property Functions</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiTList.htm">NiPropertyList</a>&amp; GetPropertyList()</p>
+
+<p class="NDLRefMemberFunction">const <a href=
+"NiTList.htm">NiPropertyList</a>&amp; GetPropertyList() const</p>
+
+<p class="NDLRefMemberDescription">Returns the list of all
+rendering properties that are currently attached to the object.
+This list may be modified by the application directly.
+Applications choosing to modify the list directly must take care
+not to attach more than one property of any type to a property
+list at one time.</p>
+
+<p class="NDLRefMemberFunction">void AttachProperty(<a href=
+"NiProperty.htm">NiProperty</a>* pkProperty)</p>
+
+<p class="NDLRefMemberDescription">Attaches the given property to
+the object, without checking to see if the property or another of
+its type is already on the list. Property lists must not have
+more than one property of a given class (i.e. no two <span class=
+"NDLSystemFont"><a href=
+"NiTexturingProperty.htm">NiTextuingProperty</a></span> objects)
+attached at once, or else undefined behavior will result.</p>
+
+<p class="NDLRefMemberFunction">void DetachProperty(<a href=
+"NiProperty.htm">NiProperty</a>* pkProperty)</p>
+
+<p class="NDLRefMemberDescription">Detaches the given property
+from the list (if it is in the list)</p>
+
+<p class="NDLRefMemberFunction">void DetachAllProperties()</p>
+
+<p class="NDLRefMemberDescription">Detaches all properties from
+the property list</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiProperty.htm">NiProperty</a>* GetProperty(int iType) const</p>
+
+<p class="NDLRefMemberDescription">Returns a smart pointer to the
+property of the given type, if it exists. Otherwise, returns
+<span class="NDLSystemFont">NULL</span>. The property types are
+defined in <span class="NDLSystemFont"><a href=
+"NiProperty.htm">NiProperty</a></span>.</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiProperty.htm">NiProperty</a> RemoveProperty(int iType)</p>
+
+<p class="NDLRefMemberDescription">Removes the property of the
+given type, if it exists, and returns a smart pointer to it.
+Otherwise, returns <span class="NDLSystemFont">NULL</span>. The
+property types are defined in <span class=
+"NDLSystemFont"><a href="NiProperty.htm">NiProperty</a></span>.</p>
+
+<a name="Culling" id="Culling"></a><p class="NDLRefHead2">Culling Functions</p>
+
+<p class="NDLRefMemberFunction">bool GetAppCulled() const</p>
+
+<p class="NDLRefMemberFunction">void SetAppCulled(bool
+bAppCulled)</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the app-cull
+flag for the object. If the app-cull flag is set to <span class=
+"NDLSystemFont">true</span>, the object and all child subtrees
+will be skipped during a culling pass. Note that this value is
+not propagated down the tree. If a culling pass begins at a
+non-root object, <span class="NDLSystemFont">spObject</span>, as
+its scene graph, then setting the app culling flag on an ancestor
+of <span class="NDLSystemFont">spObject</span> will not affect
+the culling of <span class="NDLSystemFont">spObject</span> by
+that pass.</p>
+
+<p class="NDLRefMemberFunction">void SetDisplayObject(bool
+bDisplay)</p>
+
+<p class="NDLRefMemberFunction">bool GetDisplayObject() const</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the display
+flag for the object. This flag does not change the default
+display or culling behavior of Gamebryo. It is intended to be
+used in conjunction with third-party occlusion culling solutions
+along with a custom <span class="NDLSystemFont"><a href=
+"NiCullingProcess.htm">NiCullingProcess</a></span> object, which
+could be written to obey the flags.</p>
+
+<a name="Collision" id="Collision"></a><p class="NDLRefHead2">Collision Functions</p>
+
+<p class="NDLRefMemberFunction">void SetCollisionObject(<a href=
+"NiCollisionObject.htm">NiCollisionObject</a>*
+pkCollisionObject)</p>
+
+<p class="NDLRefMemberFunction"><a href=
+"NiCollisionObject.htm">NiCollisionObject</a>*
+GetCollisionObject() const</p>
+
+<p class="NDLRefMemberDescription">Retrieve and set the object's
+collision object pointer. The collision object must be an
+<span class="NDLSystemFont">NiCollisionObject-</span>derived
+collision object.</p>
+
+<a name="Search" id="Search"></a><p class="NDLRefHead2">Searching</p>
+
+<p class="NDLRefMemberFunction">virtual NiAVObject*
+GetObjectByName(const <a href=
+"NiFixedString.htm">NiFixedString</a>&amp; kName)</p>
+
+<p class="NDLRefMemberDescription">Returns the object pointer if
+the object's name is the same as the input name. This member
+function is implemented in <span class=
+"NDLSystemFont">NiNode</span> to allow searching for an object in
+a scene graph.</p>
+
+<p class="NDLRefMemberFunction">virtual void
+GetObjectsByType(const NiRTTI* pkRTTI,
+NiTPointerList&lt;NiAVObject*&gt;&amp; kObjects)</p>
+
+<p class="NDLRefMemberDescription">This utility function
+recursively populates the passed array <span class=
+"NDLSystemFont">kObjects</span> with all of the objects that
+exactly match the RTTI type <span class=
+"NDLSystemFont">pkRTTI</span>.</p>
+
+<p class="NDLRefMemberFunction">bool IsLeaf()</p>
+
+<p class="NDLRefMemberFunction">bool IsNode()</p>
+
+<p class="NDLRefMemberDescription">These high-speed functions
+indicate if an object is a leaf in the scene graph or an interior
+node. Objects that are nodes can be safely cast to <span class=
+"NDLSystemFont"><a href="NiNode.htm">NiNode</a></span> objects.
+These functions offer a high-speed way to perform an RTTI check
+for <span class="NDLSystemFont"><a href=
+"NiNode.htm">NiNode</a></span> on an object and can greatly
+accelerate performance in code that uses frequent RTTI operations
+to traverse the scene graph.</p>
+
+<p class="NDLRefHead1">Notes</p>
+
+<a name="Update_Correctness" id="Update_Correctness"></a><p class="NDLRefHead2">Update Correctness</p>
+
+<p><span class="NDLSystemFont">Update</span> must be called at or
+above any object whose transforms are changed or who has had
+children detached or attached since the last call to <span class=
+"NDLSystemFont">Update</span> at or above that object. The
+application must call <span class="NDLSystemFont">Update</span>
+at least once at the top of the scene graph after the entire
+scene graph is attached (at application startup) to initialize
+the entire scene graph. Similarly, <span class=
+"NDLSystemFont">UpdateProperties</span> must be called at or
+above any object when properties are attached or detached from
+it, and <span class="NDLSystemFont">UpdateEffects</span> must be
+called at or above any object when dynamic effects are attached
+or detached from it. Each of the three functions must also be
+called when an object's parent is detached, or a new parent
+attached.</p>
+
+<a name="Update_Efficiency" id="Update_Efficiency"></a><p class="NDLRefHead2">Update Efficiency</p>
+
+<p>It is best to "batch up" calls to the <span class=
+"NDLSystemFont">Update</span> function. For example, if the
+transforms of an object, its parent object and its grandparent
+object are all changed during the course of updating the geometry
+for the next frame, it is much more efficient (if possible) to
+call <span class="NDLSystemFont">Update</span> on only the
+grandparent after all transforms have been changed. Thus, it is
+also important for efficiency reasons that <span class=
+"NDLSystemFont">Update</span> be called as low as possible on a
+scene graph, as the <span class="NDLSystemFont">Update</span>
+recursion does significantly more work in the pass that
+propagates downward from the calling object than it does in the
+pass that propagates upward. As a result, the application should
+balance these two factors, both in where the <span class=
+"NDLSystemFont">Updates</span> are called and in how the scene
+graph is constructed in the first place to allow for efficient
+calls to this function.</p>
+
+<a name="UpdateSelected__UpdateNodeBound__and_the_UpdateSelected_flags" id=
+"UpdateSelected__UpdateNodeBound__and_the_UpdateSelected_flags"></a><p class="NDLRefHead2">UpdateSelected, UpdateNodeBound, and the
+UpdateSelected flags</p>
+
+<p>There are a few additional issues to be considered when using
+<span class="NDLSystemFont">UpdateSelected</span> instead of
+<span class="NDLSystemFont">Update.</span> The Gamebryo plug-ins
+for 3ds max and Maya automatically export scenes that have
+<span class="NDLSystemFont">UpdateSelected</span> flags set
+optimally for a viewer application. <span class=
+"NDLSystemFont"><a href=
+"NiStream.htm">NiStream</a>::LoadStream</span> also automatically
+sets these viewer-optimal flags for old NIF files. However, these
+flags are only valid if:</p>
+
+<ul>
+    <li>There are no objects or controllers attached or detached
+    from the scene graph, and</li>
+
+    <li>The scene graph is not attached to an <span class=
+    "NDLSystemFont">NiNode</span> with directly or indirectly
+    animated transforms.</li>
+</ul>
+
+<p>These conditions hold for a typical NIF viewer application,
+and indeed the <a href=
+"../../Tools/Asset_Viewer/Introduction_to_the_Asset_Viewer.htm">Asset
+Viewer</a> tool uses <span class=
+"NDLSystemFont">UpdateSelected</span> without changing any of the
+scene's <span class="NDLSystemFont">UpdateSelected</span> flags.
+If, however, the above conditions do not hold, the flags will
+need to be reset, either manually or with the <span class=
+"NDLSystemFont">SetSelectiveUpdateFlags</span> function.</p>
+
+<p>The following chart summarizes how the flags determine
+<span class="NDLSystemFont">UpdateSelected</span> behavior.</p>
+
+<!--(Table)=========================================================-->
+<table>
+    <thead>
+        <tr>
+            <th>UpdateSelected
+            flag</th>
+
+            <th>True
+            Behavior</th>
+
+            <th>False
+            Behavior</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>SelectiveUpdate</td>
+
+            <td>Update object according to other flags</td>
+
+            <td>Do not update object at all</td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdatePropertyControllers</td>
+
+            <td>Update <span class="NDLSystemFont"><a href=
+            "NiProperty.htm">NiProperty</a></span>
+            controllers</td>
+
+            <td>Do not update <span class=
+            "NDLSystemFont"><a href="NiProperty.htm">NiProperty</a></span>
+            controllers</td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdateTransforms</td>
+
+            <td>Compute object world transforms</td>
+
+            <td>Do not compute object world transforms</td>
+        </tr>
+
+        <tr>
+            <td>SelectiveUpdateRigid</td>
+
+            <td>Move <span class="NDLSystemFont"><a href=
+            "NiNode.htm">NiNode</a></span> local bounds to
+            compute world bound</td>
+
+            <td>Merge <a href="NiNode.htm"><span class=
+            "NDLSystemFont">NiNode</span></a> child bounds to
+            compute world bound</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The Rigid bound update is faster than Merging, but it requires
+<span class="NDLSystemFont">UpdateNodeBound</span> to be called
+to initialize the local node bounds. As a rule of thumb for using
+<span class="NDLSystemFont">UpdateSelected</span>, when the scene
+graph changes such that a regular <span class=
+"NDLSystemFont">Update</span> is required, <span class=
+"NDLSystemFont">UpdateNodeBound</span> should also be called.
+Please refer to the <a href=
+"../../Programmer/General_Topics/UpdateSelected_Overview.htm">UpdateSelected</a>
+topic for additional details and tips for using <span class=
+"NDLSystemFont">UpdateSelected</span>.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

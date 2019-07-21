@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Introduction to the NiMaterial System</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type=
+"text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Introduction to the NiMaterial System</h1>
+
+<p>The Gamebryo material system is a mechanism for an application to serve up
+<a href="../NiShader/Introduction_to_Gamebryo_s_Shader_System.htm"><span class=
+"NDLSystemFont">NiShader</span></a> instances based off of the state of the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> object being rendered.
+Application developers often need to apply a similar effect to a variety of
+objects, and a single <span class="NDLSystemFont">NiShader</span> isn't
+sufficient to describe all the rendering conditions that it needs to handle.
+Rather than force an artist to apply a slightly different <span class=
+"NDLSystemFont">NiShader</span> to each geometry object, a single <span class=
+"NDLSystemFont">NiMaterial</span> can be used that will provide an appropriate
+<span class="NDLSystemFont">NiShader</span> object at runtime for each object
+that's drawn.</p>
+
+<p>A simple material can look at a mesh and determine if it was skinned or
+unskinned. It could then select between skinned and unskinned instances of the
+shader that it loaded from a shader library. Other more complicated materials
+are also possible, such as systems that actually generate vertex and pixel
+shader program code on the fly. This sort of shader program code generation can
+be done either additively or subtractively. An additive system takes a variety
+of high-level shader language program fragments and stitches them together to
+make a complete shader program. A subtractive system will have an entire shader
+program and removes pieces from it using compile-time preprocessor
+commands.</p>
+
+<h2>NiMaterial vs NiShader</h2>
+
+<p>It is important to understand the distinction that Gamebryo makes between an
+<span class="NDLSystemFont">NiMaterial</span> and an <span class=
+"NDLSystemFont">NiShader</span>. An <span class="NDLSystemFont">NiShader</span>
+contains the entire render state for how a specific geometry object will be
+drawn. It can span multiple render passes if necessary, but it is intended to
+describe to the renderer how to draw a certain object in a certain set of
+circumstances. A single <span class="NDLSystemFont">NiShader</span> instance
+can be shared among multiple geometry objects, if their structure and rendering
+circumstances coincide, but for the most part, an <span class=
+"NDLSystemFont">NiShader</span> should not be able to easily handle different
+situations. For example, a single <span class="NDLSystemFont">NiShader</span>
+may be able to draw an unskinned object that has a base map and a dark map. If
+the same <span class="NDLSystemFont">NiShader</span> object is applied to a
+geometry that is missing a dark map, or is skinned, then the <span class=
+"NDLSystemFont">NiShader</span> may fail. That is expected, because that
+<span class="NDLSystemFont">NiShader</span> was not written to be able to
+handle those circumstances.</p>
+
+<p>In this role, an <span class="NDLSystemFont">NiShader</span> is very well
+described by an <a href="../NiShader/Introduction_to_NSF_NSB_Shaders.htm">NSF
+shader</a> or <a href="../NiShader/Introduction_!FX_Shaders.htm">FX shader</a>.
+These shaders can be used to create a variety of effects, but they can only
+effectively be used in specific circumstances, when the expected textures and
+vertex data are present and when only a certain number of lights will be used,
+for example.</p>
+
+<p>An <span class="NDLSystemFont">NiMaterial</span>, on the other hand, is
+responsible for deciding which <span class="NDLSystemFont">NiShader</span>
+should be used in a given circumstance, even possibly going so far as to create
+an <span class="NDLSystemFont">NiShader</span> if none exist. An <span class=
+"NDLSystemFont">NiMaterial</span> can examine an <span class=
+"NDLSystemFont">NiMesh</span> object and its properties to make the decision,
+but it can also consider other parameters, such as the capabilities of the
+hardware, a user-supplied setting, or anything else.</p>
+
+<p>One way to think about it is that an <span class=
+"NDLSystemFont">NiMaterial</span> describes a given visual effect, while an
+<span class="NDLSystemFont">NiShader</span> is one implementation of that
+effect. A single <span class="NDLSystemFont">NiMaterial</span> can actually
+describe an entire family of effects, if the material writer wants.</p>
+
+<p>Note that there are instances of <span class=
+"NDLSystemFont">NiShader</span>-derived classes in Gamebryo that do
+<span class="NDLSystemFont">NiMaterial</span>-level work and are capable of
+handling different rendering situations. This behavior is left over from
+earlier versions of Gamebryo that lacked the <span class=
+"NDLSystemFont">NiMaterial</span> system. For backwards compatibility, these
+<span class="NDLSystemFont">NiShader</span> classes were left intact, but the
+preferred behavior for <span class="NDLSystemFont">NiShader</span> classes is
+as described here, with <span class="NDLSystemFont">NiMaterial</span> objects
+handling any necessary decision-making.</p>
+
+<h2>For More Information</h2>
+
+<p>Other NiMaterial Programmer's Guide topics cover the architecture of the
+system in detail, as well as the integration into the renderer. To really
+understand the way the system works, these sections are a must read.</p>
+
+<ul>
+    <li>Architecture
+        <ul>
+            <li><a href="NiMaterial.htm">NiMaterial</a>
+                <ul>
+                    <li><a href=
+                    "NiSingleShaderMaterial.htm">NiSingleShaderMaterial</a></li>
+
+                    <li><a href=
+                    "NiFragmentMaterial.htm">NiFragmentMaterial</a></li>
+
+                    <li style="list-style: none">
+                        <ul>
+                            <li><a href=
+                            "NiStandardMaterial.htm">NiStandardMaterial</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+
+            <li><a href="NiMaterialInstance.htm">NiMaterialInstance</a></li>
+
+            <li><a href="NiMaterialLibrary.htm">NiMaterialLibrary</a></li>
+
+            <li><a href=
+            "NiGPUProgramCache_System.htm">NiGPUProgramCache</a></li>
+        </ul>
+    </li>
+
+    <li>Using the NiMaterial System
+        <ul>
+            <li><a href="Applying_Materials.htm">Applying Materials</a></li>
+
+            <li><a href="Gamebryo_Legacy_Pipeline.htm">Gamebryo Legacy
+            Pipeline</a></li>
+
+            <li><a href="Gamebryo_Standard_Material.htm">Gamebryo Standard
+            Material</a></li>
+
+            <li><a href="Materials_From_Art.htm">Materials From Art</a></li>
+
+            <li><a href="Renderer_Interaction_With_Materials.htm">Renderer
+            Interaction With Materials</a></li>
+        </ul>
+    </li>
+
+    <li>Extending the NiMaterial System
+        <ul>
+            <li><a href="Use_Cases.htm">Use Cases</a></li>
+        </ul>
+    </li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

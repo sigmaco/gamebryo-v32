@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Serialization of Data Streams</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Serialization of Data Streams</h1>
+
+<h2>RTTI and CreateObject</h2>
+
+<p>Since <span class="NDLSystemFont">NiDataStream</span> 
+ itself is an abstract base class, it is worthwhile to examine how it is 
+ created during the streaming process as it is different from the normal 
+ <span class="NDLSystemFont">NiObject</span> path. </p>
+
+<p>In order to properly create a data stream, two pieces 
+ of information are required: usage and access flags. Since the correct 
+ derived class is created based on those inputs, it is necessary for the 
+ <span class="NDLSystemFont">NiStream</span> to know this information when 
+ it creates the objects contained within it. This is accomplished by overloading 
+ the <span class="NDLSystemFont">GetStreamableRTTIName</span> method from 
+ <span class="NDLSystemFont">NiObject</span>. Inside this method, the usage 
+ and access mask are converted to strings and concatenated using the <span 
+ class="NDLSystemFont">NiStream::ms_cRTTIDelimiter</span> variable. When 
+ the <span class="NDLSystemFont">NiDataStream:CreateObject</span> call is 
+ made during the loading process, <span class="NDLSystemFont">NiStream</span> 
+ will have parsed through the string and will provide the arguments as 
+ part of the method call. Once this has been done the correct derived class 
+ can be instantiated at load time.</p>
+
+<h2>Streaming and Access Flags</h2>
+
+<p>If the application needs to adjust the create flags 
+ on all data streams, this can be accomplished using the <span class="NDLSystemFont">NiDataStreamFactory</span> 
+ callback mechanism. See <span class="NDLSystemFont"><a href="NiDataStream_Primer.htm#NiDataStreamFactory">NiDataStreamFactory</a></span> 
+ for more details. </p>
+
+<p>Additionally, data streams created with the <span class="NDLSystemFont">CPU_WRITE_VOLATILE</span> 
+ flag do not actually serialize their contents. It is assumed that the 
+ volatile streams will be filled by a source at runtime. </p>
+
+<h2>Optional Streaming of NiDataStream Objects and NiDataStreamRef 
+ Objects</h2>
+
+<p>In some situations, it is desirable to skip streaming 
+ a particular data stream. A common use case is that the data stream is 
+ always created by the application at runtime and its values can be derived 
+ from other sources. To facilitate this use case, <span class="NDLSystemFont"><a 
+ href="../../Reference/NiMesh/NiDataStreamRef.htm">NiDataStreamRef</a></span> 
+ has a <span class="NDLSystemFont">Get/SetStreamabl</span>e API. Simply set 
+ this value to false and the data stream will be skipped when saving. Note 
+ that this can result in the <span class="NDLSystemFont">NiDataStreamRef</span> 
+ indices for streams being in a different order than when the mesh was 
+ created. For this reason, it is advisable to never stream out indices 
+ of <span class="NDLSystemFont">NiDataStreamRef</span> in the mesh and to 
+ reconstruct the cached indices from semantic name/index pairs at runtime.</p>
+
+<h2>Endianness</h2>
+
+<p>As with all data structures streamed using Gamebryo's 
+ streaming API, data is converted to the proper endian format upon load. 
+ The key to this is properly describing the <span class="NDLSystemFont"><a 
+ href="NiDataStream_Primer.htm#NiDataStreamElements">NiDataStreamElement</a></span> 
+ objects contained within the <span class="NDLSystemFont">NiDataStream</span>. 
+ If elements are left out or combined together in binary blobs, it will 
+ be impossible for the streaming system to ensure proper endian conversion.</p>
+
+<h2>Precaching NiDataStream Objects</h2>
+
+<p>One of the purposes of <span class="NDLSystemFont">NiDataStream</span> 
+ objects is to represent platform-specific buffers that reside on the rendering 
+ device. Depending on the platform, the streaming system may not be able 
+ to allocate such resources because of multithreading considerations. As 
+ a result, these buffers may be streamed into system memory and uploaded 
+ to the rendering device at a later time, guaranteed to be no later than 
+ when the mesh is rendered. To help ensure that this gets done sooner rather 
+ than later, the streaming system can be set to automatically flag the 
+ <span class="NDLSystemFont">NiDataStream</span> objects for precaching using 
+ <span class="NDLSystemFont">NiRenderer::PrecacheMesh</span> as the <span 
+ class="NDLSystemFont">NiMesh</span> is loaded. This behavior is enabled 
+ or disabled through the <span class="NDLSystemFont">NiMesh::SetUsePreloading</span> 
+ function. The default behavior is to have precaching enabled.</p>
+
+<p>The details of how each renderer operates with regards 
+ to precaching meshes can be found in the renderer-specific sections of 
+ documentation.</p>
+
+
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

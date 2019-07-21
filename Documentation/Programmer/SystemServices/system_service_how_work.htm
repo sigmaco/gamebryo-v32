@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How system services work</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>How system services work</h1>
+
+<p>All system services must inherit from the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></span> base class. This class
+declares a set of methods that are common to all system services. The class also defines default
+implementations for each of these methods. System services are allocated on the heap and are
+registered with the <span class="NDLSystemFont"><a href=
+"../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></span>. The service manager is
+responsible for initializing, ticking, and destroying all system services that are registered with
+it.</p>
+
+<table class="NDLNoteContainer" width="100%">
+    <tr align="left">
+        <td class="NDLNoteContainerTD">
+            <p class="NDLHeadingNoteContainer">Note</p>
+
+            <div class="NDLNote">
+                Remember, all system services must be allocated on the heap. Passing a
+                stack-allocated system service to the service manager will result in runtime
+                failures.
+            </div>
+        </td>
+    </tr>
+</table>
+
+<p>System services are designed to interact with one another. The <span
+class="NDLSystemFont">ISystemService</span> base class includes a pointer to the service manager.
+This pointer is assigned during registration with the service manager. This service manager pointer
+is used to gain access to other registered system services via the <span
+class="NDLSystemFont">efd::ServiceManager::GetSystemService</span> or <span class="NDLSystemFont">
+efd::ServiceManager::GetSystemServiceAs</span> methods.</p>
+
+<p>If your system service needs to wait for another system service to complete initialization, use
+the <span class="NDLSystemFont"><a href="../../Reference/efd/efd__IDependencyRegistrar.htm">
+efd::IDependencyRegistrar</a></span> interface provided during the <span class="NDLSystemFont">
+OnPreInit</span> method. Registering a dependency will ensure the dependent service is completely
+initialized before your service receives it's first <span class="NDLSystemFont">OnInit</span> call.
+</p>
+
+<p>If you want to simply check for the existence of another service, call the <span
+class="NDLSystemFont">GetSystemServiceAs</span> method on the service manager to get a pointer to
+the system service.</p>
+
+<p>Creating a system service requires you to inherit from <span class="NDLSystemFont">
+efd::ISystemService</span>, identify any other required system services, and override the <span
+class="NDLSystemFont">ISystemService</span> lifecycle methods to perform the work of your service.
+</p>
+
+<p>The <span class="NDLSystemFont">OnPreInit</span> method is a synchronous function and is called
+once and only once by the service manager. If <span class="NDLSystemFont">OnPreInit</span> returns a
+failure state, the service is considered dead and will receive no further calls.</p>
+
+<p>The <span class="NDLSystemFont">OnInit</span>, <span class="NDLSystemFont">OnTick</span>, and
+<span class="NDLSystemFont">OnShutdown</span> methods are asynchronous functions that are called
+repeatedly by the service manager as long as they return <span class="NDLSystemFont">
+ASyncResult_Pending</span>. The service manager stops calling these methods once an <span
+class="NDLSystemFont">AsyncResult_Failure</span> or <span class="NDLSystemFont">ASyncResult_Complete
+</span> is returned by the service. Failures from any of these methods will result in application
+shutdown.</p>
+
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+<ul>
+    <li><a href="system_service_overview.htm">System services overview</a></li>
+    <li><a href="system_service_features.htm">System service features</a></li>
+    <li><a href="system_service_priority_and_dependency.htm">Understanding System Service Priorities
+        and Dependencies</a></li>
+    <li><a href="system_service_limitations.htm">System service limitations</a></li>
+    <li><a href="system_service_how_relates_efr.htm">How system services relate to the Emergent Game
+        Framework</a></li>
+    <li><a href="system_service_reqs.htm">Requirements for using system services</a></li>
+    <li><a href="system_service_best_practice.htm">Best practices for working with system services
+        </a></li>
+    <li><a href="system_service_using.htm">Using system services</a></li>
+    <li><a href="../../Reference/efd/efd__ServiceManager.htm">efd::ServiceManager</a></li>
+    <li><a href="../../Reference/efd/efd__ISystemService.htm">efd::ISystemService</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+</html>

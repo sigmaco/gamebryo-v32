@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>How the MeshInstancing Demo Works</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>How the MeshInstancing Demo Works</h1>
+
+<p>The following sections describe how the <span class=
+"NDLSystemFont">MeshInstancing</span> sample uses Gamebryo's
+support for hardware instancing to render thousands of gears on
+screen. The methods and code are detailed function-by-function in
+the MeshInstancing Demo Code Overview section.</p>
+
+<h2>Overview</h2>
+
+<p>The sample loads <span class=
+"NDLSystemFont">recursive_gearing.nif</span> which contains 5
+separate non-instanced gear meshes. These gears are then
+instanced and placed the scene graph is such a way so that gear
+group exist inside of other gear groups. Creating a recursive
+gear fractal of sorts.</p>
+
+<h2>Hardware Instancing</h2>
+
+<p>Pressing the '<span class="NDLSystemFont">Hardware
+Instancing</span>' checkbox will toggle on and off the use of
+hardware instancing. When a large number of gears are being
+rendered users should notice a significant performance drop when
+turning off use of hardware instancing. This performance drop
+comes from the increased CPU work required by Gamebryo to render
+each gear individually. With hardware instancing enabled if both
+animation and dynamic bounds are disabled the application will
+become completely GPU bound.</p>
+
+<h2>Animation</h2>
+
+<p>Pressing the '<span class="NDLSystemFont">Animation'</span>
+checkbox will cycle execution of the gear rotations. A single
+recursive gear system can have a rather deep and complex scene
+graph. Multiply this complexity by thousands of gear systems and
+the resulting scene graph can become quite large. Calculating the
+animations for the scene requires recursing through the entire
+scene graph and performing calculations on each gear. This can be
+a rather time consuming process and should be something to keep
+in mind when creating large instanced scenes. Support for
+hardware instancing allows the renderer to quickly draw large
+numbers of objects, but it does not change the amount of time
+required to update / animate them. Turning off animation of the
+scene allows users to see how update time of a large scene is
+related to total frame time.</p>
+
+<h2>Dynamic Bounds</h2>
+
+<p>Pressing the '<span class="NDLSystemFont">Dynamic
+Bounds'</span> checkbox will toggle support for updating the
+scene graph bounds every frame. Computing the bounding volumes
+for a scene graph requires recursing to the leaf nodes of the
+scene graph and then bubbling data back up to the root node. This
+can be time consuming on a on reasonable sized scene graphs,
+performing this process on a huge scene graph with thousands of
+nodes is significantly worse. Due to the time consuming nature of
+updating bounding volumes instanced meshes have the option of
+turning off bounds updates on instanced nodes. This can be very
+useful considering most cases of instancing are performed on
+static geometry. Toggling support for dynamic bounds allows the
+user to see the performance affects on the update time and total
+frame time. It should be noted that enabling dynamic bounds will
+only impact performance if the scene graph is being updated /
+changed.</p>
+
+<h2>Gear Systems &amp; Gears Per System</h2>
+
+<p>Adjusting the '<span class="NDLSystemFont">Gear
+Systems</span>' and '<span class="NDLSystemFont">Gears Per
+System</span>' sliders allow the user to control how many gears
+will be rendered. Adjusting the '<span class="NDLSystemFont">Gear
+Systems</span>' slider changes the total number of main gear
+cylinders. Each new gear system will be created behind the
+previous one. A maximum of 10 gear systems can be rendered.
+Adjusting the '<span class="NDLSystemFont">Gears Per
+System</span>' slider changes the number of gears inside of each
+gear system. New gears are added inside of larger gears in the
+system. A gear system can have a maximum of 500 gears.</p>
+
+<h2>Per Instance Culling</h2>
+
+<p>Gamebryo's hardware instancing support allows for instanced
+objects to be culled in two possible manners. The first and most
+CPU efficient method is to treat all the instances of a mesh as a
+single unit. A single bounding volume will be used to encapsulate
+all of the instances, if any portion of this bounding volume is
+visible all of the instances will be rendered. Only when the
+entire bounding volume is out of view will the instances actually
+be culled. This is of course also the most GPU expensive
+method.</p>
+
+<p>The other option, which is the most GPU efficient method, is
+to cull each instance individually. As one would expected
+performing culling on thousands of objects can be a rather CPU
+intensive task. To help mitigate this cost per a instance culling
+mesh modifier is used. Performing the culling by a mesh modifier
+allows for the process of culling thousands of objects to be
+split across multiple threads via Floodgate. The MeshInstancing
+demo makes use of per instance culling. The benefits of this can
+be scene in the demo when by adjusting the camera so some of the
+gears are outside of the camera's field of view.</p>
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

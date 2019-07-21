@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>CollisionTestDynamic Demo Code Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>CollisionTestDynamic Demo Code Overview</h1>
+
+<p>The main application code for this demo (<span class=
+"NDLSystemFont">CollisionTestDynamic</span>, subclassed from
+<span class="NDLSystemFont">NiSample</span>) is fairly
+straightforward. The bulk of the collision tracking, management,
+and response code is implemented in the <span class=
+"NDLSystemFont">Interact</span> class.</p>
+
+<p>The following are the principal functions in the <span class=
+"NDLSystemFont">CollisionTestDynamic</span> class.</p>
+
+<p class="NDLRefMemberFunction">
+CollisionTestDynamic::CreateScene</p>
+
+<p class="NDLRefMemberDescription">Creates an instance of the
+Interact class and opens a NIF file that contains the geometry
+and ABVs for the entire room. It also initializes the room
+surfaces for collision detection, as collidees, using the
+artist-created ABV trees, by calling <span class=
+"NDLSystemFont">Interact::AddCollidee</span>. It also initializes
+the camera to the defined parameters in the art file.</p>
+
+<p class="NDLRefMemberFunction">
+CollisionTestDynamic::Initialize</p>
+
+<p class="NDLRefMemberDescription">Calls the <span class=
+"NDLSystemFont">NiSample</span> (base class) version, and tells
+the collision detection system that velocities will be factored
+into the detection process.</p>
+
+<p class="NDLRefMemberFunction">
+CollisionTestDynamic::ShootBullet</p>
+
+<p class="NDLRefMemberDescription">Manages any delay, if needed,
+between firing bullets, reports when there are no more bullets,
+and obtains a new bullet via <span class="NDLSystemFont">Interact::ShootBullet</span>. Then,
+it adds the new bullet to the scene graph and performs the
+necessary updates.&lt;&lt;/p&gt;</p>
+
+<p>The following are the principal functions in the <span class=
+"NDLSystemFont">Interact</span> class.</p>
+
+<p class="NDLRefMemberFunction">Interact::AddCollidee</p>
+
+<p class="NDLRefMemberDescription">Used to add room surfaces
+(wall, ceiling, and so on) as collidees for the collision group, since
+room surfaces will not be moving in the scene. The collision
+detection system would default to creating OBB trees to use for
+collision detection for each room surface if bCreateOBBs were
+true. However, as the art assets contain ABVs, those are used,
+and bCreateOBBs is always false in this demo.</p>
+
+<p class="NDLRefMemberFunction">Interact::GetNextBullet</p>
+
+<p class="NDLRefMemberDescription">Returns the next available
+bullet after changing the necessary member variables to ensure
+proper memory handling.</p>
+
+<p class="NDLRefMemberFunction">Interact::ShootBullet</p>
+
+<p class="NDLRefMemberDescription">Gets the next available bullet
+and adds it as a collider for the collision group. The collision
+detection system in this case uses the artist created ABV tree to
+use for collision detection for each bullet.</p>
+
+<p class="NDLRefMemberFunction">Interact::UpdateCollisions</p>
+
+<p class="NDLRefMemberDescription">Calls <span class=
+"NDLSystemFont">NiCollisionGroup::FindCollisions</span>, which
+directs the collision detection system to find all collisions
+among the colliders and collidees within the collision group. It
+calls the callback function <span class=
+"NDLSystemFont">Interact::Callback</span> which maintains a list
+of collisions reported. <span class=
+"NDLSystemFont">FindCollisions</span> is paired with calls to
+<span class="NDLSystemFont">Interact::ResolveCollision</span>,
+which simulates simple physics response to the collisions. These
+two functions iterate multiple times so that any new collisions
+caused by the new direction and velocity of a bullet can also be
+detected. Finally, <span class=
+"NDLSystemFont">Interact::UpdateBullet</span> is called by this
+function for each bullet.</p>
+
+<p class="NDLRefMemberFunction">Interact::ResolveCollision</p>
+
+<p class="NDLRefMemberDescription">Manages the bulk of the
+collision response behaviors. If a bullet has collided with
+either another bullet or one of the walls of the room, then
+energy may be dissipated (accomplished by reducing the speed of
+the bullet), the direction of the velocity may be altered
+(accomplished by reflecting it through a contact normal when the
+angle of collision is obtuse), and the angular velocity may be
+updated (accomplished by using a moment arm to determine how much
+the bullet should rotate about its center of mass). Additionally,
+this function may reclassify the collider bullets as collidees,
+when the velocity is small enough. (Thus, the demo has made use
+of a simplifying assumption that motionless objects do not later
+re-enter the simulation as moving objects.)</p>
+
+<p class="NDLRefMemberFunction">Interact::UpdateBullet</p>
+
+<p class="NDLRefMemberDescription">Simulates the physics of
+rigid-body free fall motion on all live bullets.</p>
+
+<p class="NDLRefMemberFunction">Interact::Callback</p>
+
+<p class="NDLRefMemberDescription">Saves collisions that occur
+between objects. When a collider will hit two objects in one time
+step, the non-bullet-to-bullet collision is saved in order to
+avoid bullets passing through the ground plane when interacting
+with other bullets. The <span class=
+"NDLSystemFont">Interact::ResolveCollision</span> function will
+handle collision response.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href=
+    "CollisionTestDynamic_Demo_overview.htm">CollisionTestDynamic
+    Demo Overview</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Instancing Basics</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Instancing Basics</h1>
+
+<p>Gamebryo<!--kadov_tag{{</ignored>}}--> 
+ provides an API to allow applications to make use of hardware instancing 
+ support. The majority of this API exists inside the <a href="../../Reference/NiMesh/NiInstancingUtilities.htm"><span 
+ class="NDLSystemFont">NiInstancingUtilities</span><!--kadov_tag{{</ignored>}}--></a> 
+ class. Applications that wish to make use of Gamebryo's<!--kadov_tag{{</ignored>}}--> 
+ hardware instancing support need to verify that the executing platform 
+ supports hardware instancing, enable hardware instancing on the desired 
+ meshes, and provide the transforms for the instances.</p>
+
+<p>When hardware instancing for a mesh is enabled, that 
+ mesh changes from representing a single visible object to multiple visible 
+ objects, instances. This can lead to some confusion on how to work with 
+ the multiple instances that the single mesh represents. To help manage 
+ this process the <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ class can be used to create placeholder nodes in the scene graph to represent 
+ the location of an instanced mesh. More information about using the <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ class can be found below. </p>
+
+<h2>Instancing Options</h2>
+
+<p>Applications using hardware instancing have two main 
+ areas of flexibility: transforms and culling. How the application works 
+ with these options will have a large impact on the resources consumed 
+ by the instanced mesh.</p>
+
+<h4>Transforms:</h4>
+
+<p>There are two ways applications can define the transforms 
+ for the instances of an instanced mesh. Either <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ objects can be placed through out the scene graph to act as place holders 
+ for the mesh instances or the instance transforms can be provided directly.</p>
+
+<p>A <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span><!--kadov_tag{{</ignored>}}--></a> 
+ object is essentially an <a href="../../Reference/NiMain/NiAVObject.htm"><span 
+ class="NDLSystemFont">NiAVObject</span><!--kadov_tag{{</ignored>}}--></a> 
+ that references an instanced mesh. Using <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ objects has the advantage of allowing applications to work with mesh instances 
+ in a manner that is similar to other scene graph objects, instead of having 
+ to manually manage the transformations of each instance. When a <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ object is placed in the scene graph it inherits the transformations of 
+ its parent node. Any time a <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ object's transformations are changed, the instanced mesh it represents 
+ is notified, and the instance transforms stored by the instanced mesh will 
+ be updated. <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a><!--kadov_tag{{</ignored>}}--> 
+ objects are ideal for scenes with complex scene graphs and changing transforms.</p>
+
+<p>Instead of using <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span><!--kadov_tag{{</ignored>}}--></a> 
+ objects to represent the transforms of the instanced meshes, they can 
+ be manually managed by the application and passed directly to the instanced 
+ mesh. While this method can require more work on the application's side 
+ to manage transforms, it eliminates the need to have large numbers of 
+ <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span><!--kadov_tag{{</ignored>}}--></a> 
+ objects existing. Manually providing the instance transformations is ideal 
+ for scenes with shallow scene graphs and static transformations.</p>
+
+<h4>Culling:</h4>
+
+<p>Since hardware instancing causes a single mesh to represent 
+ multiple meshes, care is required when determining the best way for an 
+ application to handle culling. The bounding volume stored on an instanced 
+ mesh contains the bounds of all the instances represented by that mesh. 
+ In order for the instanced mesh to be culled none of the instances can 
+ be visible. Even if only one of the instances is visible all of the instances 
+ will be rendered. In some cases it is even possible to have no instances 
+ visible and still have the instanced mesh rendered, such as looking between 
+ the grid lines of a grid of instanced meshes. For scenes where all the 
+ instances are clustered together, this is not a problem. However, for scenes 
+ where the instances are not close to each other, this can result in large 
+ amounts of unneeded data being executed by the GPU<!--kadov_tag{{</ignored>}}-->.</p>
+
+<p>Support for per instance culling is available to address 
+ this problem. Two culling passes will be executed on the mesh when per 
+ instance culling is enabled. The first culling pass is described above; 
+ the bound that contains all of the instances will be used as a quick check 
+ to see if all the instances can be culled. If any portion of this large 
+ bounding volume is visible, then the second culling pass will be initiated. 
+ The second culling pass performs the culling on a per instance level so 
+ only the visible instances are sent to the GPU for rendering. One problem 
+ with performing culling on a per instance level is simply the large number 
+ of instances that will need culled. With hardware instancing, it is possible 
+ to render thousands of objects at once in real-time.  However, performing culling 
+ on this many objects is not a trivial task. To help mitigate this cost 
+ the <a href="../../Reference/NiMesh/NiInstancingMeshModifier.htm"><span 
+ class="NDLSystemFont">NiInstancingMeshModifier</span></a><!--kadov_tag{{</ignored>}}--> 
+ uses <a href="../NiFloodgate/Introduction_to_NiFloodgate.htm">Floodgate</a> 
+ to parallelize<!--kadov_tag{{</ignored>}}--> 
+ the culling processes across available processors.</p>
+
+<p>Another way to reduce the amount of culling work required 
+ is to set the instanced mesh's bounding volume to be static. When a dynamic 
+ bounding volume is used, the bounding volume for the instanced mesh will 
+ need to be updated any time new instance transforms are provided or the 
+ location of a <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a> object is changed. The 
+ process of updating this bounding volume can be time consuming, especially 
+ if a large number of instances exist. Setting the bounding volume to static 
+ eliminates the need to update the bounding volume.</p>
+
+<h2>Using Hardware instancing</h2>
+
+<p>The process of using Gamebryo's hardware instancing 
+ support can be broken down into three parts. First, the application needs 
+ to check for hardware instancing support. Second, it needs to enable hardware 
+ instancing on the desires <a href="../../Reference/NiMesh/NiMesh.htm"><span 
+ class="NDLSystemFont">NiMesh</span></a> objects, and finally it will need 
+ to update the transformations of the instances.</p>
+
+<p>Support for hardware instancing can be determined by 
+ querying the <a href="../../Reference/NiMain/NiRenderer.htm"><span 
+ class="NDLSystemFont">NiRenderer</span></a> capability bits via <span class="NDLSystemFont">GetFlags()</span>. 
+ The following code from the MeshInstancing sample properly queries the 
+ renderer for hardware instancing support:</p>
+
+<pre>
+if ( !(NiRenderer::GetRenderer()-&gt;GetFlags() &amp;
+    NiRenderer::CAPS_HARDWAREINSTANCING) )
+{
+    NiMessageBox("The current hardware does not support hardware "
+        "instancing. Use of hardware instancing will be disabled in this "
+        "sample.",
+        "Warning - Hardware instancing not supported.");
+    m_bHardwareInstancing = false;
+}
+</pre>
+ 
+<p>To enable hardware instancing for a <a href="../../Reference/NiMesh/NiMesh.htm"><span 
+ class="NDLSystemFont">NiMesh</span></a> the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiInstancingUtilities.htm#Public_Static_Methods">NiInstancingUtilities::EnableMeshInstancing()</a></span> 
+ method should be used. This method has a large number of parameters that 
+ let you specify many of the options discussed above along with some others. 
+ One key detail about this method is that, depending on the platform, it 
+ may be required to duplicate index data. This requires either the mesh's 
+ index data to be created with the flag <a href="../../Reference/NiMesh/NiDataStream.htm#Public_Methods"><span 
+ class="NDLSystemFont">NiDataStream::ACCESS_CPU_READ</span></a> or for the 
+ index data to be passed directly into the <span class="NDLSystemFont">EnableMeshInstancing()</span> 
+ method. More information about the renderer specific requirements can 
+ be found in the <a href="Instancing_Renderer_Support.htm">renderer support</a> 
+ section.</p>
+
+<p>After hardware instancing has been enabled on a mesh, 
+ the transforms for the different instances need to be specified. As described 
+ above, this can be done in one of two ways. Either the transforms can 
+ be explicitly set or they can be specified via <a href="../../Reference/NiMesh/NiMeshHWInstance.htm"><span 
+ class="NDLSystemFont">NiMeshHWInstance</span></a> objects. Manually setting 
+ the instance transforms can simply be done by calling <a href="../../Reference/NiMesh/NiInstancingUtilities.htm#Public_Static_Methods"><span 
+ class="NDLSystemFont">NiInstancingUtilities::SetInstanceTransformations()</span></a>. 
+ If <span class="NDLSystemFont">NiMeshHWInstance</span> objects are used 
+ instead, then after the objects are created they will need to be assigned 
+ to the instanced mesh they are representing, and then finally placed in 
+ the scene graph. Assuming <span class="NDLSystemFont">m_spScene</span> is 
+ a valid smart pointer to a <span class="NDLSystemFont">NiNode, m_spInstancedMesh</span> 
+ is a valid pointer to a <span class="NDLSystemFont">NiMesh</span> object, 
+ and we wish to instance <span class="NDLSystemFont">m_spInstancedMesh</span> 
+ 500 times, the following code is an example of how this would be done:</p>
+
+<pre>
+NiInstancingUtilities::EnableMeshInstancing(m_spInstancedMesh, 500);
+ 
+for (NiUInt32 ui = 0; ui &lt; 500; ui++)
+{
+NiMeshInstance* pkInstanceNode = NiNew NiMeshHWInstance();
+NiInstancingUtilities::AddMeshInstance(m_spInstancedMesh, pkInstanceNode);
+m_spScene-&gt;AttachChild(pkInstanceNode);
+}
+</pre> 
+
+<h2>Unsupported systems</h2>
+
+<p>The following systems are not fully compatible with 
+ hardware instancing:</p>
+
+<ul>
+	
+	<li>NiAnimation</li>
+	
+	<li>NiCollision</li>
+	
+	<li>NiPhysX</li>
+</ul>
+
+<p>These systems may still be provided scenes with instanced 
+ meshes, but they will operate on the mesh as if it is a single object. 
+ </p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

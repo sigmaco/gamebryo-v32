@@ -1,0 +1,266 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Screen Space Rendering</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Screen Space Rendering</h1>
+
+<p>3D applications rarely consist of nothing but full, 3D worlds. Most 3D applications also include
+some set of 2D or screen-space objects, often used for user interface items, heads-up displays and
+backdrops. Gamebryo supports these types of objects, and includes a geometric classes to allow for
+different kinds of screen-space rendering. Note that like any other form of geometry in Gamebryo,
+all screen-space rendering must be drawn to a fully-prepared renderer (open render target group,
+etc). See <a href="Rendering_a_Frame.htm">Rendering a Frame</a> for details of these requirements.
+The section below describes the screen-space class supported by Gamebryo, as well as any additional
+requirements that must be met prior to rendering instances of it.</p>
+
+<h2>Rendering Individual Objects</h2>
+
+<h3>"2.5D" Rendering: NiMeshScreenElements</h3>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> represent the
+screen-space equivalent of generic <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> objects - they support general triangle lists
+(including the ability to add and delete sets of triangle and vertices within a given <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> instance),
+shaders, render state, and lighting. They also support dynamic transforms (and even transform
+hierarchies), as they are a subclass of <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> and hence <span class=
+"NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span>.</p>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> objects use the
+full geometric pipeline, and require the use of a special 3D view prior to rendering into a render
+target group. Prior to rendering <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span>, the code that
+renders them must call <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::SetScreenSpaceCameraData</span>, which sets
+the view to a normalized (0.0 - 1.0) coordinate system. Once the <span class=
+"NDLSystemFont">SetScreenSpaceCameraData</span> call is made, any number of calls to render
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> objects may be
+made. If the application needs to render additional 3D items once the 2D rendering is done, the
+desired 3D camera's view must be reset via a call to <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiRenderer.htm">NiRenderer</a>::SetCameraData</span>.</p>
+
+<p>In this screen-space coordinate system, the upper-left-hand corner of the screen is the origin,
+the positive X axis is towards the right, the positive Y axis is down, and the positive Z axis is
+into the screen. Note that while this is a right-handed coordinate system in 3D, when viewed as a
+purely 2D on-screen coordinate system, X and Y form a left-handed pair. Thus, assuming the default
+Gamebryo rendering system of front-CCW, visible polygons on screen in this view would appear to be
+clockwise if one used the more common interpretation of X=right, Y=up (right-handed) coordinate
+system. The creator of these objects must take this into account when creating custom polygons. The
+built-in rectangle creation functions take this into account and create the rectangles in the
+following vertex order: left-top (min X, min Y), left-bottom(min X, max Y), right-bottom (max X,
+max Y), right-top (max X, min Y). This is counter-clockwise when viewed in the X= right, Y=down
+coordinate system.</p>
+
+<p>Depth is less frequently used, but can be set in the vertex data contained in <a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm"><span class=
+"NDLSystemFont">NiMeshScreenElements</span></a> objects. Z values render front to back from values
+of 0 to 9999.</p>
+
+<p>The diagram below shows the coordinate system - note that the screen-space coordinate system is
+relative to the <em>port</em>, not the buffer.</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/ScreenElementsCoords.gif" width="715" height="528"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> are used for all
+screen-space rendering. <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> allows for
+complex rendering effects, and can also support any type of texture mapping. Applications that wish
+to use a single splash screen for multiple resolutions, for example, must use <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> for that splash
+screen, so that the texture can be stretched or squashed in order to fit any non-native
+resolutions. Rectangles are still very popular shapes with <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span>, so the object
+includes functions to easily set a 4-vertex polygon within a screen elements object to a
+screen-aligned and/or texture-aligned rectangle.</p>
+
+<p>The fact that <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> can support
+shaders make them a common object when implementing full-screen shading effects. In such a
+situation, the entire scene is rendered to an off-screen texture. Then, the resulting texture is
+rendered to a single screen elements object containing a single rectangle that fills the screen,
+using a pixel shader. Examples of this may be found in numerous Gamebryo demos.</p>
+
+<h3>Pixel-to-texel Mapping</h3>
+
+<p>It is often useful to be able to map a texture onto a screen-space rectangle in such a way that
+the texels of the texture and the pixels of the destination buffer match exactly one-to-one (or
+exactly 2-to-1, etc). In fact, for some shader effects such as downsizing a rendered texture to
+half its size, exact pixel-to-texel mapping is a requirement to make the effect work correctly.</p>
+
+<p>When rendering an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object, the
+screen-space camera settings for the given rendering target are used. These camera settings define
+(0.0, 0.0) as the upper-left corner of the upper-left pixel in the port and (1.0,1.0) as the
+lower-right corner of the lower-right pixel in the port. Since texture coordinates of 0.0 and 1.0
+define a point halfway between the last texel of one repetition of a texture and the first pixel of
+the next repetition of that texture, then the screen values used in Gamebryo match the method used
+by texture mapping. The simplest example of this is mapping an M-by-N texel texture directly to an
+M-by-N pixel render target group. The <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> rectangle for
+this is simply:</p>
+<pre>
+NiMeshScreenElementsPtr spSE = NiNew NiMeshScreenElements(false, false, 1);
+  int iHandle = spSE-&gt;Insert(4);
+  spSE-&gt;SetRectangle(iHandle, 0.0f, 0.0f, 1.0f, 1.0f);
+  spSE-&gt;SetTextures(iHandle, 0, 0.0f, 0.0f, 1.0f, 1.0f); 
+</pre>
+
+<p>Note that nothing in the above code uses the resolutions of the textures explicitly. This same
+screen-space item will work in any situation in which the texture and rendering target are the same
+resolution. The diagram below shows the case of a 1x4 texel texture being rendered into a 1x4 pixel
+rendering target directly. In this diagram, pixel boundaries are represented by the rectangle edges
+and exact pixel/texel centers (the sample point for non-antialiased rendering) are represented by
+dots:</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/PixelToTexelExact.gif" width="545" height="400"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<p>In fact, this same object can also be used to stretch an entire texture across an entire
+rendering target, no matter what the resolution of either. However, note that if the resolutions do
+not match, the mapping will obviously not be pixel-to-texel. This can be used to an application's
+advantage. For example, using the above <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object to render
+an M-by-N texture into an M/2-by-N/2 rendering target with bilinear texture filtering will result
+in the rendering target computing a box-filtered version of the source texture - in effect, a
+hardware-computed mipmap level. Repeating this process over and over, rendering an
+M/2<sup>i</sup>-by-N/2<sup>i</sup> to an M/2<sup>i+1</sup>-by-N/2<sup>i+1</sup> rendering target
+can compute an entire mipmap pyramid for a rendered texture dynamically in hardware. This is
+because the pixel centers of the lower-resolution rendering target will fall exactly in the middle
+between pairs of texel centers of the higher-resolution source texture. The diagram below shows the
+case of a 4x1 texel texture being rendered into a 2x1 pixel rendering target using bilerp. Once
+again, pixel boundaries are represented by the rectangle edges and exact pixel/texel centers (the
+sample point for non-antialiased rendering) are represented by dots:</p>
+
+<div class="NDLFigureContainer">
+    <img src="./images/PixelToTexelDownsizing.gif" width="526" height="400"> 
+    <!-- <p class="NDLFigureCaption">{Figure caption}</p> -->
+</div>
+
+<h2>Management of Screen Space Rendering Objects</h2>
+
+<p>The core Gamebryo libraries do not provide specific high-level management structures for the
+screen-space rendering objects since they are a subclass of NiMesh. These items can basically stand
+on their own when rendering , so little more than an array or list of these items are required to
+manage the objects to be rendered. <span class="NDLSystemFont">NiApplication</span> does include an
+array of this type of object, which are automatically rendered by the default <span class=
+"NDLSystemFont">RenderScreenItems</span>, which is in turn called by <span class=
+"NDLSystemFont">RenderFrame</span>. Thus, <span class="NDLSystemFont">NiApplication</span>-based
+apps that simply use screen space items as overlays can attach their screen space items to the
+<span class="NDLSystemFont">NiApplication</span> member container obtained via <span class=
+"NDLSystemFont">NiApplication::GetScreenElements</span>, and they will be rendered each frame. More
+advanced applications can create their own containers, or can even render the objects as needed
+directly. Since the screen-space objects can support complex rendered items (such as an entire page
+of rendered text), applications can often create complex effects with even a single object, making
+large arrays of these items unnecessary.</p>
+
+<h2>The Architecture of NiMeshScreenElements</h2>
+
+<h3>NiMeshScreenElements and Component "Polygons"</h3>
+
+<p><span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> is a flexible
+class that is designed to support a wide range of screen-space primitives. The class manages any
+number of atomic "polygons", which are each very much like individual triangle list primitives
+(i.e. similar to <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> objects, although the implementation is
+actually to represent all of the "polygons" in a given <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object with a
+single <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>
+object). Each polygon in an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object has its
+own array of vertices (and colors, normals, and texture coordinate sets, if desired), and its own
+set of triangle connectivity data. Each polygon object is self-contained; a polygon object can only
+access its own vertices, not the vertices for any other polygon object in the same <span class=
+"NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> instance.</p>
+
+<h3>Polygon Objects and their Vertices</h3>
+
+<p>Polygon objects within an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> instance are
+uniquely identified by integer "handles". Within a given polygon object, the vertex array (and
+other per-vertex arrays) may be retrieved and individual vertices in that array accessed via an
+index. Thus, each vertex in the entire <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> instance is
+represented by a unique pair of indices; (polygon index, vertex index). The vertex indices within
+each polygon range from 0 to the number of vertices in that polygon minus one.</p>
+
+<h3>Polygon Objects and their Triangles</h3>
+
+<p>Triangle arrays are also stored and indexed per polygon. The number of valid indices for a given
+polygon object is equal to the number of triangles in that polygon object, times three. The fully
+general set of indices per polygon object means that each polygon object can represent a convex,
+concave, simple or complex polygon in the formal sense, or even a set of disjoint polygons or
+polyhedra. The main idea is that a polygon object represents an atomic subset of the triangles in
+an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object. Polygon
+objects within an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> instance may be
+inserted or deleted at will. However, individual vertices and triangles within a polygon object may
+not be added or deleted. In order to change the number of vertices or triangles in a polygon
+object, the polygon object must be deleted and recreated.</p>
+
+<h3>The Coordinate System</h3>
+
+<p>The vertex positions are stored in normalized coordinates, and thus require no changes if the
+<span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> object is
+rendered to multiple render target groups of different sizes. However, note that the aspect ratio
+of the render target is not taken into account when rendering <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span>. If the content
+is authored for a 4:3 aspect ratio rendering target and then rendered to a square rendering target,
+then there may be squashing or stretching as the object is rendered to exactly fit the target.</p>
+
+<h3>Modifying Vertices and Triangles in a Polygon</h3>
+
+<p>The accessor functions within <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshScreenElements.htm">NiMeshScreenElements</a></span> are designed to
+allow two types of vertex component access. The first is enabled by the "Set" functions, and copies
+data into the internal representation from single values or arrays of values. These functions also
+automatically set the "changed" flags upon the data, ensuring that the renderer will repack the
+data prior to rendering the object again. The other type of access is to use the array-returning
+Get functions (not the Get functions that take arrays as arguments these functions copy data into
+user-supplied arrays), which return pointers to the internal representation of the data.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

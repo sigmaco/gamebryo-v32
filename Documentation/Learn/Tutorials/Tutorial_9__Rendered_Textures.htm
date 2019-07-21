@@ -1,0 +1,279 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Core Runtime Tutorial 9: Rendered Textures</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Core Runtime Tutorial 9: Rendered Textures</h1>
+
+<p>This tutorial covers creating and displaying a rendered 
+ texture.</p>
+
+<h2>The Demo</h2>
+
+<p>In the demo, we replace the logo texture on the remote 
+ with a rendered texture that gives a bird's eye view from the perspective 
+ of the helicopter.</p>
+
+<h2>What You Should See After Running the Tutorial</h2>
+
+<p>All platforms should display a village, a moving helicopter, 
+ and a rendered view in the RF remote. The following screen capture was 
+ taken from the <span class="NDLSystemFont">Win32</span> platform.</p>
+
+
+<div class="NDLFigureContainer">
+    <img src="images/tutorial9.jpg" width="515" height="400" alt="Adding rendered textures (57K)" />
+        <p class="NDLFigureCaption">Adding rendered textures</p>
+</div>
+
+
+<h2>The Relevant Code</h2>
+
+<p>The relevant code in this tutorial is concerned with 
+ creating a rendered texture. To make things simple, we have had the artist 
+ create an object named &quot;DisplayScreen&quot; that has the texture 
+ that we wish to replace. All we need to do is find the object, grab the 
+ texturing property, and replace the existing base texture with our new 
+ rendered texture. Once we have done that, we create a render target group 
+ that will let the renderer know where to draw this scene during the rendering 
+ pass. We store a smart pointer to the display screen so that it can be 
+ culled prior to rendering from the helicopter (so that the remote control 
+ is not seen floating in space).</p>
+
+<pre>
+void RenderedTexture::ReplaceDisplayTextureWithRenderedTexture()
+{
+    m_spDisplayScreen = m_spScene-&gt;GetObjectByName("DisplayScreen");
+    NIASSERT(m_spDisplayScreen);
+ 
+    NiTexturingProperty* pkTexturing = (NiTexturingProperty*)
+        m_spDisplayScreen-&gt;GetProperty(NiProperty::TEXTURING);
+    NIASSERT(pkTexturing);
+</pre> 
+
+<p>Now, we can create our rendered texture and save a reference 
+ to it through <span class="NDLSystemFont">m_spTexture</span>.</p>
+
+<pre>
+    m_spTexture = NiRenderedTexture::Create(256, 256, m_spRenderer);
+    NIASSERT(m_spTexture);
+</pre>
+ 
+<p>The final part of creating a rendered texture is to 
+ create an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderTargetGroup.htm">NiRenderTargetGroup</a></span>. 
+ The <span class="NDLSystemFont">NiRenderTargetGroup::Create</span> function 
+ will use the current renderer settings to create a rendered texture, attempting 
+ to detect multisampling and dimension requirements as needed. (If you 
+ are curious, the last two boolean arguments of the <span class="NDLSystemFont">Create</span> 
+ call are to request a compatible stencil buffer as part of the rendered 
+ texture.) As a final step using the texturing property that we got earlier 
+ in the function, we set the base texture of <span class="NDLSystemFont">DisplayScreen</span> 
+ to be the rendered texture that we have created.</p>
+
+<pre>
+    m_spRenderTargetGroup = NiRenderTargetGroup::Create(
+        m_spTexture-&gt;GetBuffer(), m_spRenderer, true, true);
+    NIASSERT(m_spRenderTargetGroup);
+ 
+    pkTexturing-&gt;SetBaseTexture(m_spTexture);
+</pre> 
+
+<p>We also want to set the apply mode on the texturing 
+ property to be <span class="NDLSystemFont">APPLY_REPLACE</span>, so that 
+ the colors of the texture will completely replace the lighting on the 
+ screen.</p>
+
+<pre>
+    pkTexturing-&gt;SetApplyMode(NiTexturingProperty::APPLY_REPLACE);
+}
+</pre> 
+ 
+<p>Now we are going to get ready to set up our new camera. 
+ We will do this in <span class="NDLSystemFont">CreateScene</span>. The camera 
+ we want to create actually already exists. It was created in Maya, attached 
+ to the helicopter, and exported out along with the helicopter. We find 
+ the camera by using <span 
+ class="NDLSystemFont"><a HREF="../../Reference/NiApplication/NiApplication.htm">NiApplication</a>::FindFirstCamera</span> which is 
+ similar to the <span class="NDLSystemFont">FindCamera</span> we wrote in 
+ <a HREF="Tutorial_2__Nif_Files.htm">Tutorial 2: Files</a>.</p>
+
+<pre>
+    m_spExtraCamera = FindFirstCamera(pkHeli);
+    NIASSERT(m_spExtraCamera);
+</pre> 
+
+<p>In this application, we will override another function 
+ that we have not before: <span class="NDLSystemFont">CreateFrame</span>. 
+ This function is called by <span class="NDLSystemFont">NiApplication</span> 
+ after <span class="NDLSystemFont">CreateScene</span> and is used to set 
+ up the <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Frame.htm">render 
+ frame</a> that will be used to render the scene. This tutorial has enabled 
+ using the Gamebryo <a HREF="../../Programmer/Frame_Rendering_System/Introduction_to_the_Frame_Rendering_System.htm">frame 
+ rendering system</a> for rendering the scene. This allows you to set up 
+ your rendering operations in the <span class="NDLSystemFont">CreateFrame</span> 
+ function and have them automatically executed by <span class="NDLSystemFont">NiApplication</span> 
+ during its rendering call.</p>
+
+<p>In this tutorial, we need the rendered texture to be 
+ drawn first and then the rest of the scene. To do this, our <span class="NDLSystemFont">CreateFrame</span> 
+ function will first call <span class="NDLSystemFont">NiSample::CreateFrame</span> 
+ to create the default render frame with <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Step.htm">render 
+ steps</a> to render the main scene graph (<span class="NDLSystemFont">m_spScene</span>) 
+ and all screen-space elements.</p>
+
+<pre>
+bool RenderedTexture::CreateFrame()
+{
+    if (!NiSample::CreateFrame())
+    {
+        return false;
+    }
+</pre> 
+
+<p>Once the render frame has been created, our function 
+ needs to create a <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_Click.htm">render 
+ click</a> that will render to the rendered texture. This is done by first 
+ creating a <a HREF="../../Programmer/Frame_Rendering_System/Frame_Rendering_System_Render_View.htm">render 
+ view</a> object to hold the scene graph and camera to render from the 
+ helicopter. We will use the <span class="NDLSystemFont">m_spScene</span> 
+ and <span class="NDLSystemFont">m_spExtraCamera</span> pointers here.</p>
+
+<pre>
+    Ni3DRenderView* pkRenderedTextureRenderView = NiNew Ni3DRenderView(
+        m_spExtraCamera, m_spCuller);
+    pkRenderedTextureRenderView-&gt;SetName(m_kRenderedTextureRenderViewName);
+    pkRenderedTextureRenderView-&gt;AppendScene(m_spScene);
+</pre> 
+ 
+<p>Next, we need to create a render click that will use 
+ our render view. This render click will be told to render its output to 
+ the render target group that we created earlier. It will also be told 
+ to clear all of its color, depth, and stencil buffers when it renders. 
+ We will attach pre- and post-processing functions to this render click 
+ to allow us to cull the display screen object when we render this pass.</p>
+
+<pre>
+    NiViewRenderClick* pkRenderedTextureRenderClick = NiNew NiViewRenderClick;
+    pkRenderedTextureRenderClick-&gt;SetName(m_kRenderedTextureRenderClickName);
+    pkRenderedTextureRenderClick-&gt;AppendRenderView(
+        pkRenderedTextureRenderView);
+    pkRenderedTextureRenderClick-&gt;SetRenderTargetGroup(m_spRenderTargetGroup);
+    pkRenderedTextureRenderClick-&gt;SetClearAllBuffers(true);
+    pkRenderedTextureRenderClick-&gt;SetPreProcessingCallbackFunc(
+        RenderedTextureRenderClickPre, this);
+    pkRenderedTextureRenderClick-&gt;SetPostProcessingCallbackFunc(
+        RenderedTextureRenderClickPost, this);
+</pre> 
+
+<p>Finally, we need to add our render click at the beginning 
+ of the main render step that was created in <span class="NDLSystemFont">NiApplication::CreateFrame</span>. 
+ We want to draw to the rendered texture immediately before rendering the 
+ main scene, so we'll add our rendered texture render click to the beginning 
+ of the list of render clicks in the main render step.</p>
+
+<pre>
+    NIASSERT(m_spFrame);
+    NiDefaultClickRenderStep* pkMainStep = NiDynamicCast(
+        NiDefaultClickRenderStep, m_spFrame-&gt;GetRenderStepByName(
+        m_kMainRenderStepName));
+    NIASSERT(pkMainStep);
+    pkMainStep-&gt;PrependRenderClick(pkRenderedTextureRenderClick);
+ 
+    return true;
+}
+</pre> 
+
+<p>The pre- and post-processing functions that we registered 
+ with our render click simply cull the display screen object before rendering 
+ to the rendered texture and restore it once rendering is complete. Since 
+ these are static functions, a pointer to the <span class="NDLSystemFont">RenderedTexture</span> 
+ class was set as the callback data for these functions when they were 
+ registered, so each function first needs to grab this pointer and then 
+ use it to set the culled state on the display screen.</p>
+
+<pre>
+bool RenderedTexture::RenderedTextureRenderClickPre(
+    NiRenderClick* pkCurrentRenderClick, void* pvCallbackData)
+{
+    RenderedTexture* pkThis = (RenderedTexture*) pvCallbackData;
+    pkThis-&gt;m_spDisplayScreen-&gt;SetAppCulled(true);
+    return true;
+}
+ 
+bool RenderedTexture::RenderedTextureRenderClickPost(
+    NiRenderClick* pkCurrentRenderClick, void* pvCallbackData)
+{
+    RenderedTexture* pkThis = (RenderedTexture*) pvCallbackData;
+    pkThis-&gt;m_spDisplayScreen-&gt;SetAppCulled(false);
+    return true;
+}
+</pre> 
+
+<p>Now that the render frame is set up, <span class="NDLSystemFont">NiApplication</span> 
+ will automatically render from the helicopter camera to our rendered texture 
+ and then use that texture when rendering the display screen in the main 
+ scene. This will allow us to see an image of what is rendered on that 
+ camera displayed on the screen.</p>
+
+<p>The very last thing to note in this demo is that we 
+ had to override <span class="NDLSystemFont">NiApplication::Terminate</span> 
+ because of the introduction of smart pointer member variables. It is necessary 
+ to set them to NULL so that their reference count will be zero. That way 
+ they will release the memory that they are pointing to during termination 
+ of the application.</p>
+
+<pre>
+void RenderedTexture::Terminate()
+{
+    m_spDisplayScreen = NULL;
+    m_spTexture = NULL;
+    m_spRenderTargetGroup = NULL;
+    m_spExtraCamera = NULL;
+    NiSample::Terminate();
+}
+</pre> 
+
+<h2>Moving on...</h2>
+
+<p>This is the final tutorial in the Core Runtime tutorial series. For more information about Core Runtime programming, see <a href="../../Programmer/Introduction_to_CoreRuntime_Programming.htm">Core Runtime Programming</a>.</p>
+
+<p>Additional tutorials cover the <a href="tutorial_game_framework_intro.htm">Game Framework</a> and <a href="sso_tutorial_intro.htm">Online</a> subsystems.</p> 
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+<li><span class="NDLSystemFont"><a href="../../Reference/NiApplication/Introduction_to_NiApplication.htm">NiApplication</a></span></li>
+<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiFrustum.htm">NiFrustum</a></span></li>
+<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderer.htm">NiRenderer</a></span></li>
+<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiRenderedTexture.htm">NiRenderedTexture</a></span></li>
+<li><span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTexturingProperty.htm">NiTexturingProperty</a></span></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

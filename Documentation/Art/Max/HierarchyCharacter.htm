@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Animated Character Hierarchy ABV Example</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Animated Character Hierarchy ABV Example</h1>
+
+<div class="FigureContainer">
+    <img alt="" src="./images/animated_character_example_01.jpg"
+    width="282" height="215">&nbsp;<img alt="" src=
+    "./images/animated_character_example_02.jpg" width="280"
+    height="214">
+
+    <p class="FigureCaption">Animated Character Example</p>
+</div>
+
+<p>The soldier model pictured above uses the same proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+as mentioned earlier, but a couple other aspects of modeling the
+<a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+come into play here. The first picture above shows a proxy
+<a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+hierarchy defined and tailored for the soldier in figure mode
+(the "Figure Soldier"). The second shows a proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+hierarchy defined and tailored for the Soldier moving in his
+backward walk cycle (the "Walk Soldier").</p>
+
+<p>First of all, the basic proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+for the main body parts - torso, legs, feet, arms, hands &amp;
+head - were modeled in figure mode and are the same for both
+models. Because a skin-and-bones character does not have
+individual skins for each body part, these proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+were attached to the underlying bones of the character, instead.
+While the bones will not be rendered (they should be set to
+"hidden" when exported to NIF format), they do remain with the
+model in order to control the positioning of the skin. Because of
+these attachments, the proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+move with the character when he is animated (right picture).</p>
+
+<p>The <span class="NDLSystemFont">PROPAGATE_ALWAYS</span>
+<a href=
+"../../Reference/NiCollision/Propagation_Control_Flags.htm">propagation
+flag</a> is vital to implementing this <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+tree scheme, allowing a dynamic hierarchy of <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+to be defined for a dynamic object, such as (but not limited to)
+an animated skin-and-bones character. The flag is only applicable
+to <a href=
+"../../Reference/NiCollision/Collision_Data.htm">collision
+data</a> attached to an <span class="NDLSystemFont"><a href=
+"../../Reference/NiMain/NiNode.htm">NiNode</a></span>-derived
+class.</p>
+
+<p>Many of the proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+for the soldier use the <span class=
+"NDLSystemFont">PROPAGATE_ALWAYS</span> <a href=
+"../../Reference/NiCollision/Propagation_Control_Flags.htm">propagation
+flag</a>, including the torso, legs and arms. Because of the way
+collision propagation works, proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+should be defined for all children of a node that uses
+<span class="NDLSystemFont">PROPAGATE_ALWAYS</span> and should
+likely be defined all the way down the tree until <span class=
+"NDLSystemFont">PROPAGATE_NEVER</span> proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+are reached. In order to better clarify these concepts, we will
+look at the definition of the soldier proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+in detail from the top bone down, following the schematic diagram
+(for the "Walk Soldier") pictured below.</p>
+
+<div class="FigureContainer">
+    <img src="images/CharacterSceneGraph.jpg" width="540" height=
+    "792" alt="CharacterSceneGraph (118K)">
+
+    <p class="FigureCaption">Animated Character Example
+    Hierarchy</p>
+</div>
+
+<h3>Bip01</h3>
+
+<p>Bip01 is the main attachment point for the character in the
+scene graph. Because the figure-mode skin geometry will be placed
+as children of this node, we do not want to start collision
+testing at Bip01, but rather at its first child.</p>
+
+<h3>Bip01 Pelvis</h3>
+
+<p>There are a few "free" bones in the character
+hierarchy&mdash;ones that don't control a major body part with
+which we are concerned about colliding. We will take advantage of
+these free bones to define culling proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+for larger groups of bones. If a potential collision is not found
+at this level, then testing will not continue any further into
+the character. By defining one of these free bones for the Bip01
+Pelvis, we end up with an overall bound for the entire
+character.</p>
+
+<p>This setup is very important, because, otherwise, the various
+nodes with collision data set to <span class=
+"NDLSystemFont">PROPAGATE_ALWAYS</span> would cause many nodes to
+be tested for every other collidable object in the scene. Also,
+by attaching it to the pelvis, the <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+will rotate with the character as it moves, allowing us to define
+a fairly tight bound for him.</p>
+
+<p>The size and shape of this proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+will be determined by what you plan to do with the character. You
+could define one large bound that would enclose the character no
+matter what the animation was. This choice is perhaps the most
+desirable, as you won't have to keep multiple versions of a
+character around. The undesirable part of this approach is that
+it will not be as efficient as a tighter bound tailored for a
+particular situation. In the "Figure Soldier" model, this
+<a href="../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">
+ABV</a> is a large sphere, which has a lot of wasted space in
+front and behind of the model. In the "Walk Soldier" model,
+because we know that he will never stretch his arms out during
+his animation cycle, we fit a much tighter capsule <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+to his geometry.</p>
+
+<p>We can set the <a href=
+"../../Reference/NiCollision/Propagation_Control_Flags.htm">propagation
+flag</a> for this <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+as <span class="NDLSystemFont">PROPAGATE_ON_SUCCESS</span> which
+means that propagation will only occur on a successful collision.
+Also, by default, no callback will be called.</p>
+
+<h3>Bip01 Spine</h3>
+
+<p>The Bip01 Spine is the bone that branches out to other bones.
+To it we will attach a tight-fitting box to encompass the lower
+part of the torso of the character. To make sure that collision
+testing occurs on the other parts of the character, we will set
+the propagation flag to <span class=
+"NDLSystemFont">PROPAGATE_ALWAYS</span>. We could have attached
+the torso box to one of the other spine linkages, but then the
+first spine bone would have been useless, as it couldn't be used
+to generate any culling proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+that would have done anything other than what the Bip01 Pelvis
+already did.</p>
+
+<h3>Bip01 Spine1</h3>
+
+<p>Bip01 Spine1 is another "free" bone, as the torso <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+is already enclosing the spine. Rather than having nothing or
+placing a dummy <span class=
+"NDLSystemFont">PROPAGATE_ALWAYS</span> with a <span class=
+"NDLSystemFont">NOTEST</span> <a href=
+"../../Reference/NiCollision/Collision_Control_Flags.htm">collision
+flag</a>, we will take this opportunity to do some more culling,
+creating another <span class=
+"NDLSystemFont">PROPAGATE_ON_SUCCESS</span> <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+that culls out the upper body. The "Figure Soldier" has a
+horizontal capsule <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+surrounding the arms, head and chest, while the "Walk Soldier"
+has a vertically oriented capsule <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+that encloses the same body parts.</p>
+
+<h3>Bip01 Spine2</h3>
+
+<p>This bone is used to enclose the upper portion of the torso.
+While the lower torso box could have been made large enough to
+cover the entire torso, this technique allows the bounds to more
+closely follow the character is he twists or bends over. Besides,
+there wasn't anything else to do with this node.</p>
+
+<h3>Bip01 Neck</h3>
+
+<p>Bip01 Neck could have been left without collision data,
+however, we decided to go ahead and add a small sphere
+representation.</p>
+
+<h3>Bip01 L Clavicle &amp; Bip01 R Clavicle</h3>
+
+<p>These bones are also buried inside the upper pelvis, but since
+we now have a notion of "left and right", we will use them to
+create culling <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+for the arms. Culling is still quite useful, so we might as well
+see if we can eliminate the tests against the three other bounds
+that make up each arm. The <span class=
+"NDLSystemFont">PROPAGATE_ON_SUCCESS</span> flag will be used
+here, too.</p>
+
+<p>The character animation really comes into play here. The
+Clavicles will swing with the torso, pretty much, but their
+motions can be quite different from that of the arms that are
+attached to them. For a generalized cull hierarchy, these
+<a href="../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">
+ABV</a>s will need to be quite large to capture all the potential
+motion of the character's arms. For a character that's standing
+like a scarecrow ("Figure Soldier" model), these proxy <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+can be quite small. For the "Walk Soldier", they had to be quite
+a bit larger and carefully positioned so that they would capture
+most, if not all, of the character's motion (you might settle for
+some minor artifacts, such as elbow-tips passing through other
+objects, in an effort to keep your performance up).</p>
+
+<h3>Bip01 L Upper Arm, Bip01 L Fore Arm.</h3>
+
+<p>The arm segments are capsule <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>s
+with <span class="NDLSystemFont">PROPAGATE_ALWAYS</span>
+propagation. They need to be overlapped somewhat to make sure
+that the rounded caps of the capsule ABVs catch all the geometry
+during animation.</p>
+
+<h3>Bip01 L Hand &amp; Bip01 R Hand</h3>
+
+<p>We now reach the first end nodes of the collision hierarchy.
+While there might be finger bones in the model, we don't care
+about them in this application, and will use the <span class=
+"NDLSystemFont">PROPAGATE_NEVER</span> propagation flag on the
+boxes defined for these proxies.</p>
+
+<h3>Bip01 Head</h3>
+
+<p>Similar to the hands, the Bip01 Head is an end node of the
+hierarchy, approximated by a box <a href=
+"../../Reference/NiCollision/Alternate_Bounding_Volumes.htm">ABV</a>
+with <span class="NDLSystemFont">PROPAGATE_NEVER</span>
+propagation. In this case, we don't care about collision with the
+hat, so the proxy box is not made large enough to surround the
+hat.</p>
+
+<h3>Bip01 L Thigh, Bip01 L Calf, Bip01 L Foot.</h3>
+
+<p>The leg hierarchy behaves similarly to the arm hierarchy,
+except that there are no free bones for culling out each side as
+in the upper body. With different bone hierarchies, perhaps this
+approach could have been possible.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

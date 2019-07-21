@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Action Service Overview</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2"
+type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Action Overview</h1>
+
+<p>The action system in Toolbench provides plug-in writers with a
+mechanism for creating operations other plug-ins can use. By
+creating an action you can make an operation undoable,
+automateable and potentially scriptable.</p>
+
+<h2>Action Executor</h2>
+
+<p>The ActionExecutor is responsible for executing actions in
+Toolbench. Any action it executes is forwarded to any action
+processors registered with the action system, provided the action
+executor has not been suspended. Currently if a plug-in has an
+action processor it will be loaded immediately with the action
+plug-in and begin receiving any actions that are executed.</p>
+
+<h2>Action Processor</h2>
+
+<p>The IActionProcessor interface is used by plug-in authors to
+create their action processors that the action executor will send
+actions to.  Action processors are a way plug-in authors can add
+functionality to the action system.  For example, the undo system
+is implemented in part with an action processor.  The undo action
+processor sniffs incoming actions to figure out if it should
+place them onto the undo stack.</p>
+
+<h2>Interfaces</h2>
+
+<ul>
+    <li>IActionHandler
+
+        <ul>
+            <li>All actions must implement this interface at some
+            level.  Actions only implementing this interface can
+            only do the bare minimum, which is execute.</li>
+        </ul>
+    </li>
+
+    <li>IContentModifyingAction
+
+        <ul>
+            <li>Actions with this interface will cause the
+            content to be dirtied automatically if an action of
+            this type is executed on the content.</li>
+        </ul>
+    </li>
+
+    <li>IUndoableActionHandler
+
+        <ul>
+            <li>Actions with this interface can be undone or
+            redone once executed.  Undoable actions are also
+            content modifying actions. Note, it is the
+            responsibility of the action to maintain the
+            necessary state necessary for performing a redo.</li>
+        </ul>
+    </li>
+
+    <li>ISerializableAction
+
+        <ul>
+            <li>Actions with this interface support being
+            serialized and deserialized at a later time to
+            perform the exact same action again.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>All 3 special IActionHandler interfaces have support for
+dynamically changing the assumed capability of the interface. 
+For example, the IUndoableActionHandler has a property that
+returns whether or not the action is undoable.  This is so the
+system supports a situation where the action could become
+conditionally undoable, most of the time the properties will just
+return true.</p>
+
+<p>An action that does not always return true for its undo
+capability is the entity select actions in the World Builder
+plug-in suite. There is a setting to enable or disable the
+ability for selection events/actions to be undoable. Therefore,
+the selection related actions check this setting in order to
+determine the state of the undoable nature of the action.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

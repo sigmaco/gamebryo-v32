@@ -1,0 +1,299 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>DDE Header Generator Usage</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Expedition" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>DDE Header Generator Usage</h1>
+
+<p>The Data Driven Enum (DDE) header generator can generate a C++ header file which defines symbols
+for every entry in a DDE file. You can specify how these symbols are named, whether they should be
+placed into a namespace and the data type that should be used. This allows the enumeration values
+to be compiled into code in a type safe manner.</p>
+
+<h2>Usage</h2>
+
+<p class="NDLRefMemberFunction">DDEHeaderGenRelease enum=input_filename output=output_filename
+[base#=base1_filename] [base#=base2_filename] [base#=...]</p>
+
+<h2>Required Arguments</h2>
+
+<p class="NDLRefMemberFunction">enum=input_filename</p>
+
+<p class="NDLRefMemberDescription">Provide the source enum file name including the path.</p>
+
+<p class="NDLRefMemberFunction">output=output_filename</p>
+
+<p class="NDLRefMemberDescription">Provide a file name including the path where the resulting
+header file is created.</p>
+
+<h2>Optional arguments</h2>
+
+<p class="NDLRefMemberFunction">base#=base_enum_filename</p>
+
+<p class="NDLRefMemberDescription">This attribute is used to specify the file name and path of all
+base enumerations. If the enumeration file specified by the "enum" argument uses the "base"
+attribute in the "enum" tag then you must specify the base enumeration file. In turn, if that base
+enumeration also has its own base enumeration it must also be specified using its own "base#"
+argument. The order in which the base tags is specified is important, the first "base#" argument
+provides the original parent enumeration file which is used as the base by the second enumeration,
+and so on with the last being base enumeration specified being the enumeration used directly by the
+source enumeration file. For example, egfLogID.enum uses ecrLogID.enum as its base, which in turn
+uses efdLogID.enum as the original parent. Assuming all files are in the current directory, this
+can be specified as follows:</p>
+
+<p class="NDLRefMemberDescription"><span class="NDLSystemFont">DDEHeaderGenRelease.exe
+base#=efdLogIDs.enum base#=ecrLogIDs.enum enum=egfLogIDs.enum output=egfLogIDs.h</span></p>
+
+<h2>Enum file format</h2>
+
+<p>The enum data file is written in XML using a specific format that includes the following
+tags:</p>
+
+<h3>enum</h3>
+
+<p>The top level tag which defines the data driven enumeration. This tag supports the following
+attributes:</p>
+
+<ul>
+    <li>base&mdash;If this enumeration derives from a base enumeration then the base enumeration
+    name is specified. Specify only the enum name, not the file name. When a base enumeration is
+    specified the 'type', 'storage', and 'invalid' attributes cannot also be used and are ignored.
+    When a base enumeration is specified this enumeration will begin with the next value that would
+    have been assigned by the parent enumeration. Note that future changes to the base enumeration
+    will cause this enumeration to be renumbered.</li>
+
+    <li>type&mdash;Determines how values are assigned to new keys.
+
+        <ul>
+            <li>"Normal": (Default) Results in sequential assignment of values starting from zero
+            and incrementing by one.</li>
+
+            <li>"Bitfield": Results in sequential assignment of bits starting from one and left
+            shifting by one for each additional value.</li>
+        </ul>
+    </li>
+
+    <li>storage&mdash;pecifies the storage data type which determines how many bytes of memory are
+    used for each entry. This also determines the values of the 'EE_MAX' and 'EE_MIN' tokens. Valid
+    values for this attribute are: efd::UInt8, efd::SInt8, efd::UInt16, efd::SInt16, efd::UInt32,
+    efd::SInt32, efd::UInt64 and efd::SInt64.</li>
+
+    <li>invalid&mdash;Optional. Used to specify a default or invalid enumeration member. The
+    invalid name and value are returned from certain efd::DataDrivenEnum methods when a key or
+    value is not found. If this attribute is not specified then a name of "INVALID" and a value of
+    zero are used. There are four ways to specify this attribute:
+
+        <ul>
+            <li>invalid="Name" - If you just specify a name then whatever name is specified will be
+            used instead of the default name "INVALID". The value will still be zero.</li>
+
+            <li>invalid="Name=Value" - If both a name and a value are specified then both will be
+            used.</li>
+
+            <li>invalid="=Value" - If only a value is specified then the default name will be used
+            with the specified value. The leading equal sign (=) character must be specified.</li>
+
+            <li>invalid="" - By specifying no name or value it will completely omit the invalid
+            value and the enumeration will default to starting at zero.</li>
+        </ul>When a value is provided it can be either an integer or one of the 'EE_MAX' and
+        'EE_MIN' tokens. If the value is greater or equal to zero then the enumeration will begin
+        with the next higher value, otherwise the enumeration will begin at zero.
+    </li>
+
+    <li>start&mdash;Optional. Used to specify the starting enumeration value. By default
+    enumerations start at one if they have no base or continue with the next unused value if they
+    have a base.</li>
+
+    <li>max&mdash;Optional. Used to specify the maximum enumeration value. An error will be
+    generated if the enumeration overflows this limit.</li>
+</ul>
+
+<h3>header</h3>
+
+<p>The DDEHeaderGen configuration tag which is used inside the 'enum' tag. This tag is required in
+order to use an enumeration with the DDEHeaderGen tool but is otherwise optional. This tag supports
+the following attributes:</p>
+
+<ul>
+    <li>useNamespace&mdash;Optional. Used in included all defined symbols in the specified
+    namespace. If omitted, no namespace will be used.</li>
+
+    <li>typedef&mdash;Optional. Cannot be used with 'useExistingTypedef'. Used to create and use a
+    new C++ typedef for this enumeration. The typedef will map the provided name to whatever type
+    was specified in the 'storage' attribute for this enumeration (or its final parent). If no
+    typedef is used then the 'storage' type is used directly instead.</li>
+
+    <li>useExistingTypedef&mdash;Optional. Cannot be used with 'typedef'. Used to provide an
+    existing C++ typedef for this enumeration. You will typically want to specify the name of the
+    header file that defines this typedef using the 'includes' attribute when using this option.
+    The provided typedef must be compatible with the 'storage' type of this enumeration or compiler
+    errors may result. If no typedef is used then the 'storage' type is used directly instead.</li>
+
+    <li>prefix&mdash;Optional. This string is prepended to every name in the enumeration when
+    generating the C++ identifier. The value must contain only legal C++ identifier
+    characters.</li>
+
+    <li>suffix&mdash;Optional. This string is appended to every name in the enumeration when
+    generating the C++ identifier. The value must contain only legal C++ identifier
+    characters.</li>
+
+    <li>includes&mdash;Optional. A semicolon (;) separated list of additional C++ header files that
+    should be included in the generated header. When using a base enumeration you may wish to
+    include the base enumeration header file here. When using the 'useExistingTypedef' option it is
+    recommended that the header file defining the typedef be specified here.</li>
+</ul>
+
+<h3>item</h3>
+
+<p>Used to add an entry to the enumeration. This tag can be used multiple times within the 'enum'
+tag and the order of declaration determines the enumeration value assignment. This tag supports the
+following attributes:</p>
+
+<ul>
+    <li>name&mdash;The name of the entry. You can use a blank name or omit the attribute in order
+    to specify a placeholder that will advance the next value without creating a new entry; this is
+    useful for removing values from an existing enum if you do not want the other values to
+    change.</li>
+
+    <li>value&mdash;Optional. By default the next sequential value will be assigned but this can be
+    overridden by specifying a specific value. After using a specific value the next sequentially
+    assigned value will continue from this value. When specifying a value, you can use an integer
+    or one of the 'EE_MAX' and 'EE_MIN' tokens. When using values from an enum of type "Bitfield"
+    you can use the '|' symbol to bitwise or multiple values together.</li>
+</ul>
+
+<h3>alias</h3>
+
+<p>Used to specify multiple names for the same value. This tag can be used multiple times within
+the 'enum' tag. The value being aliased must precede the alias. You can alias values from the
+current enumeration or any base enumeration. The same value can have multiple aliases. This tag
+supports the following attributes:</p>
+
+<ul>
+    <li>name&mdash;The name of the alias.</li>
+
+    <li>value&mdash;The name (not the value) of an existing entry.</li>
+</ul>
+
+<h2>Example</h2>
+
+<p>Here is an example Data Driven Enumeration file (from <span class=
+"NDLSystemFont">efdPrimitiveTypeIDs.enum</span>)</p>
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+
+&lt;enum type="Normal" storage="efd::UInt32" invalid="" start="0xF0000001" end="0xF00000FF"&gt;
+
+    &lt;header useNamespace="efd" prefix="kTypeID_" /&gt;
+
+    &lt;item name="Bool"/&gt;
+    &lt;item name="Char"/&gt;
+    &lt;item name="SInt8"/&gt;
+    &lt;item name="UInt8"/&gt;
+    &lt;item name="SInt16"/&gt;
+    &lt;item name="UInt16"/&gt;
+    &lt;item name="SInt32"/&gt;
+    &lt;item name="UInt32"/&gt;
+    &lt;item name="SInt64"/&gt;
+    &lt;item name="UInt64"/&gt;
+    &lt;item name="Float32"/&gt;
+    &lt;item name="Float64"/&gt;
+    &lt;item name="utf8string"/&gt;
+    &lt;item name="Point2"/&gt;
+    &lt;item name="Point3"/&gt;
+    &lt;item name="Point4"/&gt;
+    &lt;item name="Matrix3"/&gt;
+    &lt;item name="Color"/&gt;
+    &lt;item name="ColorA"/&gt;
+    &lt;item name="Quaternion"/&gt;
+    &lt;item name="AssetID"/&gt;
+
+&lt;/enum&gt;
+</pre>
+
+<p>The resulting generated <span class="NDLSystemFont">efdPrimitiveIDs.h</span> follows:</p>
+<pre>
+#pragma once
+#ifndef EE_efdPrimitiveTypeIDs_h_INCLUDED
+#define EE_efdPrimitiveTypeIDs_h_INCLUDED
+
+#include &lt;efd/ClassInfo.h&gt;
+
+namespace efd
+{
+
+    static const efd::UInt32 kTypeID_Bool       = 4026531841u; // 0xF0000001
+    static const efd::UInt32 kTypeID_Char       = 4026531842u; // 0xF0000002
+    static const efd::UInt32 kTypeID_SInt8      = 4026531843u; // 0xF0000003
+    static const efd::UInt32 kTypeID_UInt8      = 4026531844u; // 0xF0000004
+    static const efd::UInt32 kTypeID_SInt16     = 4026531845u; // 0xF0000005
+    static const efd::UInt32 kTypeID_UInt16     = 4026531846u; // 0xF0000006
+    static const efd::UInt32 kTypeID_SInt32     = 4026531847u; // 0xF0000007
+    static const efd::UInt32 kTypeID_UInt32     = 4026531848u; // 0xF0000008
+    static const efd::UInt32 kTypeID_SInt64     = 4026531849u; // 0xF0000009
+    static const efd::UInt32 kTypeID_UInt64     = 4026531850u; // 0xF000000A
+    static const efd::UInt32 kTypeID_Float32    = 4026531851u; // 0xF000000B
+    static const efd::UInt32 kTypeID_Float64    = 4026531852u; // 0xF000000C
+    static const efd::UInt32 kTypeID_utf8string = 4026531853u; // 0xF000000D
+    static const efd::UInt32 kTypeID_Point2     = 4026531854u; // 0xF000000E
+    static const efd::UInt32 kTypeID_Point3     = 4026531855u; // 0xF000000F
+    static const efd::UInt32 kTypeID_Point4     = 4026531856u; // 0xF0000010
+    static const efd::UInt32 kTypeID_Matrix3    = 4026531857u; // 0xF0000011
+    static const efd::UInt32 kTypeID_Color      = 4026531858u; // 0xF0000012
+    static const efd::UInt32 kTypeID_ColorA     = 4026531859u; // 0xF0000013
+    static const efd::UInt32 kTypeID_Quaternion = 4026531860u; // 0xF0000014
+    static const efd::UInt32 kTypeID_AssetID    = 4026531861u; // 0xF0000015
+
+} // end namespace efd
+
+#endif // EE_efdPrimitiveTypeIDs_h_INCLUDED
+</pre>
+
+<p>To use any of the resulting constants in code, simply prefix the namespace to the id such as
+<span class="NDLSystemFont">efd::kTypeID_Bool</span>.</p>
+
+<h2>Additional Notes</h2>
+
+<ul>
+    <li>As a convention, enum file names have the '.enum' extension.</li>
+
+    <li>All characters used for the entry names in the enum file must be valid characters for C++
+    identifiers in order for the resulting header file to be valid. This restriction only applies
+    to enumerations used with the header generator.</li>
+</ul>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="DataDrivenEnum_intro.htm">DDE Header Generator: Introduction</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

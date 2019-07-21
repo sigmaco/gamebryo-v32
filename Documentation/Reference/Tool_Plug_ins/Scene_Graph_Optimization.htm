@@ -1,0 +1,415 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Scene Graph Optimization</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script>
+<script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<p class="NDLRefHeadClassTitle">Scene Graph Optimization</p>
+
+<p class="NDLRefParentage">Type: PROCESS</p>
+
+<p class="NDLRefParentage">Version: 3.0</p>
+
+<p class="NDLRefHeaderFile">&lt;SceneGraphOptimization.dll&gt;</p>
+
+<p class="NDLRefHead1">Description</p>
+
+<p>This plug-in optimizes the scene graph to reduce memory overhead and traversal time. There are a
+myriad of optimization options that can be set for this plug-in. This plug-in <em>must</em> be run
+in order for hardware skin partitions and <span class="NDLSystemFont"><a href=
+"../../Reference/NiAnimation/NiSkinningLODController.htm">NiSkinningLODController</a></span>
+objects to be created properly.</p>
+
+<p class="NDLRefHead1">Options</p>
+
+<div class="NDLFigureContainer">
+    <img src="images/SceneGraphOptimizationOptions.jpg" width="531" height="592" alt=
+    "SceneGraphOptimizationOptions (75K)">
+
+    <p class="NDLFigureCaption">Optimization Options</p>
+</div>
+
+<p class="NDLRefHead2">Remove duplicate properties</p>
+
+<p><b>Function Performed:</b> Ensures that all duplicate properties in the scene are shared.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveDupProperties</span></p>
+
+<p><b>Explanation:</b> All material and texturing properties are exported as unique objects, even
+if they are the same property in 3ds max or Maya. This function ensures that all identical
+properties in the scene are shared to reduce memory overhead. Several other optimization options
+will not be as effective if this option is not checked. This optimization option should always be
+selected.</p>
+
+<p class="NDLRefHead2">Remove bad NiTexturing properties</p>
+
+<p><b>Function Performed:</b> Removes <span class="NDLSystemFont">NiTexturingProperty</span>
+properties with no image data in the scene and those that use a nonexistent set of texture
+coordinates.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveBadTexturingProps</span></p>
+
+<p><b>Explanation:</b> This function cleans up after some situations that can occur due to the way
+the artist manipulates the textures and the way 3ds max exposes the data to the Gamebryo 3ds max
+Plug-in. This function is not trying to correct an artist mistake. Instead, it optimizes the
+content received from the 3ds max SDK for better performance and to reduce memory overhead. This
+optimization option should always be selected.</p>
+
+<p class="NDLRefHead2">Remove multi-material nodes</p>
+
+<p><b>Function Performed:</b> Removes all multi-material nodes in the scene. Multi-material nodes
+are created by some modeling packages to accommodate multiple materials on an object. They are
+usually not needed and can be removed.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveMultiMtlNodes</span></p>
+
+<p><b>Explanation:</b> When a multi-sub object material is used on an object in 3ds max, that
+object is split up into multiple objects upon export, one for each material. These multiple objects
+are placed under a common parent node, which is given the name "<span class=
+"NDLSystemFont">__NDL_MultiMtl_Node</span> ". This node has no transforms, controllers, or
+properties on it and serves no real purpose other than to indicate that its children used to be a
+single object. This optimization function removes all such nodes to reduce object overhead. It
+should always be selected.</p>
+
+<p class="NDLRefHead2">Remove childless nodes</p>
+
+<p><b>Function Performed:</b> Removes all nodes in the scene that have no children.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveChildlessNodes</span></p>
+
+<p><b>Explanation:</b> Gamebryo only renders leaf objects in the scene graph. A <span class=
+"NDLSystemFont">NiNode</span> object has no visible geometry and thus is irrelevant to rendering.
+Thus, a node with no children is entirely useless unless specifically reserved for application use
+later. To reduce object overhead, this function removes all <span class=
+"NDLSystemFont">NiNode</span> objects in the scene that have no children and appear not to be used.
+A node can be retained if the string "<span class="NDLSystemFont">NiOptimizeKeep</span>" is placed
+in its user-defined properties in 3ds max or in a string property in Maya. A childless node will be
+removed even if it has time controllers attached to it. If you want the node to be kept, you must
+tag the node with "<span class="NDLSystemFont">NiOptimizeKeep</span>".</p>
+
+<p class="NDLRefHead2">Remove single-child nodes</p>
+
+<p><b>Function Performed:</b> Removes all nodes in the scene that have only one child, propagating
+any properties, transforms and name to that child. The name will not be propagated if the child has
+an "<span class="NDLSystemFont">NiOptimizeKeep</span>" tag.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveSingleChildNodes</span></p>
+
+<p><b>Explanation:</b> A geometry object in 3ds max or Maya is actually represented internally by a
+node with a geometry child. That is what gets exported. Thus, if you create a box named
+"<span class="NDLSystemFont">Box01</span>", after exporting you will have an <span class=
+"NDLSystemFont">NiNode</span> object named "<span class="NDLSystemFont">Box01</span>" with the
+transforms of the box. That node will have a single <span class="NDLSystemFont">NiMesh</span> child
+named "<span class="NDLSystemFont">Box</span>" with identity transforms. Usually only the geometry
+object is needed, since the geometry appears to be a single object in the art tool, so this
+optimization function removes these single-child nodes to reduce object overhead. The name,
+transforms, and properties of the node are propagated to the child, and the node is removed, with
+the child being attached to the node's parent. Thus, after running this function, you will have an
+<span class="NDLSystemFont">NiMesh</span> object named "<span class="NDLSystemFont">Box01</span>".
+If the node has any time controllers attached to it (i.e., it is animated), the node will not be
+removed. If the child has an "<span class="NDLSystemFont">NiOptimizeKeep</span>" tag on it, the
+name will not be propagated to it.</p>
+
+<p class="NDLRefHead2">Merge sibling nodes</p>
+
+<p><b>Function Performed:</b> Merges sibling nodes in the scene. Two nodes will be merged if the
+following holds: the nodes are sibling nodes, of exact type <span class=
+"NDLSystemFont">NiNode</span>, and they have a parent of exact type <span class=
+"NDLSystemFont">NiNode</span>, the same properties attached to them, and the same visibility flag.
+If two nodes can be merged and have different transforms on them, the transforms for both nodes are
+pushed down to their children before they are merged.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">MergeSiblingNodes</span></p>
+
+<p><b>Explanation:</b> Merging sibling nodes, in conjunction with removing single-child nodes and
+merging sibling <span class="NDLSystemFont">NiMesh</span> objects, can allow more <span class=
+"NDLSystemFont">NiMesh</span> objects to be merged than would be otherwise. The fewer objects in
+the scene and the more triangles per <span class="NDLSystemFont">NiMesh</span> object, the faster
+the run-time performance will be.</p>
+
+<p class="NDLRefHead2">Merge sibling NiMesh objects</p>
+
+<p><b>Function Performed:</b> Merges all sibling <span class="NDLSystemFont">NiMesh</span> objects
+in the scene. Two <span class="NDLSystemFont">NiMesh</span> objects can be merged if the following
+holds: they have a common parent of exact type <span class="NDLSystemFont">NiNode</span>, the same
+material, the same number of properties, the same set of property pointers, the same number of
+texture sets, the exact same extra data set, no time controllers attached, no cloned data streams,
+and the same <span class="NDLSystemFont">AppCulled</span> flag value.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">MergeSiblingMeshes</span></p>
+
+<p><b>Explanation:</b> This function merges sibling <span class="NDLSystemFont">NiMesh</span>
+objects to reduce object overhead. Its effectiveness is vastly reduced if duplicate properties and
+single-child nodes are not removed and sibling nodes are not merged.</p>
+
+<p class="NDLRefHead2">Do not merge alpha-blended objects</p>
+
+<p><b>Function Performed:</b> If this option is checked, merging does not occur below nodes with an
+<span class="NDLSystemFont">NiAlphaProperty</span> attached when alpha blending is enabled or
+sorters are allowed.</p>
+
+<p><b>Explanation:</b> Merging two <span class="NDLSystemFont">NiMesh</span> objects that are
+intended to be sorted by an alpha sorter may cause the sorter to be unable to correctly order the
+<span class="NDLSystemFont">NiMesh</span> objects when rendering. This situation should be avoided,
+but it can be allowed by un-checking this option.</p>
+
+<p class="NDLRefHead2">Remove extra texture coordinate sets</p>
+
+<p><b>Function Performed:</b> Removes all texture coordinate sets from geometry in the scene that
+are not used by any <span class="NDLSystemFont">NiTexturingProperty</span> attached to the current
+or a higher node.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveExtraUVSets</span></p>
+
+<p><b>Explanation:</b> This option removes any texture coordinate sets that do not have a texture
+associated with them, which saves memory. In 3ds max and Maya it is easy to accidentally generate
+unneeded UV sets. However, this option should not be checked if your application is applying
+textures through code, using a dynamic reflection, procedural texture, or other such effect.</p>
+
+<p class="NDLRefHead2">Remove unnecessary colors</p>
+
+<p><b style="font-weight: bold;">Function Performed:</b> Recursively removes colors that are not
+needed.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveUnnecessaryColorSets</span></p>
+
+<p><b>Explanation:</b> A color set is removed from every object when the following is true: the
+object is not a particle system, contains a vertex color property with a source mode that is not
+emissive or if the properties source mode is ambient and diffuse and the lighting mode is not
+emissive, ambient, and diffuse.</p>
+
+<p class="NDLRefHead2">Remove unnecessary normals</p>
+
+<p><b>Function Performed:</b> Recursively removes normals that are not needed. Will <em>not</em>
+remove normals from scenes without lights.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveUnnecessaryNormals</span></p>
+
+<p><b>Explanation:</b> Normals are removed from every object when the following is true: the object
+has an <span class="NDLSystemFont">NiTexturingProperty</span> attached that has a base map and an
+apply mode of <span class="NDLSystemFont">APPLY_REPLACE</span>, or the object has an <span class=
+"NDLSystemFont">NiVertexColorProperty</span> attached whose lighting mode is emissive. This
+optimization option should always be selected.</p>
+
+<p class="NDLRefHead2">Remove unnecessary NiVisControllers</p>
+
+<p><b>Function Performed:</b> Removes all <span class="NDLSystemFont">NiVisController</span>s in
+the scene whose keys all have the same visibility data, updating the visibility flag of their
+targets.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveUnnecessaryVisControllers</span></p>
+
+<p><b>Explanation:</b> If a <span class="NDLSystemFont">NiVisController</span> has the same
+visibility data for all its keys, it does not need to exist. This function removes the <span class=
+"NDLSystemFont">NiVisController</span> in this situation. This situation can occur quite easily in
+3ds max and Maya and is not always due to artist error. This optimization option should always be
+selected.</p>
+
+<p class="NDLRefHead2">Optimize NiMesh objects</p>
+
+<p><b>Function Performed:</b> Removes degenerate triangles, collapses vertices, re-orders
+triangles, and tries to optimize for the hardware vertex cache for all <span class=
+"NDLSystemFont">NiMesh</span> objects in the scene, deleting them if all their triangles are
+degenerate.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">OptimizeMeshes</span></p>
+
+<p><b>Explanation:</b> The primary aim of this optimization is to improve rendering performance
+through data re-ordering. The removal of degenerate triangles and collapsing of vertices should not
+be required in datasets exported from 3ds max or Maya. However, after merging <span class=
+"NDLSystemFont">NiMesh</span> objects or on modified datasets, it can be useful. Meshes for which
+data re-ordering is not allowed, such as morphed geometry, will not be modified. There is no harm
+in leaving this option turned on at all times to ensure optimized <span class=
+"NDLSystemFont">NiMesh</span> data.</p>
+
+<p>Triangle re-ordering optimization sorts the index buffers to optimize the mesh in a generic view
+independent way for better intra-object Z-buffer rejection using three assumptions. First, larger
+triangles are more likely to occlude smaller triangles and should come first in the mesh. Second,
+outward facing triangles from the center of the mesh are more likely to provide occlusion on
+concave meshes. Third, triangles further from the center are more likely to occlude than those near
+the center. Re-ordering is not done for triangle strip objects. The <em>Size Weight</em>,
+<em>Direction Weight</em>, and <em>Position Weight</em> values control the relative weight given to
+each of the three criteria. Higher values make that criteria more important in determining
+rendering order, while a value of 0 means that criteria is ignored. If the "NiNoOptimizeMesh" tag
+is added to the object the re-ordering will not be performed. This is important if you need to
+maintain the triangle order given by the DCC application.</p>
+
+<p>Vertex cache optimization tries to re-order triangles so that vertices are re-used before they
+are removed from the hardware vertex cache. The size of the simulated cache can be adjusted to tune
+performance. The size is relative to the actual hardware cache size. If the "NiNoOptimizeMesh" tag
+is added to the object the re-ordering will not be performed. This is important if you need to
+maintain the triangle order given by the DCC application.</p>
+
+<p class="NDLRefHead2">Remove hidden bone geometry</p>
+
+<p><b>Function Performed:</b> Removes any <span class="NDLSystemFont">NiRenderObject</span> object
+in the scene that is a child of a bone and whose <span class="NDLSystemFont">AppCulled</span> flag
+is true.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveHiddenBoneGeometry</span></p>
+
+<p><b>Explanation:</b> A bone is defined as an object that is pointed to by the bone array of a
+skinned <span class="NDLSystemFont">NiMesh</span> object in the scene graph. This function removes
+any <span class="NDLSystemFont">NiRenderObject</span> child of a bone whose <span class=
+"NDLSystemFont">AppCulled</span> flag is <span class="NDLSystemFont">true</span> (i.e., that is
+hidden), without exception.</p>
+
+<p class="NDLRefHead2">Remove unnecessary NiLookAtControllers</p>
+
+<p><b>Function Performed:</b> Removes <span class="NDLSystemFont">NiLookAtInterpolator</span>
+objects and their associated controllers in the scene if there are no <span class=
+"NDLSystemFont">NiKeyframeController</span> objects on either the target or the "Look At" of the
+controller or above them in the scene graph.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveUnnecessaryLookAtControllers</span></p>
+
+<p><b>Explanation:</b> An <span class="NDLSystemFont">NiTransformController</span> with an
+<span class="NDLSystemFont">NiLookAtInterpolator</span> changes the orientation of its target to
+always face a particular "Look At" object. If there are no <span class=
+"NDLSystemFont">NiTransformController</span> objects attached above either the target or the "Look
+At" in the scene graph, the original controller is not necessary since nothing will ever move. This
+function removes the controller in this situation.</p>
+
+<p>One way in which this situation might occur is if a target camera is used, but neither the
+camera nor the target is animated. This optimization option should typically be selected, but might
+need to be un-checked if there are objects that are moved by physics or some other non-keyframe
+controller based method.</p>
+
+<p class="NDLRefHead2">Reduce animation keys</p>
+
+<p><b>Function Performed:</b> Reduces redundant animation keys for all <span class=
+"NDLSystemFont">NiKeyframeController</span>s in the scene. The tolerance specifies a ratio of how
+far off a key is allowed to be from an interpolation between the two keys on either side of it to
+still be considered redundant.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">ReduceAnimationKeys</span></p>
+
+<p><b>Explanation:</b> Since both 3ds max and Maya produce copious amounts of keyframes in certain
+cases (Maya when "baking" IK animations and 3ds max when sampling keyframes), this function can be
+essential in removing duplicate keyframes. It should be turned on unless there is a specific reason
+why redundant animation keys should not be removed.</p>
+
+<p class="NDLRefHead2">Remove unnecessary extra data</p>
+
+<p><b>Function Performed:</b> Removes extra data strings that are empty or that contain only
+strings used for temporary conversion purposes. If the <em>Remove "NiOptimizeKeep" tags</em> option
+is checked, extra data objects that contain the strings "<span class=
+"NDLSystemFont">NiOptimizeKeep</span>" and "<span class="NDLSystemFont">sgoKeep</span>" are also
+removed.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class=
+"NDLSystemFont">RemoveUnnecessaryExtraData</span></p>
+
+<p><b>Explanation:</b> These strings are removed to free memory. There is no other reason why they
+need to be removed.</p>
+
+<p class="NDLRefHead2">Sort children of each node by NiTexturingProperty</p>
+
+<p><b>Function Performed:</b> Sorts all the children of each node in the scene by the address of
+the <span class="NDLSystemFont">NiTexturingProperty</span> present in their property states.
+Children with no <span class="NDLSystemFont">NiTexturingProperty</span> objects in their property
+state are sorted first.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">SortByTexturingProp</span></p>
+
+<p><b>Explanation:</b> This function helps somewhat with increasing rendering efficiency. However,
+the constraints of maintaining the structure of the scene graph limit how optimized it can be.</p>
+
+<p class="NDLRefHead2">Object Names</p>
+
+<h3>Remove all object names</h3>
+
+<p><b>Function Performed:</b> Removes the name string from every object and material property in
+the scene.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemoveNames</span></p>
+
+<p><b>Explanation:</b> This function is provided in case names are not needed by an application.
+Removing the names can slightly reduce the memory overhead but will cause problems with some
+classes such as <span class="NDLSystemFont">NiControllerManager</span> that relies on the presence
+of object names. You should only remove names if you are positive they are not needed.</p>
+
+<h3>Remove object partial path names</h3>
+
+<p><b>Function Performed:</b> Removes the partial path from the name string on every object in the
+scene.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">RemovePartialPaths</span></p>
+
+<p><b>Explanation:</b> This function is provided in case unique names are not needed by an
+application. Removing the partial path from the name can slightly reduce the memory overhead.</p>
+
+<h3>Name all unnamed objects</h3>
+
+<p><b>Function Performed:</b> Adds unique names to all objects that are unnamed in the scene.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">NameUnnamedObjects</span></p>
+
+<p><b>Explanation:</b> This function prevents any objects from being exported with no name. This
+option is provided in case an application requires that all objects have names.</p>
+
+<p class="NDLRefHead2">Skin and Bones Support</p>
+
+<p><b>Weld hardware skin partitions</b></p>
+
+<p><b>Function Performed:</b> Elimination of cracks in skinned models.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">WeldSkin</span></p>
+
+<p><b>Explanation:</b> The limited number of bones that can be active when using
+hardware-accelerated skinning creates the need to ignore certain bone-vertex interactions when the
+data structures used for hardware-accelerated skinning are created. This can cause cracks to appear
+on edges shared by triangles in different Gamebryo objects if a bone's influence is ignored in one
+triangle but not ignored by an adjacent triangle in a different Gamebryo object. The welding code
+identifies edges where such cracks have been created and eliminates them. In order for this welding
+to occur, the two objects must have identical world transforms.</p>
+
+<p><b>Hardware/Software/Both</b></p>
+
+<p><b>Function Performed:</b> Specifies the settings for exporting skinning information.</p>
+
+<p><b>NiOptimize Function Called:</b> <span class="NDLSystemFont">OptimizeSkinData</span></p>
+
+<p><b>Explanation:</b> These options specify what type of skinning information to export for each
+platform. You have the option to export information for hardware skinning, software skinning, or
+both. Datasets exported with only information for hardware skinning will not run on graphics
+hardware that does not support hardware skinning. Datasets exported with both hardware and software
+skinning information will be hardware accelerated when possible, but can still run on graphics
+hardware that does not support hardware skinning. You can also specify the number of bones per skin
+partition here. Meshes that are used as an instance by the <span class="NDLSystemFont"><a href=
+"../../Reference/NiMesh/NiMeshHWInstance.htm">NiMeshHWInstance</a></span> can not be hardware
+skinned. If this is encountered the mesh will remain skinned in software.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

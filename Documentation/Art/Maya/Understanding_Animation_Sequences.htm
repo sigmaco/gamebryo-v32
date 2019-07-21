@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Understanding Animation Sequences</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+
+<h1>Understanding Animation Sequences</h1>
+
+
+<p>Gamebryo is specially designed for character animation. 
+ Using the Gamebryo Max and Maya plugins, you can create characters and 
+ define animation sequences. These sequences are the different animations 
+ the character can perform: walk, run, attack, and so on. Using the Gamebryo 
+ Animation Tool, you will be able to seamlessly blend the animation sequences, 
+ creating top quality interactive characters. During export, the character 
+ animations are separated from the character art, creating a .NIF (art 
+ file) and a .KF (animation file). Separating the art from the animation 
+ does two things: reduce memory/disk size and allows for animation reuse. 
+ </p>
+
+<p>For example, suppose you had three different monsters, 
+ red Ogres, green Ogres, and Blue Ogres, that look different and have different 
+ skins, but they have the same bone structure. Because they share the same 
+ bone structure, they all can share the same walk, run and attack sequences.</p>
+
+<p>Character Sequences are composed of several hierarchical pieces. At the top level is the Character Root. The Character Root has exactly one Accumulation Root. The Character Root also has a collection of Layer Roots. Every Layer Root can have a collection of Sequences. The Sequences can have collections of either Morph Keys, or Text Keys. Below is a diagram that shows these relationships.</p>
+
+
+<div class="FigureContainer">
+    <img src="./images/CharacterSequencesDiagram.gif" width="576" height="576" />
+          <p class="FigureCaption">Animation sequence</p>
+</div>
+
+
+<p>The Character Root exists in Max and Maya as a Dag Node. 
+ All of a Character Roots Layer Roots, Sequences, Text Keys and Morph Keys, 
+ must refer to objects that exist in the scene graph below the Character 
+ Root, or in other words, must be descendants of the Character Root.</p>
+
+<h4>Accumulation Root</h4>
+
+<p>There can only be one Accumulation Root in a scene. 
+ The Accumulation Root is a node that will, as the name implies, accumulate 
+ animation. The accumulation root is used heavily for animations such as 
+ walk cycles. In your typical walk cycle a sequence will be set up to loop 
+ so the character can continue to walk for as long as needed. However, 
+ after each loop the character should not snap back to the origin, but 
+ should continue walking from the spot where the last walk animation ended. 
+ To accomplish this feat, animation accumulation is necessary. With animation 
+ accumulation set to accumulate translation for the walk cycle sequence, 
+ all of the translation on the Accumulation Root would accumulate each 
+ time the animation is played. In other words, if the Accumulation Root 
+ translated from 0 to 10 the first time the animation was played, it would 
+ translate from 10 to 20 the next time the animation is played.</p>
+
+<p>Since it possible to set accumulation for some attributes 
+ but not others the Accumulation Root is split into two nodes on export. 
+ One will receive all of the accumulation animation, and the other receives 
+ all of the animation that does not accumulate. The creation of the special 
+ non-accumulation node has some important consequences for exporting sequences 
+ from multiple files. If one file was exported with the controller extractor 
+ and the other was not, upon export, their scene graphs will be different. 
+ This will cause errors if one attempts to use sequences (.kf files) exported 
+ from one file, with the character (.nif files) exported from a scene that 
+ did not use the controller extractor.</p>
+
+<p>Another import caveat is to be careful to not put a 
+ skinned mesh below the Accumulation Node. If a skin mesh is below the 
+ Accumulation Node in the hierarchy it will be double transformed from 
+ both the bones and the accumulation node.</p>
+
+<h4>Layer Roots</h4>
+
+<p>Sometimes it can be useful to combine two animations. 
+ For instance, a character could be running and then receive a phone call. 
+ Using layered animation, the running animation could continue to play 
+ as the phone answering animation was layered over it. To accomplish this 
+ task, a Layer Root would be created at the characters shoulder. The Layer 
+ Root would store sequence information that would affect all nodes that 
+ were descendants of the Layer Root, such as rotation on the elbow and 
+ the wrist. When the sequences are activated they are given a priority 
+ number. If two sequences are playing with the same priority their values 
+ are blended together. Otherwise, if the priorities are different the sequence 
+ with the highest priority controls the node. In the case of the character 
+ running and answering his cell phone, the cell phone answering animation 
+ would have to be activated with a higher priority so it could wholly control 
+ the arm.</p>
+
+<h4>Sequences</h4>
+
+<p>Sequences contain a collection of animation data for 
+ a group of nodes. Every sequence has a start and end time, along with 
+ looping and accumulation information. </p>
+
+<h4>Text Keys</h4>
+
+<p>Sometimes, an artist will be required to embed information 
+ in the scene graph to be used later. The Text Key Window allows you to 
+ create strings and associate them with particular frames. By selecting 
+ a node in the scene graph and using the &quot;Create Text Key&quot; icon, 
+ you can create text keys. For example, you may create text keys for each 
+ frame your characters feet hit the ground. The programmer could use this 
+ &quot;Step Sound&quot; later to determine when and where to play the proper 
+ sound. The practical uses for text keys are almost endless. </p>
+
+<h4>Morph Tags</h4>
+
+<p>Within the Gamebryo animation system, it is possible 
+ to Morph one animation into another. For example, say your character has 
+ two sequences, walk and run, and you want the character to transition 
+ smoothly from walking to running. If the morphing system knows when the 
+ two sequences are equivalent (e.g., &quot;The right foot is down.&quot;), 
+ it would be able to morph smoothly from one animation sequence to the 
+ next. The Morph Tag window allows you to specify particular frames, so 
+ the morphing system knows where the animations are suppose to match up. 
+ It is important to remember that Morph tags need to be placed on the same 
+ node as your sequences. Internally, Morph Tags are stored as a NiTextKey, 
+ and the string &quot;morph:&quot; is pre-pended to the morph tag name.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Creating a NetLib</title>
+<!--(Begin Meta)================================================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="FSO" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)==================================================================================-->
+    
+<!--(Begin Links)===============================================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=================================================================================-->
+
+</head>
+
+<!--(Begin Body)================================================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript">
+</script><script language="JavaScript1.2" type="text/javascript">
+WriteNavLink(2);
+</script>
+
+<h1>Creating a NetLib</h1>
+
+<p>If you require a Quality of Service that is not one of the defaults provided, you can implement
+a new Quality of Service or integrate an existing network library (NetLib) by creating a new
+NetLib.</p>
+
+<p>The <span class="NDLSystemFont">efd::INetLib</span> class is the primary interface between
+Gamebryo LightSpeed communication services such as <a href=
+"../../Reference/QuickRef_Services/svc_qckref_channel_manager_svc.htm">ChannelManager</a> and
+<a href="../../Reference/QuickRef_Services/svc_qckref_net_svc.htm">NetService</a> and underlying
+network messaging transports. It declares transport-neutral functions that are used to manage the
+state of network connections and their associated categories. These functions are also used to
+register and unregister message callbacks and event handlers.</p>
+
+<p>The <span class="NDLSystemFont">efd::NetLib</span> class contains a complete set of default
+implementation methods for the <span class="NDLSystemFont">efd::INetLib</span> interface, including
+full support for a number of common qualities of service using the supplied socket-based transport,
+<span class="NDLSystemFont">efd::NetTransportTCP</span>. It also serves as the main extensibility
+point for new NetLib implementations. To make a new NetLib, you can simply subclass <span class=
+"NDLSystemFont">efd::NetLib</span> and override the functions that are required by the new quality
+of service or the network transport that is being integrated. However, in practice, all but the
+simplest implementations will require much more integration work below the NetLib interface
+level.</p>
+
+<p>The provided <span class="NDLSystemFont"><a href=
+"../../Reference/efdNetLibEnet/Introduction_to_efdNetLibEnet_Class_Reference.htm">efd::NetLibEnet</a></span>
+and <span class="NDLSystemFont"><a href=
+"../../ee_goto.htm#Reference/efdNetLibXbox360XRNM/Introduction_to_efdNetLibXbox360XRNM_Class_Reference.htm">
+efd::NetLibXbox360XRNM</a></span> classes are good examples of Gamebryo LightSpeed integrations to
+third-party networking libraries. You should refer to these to aid in understanding the
+interactions between the Gamebryo LightSpeed services and NetLib implementations.</p>
+
+<p>Enet (http://enet.bespin.org) is an open source network communication library that provides
+lightweight ordering and reliability qualities of service on top of UDP. It was a good candidate
+library to integrate because the library itself does not spawn threads, has easily swappable alloc
+and free functions, and has a way of polling for new connections and data. An Enet-aware transport
+was made by subclassing <span class="NDLSystemFont">efd::NetTransportTCP</span> and overriding a
+few key functions: <span class="NDLSystemFont">Listen()</span>, <span class=
+"NDLSystemFont">Connect</span>, and <span class="NDLSystemFont">ReceiveMessage()</span>. UDP
+"connections" were represented by subclassing the existing class <span class=
+"NDLSystemFont">efd::IConnection</span>, which further allowed a considerable amount of
+<span class="NDLSystemFont">efd::NetTransportTCP</span> code reuse.</p>
+
+<p>XRNM is Microsoft's multi-quality of service datagram networking library for the Xbox 360.
+Because it provides high level support for Microsoft's Voice over UDP (VDP) protocol, it too was a
+good candidate for a NetLib integration. Like <span class="NDLSystemFont">LibNetEnet</span>,
+<span class="NDLSystemFont">NetLibXbox360XRNM</span> implemented an entirely new underlying
+transport. However, unlike <span class="NDLSystemFont">LibNetEnet</span>, the <span class=
+"NDLSystemFont">NetLibXbox360XRNM</span> custom transport implemented the <span class=
+"NDLSystemFont">efd::INetTransport</span> interface directly instead of subclassing <span class=
+"NDLSystemFont">efd::NetTransportTCP</span>. This was because the XRNM programming model and API
+were sufficiently different from the socket-based <span class=
+"NDLSystemFont">efd::NetTransportTCP</span> to warrant an entirely new <span class=
+"NDLSystemFont">INetTransport</span> implementation. To maintain compatibility with the
+<span class="NDLSystemFont">efd::INetTransport</span> interface, <span class=
+"NDLSystemFont">NetLibXbox360XRNM</span> also subclassed <span class=
+"NDLSystemFont">efd::IConnection</span> to represent XRNM endpoint links.</p>
+
+<p>The only requirement for a new Gamebryo LightSpeed-compatible NetLib is that it implement the
+<span class="NDLSystemFont">efd::INetLib</span> interface in full. No supplied classes or design
+patterns other than those required by <span class="NDLSystemFont">efd::INetLib</span> need be
+reused, though doing so may save a considerable amount of effort.</p>
+
+<p class="NDLHeadingRelatedTopic">Related topics</p>
+
+<ul>
+    <li><a href="sso_networking_overview.htm">Networking Overview</a></li>
+
+    <li><a href="sso_networking_prereqs.htm">Networking Prerequisites</a></li>
+
+    <li><a href="sso_networking_requirements.htm">Networking Requirements</a></li>
+
+    <li><a href="sso_networking_config.htm">Networking Configuration</a></li>
+
+    <li><a href="sso_networking_how_work.htm">How Networking Works</a></li>
+
+    <li><a href="sso_networking_limitations.htm">Networking Limitations</a></li>
+
+    <li><a href="sso_networking_best_practice.htm">Best Practices for Working with
+    Networking</a></li>
+
+    <li><a href="sso_networking_handle_categories.htm">Understanding How Networking Handles
+    Categories</a></li>
+
+    <li><a href="sso_networking_quality_of_service.htm">Quality of Service</a></li>
+
+    <li><a href="sso_networking_troubleshoot.htm">Troubleshooting Networking</a></li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>

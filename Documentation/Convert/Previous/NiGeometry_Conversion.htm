@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>NiGeometry Conversion</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>NiGeometry Conversion</h1>
+
+<p>This page is a guide to converting an application that 
+ was using Gamebryo 2.3 geometry related classes to Gamebryo 2.5. Before 
+ starting to convert your code, please read the <a href="../../Reference/NiMesh/NiMesh_Rel_Notes.htm">NiMesh 
+ Library Release Notes</a> to learn about the new features and capabilities 
+ enabled by the changes to the Gamebryo geometry system. </p>
+
+<h2>Basic changes required for all applications</h2>
+
+<ul>
+	
+	<li>All applications must 
+ link with the <a href="../../Programmer/NiMesh/Introduction_to_the_NiMesh_Library.htm">NiMesh</a> 
+ and <a href="../../Programmer/NiFloodgate/Introduction_to_NiFloodgate.htm">NiFloodgate</a> 
+ libraries.</li>
+	
+	<li>All applications must 
+ include <span class="NDLSystemFont">NiMeshLib.h</span>. Note, it is not 
+ sufficient to just include <span class="NDLSystemFont">NiMesh.h</span>, 
+ which contains only the <span class="NDLSystemFont">NiMesh</span> class 
+ declaration. The <span class="NDLSystemFont">NiMeshLib.h</span> header includes 
+ all the headers required by the <span class="NDLSystemFont">NiMesh</span> 
+ library. </li>
+	
+	<li>Skinning shaders must 
+ be converted to use SkinBoneMatrix3. Other <a href="Converting_to_Gamebryo_2_5_Overview.htm#NiShaderConstantMap_Changes">predefined 
+ skinning shader constants were deprecated</a>.</li>
+	
+	<li>Replace <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiGeometry.htm">NiGeometry</a></span>, 
+ <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTriShape.htm">NiTriShape</a></span>, 
+ and <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiTriStrips.htm">NiTriStrips</a></span> 
+ class references with <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span>. 
+ Be careful with RTTI and particle systems: due to the class derivation 
+ hierarchy, using <span class="NDLSystemFont">NiIsKindOf</span> or <span 
+ class="NDLSystemFont">NiDynamicCast</span> with <span class="NDLSystemFont">NiTriShape</span> 
+ or <span class="NDLSystemFont">NiTriStrips</span> excluded <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiParticles.htm">NiParticle</a></span> 
+ objects in Gamebryo 2.3, but <span class="NDLSystemFont">NiIsKindOf</span> 
+ and <span class="NDLSystemFont">NiDynamicCast</span> of <span class="NDLSystemFont">NiMesh</span> 
+ will include <span class="NDLSystemFont">NiPSParticleSystem</span> objects 
+ in Gamebryo 2.5.</li>
+	
+	<li>Replace <span class="NDLSystemFont">NiRenderer::PrecacheGeometry</span> 
+ with <span class="NDLSystemFont">NiRenderer::PrecacheMesh</span> on DX9 
+ and D3D10 only:
+	
+	<ul>
+		
+		<li><span class="NDLSystemFont">PrecacheMesh</span> 
+ does nothing on 360 or PS3, so it is not recommended to call it. On those 
+ platforms, <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream.htm">NiDataStream</a></span> 
+ objects are renderer-ready as soon as they are loaded.</li>
+		
+		<li>On DX9 and D3D10, 
+ calling <span class="NDLSystemFont">PrecacheMesh</span> is recommended for 
+ best renderer performance, similarly to Gamebryo 2.3. However, there is 
+ no longer any functional reason to call <span class="NDLSystemFont">PrecacheMesh</span> 
+ as there was in 2.3 with <span class="NDLSystemFont">PrecacheGeometry</span>. 
+ When rendering an object with multiple shaders in 2.3, <span class="NDLSystemFont">PrecacheGeometry</span> 
+ was needed to ensure all vertex buffers were available to the renderer, 
+ but this is no longer necessary.</li>
+	</ul>
+	</li>
+	
+	<li>Streaming out NIF files 
+ via <span class="NDLSystemFont">NiStream::Save</span> may require some application 
+ changes as documented <a href="../../Programmer/Object_Systems/Streaming.htm#StreamingOutGeometricData">here</a>.</li>
+</ul>
+
+<p>See also:</p>
+
+<ul>
+  <li><a href="Deprecated_Screen_Space_Classes.htm">Deprecated Screen-Space Classes</a></li>
+  <li><a href="NiParticle_Conversion.htm">NiParticle Conversion</a></li>
+  <li><a href="NiPick_Conversion.htm">NiPick Conversion</a></li>
+</ul>
+
+<h2>Changes required for applications that create or manipulate 
+ geometry</h2>
+
+<p>Application code that creates or manipulates geometry 
+ data must be ported to the new <span class="NDLSystemFont">NiMesh</span> 
+ API. It is highly recommended to read the <a href="../../Programmer/NiMesh/Introduction_to_the_NiMesh_Library.htm">Introduction 
+ to the NiMesh Library</a> before starting to port your application. Important 
+ differences between <span class="NDLSystemFont">NiMesh</span> and <span 
+ class="NDLSystemFont">NiGeometry</span> include:</p>
+
+<ul>
+	
+	<li>The <span class="NDLSystemFont">NiMesh</span> 
+ class can represent all primitive types without deriving. <span class="NDLSystemFont">NiTriShape</span> 
+ and <span class="NDLSystemFont">NiTriStrips</span> objects will become <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ objects with a different <span class="NDLSystemFont">NiMesh::PrimitiveType</span>. 
+ See <span class="NDLSystemFont">NiMesh::SetPrimitiveType</span> and <span 
+ class="NDLSystemFont">NiMesh::GetPrimitiveType</span>.</li>
+	
+	<li><a href="../../Programmer/NiMesh/Data_Stream_Lock_and_Iterator_Objects.htm">Data 
+ Stream Lock and Iterator Objects</a> are used to access to create or access 
+ geometry data instead of <span class="NDLSystemFont">GetVertices</span>, 
+ <span class="NDLSystemFont">GetNormals</span>, <span class="NDLSystemFont">GetColors</span>, 
+ <span class="NDLSystemFont">GetTextures</span>, <span class="NDLSystemFont">GetTextureSet</span>, 
+ <span class="NDLSystemFont">CreateVertices</span>, <span class="NDLSystemFont">CreateColors</span>, 
+ <span class="NDLSystemFont">CreateTextures</span>, <span class="NDLSystemFont">GetAdditionalGeometryData</span>, 
+ <span class="NDLSystemFont">SetAdditionalGeometryData</span>, <span class="NDLSystemFont">SetModelData</span>, 
+ <span class="NDLSystemFont">GetModelData</span>, <span class="NDLSystemFont">GetTriList</span>. 
+ </li>
+	
+	<li>Use <span class="NDLSystemFont">GetPrimitiveCount</span> 
+ or <span class="NDLSystemFont">GetTotalPrimitiveCount</span> instead of 
+ <span class="NDLSystemFont">GetTriangleCount</span>.</li>
+	
+	<li><span class="NDLSystemFont">GetActiveVertexCount</span>, 
+ <span class="NDLSystemFont">SetActiveVertexCount</span>, <span class="NDLSystemFont">GetActiveTriangleCount</span>, 
+ and <span class="NDLSystemFont">SetActiveTriangleCount</span> methods do 
+ not exist for <span class="NDLSystemFont">NiMesh</span>. Instead, use <span 
+ class="NDLSystemFont">NiDataStreamRef::SetActiveCount</span> or the <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStream__Region.htm">NiDataStream::Region</a></span> 
+ methods <span class="NDLSystemFont">GetRange</span> and <span class="NDLSystemFont">SetRange</span>.</li>
+	
+	<li>Use <span class="NDLSystemFont">GetSemanticCount</span> 
+ or <span class="NDLSystemFont">GetMaxIndexBySemantic</span> with <span class="NDLSystemFont">NiCommonSemantics::TEXCOORD()</span> 
+ instead of <span class="NDLSystemFont">GetTextureSets</span>.</li>
+	
+	<li>Consistency is now 
+ set on individual data streams instead of the entire object, so the GetConsistency 
+ and SetConsistency methods do not exist for <span class="NDLSystemFont">NiMesh</span>. 
+ Instead, each data stream has a set of <a href="../../Programmer/NiMesh/Data_Stream_Access.htm">access 
+ flags</a>.</li>
+	
+	<li>Similarly, <span class="NDLSystemFont">NiGeometryData</span> 
+ methods <span class="NDLSystemFont">GetKeepFlags</span> and <span class="NDLSystemFont">SetKeepFlags</span> 
+ do not exist in <span class="NDLSystemFont">NiMesh</span>. Instead, use 
+ the CPU_READ <a href="../../Programmer/NiMesh/Data_Stream_Access.htm">access 
+ flag</a> to control whether or not the geometry data is accessible by 
+ the CPU. </li>
+	
+	<li>Skinning is now handled 
+ by a mesh modifier. Use <span class="NDLSystemFont">NiGetModifier(NiSkinningMeshModifier, 
+ pkMesh)</span> instead of <span class="NDLSystemFont">GetSkinInstance</span>, 
+ and use <span class="NDLSystemFont">AddModifier</span> with an <span class="NDLSystemFont">NiSkinningMeshModifier</span> 
+ instance instead of <span class="NDLSystemFont">SetSkinInstance</span>.</li>
+	
+	<li>A <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiShaderDeclaration.htm">NiShaderDeclaration</a></span> 
+ instance is no longer stored on the geometry object, so the <span class="NDLSystemFont">GetShaderDecl</span> 
+ and <span class="NDLSystemFont">SetShaderDecl</span> methods do not exist 
+ for <span class="NDLSystemFont">NiMesh</span>. Instead, each <a href="../../Reference/NiMain/NiShader.htm"><span 
+ class="NDLSystemFont">NiShader</span></a> instance has a <a href="../../Reference/NiMain/NiSemanticAdapterTable.htm"><span 
+ class="NDLSystemFont">NiSemanticAdapterTable</span></a> object that describes 
+ the linkage between the individual streams of vertex data in an <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMesh.htm">NiMesh</a></span> 
+ object and the varying inputs to a shader.</li>
+	
+	<li><span class="NDLSystemFont">GetNormalBinormalTangentMethod</span> 
+ and <span class="NDLSystemFont">StoreNormalBinormalTangent</span> no longer 
+ exist. NBT generation occurs only in the toolchain, so the NBT calculation 
+ method is set there. To determine whether or not an <span class="NDLSystemFont">NiMesh</span> 
+ object has NBT's, use the <span class="NDLSystemFont">ContainsData</span> 
+ or <span class="NDLSystemFont">GetSemanticCount</span> methods with <span 
+ class="NDLSystemFont">NiCommonSemantics::NORMAL()</span> and <span class="NDLSystemFont">NiCommonSemantics::BINORMAL()</span>.</li>
+	
+	<li><span class="NDLSystemFont">ApplyTransform</span> 
+ was not ported to <span class="NDLSystemFont">NiMesh</span>. If your application was using this method, visit Emergent's <a href="https://pulse.emergent.net/support/" target="_blank">Online Support Portal</a> for porting assistance.</li>
+	
+	<li>The <span class="NDLSystemFont">NiGeometry</span> 
+ constructor could automatically compute the object's model bounding sphere 
+ from the positions. This is no longer supported with <span class="NDLSystemFont">NiMesh</span>. 
+ Applications should call either <span class="NDLSystemFont">NiMesh::SetModelBound</span> 
+ or <span class="NDLSystemFont">NiMesh::RecomputeBounds</span> to set the 
+ bound of a programmatically-created NiMesh object.</li>
+	
+	<li>If an application adds 
+ or removes data streams from an <span class="NDLSystemFont">NiMesh</span> 
+ object with a mesh modifier attached, <span class="NDLSystemFont">ResetModifiers</span> 
+ must be called to make sure that the modifiers do not reference invalid 
+ or stale data streams. <span class="NDLSystemFont">ResetSceneModifiers</span> 
+ is a convenience method to <span class="NDLSystemFont">ResetModifiers</span> 
+ for an entire scene graph.</li>
+</ul>
+
+<h2>Changes required for applications loading references 
+ to legacy geometry classes</h2>
+
+<p>Applications with their own serialized classes with 
+ references to <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiGeometry.htm">NiGeometry</a></span> 
+ or <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiGeometryData.htm">NiGeometryData</a></span> 
+ derived objects may desire backwards compatibility conversion at load 
+ time. <span class="NDLSystemFont">NiGeometry</span> and <span class="NDLSystemFont">NiGeometryData</span> 
+ objects are automatically converted by the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiGeometryConverter.htm">NiGeometryConverter</a></span> 
+ class in an <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiStream.htm">NiStream</a></span> 
+ post-process function, and your application will need its own <a href="../../Reference/NiMain/NiStream.htm#PostProcessingFunctions">post-processing 
+ function</a> in order to update any pointers to the corresponding converted 
+ <span class="NDLSystemFont">NiMesh</span> object. Note that this also applies 
+ to <span class="NDLSystemFont"><a href="../../Reference/NiMain/NiAVObject.htm">NiAVObject</a></span> 
+ pointers that may point to <span class="NDLSystemFont">NiGeometry</span> 
+ objects.</p>
+
+<p><a href="Converting_to_Gamebryo_2_5_Overview.htm#Changes_to_Static_Data_Management">New 
+ <span class="NDLSystemFont">NiStaticDataManager</span> functionality</a> 
+ for specifying dependencies between libraries should be used to ensure 
+ the <span class="NDLSystemFont">NiGeometryConverter</span> runs before your 
+ application's converter.</p>
+
+<p>The <a href="NiParticle_Conversion.htm">NiParticle Conversion</a> 
+ guide discusses additional considerations needed to convert references 
+ to legacy particle system objects.</p>
+
+<p>Conversion to use Mesh Modifiers introduces subtle constraints 
+ on the ordering in which operations occur. For example, the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXClothModifier.htm">NiPhysXClothModifier</a></span> 
+ gets attached upon loading of the <span class="NDLSystemFont">NiMesh</span> 
+ object, but it can't attach because it doesn't have all the data it needs 
+ from PhysX. So care must be taken to explicitly re-attach it when that 
+ data is made available. </p>
+
+<p>Source customers may refer to the <span class="NDLSystemFont"><a href="../../Reference/NiPhysX/NiPhysXConverter.htm">NiPhysXConverter</a></span> 
+ in the <span class="NDLSystemFont">NiPhysX</span> library for an additional 
+ example of how to do this.</p>
+
+<p>Morphing has been affected greatly by the geometry change. 
+ First, <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiGeomMorpherController.htm">NiGeomMorpherController</a></span> 
+ has been deprecated. It is replaced by <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiMorphWeightsController.htm">NiMorphWeightsController</a></span>. 
+ Rather than morphing the vertices itself, it now manipulates the weights 
+ and the <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMorphMeshModifier.htm">NiMorphMeshModifier</a></span> 
+ updates the vertices. Morph targets are no longer stored in <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiMorphData.htm">NiMorphData</a></span>. 
+ That class has been deprecated and morph targets are now stored as additional 
+ vertex data streams on the mesh itself. Finally, the <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiGeomMorpherUpdateTask.htm">NiGeomMorpherUpdateTask</a></span> 
+ has also been deprecated. It is entirely replaced by the use of <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiMorphMeshModifier.htm">NiMorphMeshModifier</a></span>.</p>
+
+<p><span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiBoneLODController.htm">NiBoneLODController</a></span> 
+ has been deprecated. It is replaced by <span class="NDLSystemFont"><a href="../../Reference/NiAnimation/NiSkinningLODController.htm">NiSkinningLODController</a>.</span></p>
+
+<h2>Samples</h2>
+
+<p>Compare the Gamebryo sample code between Gamebryo 2.3 
+ and 2.5 to see examples of the changes described on this page. In particular, 
+ the following samples underwent interesting changes:</p>
+
+<ul>
+	
+	<li>SoftParticles
+	
+	<ul>
+		
+		<li>Code 
+ simplified, because now that custom shaders can be applied to particle 
+ systems, there is no need to renderer the particles as a custom <span 
+ class="NDLSystemFont">NiTriShape</span>.</li>
+	</ul>
+	</li>
+	
+	<li>Picking
+	
+	<ul>
+		
+		<li>Mark 
+ pickable <span class="NDLSystemFont">NiMesh </span>objects as CPU_READ. 
+ Applications can either use an <span class="NDLSystemFont">NiMeshProfile</span> 
+ to set access flags at export time (recommended), or they can set an <span 
+ class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamFactory.htm">NiDataStreamFactory</a></span> 
+ callback to override access flags at load time (what this sample does).</li>
+		
+		<li>Simple 
+ example of code difference between programmatically creating an <span 
+ class="NDLSystemFont">NiTriShape</span> object vs an <span class="NDLSystemFont">NiMesh</span> 
+ object - the highlighted triangle is created programmatically.</li>
+		
+		<li>Example 
+ of how reading pick results has changed - now need <span class="NDLSystemFont"><a href="../../Reference/NiMesh/NiDataStreamElementLock.htm">NiDataStreamElementLock</a></span>, 
+ and must check <span class="NDLSystemFont">GetIndicesValid</span>.</li>
+	</ul>
+	</li>
+	
+	<li>ShaderSample
+	
+	<ul>
+		
+		<li>Instead 
+ of creating <span class="NDLSystemFont">NiAdditionalGeometryData</span> 
+ to add custom vertex buffers, setup the <a href="../../Reference/NiMesh/NiDataStreamRef.htm"><span 
+ class="NDLSystemFont">NiDataStreamRef</span></a> with the vertex data and 
+ call <span class="NDLSystemFont">AddStreamRef</span> on the <span class="NDLSystemFont">NiMesh</span> 
+ object.</li>
+	</ul>
+	</li>
+	
+	<li>MetalWars 
+ ShadowGeometry
+	
+	<ul>
+		
+		<li>Examples 
+ of Primitive iterators and data stream locking.</li>
+	</ul>
+	</li>
+</ul>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+</body>
+
+</html>

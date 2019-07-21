@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+
+<title>Writing your own shader-derived class</title>
+<!--(Begin Meta)===================================================-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+<meta name="Originator" content="Pre-Expedition-RH" />
+<meta name="Generator" content="Palimpsest by Emergent Game Technologies - http://emergent.net" />
+<meta name="Last-Updated" content="%lastupdated%" />
+
+<!--(End Meta)====================================================-->
+    
+<!--(Begin Links)===================================================-->
+    
+<link rel="stylesheet" href="../../shared/Emergent.css" type="text/css" />
+
+<!--(End Links)=====================================================-->
+
+</head>
+
+<!--(Begin Body)===================================================-->
+<body lang="EN-US">
+<script src="../../shared/NavScript.js" language="JavaScript1.2" type="text/javascript"></script> <script language="JavaScript1.2" type="text/javascript">WriteNavLink(2);</script>
+
+<h1>Writing your own shader-derived class</h1>
+
+<p>Users of the Gamebryo engine can derive from a renderer-specific 
+ base class, such as <span class="NDLSystemFont">NiD3DShaderInterface</span>, 
+ to implement their own custom shaders. <span class="NDLSystemFont">NiD3DShaderInterface</span> 
+ is the interface through which the D3D renderer interacts with all shaders 
+ during the rendering of objects in the <span class="NDLSystemFont">RenderXXX</span> 
+ function calls. For a complete description of the rendering interface, 
+ please refer to <a href="Introduction_!Renderer_Interaction.htm">Renderer Interface</a>.</p>
+
+<p>There may be several levels to choose from when deriving 
+ your own shader classes, depending on which renderer you're using. For 
+ the D3D renderers, the lowest level is to derive from <span class="NDLSystemFont">NiD3DShaderInterface</span>. 
+ This class requires that all functionality expected by the renderer be 
+ completely implemented. While this level of implementation is the lowest 
+ level at which you can interface with the renderer, it is the most difficult 
+ to implement, requiring the most code to be written. There are no 'helper' 
+ members available at this level, such as an array of <span class="NDLSystemFont">NiD3DPass</span> 
+ instances, to aid in implementing your shader. For a full breakdown of 
+ the interface functions, please refer to the <a href="../../Reference/NiDX9Renderer/NiDX9Renderer_Class_Reference_Intro.htm">NiDX9 Renderer Shader class reference documentation</a>. </p>
+
+<p>The next level available of derivation available in 
+ the D3D renderer is the <span class="NDLSystemFont">NiD3DShader</span> 
+ class. This class adds some helpful structure to the system, providing 
+ several members which aid in the implementation of the renderer-required 
+ functions. Packing definitions, render states, shader constant register 
+ settings, and an array of passes are all provided with this class. A derived 
+ class is free to fill these in as it sees fit, and let the base implementation 
+ handle the run-time functions. Or, it can pick-and-choose which functions 
+ it wishes to alter, such as setting an obscure transformation matrix during 
+ the <span class="NDLSystemFont">SetupTransformations</span> 
+ function to achieve a desired effect, but leaving the rest 'as-is'.</p>
+
+<p>An application may also derive from <span class="NDLSystemFont">NiD3DDefaultShader</span>. 
+ This class represents the legacy default Gamebryo pipeline, and implements 
+ the code to analyze the <span class="NDLSystemFont">NiProperty</span> 
+ and <span class="NDLSystemFont">NiDynamicEffect</span> instances 
+ attached to the object being rendered, setting up the required passes 
+ to achieve the desired effect. There are advantages that an application 
+ can leverage should they decide to derive from this level. As an example, 
+ if you knew that no object in your scene will ever have projected lights 
+ applied to it, you can derive from the <span class="NDLSystemFont">UpdatePipeline</span>, 
+ removing the code which analyzes and sets up projected lighting effects. 
+ If you have an object in the scene which requires projected lights be 
+ additive, but all other Gamebryo pipeline functionality remains intact, 
+ derive a new shader class for that object which handles additive projected 
+ lights, and assign it accordingly. [NOTE: <span class="NDLSystemFont">NiD3DDefaultShader</span> 
+ is derived from <span class="NDLSystemFont">NiD3DShader</span>.]</p>
+
+<p>The current default pipeline uses <span class="NDLSystemFont">NiDX9FragmentShader</span> 
+ to render geometry objects. This class is actually much simpler than <span 
+ class="NDLSystemFont">NiD3DDefaultShader</span>, though that is because 
+ the work to set up the render states and shaders is taken care of by the 
+ <span class="NDLSystemFont">NiStandardMaterial</span> class. If you're going 
+ to derive a new material from <span class="NDLSystemFont">NiStandardMaterial</span> 
+ or <span class="NDLSystemFont">NiFragmentMaterial</span>, then you'll be 
+ using <span class="NDLSystemFont">NiDX9FragmentShader</span> objects. </p>
+
+<p>As stated before, the system provides several levels 
+ at which developers can choose to derive their shaders from. Depending 
+ on their specific needs, they should be able to accomplish whatever they 
+ desire with one of the three classes provided. These derived classes can 
+ be compiled directly by your application, and the application can 'hand 
+ attach' these instances to objects which require their usage.</p>
+
+<p>For examples of deriving your own shader classes, as 
+ well as attaching them once there are created, please refer to the <a 
+ href="../../Learn/Demos/Overview_!ShaderSample.htm">ShaderSample</a> 
+ documentation.</p>
+
+<!--kadov_tag{{<placeholder id="footer">}}-->
+
+</body>
+
+</html>
